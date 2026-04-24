@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #004085;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #004085;
+            margin: 0;
+            font-size: 20pt;
+            text-transform: uppercase;
+        }
+        .header p {
+            margin: 5px 0;
+            font-size: 10pt;
+            color: #555;
+        }
+        .section-title {
+            background-color: #f8f9fa;
+            border-left: 4px solid #004085;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 11pt;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 4px 8px;
+            text-align: left;
+            vertical-align: top;
+            border: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f2f2f2;
+            width: 30%;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 8pt;
+            text-align: center;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 4px;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Admission Suite Official Master Sheet</h1>
+        <p>Institutional Academic Record - Generated on {{ today|date:"F d, Y" }}</p>
+    </div>
+
+    <div style="float: right; width: 100px; height: 120px; border: 1px solid #ddd; text-align: center; padding-top: 40px; font-size: 8pt; color: #999;">
+        [STUDENT PHOTO]
+    </div>
+
+    <div style="width: 80%;">
+        <p><strong>Student Name:</strong> <span style="font-size: 14pt;">{{ student.student_name }}</span></p>
+        <p><strong>UGC ID:</strong> <span style="font-size: 12pt; font-family: monospace; color: #004085;">{{ student.student_id }}</span></p>
+        <p><strong>Status:</strong> <span class="status-badge">{{ student.admission_status }}</span></p>
+    </div>
+
+    <div class="section-title">Academic & Institutional Profile</div>
+    <table>
+        <tr>
+            <th>Program / Department</th>
+            <td>{{ student.program }}</td>
+            <th>Batch / Session</th>
+            <td>{{ student.batch }} ({{ student.semester_name }} {{ student.admission_year }})</td>
+        </tr>
+        <tr>
+            <th>Program Level</th>
+            <td>{{ student.program_type }}</td>
+            <th>College Cluster</th>
+            <td>{{ student.cluster }}</td>
+        </tr>
+        <tr>
+            <th>Admission Date</th>
+            <td>{{ student.admission_date|date:"d M Y" }}</td>
+            <th>Hall / Residence</th>
+            <td>{{ student.hall_attached }} {% if student.is_non_residential %}(Non-Res){% endif %}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Personal & Contact Details</div>
+    <table>
+        <tr>
+            <th>Gender / Religion</th>
+            <td>{{ student.gender }} / {{ student.religion }}</td>
+            <th>Date of Birth</th>
+            <td>{{ student.dob|date:"d M Y" }}</td>
+        </tr>
+        <tr>
+            <th>Blood Group</th>
+            <td>{{ student.blood_group }}</td>
+            <th>National ID / Birth Reg</th>
+            <td>{{ student.national_id }}</td>
+        </tr>
+        <tr>
+            <th>Student Mobile</th>
+            <td>{{ student.student_mobile }}</td>
+            <th>Emergency contact</th>
+            <td>{{ student.emergency_contact }}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Academic Background (SSC/HSC)</div>
+    <table>
+        <tr>
+            <th>SSC Records</th>
+            <td>GPA: {{ student.ssc_gpa }} | Year: {{ student.ssc_year }} | Roll: {{ student.ssc_roll }}</td>
+        </tr>
+        <tr>
+            <th>HSC Records</th>
+            <td>GPA: {{ student.hsc_gpa }} | Year: {{ student.hsc_year }} | Roll: {{ student.hsc_roll }}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Financial Summary</div>
+    <table>
+        <tr>
+            <th>Admission Payment</th>
+            <td>{{ student.admission_payment }}</td>
+            <th>Second Installment</th>
+            <td>{{ student.second_installment }}</td>
+        </tr>
+        <tr>
+            <th>Scholarship / Waiver</th>
+            <td>{{ student.waiver }}</td>
+            <th>Other Charges</th>
+            <td>{{ student.others }}</td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        This is an electronically generated document. No signature is required for internal use.
+        <br>Generated by: Admission Suite Web Portal
+    </div>
+</body>
+</html>

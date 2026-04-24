@@ -1,0 +1,105 @@
+{% load core_tags %}
+{% for student in page_obj %}
+<tr class="animated fadeIn">
+    <!-- 1. SL -->
+    <td class="text-center">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+
+    <!-- 2. Photo -->
+    <td class="text-center p-1">
+        <div class="bg-light border d-inline-block" style="width: 40px; height: 48px; border-radius: 2px; overflow: hidden;">
+            {% if student.photo_url %}
+            <img src="{{ student.photo_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+            {% else %}
+            <i class="fas fa-user text-muted opacity-50 mt-2"></i>
+            {% endif %}
+        </div>
+    </td>
+
+    <!-- 3. ID & Name -->
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="mr-2">
+                <div class="font-weight-black text-dark mb-0 text-monospace" style="font-size: 15px; letter-spacing: 0.5px;">{{ student.student_id }}</div>
+                <div class="font-weight-bold text-dark text-uppercase mt-1" style="font-size: 15px; line-height: 1.2;">{{ student.student_name }}</div>
+            </div>
+            <button type="button"
+                    class="student-info-trigger"
+                    data-short-info-url="{% url 'student_short_info' student.student_id %}"
+                    aria-label="Open quick student details"
+                    title="Quick Details">
+                <i class="fas fa-info-circle" style="font-size: 14px;"></i>
+            </button>
+        </div>
+    </td>
+
+    <!-- 4. Parents -->
+    <td>
+        <div>
+            <div class="text-dark" style="font-weight: 700; font-size: 15px;"><i class="fas fa-user-tie opacity-50 mr-1"></i> {{ student.father_name|default:"-" }}</div>
+            <div class="text-muted mt-1" style="font-size: 15px;"><i class="fas fa-user-nurse opacity-50 mr-1"></i> {{ student.mother_name|default:"-" }}</div>
+        </div>
+    </td>
+
+    <!-- 5. Program & Batch -->
+    <td>
+        <div class="font-weight-bold text-dark" style="font-size: 15px;">{{ program_map|get_item:student.program|default:student.program }}</div>
+        <div class="text-muted" style="font-size: 15px;">Batch: <strong>{{ student.batch|default:"-" }}</strong></div>
+    </td>
+
+    <!-- 6. Intake Details -->
+    <td class="text-center">
+        <div class="text-dark font-weight-bold" style="font-size: 15px;">{{ student.semester_name|default:"Spring" }}</div>
+        <div class="text-muted mt-1" style="font-size: 12px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">{{ student.program_type|default:"Bachelor" }}</div>
+    </td>
+
+    <!-- 7. Mobile & Gender -->
+    <td class="text-center">
+        <div class="font-weight-bold text-dark" style="font-size: 15px;">{{ student.student_mobile|default:"-" }}</div>
+        <div class="mt-1" style="font-size: 15px; font-weight: 700;">
+            {% if student.gender == 'Male' %}
+            <span class="text-primary">MALE</span>
+            {% elif student.gender == 'Female' %}
+            <span style="color: #e83e8c;">FEMALE</span>
+            {% else %}
+            <span class="text-muted">{{ student.gender|upper|default:"N/A" }}</span>
+            {% endif %}
+        </div>
+    </td>
+
+    <!-- 8. Special Flags (Icons) -->
+    <td class="text-center">
+        <div class="d-flex justify-content-center flex-wrap" style="gap: 8px;">
+            {% if student.is_freedom_fighter_child %}<i class="fas fa-medal text-warning" title="FF Child"></i>{% endif %}
+            {% if student.is_armed_forces_child %}<i class="fas fa-shield-halved text-secondary" title="Armed Forces Child"></i>{% endif %}
+            {% if student.is_july_joddha_2024 %}<i class="fas fa-fire text-danger" title="July Joddha 2024"></i>{% endif %}
+            {% if student.is_credit_transfer %}<i class="fas fa-right-left text-primary" title="Credit Transfer"></i>{% endif %}
+            {% if student.is_non_residential %}<i class="fas fa-house-circle-xmark text-muted" title="Non-Residential"></i>{% endif %}
+            {% if student.is_temp_admission_cancel %}<i class="fas fa-user-slash text-muted" title="Temp Cancel"></i>{% endif %}
+        </div>
+    </td>
+
+    <!-- 9. Action -->
+    <td class="text-right">
+        <div class="d-flex justify-content-end align-items-center" style="gap: 8px;">
+            <button type="button" 
+                    class="row-action-link row-action-link--success" 
+                    onclick="copyStudentData('{{ student.student_name|escapejs }}', '{{ student.student_id|escapejs }}', '{{ student.program|escapejs }}', '{{ student.batch|escapejs }}')"
+                    title="Copy Data">
+                <i class="fas fa-copy"></i>
+            </button>
+            <a href="{% url 'student_profile' student.student_id %}" class="row-action-link row-action-link--primary" title="View Profile">
+                <i class="far fa-comment-dots fa-lg"></i>
+            </a>
+            <a href="{% url 'edit_student' student.student_id %}" class="row-action-link row-action-link--warning" title="Edit Student">
+                <i class="fas fa-pencil-alt"></i>
+            </a>
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="10" class="text-center py-5 text-muted bg-light">
+        No students found matching your criteria.
+    </td>
+</tr>
+{% endfor %}

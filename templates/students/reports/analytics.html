@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Academic Analytics | Admission Suite{% endblock %}
+{% block page_title %}High Impact Intake Analytics{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        const data = {{ data|safe }};
+        
+        // 1. Program Distribution Chart
+        new Chart(document.getElementById('programChart'), {
+            type: 'doughnut',
+            data: {
+                labels: data.program_split.map(i => i.program || 'Unknown'),
+                datasets: [{
+                    data: data.program_split.map(i => i.count),
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                }]
+            },
+            options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // 2. GPA Intake Quality (SSC vs HSC)
+        // We'll just show the global aggregate for now, or per-program if we had that detail in reports.py
+        new Chart(document.getElementById('gpaComparisonChart'), {
+            type: 'bar',
+            data: {
+                labels: ['GPA 5.0 (Golden)', 'GPA 4.0 - 4.99'],
+                datasets: [
+                    {
+                        label: 'SSC Intake',
+                        data: [data.gpa_stats.ssc_5, data.gpa_stats.ssc_4],
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)'
+                    },
+                    {
+                        label: 'HSC Intake',
+                        data: [data.gpa_stats.hsc_5, data.gpa_stats.hsc_4],
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)'
+                    }
+                ]
+            },
+            options: { 
+                responsive: true,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+
+        // 3. Gender Split
+        new Chart(document.getElementById('genderChart'), {
+            type: 'pie',
+            data: {
+                labels: data.gender_split.map(i => i.gender || 'Unknown'),
+                datasets: [{
+                    data: data.gender_split.map(i => i.count),
+                    backgroundColor: ['#3b82f6', '#f472b6', '#94a3b8']
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- GPA Quality Overview -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-graduation-cap mr-2"></i> Intake Quality Audit</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="gpaComparisonChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                <div class="row mt-4">
+                    <div class="col-6 border-right">
+                        <div class="description-block">
+                            <h5 class="description-header">{{ data.gpa_stats.ssc_avg|floatformat:2 }}</h5>
+                            <span class="description-text">AVG SSC GPA</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="description-block">
+                            <h5 class="description-header">{{ data.gpa_stats.hsc_avg|floatformat:2 }}</h5>
+                            <span class="description-text">AVG HSC GPA</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dept/Program Split -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-pie mr-2"></i> Program Distribution</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="programChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Demographic Charts -->
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold">Gender Split</h3></div>
+            <div class="card-body">
+                <canvas id="genderChart" style="min-height: 200px; height: 200px; max-height: 200px; max-width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold">Enrollment Summary</h3></div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-valign-middle">
+                    <thead>
+                        <tr>
+                            <th>Program</th>
+                            <th>Enrolled Count</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data.program_split %}
+                        <tr>
+                            <td>{{ item.program }}</td>
+                            <td>{{ item.count }}</td>
+                            <td><span class="badge badge-success">On-Track</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

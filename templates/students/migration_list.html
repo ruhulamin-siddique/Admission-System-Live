@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Migration Hub | Admission Suite{% endblock %}
+{% block page_title %}Academic Migration & History{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Search Explorer -->
+        <div class="card shadow-sm border-0 mb-4" style="border-radius: 16px; background: #f8f9fa;">
+            <div class="card-body p-4 p-lg-5 text-center">
+                <h2 class="font-weight-black mb-1">Find Student to Migrate</h2>
+                <p class="text-muted mb-4">Enter Student ID, Name, or Mobile to initiate a department change</p>
+                
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden bg-white border">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-white border-0 pl-4"><i class="fas fa-search text-muted"></i></span>
+                            </div>
+                            <input type="text" name="search" class="form-control border-0 px-3" 
+                                   placeholder="e.g. 080261..." 
+                                   autofocus
+                                   hx-get="{% url 'migration_center' %}" 
+                                   hx-trigger="keyup changed delay:300ms" 
+                                   hx-target="#migration-container"
+                                   value="{{ query }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-indigo px-4 font-weight-bold" style="background: #6610f2; color: white;">Explore</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Container: Results or History -->
+        <div id="migration-container">
+            {% if query %}
+                {% include 'students/partials/migration_table.html' %}
+            {% else %}
+                {% include 'students/partials/migration_history_table.html' %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

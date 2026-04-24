@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Report Center | Admission Suite{% endblock %}
+{% block page_title %}Professional Report Center{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        height: 100%;
+        border: 1px solid #e2e8f0;
+    }
+    .report-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        border-color: #3b82f6;
+    }
+    .report-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Academic Analytics -->
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'analytics_dashboard' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-primary text-white">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h5 class="card-title font-weight-bold">Academic Intake Analytics</h5>
+                <p class="card-text text-muted">A visual dashboard breaking down GPA distributions, student quality, and enrollment trends by program.</p>
+            </div>
+            <div class="card-footer bg-transparent border-top-0 text-primary">
+                Explore Dashboard <i class="fas fa-arrow-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Export Center -->
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'export_center' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-indigo text-white" style="background-color: #6610f2 !important;">
+                    <i class="fas fa-file-export"></i>
+                </div>
+                <h5 class="card-title font-weight-bold">Dynamic Excel Hub</h5>
+                <p class="card-text text-muted">Generate high-fidelity reports with custom fields, date ranges, and multi-dimensional filters for all records.</p>
+            </div>
+            <div class="card-footer bg-transparent border-top-0 text-indigo" style="color: #6610f2 !important;">
+                Configure & Export <i class="fas fa-arrow-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demographic Split -->
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='#'">
+            <div class="card-body">
+                <div class="report-icon bg-info text-white">
+                    <i class="fas fa-id-badge"></i>
+                </div>
+                <h5 class="card-title font-weight-bold">Demographic Insights</h5>
+                <p class="card-text text-muted">Explore distributions of student gender, religion, blood group, and residential hall assignments.</p>
+            </div>
+            <div class="card-footer bg-transparent border-top-0 text-info">
+                Coming Soon <i class="fas fa-lock ml-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

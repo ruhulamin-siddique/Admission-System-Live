@@ -1,0 +1,637 @@
+{% extends 'base.html' %}
+
+{% block title %}Academic Settings | Admission Suite{% endblock %}
+{% block page_title %}Academic Master Data{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card card-primary card-outline">
+            <div class="card-body box-profile">
+                <h3 class="profile-username text-center">Settings Menu</h3>
+                <p class="text-muted text-center">Academic Configuration</p>
+                <ul class="nav nav-pills flex-column" id="settings-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="clusters-tab" data-toggle="pill" href="#clusters" role="tab"><i class="fas fa-layer-group mr-2"></i> Clusters</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="programs-tab" data-toggle="pill" href="#programs" role="tab"><i class="fas fa-graduation-cap mr-2"></i> Programs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="halls-tab" data-toggle="pill" href="#halls" role="tab"><i class="fas fa-hotel mr-2"></i> Halls</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="years-tab" data-toggle="pill" href="#years" role="tab"><i class="fas fa-calendar-alt mr-2"></i> Admission Years</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="semesters-tab" data-toggle="pill" href="#semesters" role="tab"><i class="fas fa-clock mr-2"></i> Semesters</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="batches-tab" data-toggle="pill" href="#batches" role="tab"><i class="fas fa-users mr-2"></i> Batches</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <div class="tab-content">
+                    <!-- Clusters -->
+                    <div class="tab-pane fade show active" id="clusters" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="m-0 font-weight-bold">Clusters</h4>
+                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addClusterModal"><i class="fas fa-plus mr-1"></i> Add Cluster</button>
+                        </div>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>UGC Code</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in clusters %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td><code>{{ item.code }}</code></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editClusterModal{{ item.id }}"><i class="fas fa-edit"></i></button>
+                                        <a href="{% url 'delete_master_data' 'cluster' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this cluster?')"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Programs -->
+                    <div class="tab-pane fade" id="programs" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="m-0 font-weight-bold">Programs</h4>
+                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addProgramModal"><i class="fas fa-plus mr-1"></i> Add Program</button>
+                        </div>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Program Name</th>
+                                    <th>Short Name</th>
+                                    <th>UGC Code</th>
+                                    <th>Cluster</th>
+                                    <th>Program Type</th>
+                                    <th>Sort Order</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in programs %}
+                                <tr>
+                                    <td><span data-toggle="tooltip" title="Code: {{ item.full_ugc_code }}">{{ item.name }}</span></td>
+                                    <td><strong>{{ item.short_name|default:"-" }}</strong></td>
+                                    <td><code>{{ item.ugc_code }}</code></td>
+                                    <td><span data-toggle="tooltip" title="Cluster: {{ item.cluster.name }}">{{ item.cluster.name }}</span></td>
+                                    <td><span class="badge badge-secondary">{{ item.get_level_code_display }}</span></td>
+                                    <td><span class="badge badge-info">{{ item.sort_order }}</span></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editProgramModal{{ item.id }}"><i class="fas fa-edit"></i></button>
+                                        <a href="{% url 'delete_master_data' 'program' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this program?')"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Halls -->
+                    <div class="tab-pane fade" id="halls" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="m-0 font-weight-bold">Residential Halls</h4>
+                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addHallModal"><i class="fas fa-plus mr-1"></i> Add Hall</button>
+                        </div>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Hall Code</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in halls %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td><code>{{ item.code }}</code></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editHallModal{{ item.id }}"><i class="fas fa-edit"></i></button>
+                                        <a href="{% url 'delete_master_data' 'hall' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this hall?')"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Years -->
+                    <div class="tab-pane fade" id="years" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="m-0 font-weight-bold">Admission Years</h4>
+                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addYearModal"><i class="fas fa-plus mr-1"></i> Add Year</button>
+                        </div>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Year</th>
+                                    <th>Active</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in years %}
+                                <tr>
+                                    <td>{{ item.year }}</td>
+                                    <td>
+                                        {% if item.is_active %}
+                                        <span class="badge badge-success">Yes</span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editYearModal{{ item.id }}"><i class="fas fa-edit"></i></button>
+                                        <a href="{% url 'delete_master_data' 'year' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this year?')"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Semesters -->
+                    <div class="tab-pane fade" id="semesters" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="m-0 font-weight-bold">Semesters</h4>
+                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addSemesterModal"><i class="fas fa-plus mr-1"></i> Add Semester</button>
+                        </div>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Semester Code</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in semesters %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td><code>{{ item.code }}</code></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editSemesterModal{{ item.id }}"><i class="fas fa-edit"></i></button>
+                                        <a href="{% url 'delete_master_data' 'semester' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this semester?')"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Batches -->
+                    <div class="tab-pane fade" id="batches" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="m-0 font-weight-bold">Batches</h4>
+                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addBatchModal"><i class="fas fa-plus mr-1"></i> Add Batch</button>
+                        </div>
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Batch Name</th>
+                                    <th>Admission Year</th>
+                                    <th>Sort Order</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in batches %}
+                                <tr>
+                                    <td><strong>{{ item.name }}</strong></td>
+                                    <td>{{ item.admission_year.year }}</td>
+                                    <td><span class="badge badge-info">{{ item.sort_order }}</span></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editBatchModal{{ item.id }}"><i class="fas fa-edit"></i></button>
+                                        <a href="{% url 'delete_master_data' 'batch' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this batch?')"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Add Cluster Modal -->
+<div class="modal fade" id="addClusterModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'add_master_data' 'cluster' %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Cluster</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Cluster Name</label>
+                    <input type="text" name="name" class="form-control" required placeholder="e.g. Engineering & Technology">
+                </div>
+                <div class="form-group">
+                    <label>UGC Code</label>
+                    <input type="text" name="code" class="form-control" required placeholder="e.g. 05">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Cluster</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Program Modal -->
+<div class="modal fade" id="addProgramModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'add_master_data' 'program' %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Program</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Program Full Name</label>
+                    <input type="text" name="name" class="form-control" required placeholder="e.g. Computer Science and Engineering">
+                </div>
+                <div class="form-group">
+                    <label>Short Name</label>
+                    <input type="text" name="short_name" class="form-control" required placeholder="e.g. CSE">
+                </div>
+                <div class="form-group">
+                    <label>UGC Subject Code</label>
+                    <input type="text" name="ugc_code" class="form-control" required placeholder="e.g. 01">
+                </div>
+                <div class="form-group">
+                    <label>Cluster</label>
+                    <select name="cluster" class="form-control" required>
+                        {% for c in clusters %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Program Type</label>
+                    <select name="level_code" class="form-control">
+                        <option value="1">Bachelor (1)</option>
+                        <option value="3">Masters (3)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" class="form-control" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Program</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Hall Modal -->
+<div class="modal fade" id="addHallModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'add_master_data' 'hall' %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Hall</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Hall Name</label>
+                    <input type="text" name="name" class="form-control" required placeholder="e.g. Abbas Uddin Ahmed Hall">
+                </div>
+                <div class="form-group">
+                    <label>Hall Code</label>
+                    <input type="text" name="code" class="form-control" required placeholder="e.g. 02">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Hall</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Year Modal -->
+<div class="modal fade" id="addYearModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'add_master_data' 'year' %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Add Admission Year</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Admission Year</label>
+                    <input type="number" name="year" class="form-control" required value="2026">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Year</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Semester Modal -->
+<div class="modal fade" id="addSemesterModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'add_master_data' 'semester' %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Add Semester</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Semester Name</label>
+                    <input type="text" name="name" class="form-control" required placeholder="e.g. Spring">
+                </div>
+                <div class="form-group">
+                    <label>Semester Code (1 or 2)</label>
+                    <input type="text" name="code" class="form-control" required placeholder="e.g. 1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Semester</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Batch Modal -->
+<div class="modal fade" id="addBatchModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'add_master_data' 'batch' %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Batch</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Batch Name</label>
+                    <input type="text" name="name" class="form-control" required placeholder="e.g. 25th">
+                </div>
+                <div class="form-group">
+                    <label>Admission Year</label>
+                    <select name="year" class="form-control" required>
+                        {% for y in years %}
+                        <option value="{{ y.id }}">{{ y.year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" class="form-control" value="0" help="Higher numbers appear first">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save Batch</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!-- Edit Modals (Looping again to create unique modals for simplicity) -->
+{% for item in clusters %}
+<div class="modal fade" id="editClusterModal{{ item.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'edit_master_data' 'cluster' item.id %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Cluster: {{ item.name }}</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Cluster Name</label>
+                    <input type="text" name="name" class="form-control" required value="{{ item.name }}">
+                </div>
+                <div class="form-group">
+                    <label>UGC Code</label>
+                    <input type="text" name="code" class="form-control" required value="{{ item.code }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-info">Update Cluster</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% for item in programs %}
+<div class="modal fade" id="editProgramModal{{ item.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'edit_master_data' 'program' item.id %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Program: {{ item.name }}</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Program Full Name</label>
+                    <input type="text" name="name" class="form-control" required value="{{ item.name }}">
+                </div>
+                <div class="form-group">
+                    <label>Short Name</label>
+                    <input type="text" name="short_name" class="form-control" required value="{{ item.short_name }}">
+                </div>
+                <div class="form-group">
+                    <label>UGC Subject Code</label>
+                    <input type="text" name="ugc_code" class="form-control" required value="{{ item.ugc_code }}">
+                </div>
+                <div class="form-group">
+                    <label>Cluster</label>
+                    <select name="cluster" class="form-control" required>
+                        {% for c in clusters %}
+                        <option value="{{ c.id }}" {% if item.cluster.id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Program Type</label>
+                    <select name="level_code" class="form-control">
+                        <option value="1" {% if item.level_code == '1' %}selected{% endif %}>Bachelor (1)</option>
+                        <option value="3" {% if item.level_code == '3' %}selected{% endif %}>Masters (3)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" class="form-control" value="{{ item.sort_order }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-info">Update Program</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% for item in halls %}
+<div class="modal fade" id="editHallModal{{ item.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'edit_master_data' 'hall' item.id %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Hall: {{ item.name }}</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Hall Name</label>
+                    <input type="text" name="name" class="form-control" required value="{{ item.name }}">
+                </div>
+                <div class="form-group">
+                    <label>Hall Code</label>
+                    <input type="text" name="code" class="form-control" required value="{{ item.code }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-info">Update Hall</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% for item in years %}
+<div class="modal fade" id="editYearModal{{ item.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'edit_master_data' 'year' item.id %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Year: {{ item.year }}</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Admission Year</label>
+                    <input type="number" name="year" class="form-control" required value="{{ item.year }}">
+                </div>
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" name="is_active" class="custom-control-input" id="activeSwitch{{ item.id }}" {% if item.is_active %}checked{% endif %}>
+                        <label class="custom-control-label" for="activeSwitch{{ item.id }}">Active for Admissions</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-info">Update Year</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% for item in semesters %}
+<div class="modal fade" id="editSemesterModal{{ item.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'edit_master_data' 'semester' item.id %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Semester: {{ item.name }}</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Semester Name</label>
+                    <input type="text" name="name" class="form-control" required value="{{ item.name }}">
+                </div>
+                <div class="form-group">
+                    <label>Semester Code</label>
+                    <input type="text" name="code" class="form-control" required value="{{ item.code }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-info">Update Semester</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% for item in batches %}
+<div class="modal fade" id="editBatchModal{{ item.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'edit_master_data' 'batch' item.id %}" method="POST" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Batch: {{ item.name }}</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Batch Name</label>
+                    <input type="text" name="name" class="form-control" required value="{{ item.name }}">
+                </div>
+                <div class="form-group">
+                    <label>Admission Year</label>
+                    <select name="year" class="form-control" required>
+                        {% for y in years %}
+                        <option value="{{ y.id }}" {% if item.admission_year.id == y.id %}selected{% endif %}>{{ y.year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" class="form-control" value="{{ item.sort_order }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-info">Update Batch</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Activate tab from URL hash
+    var hash = window.location.hash;
+    if (hash) {
+        $('.nav-pills a[href="' + hash + '"]').tab('show');
+    }
+
+    // Update URL hash on tab change
+    $('.nav-pills a').on('shown.bs.tab', function (e) {
+        window.location.hash = e.target.hash;
+    });
+
+    // Initialize Tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}

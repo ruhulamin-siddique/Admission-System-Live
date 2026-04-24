@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}System Settings | Admission Suite{% endblock %}
+{% block page_title %}Institutional Branding & Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card card-outline card-primary shadow-lg border-0" style="border-radius: 12px;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-palette mr-2 text-primary"></i> Organization Branding
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Institution Name</label>
+                        <input type="text" name="institution_name" class="form-control" value="{{ settings.institution_name }}" required>
+                        <small class="text-muted">This name appears on the login screen and sidebar.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Institutional Logo (Upload File)</label>
+                        <div class="custom-file">
+                            <input type="file" name="institution_logo" class="custom-file-input" id="logoUpload" accept="image/*">
+                            <label class="custom-file-label" for="logoUpload">Choose file</label>
+                        </div>
+                        <small class="text-muted">Recommended: Square or horizontal PNG with transparent background.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Institutional Favicon/Icon (Upload File)</label>
+                        <div class="custom-file">
+                            <input type="file" name="institution_favicon" class="custom-file-input" id="faviconUpload" accept="image/*">
+                            <label class="custom-file-label" for="faviconUpload">Choose file</label>
+                        </div>
+                        <small class="text-muted">This icon appears in the browser tab. Recommended: 32x32 or 64x64 PNG.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Logo URL (Fallback Link)</label>
+                        <input type="url" name="institution_logo_url" class="form-control" value="{{ settings.institution_logo_url|default:'' }}" placeholder="https://example.com/logo.png">
+                        <small class="text-muted">Optional: Use if no file is uploaded above.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Primary Theme Color</label>
+                        <div class="input-group my-colorpicker2">
+                            <input type="color" name="theme_color" class="form-control" value="{{ settings.theme_color }}" style="height: 38px; padding: 2px;">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                            <i class="fas fa-save mr-2"></i> Save Branding Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card card-outline card-info shadow-sm">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">Live Preview</h3>
+            </div>
+            <div class="card-body text-center py-5">
+                <div class="mb-4 d-flex justify-content-center align-items-center" style="gap: 20px;">
+                    <div class="text-center">
+                        <div class="small text-muted mb-2 font-weight-bold">MAIN LOGO</div>
+                        <img id="preview-logo-img" src="{{ settings.logo_url|default:'' }}" alt="Logo" style="max-height: 80px; {% if not settings.logo_url %}display:none;{% endif %}" class="img-thumbnail border-0">
+                        <div id="preview-logo-placeholder" {% if settings.logo_url %}style="display:none;"{% endif %}>
+                            <i class="fas fa-graduation-cap fa-4x text-primary"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center border-left pl-4">
+                        <div class="small text-muted mb-2 font-weight-bold">FAVICON</div>
+                        <img id="preview-favicon-img" src="{{ settings.favicon_url|default:'' }}" alt="Favicon" style="width: 32px; height: 32px; {% if not settings.favicon_url %}display:none;{% endif %}" class="shadow-sm">
+                        <div id="preview-favicon-placeholder" {% if settings.favicon_url %}style="display:none;"{% endif %}>
+                            <i class="fas fa-image fa-2x text-muted"></i>
+                        </div>
+                    </div>
+                </div>
+                <h4 style="color: {{ settings.theme_color }}; font-weight: 700;">{{ settings.institution_name }}</h4>
+                <p class="text-muted">This is how your branding will look across the system.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Show selected filename in custom-file input
+    $('.custom-file-input').on('change', function() {
+        let fileName = $(this).val().split('\\').pop();
+        $(this).next('.custom-file-label').addClass("selected").html(fileName);
+        
+        // Live Preview Logic
+        const input = this;
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (input.id === 'logoUpload') {
+                    $('#preview-logo-img').attr('src', e.target.result).show();
+                    $('#preview-logo-placeholder').hide();
+                } else if (input.id === 'faviconUpload') {
+                    $('#preview-favicon-img').attr('src', e.target.result).show();
+                    $('#preview-favicon-placeholder').hide();
+                }
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    });
+</script>
+{% endblock %}

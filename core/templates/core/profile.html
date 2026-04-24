@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile | Admission Suite{% endblock %}
+{% block page_title %}Staff Member Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Profile Image & Quick Stats -->
+        <div class="card card-primary card-outline shadow-lg border-0" style="border-radius: 15px;">
+            <div class="card-body box-profile">
+                <div class="text-center mb-3">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 100px; height: 100px; font-size: 3rem;">
+                        {{ user.username|make_list|first|upper }}
+                    </div>
+                </div>
+
+                <h3 class="profile-username text-center font-weight-bold">{{ user.username }}</h3>
+                <p class="text-muted text-center">{{ user.email|default:"No email set" }}</p>
+
+                <ul class="list-group list-group-unbordered mb-3">
+                    <li class="list-group-item border-top-0">
+                        <b>Account Status</b> <a class="float-right"><span class="badge badge-success">Active</span></a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Member Since</b> <a class="float-right text-muted small">{{ user.date_joined|date:"M Y" }}</a>
+                    </li>
+                    <li class="list-group-item border-bottom-0">
+                        <b>Last Login</b> <a class="float-right text-muted small">{{ user.last_login|date:"d M H:i" }}</a>
+                    </li>
+                </ul>
+
+                <a href="{% url 'password_change' %}" class="btn btn-primary btn-block shadow-sm">
+                    <i class="fas fa-key mr-2"></i> <b>Change My Password</b>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-lg border-0" style="border-radius: 15px;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-user-shield mr-2 text-primary"></i> Security & Access Details</h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-sm-4 text-muted font-weight-bold">Assigned Role</div>
+                    <div class="col-sm-8 text-primary">
+                        <i class="fas fa-id-badge mr-1"></i> {{ user.profile.role.name|default:"General Staff" }}
+                    </div>
+                </div>
+                <div class="row mb-4 border-top pt-3">
+                    <div class="col-sm-4 text-muted font-weight-bold">Departmental Scope</div>
+                    <div class="col-sm-8">
+                        {% if user.profile.department_scope %}
+                        <span class="badge badge-warning">Restricted: {{ user.profile.department_scope }} ONLY</span>
+                        {% else %}
+                        <span class="badge badge-info">Global Access (Full Permissions)</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-4 border-top pt-3">
+                    <div class="col-sm-4 text-muted font-weight-bold">Permissions Info</div>
+                    <div class="col-sm-8 text-muted small">
+                        Your role defines which modules (Students, Reports, Security) you can access. 
+                        If you need additional permissions, please contact a system administrator.
+                    </div>
+                </div>
+
+                <div class="callout callout-info mt-5">
+                    <h5><i class="fas fa-info mr-2"></i> Security Tip</h5>
+                    <p>Always ensure you log out when using the Admission Suite on shared terminals. Your current session activity is monitored to ensure data integrity.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

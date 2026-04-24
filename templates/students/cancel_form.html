@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}System Cancellation | Admission Suite{% endblock %}
+{% block page_title %}Revoke Admission: {{ student.student_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center pt-4">
+    <div class="col-xl-6 col-lg-8">
+        <div class="card shadow-lg border-0" style="border-radius: 20px; overflow: hidden;">
+            <div class="card-header bg-danger text-white p-4">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3 bg-white text-danger rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 50px; height: 50px;">
+                        <i class="fas fa-exclamation-triangle fa-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 font-weight-black">Confirm Revocation</h4>
+                        <p class="mb-0 small opacity-75">ID: {{ student.student_id }} | Current Status: {{ student.admission_status }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="card-body p-4">
+                    <div class="alert alert-warning border-0" style="background: #fff3cd; border-radius: 12px;">
+                        <h6 class="font-weight-bold mb-1 ml-1"><i class="fas fa-info-circle mr-1"></i> Critical Action Warning</h6>
+                        <p class="small mb-0 ml-1">By proceeding, this student will be marked as <strong>Cancelled</strong> and hidden from the main directory. This action is permanently logged in the audit history.</p>
+                    </div>
+
+                    <div class="form-group mb-4 mt-4">
+                        <label class="small font-weight-bold text-uppercase text-muted letter-spacing-1">Cancellation Reason Category <span class="text-danger">*</span></label>
+                        <select name="reason_category" class="form-control form-control-lg border-2" required style="border-radius: 10px;">
+                            <option value="" disabled selected>Select a primary reason...</option>
+                            <option value="Migration">Migration to other University</option>
+                            <option value="Financial">Financial/Non-Payment</option>
+                            <option value="Personal">Personal Reasons</option>
+                            <option value="Academic">Academic Non-Performance</option>
+                            <option value="Disciplinary">Disciplinary Action</option>
+                            <option value="Temporary">Temporary/Draft Suspension</option>
+                            <option value="Other">Other (Please specify in notes)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="small font-weight-bold text-uppercase text-muted letter-spacing-1">Custom Message / Internal Story <span class="text-danger">*</span></label>
+                        <textarea name="notes" class="form-control border-2" rows="5" required 
+                                  placeholder="Provide the full internal story for this cancellation. This will be preserved in the student's academic history."
+                                  style="border-radius: 12px;"></textarea>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white p-4 border-0 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'cancellation_hub' %}" class="btn btn-link text-muted font-weight-bold">Discard & Return</a>
+                    <button type="submit" class="btn btn-danger btn-lg px-5 rounded-pill font-weight-black shadow-lg"
+                            onclick="return confirm('FINAL CONFIRMATION: Are you sure you want to permanently revoke this admission?')">
+                        <i class="fas fa-user-times mr-2"></i> Execute Revocation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

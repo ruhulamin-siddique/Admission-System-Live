@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile | Admission Suite{% endblock %}
+{% block page_title %}My Profile & Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-shell,
+    .profile-panel {
+        border: 0;
+        border-radius: 18px;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .profile-avatar {
+        width: 92px;
+        height: 92px;
+        border-radius: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.6rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #1d4ed8, #4338ca);
+        color: #fff;
+        box-shadow: 0 16px 30px rgba(37, 99, 235, 0.24);
+    }
+
+    .profile-meta {
+        color: #64748b;
+        font-size: 0.88rem;
+    }
+
+    .summary-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #64748b;
+    }
+
+    .summary-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .permission-chip {
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.08);
+        color: #1d4ed8;
+        font-weight: 700;
+        padding: 0.45rem 0.8rem;
+        margin: 0 0.4rem 0.4rem 0;
+        display: inline-flex;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card profile-shell">
+            <div class="card-body text-center">
+                <div class="profile-avatar mb-3">
+                    {{ user.username|make_list|first|upper }}
+                </div>
+                <h3 class="font-weight-bold mb-1">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}</h3>
+                <div class="profile-meta mb-3">@{{ user.username }}</div>
+                <p class="text-muted mb-4">{{ user.email|default:"No email on file" }}</p>
+
+                <div class="text-left">
+                    <div class="d-flex justify-content-between py-2 border-top">
+                        <span class="summary-label">Account Status</span>
+                        <span class="summary-value">
+                            {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-top">
+                        <span class="summary-label">Member Since</span>
+                        <span class="summary-value">{{ user.date_joined|date:"M Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-top">
+                        <span class="summary-label">Last Login</span>
+                        <span class="summary-value">
+                            {% if user.last_login %}
+                            {{ user.last_login|date:"d M Y" }}
+                            {% else %}
+                            Never
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <a href="{% url 'password_change' %}" class="btn btn-primary btn-block mt-4">
+                    <i class="fas fa-key mr-2"></i> Change My Password
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card profile-panel mb-4">
+            <div class="card-header bg-white border-0">
+                <h3 class="card-title font-weight-bold mb-1"><i class="fas fa-user-edit mr-2 text-primary"></i> Update My Information</h3>
+                <p class="text-muted small mb-0">Every authenticated user can maintain their own profile details here. Role and scope remain administrator-controlled.</p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>First Name</label>
+                            <input type="text" name="first_name" value="{{ profile_form.first_name.value|default:'' }}" class="form-control" placeholder="First name">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Last Name</label>
+                            <input type="text" name="last_name" value="{{ profile_form.last_name.value|default:'' }}" class="form-control" placeholder="Last name">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Username</label>
+                            <input type="text" value="{{ user.username }}" class="form-control" disabled>
+                            <small class="text-muted">Usernames are fixed for login consistency.</small>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Email Address</label>
+                            <input type="email" name="email" value="{{ profile_form.email.value|default:'' }}" class="form-control" placeholder="name@university.edu">
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-2">
+                        <p class="text-muted small mb-3 mb-md-0">Need access changes? Contact an administrator to update your role or department scope.</p>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save mr-2"></i> Save Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card profile-panel">
+            <div class="card-header bg-white border-0">
+                <h3 class="card-title font-weight-bold mb-1"><i class="fas fa-user-shield mr-2 text-primary"></i> Access Summary</h3>
+                <p class="text-muted small mb-0">A clear view of what this account can reach inside the system.</p>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="summary-label mb-2">Assigned Role</div>
+                        <div class="summary-value">{{ user.profile.role.name|default:"No role assigned" }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="summary-label mb-2">Program Scope</div>
+                        <div class="summary-value">{{ scope_label }}</div>
+                    </div>
+                </div>
+
+                {% if access_summary %}
+                {% for section in access_summary %}
+                <div class="mb-4 {% if not forloop.last %}border-bottom pb-4{% endif %}">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="mr-2 text-primary"><i class="{{ section.icon }}"></i></div>
+                        <div class="font-weight-bold text-dark">{{ section.display }}</div>
+                    </div>
+                    <div>
+                        {% for task in section.tasks %}
+                        <span class="permission-chip" title="{{ task.description }}">{{ task.label }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="alert alert-light border mb-0">
+                    No role-based permissions are assigned yet. You can still keep your personal profile details up to date from this page.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
