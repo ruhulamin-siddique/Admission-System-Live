@@ -32,6 +32,11 @@ class UserProfile(models.Model):
         help_text="If set, restricts access to only this Program/Department's data."
     )
     is_active = models.BooleanField(default=True)
+    theme_mode = models.CharField(
+        max_length=10, 
+        default='light', 
+        choices=[('light', 'Light'), ('dark', 'Dark')]
+    )
 
     def __str__(self):
         return f"{self.user.username} - {self.role.name if self.role else 'No Role'}"

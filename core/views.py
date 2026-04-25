@@ -16,6 +16,24 @@ from .forms import (
     get_department_scope_label,
 )
 from .models import Role, RolePermission, SystemSettings, UserProfile
+from django.http import JsonResponse
+import json
+
+@login_required
+def toggle_theme(request):
+    """AJAX view to persist theme mode preference."""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            mode = data.get('mode')
+            if mode in ['light', 'dark']:
+                profile = request.user.profile
+                profile.theme_mode = mode
+                profile.save(update_fields=['theme_mode'])
+                return JsonResponse({'status': 'success'})
+        except Exception:
+            pass
+    return JsonResponse({'status': 'error'}, status=400)
 
 
 def _ensure_missing_user_profiles():

@@ -15,4 +15,5 @@ urlpatterns = [
     path('security/user/reset-password/<int:user_id>/', views.user_reset_password, name='user_reset_password'),
     path('security/settings/', views.system_settings, name='system_settings'),
     path('security/audit-logs/', views.audit_logs, name='audit_logs'),
+    path('security/toggle-theme/', views.toggle_theme, name='toggle_theme'),
 ]
