@@ -1,188 +1,272 @@
 {% extends 'base.html' %}
 
-{% block title %}My Profile | Admission Suite{% endblock %}
-{% block page_title %}My Profile & Settings{% endblock %}
+{% block title %}Identity Dashboard | {{ user.username }}{% endblock %}
+{% block page_title %}Staff Identity Hub{% endblock %}
 
 {% block extra_css %}
 <style>
-    .profile-shell,
-    .profile-panel {
-        border: 0;
-        border-radius: 18px;
-        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
-    }
-
-    .profile-avatar {
-        width: 92px;
-        height: 92px;
+    /* Glassmorphism Profile Header */
+    .identity-header-card {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         border-radius: 24px;
-        display: inline-flex;
+        padding: 3rem 2rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        margin-bottom: 2rem;
+    }
+    .identity-header-card::after {
+        content: '\f2c2';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        right: -30px;
+        bottom: -30px;
+        font-size: 15rem;
+        opacity: 0.03;
+        transform: rotate(-15deg);
+    }
+    .profile-avatar-giant {
+        width: 140px;
+        height: 140px;
+        border-radius: 35px;
+        border: 5px solid rgba(255,255,255,0.2);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        object-fit: cover;
+        background: #fff;
+    }
+    .profile-initial-giant {
+        width: 140px;
+        height: 140px;
+        border-radius: 35px;
+        background: #3b82f6;
+        color: white;
+        display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2.6rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #1d4ed8, #4338ca);
-        color: #fff;
-        box-shadow: 0 16px 30px rgba(37, 99, 235, 0.24);
+        font-size: 4rem;
+        font-weight: 900;
+        border: 5px solid rgba(255,255,255,0.2);
     }
-
-    .profile-meta {
-        color: #64748b;
-        font-size: 0.88rem;
+    
+    /* Stats Row */
+    .stat-card-premium {
+        background: white;
+        border-radius: 20px;
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        height: 100%;
     }
-
-    .summary-label {
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #64748b;
+    .stat-card-premium:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+    .stat-icon-box {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
     }
-
-    .summary-value {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #0f172a;
+    
+    /* Activity Timeline */
+    .timeline-item-premium {
+        position: relative;
+        padding-left: 30px;
+        padding-bottom: 1.5rem;
+        border-left: 2px solid #e2e8f0;
     }
+    .timeline-item-premium::before {
+        content: '';
+        position: absolute;
+        left: -7px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #3b82f6;
+        border: 2px solid white;
+    }
+    .timeline-item-premium:last-child { border-left-color: transparent; }
 
     .permission-chip {
-        border-radius: 999px;
-        background: rgba(37, 99, 235, 0.08);
-        color: #1d4ed8;
+        background: #f1f5f9;
+        color: #475569;
         font-weight: 700;
-        padding: 0.45rem 0.8rem;
-        margin: 0 0.4rem 0.4rem 0;
-        display: inline-flex;
-        align-items: center;
+        font-size: 0.75rem;
+        padding: 4px 12px;
+        border-radius: 20px;
+        display: inline-block;
+        margin: 2px;
     }
+
+    .dark-mode .stat-card-premium { background: #1e293b; border-color: #334155; }
+    .dark-mode .timeline-item-premium { border-left-color: #334155; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-4 mb-4">
-        <div class="card profile-shell">
-            <div class="card-body text-center">
-                <div class="profile-avatar mb-3" style="{% if user.profile.photo %}background: url('{{ user.profile.photo.url }}') center/cover no-repeat;{% endif %}">
-                    {% if not user.profile.photo %}
-                    {{ user.username|make_list|first|upper }}
-                    {% endif %}
+<div class="container-fluid pt-4">
+    <!-- 1. Identity Card Header -->
+    <div class="identity-header-card">
+        <div class="row align-items-center">
+            <div class="col-md-auto text-center mb-4 mb-md-0">
+                {% if user.profile.photo %}
+                    <img src="{{ user.profile.photo.url }}" class="profile-avatar-giant">
+                {% else %}
+                    <div class="profile-initial-giant">{{ user.username|first|upper }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md ml-md-4 text-center text-md-left">
+                <div class="d-flex flex-column flex-md-row align-items-center mb-2">
+                    <h1 class="font-weight-black mb-0 mr-3" style="font-size: 2.5rem;">
+                        {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}
+                    </h1>
+                    <span class="badge badge-primary px-3 py-1 rounded-pill"><i class="fas fa-shield-check mr-1"></i> VERIFIED STAFF</span>
                 </div>
-                <h3 class="font-weight-bold mb-1">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}</h3>
-                <div class="profile-meta mb-3">@{{ user.username }}</div>
-                <p class="text-muted mb-4">{{ user.email|default:"No email on file" }}</p>
-
-                <div class="text-left">
-                    <div class="d-flex justify-content-between py-2 border-top">
-                        <span class="summary-label">Account Status</span>
-                        <span class="summary-value">
-                            {% if user.is_active %}Active{% else %}Inactive{% endif %}
-                        </span>
-                    </div>
-                    <div class="d-flex justify-content-between py-2 border-top">
-                        <span class="summary-label">Member Since</span>
-                        <span class="summary-value">{{ user.date_joined|date:"M Y" }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between py-2 border-top">
-                        <span class="summary-label">Last Login</span>
-                        <span class="summary-value">
-                            {% if user.last_login %}
-                            {{ user.last_login|date:"d M Y" }}
-                            {% else %}
-                            Never
-                            {% endif %}
-                        </span>
-                    </div>
+                <p class="lead opacity-75 mb-3">@{{ user.username }} | {{ user.email|default:"No email configured" }}</p>
+                <div class="d-flex flex-wrap justify-content-center justify-content-md-start">
+                    <div class="mr-4 mb-2"><i class="fas fa-user-tag mr-2"></i> {{ user.profile.role.name|default:"General Access" }}</div>
+                    <div class="mr-4 mb-2"><i class="fas fa-building mr-2"></i> {{ scope_label }}</div>
+                    <div class="mb-2"><i class="fas fa-calendar-check mr-2"></i> Joined {{ user.date_joined|date:"M d, Y" }}</div>
                 </div>
-
-                <a href="{% url 'password_change' %}" class="btn btn-primary btn-block mt-4">
-                    <i class="fas fa-key mr-2"></i> Change My Password
+            </div>
+            <div class="col-md-auto text-center text-md-right mt-4 mt-md-0">
+                <a href="{% url 'password_change' %}" class="btn btn-light rounded-pill px-4 font-weight-bold">
+                    <i class="fas fa-key mr-2"></i> Identity Security
                 </a>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-8">
-        <div class="card profile-panel mb-4">
-            <div class="card-header bg-white border-0">
-                <h3 class="card-title font-weight-bold mb-1"><i class="fas fa-user-edit mr-2 text-primary"></i> Update My Information</h3>
-                <p class="text-muted small mb-0">Every authenticated user can maintain their own profile details here. Role and scope remain administrator-controlled.</p>
+    <div class="row">
+        <!-- Left Column: Stats & Information -->
+        <div class="col-xl-8">
+            <!-- Quick Stats Row -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card-premium shadow-sm">
+                        <div class="stat-icon-box bg-soft-blue text-primary"><i class="fas fa-user-plus fa-lg"></i></div>
+                        <div class="h3 font-weight-black mb-0">{{ total_admissions }}</div>
+                        <div class="text-muted small font-weight-bold">Total Admissions</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card-premium shadow-sm">
+                        <div class="stat-icon-box bg-soft-gold text-warning"><i class="fas fa-clock fa-lg"></i></div>
+                        <div class="h3 font-weight-black mb-0">{{ account_age }}</div>
+                        <div class="text-muted small font-weight-bold">Days on System</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card-premium shadow-sm">
+                        <div class="stat-icon-box bg-soft-green text-success"><i class="fas fa-circle-check fa-lg"></i></div>
+                        <div class="h3 font-weight-black mb-0">ACTIVE</div>
+                        <div class="text-muted small font-weight-bold">System Status</div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label>First Name</label>
-                            <input type="text" name="first_name" value="{{ profile_form.first_name.value|default:'' }}" class="form-control" placeholder="First name">
+
+            <!-- Profile Form Card -->
+            <div class="card shadow-sm border-0 rounded-lg mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 font-weight-bold"><i class="fas fa-id-card-clip mr-2 text-primary"></i> Edit Identity Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="small font-weight-bold">First Name</label>
+                                <input type="text" name="first_name" value="{{ profile_form.first_name.value|default:'' }}" class="form-control rounded-lg">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label class="small font-weight-bold">Last Name</label>
+                                <input type="text" name="last_name" value="{{ profile_form.last_name.value|default:'' }}" class="form-control rounded-lg">
+                            </div>
+                            <div class="col-md-12 form-group">
+                                <label class="small font-weight-bold">Official Email</label>
+                                <input type="email" name="email" value="{{ profile_form.email.value|default:'' }}" class="form-control rounded-lg">
+                            </div>
+                            <div class="col-md-12 form-group">
+                                <label class="small font-weight-bold">Change Profile Photo</label>
+                                <div class="custom-file">
+                                    <input type="file" name="photo" class="custom-file-input" id="profilePhotoInput">
+                                    <label class="custom-file-label" for="profilePhotoInput">Choose new photo...</label>
+                                </div>
+                                <small class="text-muted mt-1 d-block">Recommended size 400x400px (JPG/PNG).</small>
+                            </div>
                         </div>
-                        <div class="col-md-6 form-group">
-                            <label>Last Name</label>
-                            <input type="text" name="last_name" value="{{ profile_form.last_name.value|default:'' }}" class="form-control" placeholder="Last name">
+                        <div class="text-right mt-3">
+                            <button type="submit" class="btn btn-dark px-5 rounded-pill font-weight-bold">Save Identity Updates</button>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label>Username</label>
-                            <input type="text" value="{{ user.username }}" class="form-control" disabled>
-                            <small class="text-muted">Usernames are fixed for login consistency.</small>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Permissions Summary -->
+            <div class="card shadow-sm border-0 rounded-lg mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 font-weight-bold"><i class="fas fa-user-shield mr-2 text-primary"></i> Role-Based Permissions</h5>
+                </div>
+                <div class="card-body">
+                    {% if access_summary %}
+                        {% for section in access_summary %}
+                        <div class="mb-3">
+                            <div class="small font-weight-bold text-muted mb-2"><i class="{{ section.icon }} mr-1"></i> {{ section.display|upper }}</div>
+                            <div class="d-flex flex-wrap">
+                                {% for task in section.tasks %}
+                                    <span class="permission-chip">{{ task.label }}</span>
+                                {% endfor %}
+                            </div>
                         </div>
-                        <div class="col-md-6 form-group">
-                            <label>Email Address</label>
-                            <input type="email" name="email" value="{{ profile_form.email.value|default:'' }}" class="form-control" placeholder="name@university.edu">
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label>Profile Picture</label>
-                            <input type="file" name="photo" class="form-control-file">
-                            <small class="text-muted">Upload a professional headshot (JPG/PNG).</small>
-                        </div>
-                    </div>
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-2">
-                        <p class="text-muted small mb-3 mb-md-0">Need access changes? Contact an administrator to update your role or department scope.</p>
-                        <button type="submit" class="btn btn-primary px-4">
-                            <i class="fas fa-save mr-2"></i> Save Profile
-                        </button>
-                    </div>
-                </form>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">No specific role-based permissions assigned.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
-        <div class="card profile-panel">
-            <div class="card-header bg-white border-0">
-                <h3 class="card-title font-weight-bold mb-1"><i class="fas fa-user-shield mr-2 text-primary"></i> Access Summary</h3>
-                <p class="text-muted small mb-0">A clear view of what this account can reach inside the system.</p>
-            </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        <div class="summary-label mb-2">Assigned Role</div>
-                        <div class="summary-value">{{ user.profile.role.name|default:"No role assigned" }}</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="summary-label mb-2">Program Scope</div>
-                        <div class="summary-value">{{ scope_label }}</div>
-                    </div>
+        <!-- Right Column: Timeline & Sessions -->
+        <div class="col-xl-4">
+            <!-- Personal Activity Timeline -->
+            <div class="card shadow-sm border-0 rounded-lg mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 font-weight-bold"><i class="fas fa-history mr-2 text-primary"></i> My Recent Activity</h5>
                 </div>
-
-                {% if access_summary %}
-                {% for section in access_summary %}
-                <div class="mb-4 {% if not forloop.last %}border-bottom pb-4{% endif %}">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="mr-2 text-primary"><i class="{{ section.icon }}"></i></div>
-                        <div class="font-weight-bold text-dark">{{ section.display }}</div>
-                    </div>
-                    <div>
-                        {% for task in section.tasks %}
-                        <span class="permission-chip" title="{{ task.description }}">{{ task.label }}</span>
+                <div class="card-body">
+                    <div class="timeline-container">
+                        {% for log in personal_logs %}
+                        <div class="timeline-item-premium">
+                            <div class="small font-weight-bold text-dark">{{ log.description }}</div>
+                            <div class="small text-muted">{{ log.timestamp|timesince }} ago</div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-ghost fa-2x text-muted mb-2"></i>
+                            <p class="text-muted small">No recent activity found.</p>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
-                {% endfor %}
-                {% else %}
-                <div class="alert alert-light border mb-0">
-                    No role-based permissions are assigned yet. You can still keep your personal profile details up to date from this page.
+                <div class="card-footer bg-white text-center">
+                    <a href="{% url 'audit_logs' %}?user={{ user.id }}" class="small font-weight-bold text-primary">View My Full Audit History</a>
                 </div>
-                {% endif %}
+            </div>
+
+            <!-- Security Info Card -->
+            <div class="card shadow-sm border-0 rounded-lg bg-light">
+                <div class="card-body">
+                    <h6 class="font-weight-bold mb-3"><i class="fas fa-info-circle mr-2 text-primary"></i> Session Info</h6>
+                    <div class="small mb-2"><strong>Last Login:</strong> {{ user.last_login|date:"F d, Y @ H:i" }}</div>
+                    <div class="small mb-2"><strong>IP Address:</strong> {{ request.META.REMOTE_ADDR }}</div>
+                    <div class="small text-muted border-top pt-2 mt-2">
+                        For security concerns, please log out from other devices and rotate your password every 90 days.
+                    </div>
+                </div>
             </div>
         </div>
     </div>

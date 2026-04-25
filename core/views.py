@@ -351,16 +351,30 @@ def user_profile(request):
         profile_form = UserSelfProfileForm(request.POST, request.FILES, user=request.user)
         if profile_form.is_valid():
             profile_form.save()
+            from core.utils import log_activity
+            log_activity(request, 'UPDATE', 'security', 'Updated personal profile details and photo')
             messages.success(request, 'Your profile has been updated successfully.')
             return redirect('user_profile')
         _add_form_errors(request, profile_form, 'Could not update your profile.')
     else:
         profile_form = UserSelfProfileForm(user=request.user)
 
+    # Fetch Personal Stats & Logs
+    from .models import ActivityLog
+    from students.models import Student
+    from django.utils import timezone
+    
+    personal_logs = ActivityLog.objects.filter(user=request.user).order_by('-timestamp')[:10]
+    total_admissions = ActivityLog.objects.filter(user=request.user, action_type='CREATE', module='students').count()
+
     return render(request, 'core/profile.html', {
         'profile_form': profile_form,
+        'profile': profile,
         'scope_label': get_department_scope_label(profile.department_scope),
         'access_summary': _build_access_summary(request.user),
+        'personal_logs': personal_logs,
+        'total_admissions': total_admissions,
+        'account_age': (timezone.now() - request.user.date_joined).days
     })
 
 
