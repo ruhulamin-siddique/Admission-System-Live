@@ -13,36 +13,45 @@ A high-performance, secure, and modern Django-based web application designed for
 
 ## 🚀 Key Features
 
-- **Professional Deployment**: Optimized for cPanel with a Git-based automated workflow.
-- **Universal Database Engine**: Seamlessly switches between **MySQL (Production)** and **SQLite (Local Development)**.
+### 🏢 Command Center Header
+- **Global Intelligence Search**: Real-time "Google-style" search engine (ID, Name, Mobile, Email) powered by HTMX.
+- **Live Notification Feed**: Instant activity tracking (New Admissions, Updates, Security) directly in the navbar.
+- **Theme Engine**: Persistent **Dark Mode** toggle with AdminLTE native integration.
+- **Sticky Layout**: One-click "Pin/Unpin" header toggle preserved across sessions.
+
+### 👤 Staff Identity Hub 2.0
+- **Premium Dashboards**: Every staff member has a glassmorphism-styled personal dashboard.
+- **Work Analytics**: Individual stats tracking (Total Admissions Performed, Account Age).
+- **Personal Timeline**: A vertical history of the specific user's latest actions for accountability.
+- **Avatar Management**: Full support for professional profile photos with fallback initial avatars.
+
+### 🛡️ Security & Performance
 - **RBAC (Role-Based Access Control)**: Granular permission system for modules and specific tasks.
-- **Environment Hardening**: Secure `.env` based configuration for sensitive credentials.
-- **Student Lifecycle Management**: Comprehensive tracking from intake to graduation.
+- **Identity Security**: Redesigned password management portal with "Security-First" aesthetics.
+- **Universal Database Engine**: Seamlessly switches between **MySQL (Production)** and **SQLite (Local Development)**.
 - **Security by Default**: Global authentication enforcement and session hardening.
-- **Premium UI**: Modern, iconized navigation and mobile-responsive layouts.
 
 ## 🛠️ Technology Stack
 
 - **Backend**: Python 3.x, Django 5.x/6.x
 - **Database**: MySQL (Production - cPanel) / SQLite (Local)
-- **Frontend**: HTML5, Vanilla CSS, JavaScript (AJAX / HTMX)
-- **Styling**: Premium custom CSS with modern aesthetics.
+- **Frontend**: HTML5, Vanilla CSS, JavaScript (**HTMX** for real-time reactivity)
+- **Styling**: Premium custom CSS with glassmorphism and modern UI/UX patterns.
 
 ## 📂 Project Structure
 
 ```text
 Admission/
 ├── admission_system/      # Project configuration (settings, main URLs)
-├── core/                  # Security, RBAC, User Profiles, and System Settings
+├── core/                  # Security, RBAC, User Profiles, Activity Logging
 │   ├── middleware.py      # Login required & activity enforcement
-│   ├── decorators.py      # RBAC permission decorators
-│   ├── models.py          # Role, Permission, UserProfile, SystemSettings
-│   └── views.py           # Security management views
+│   ├── context_processors # Global system settings & live notifications
+│   ├── models.py          # Role, UserProfile, ActivityLog, SystemSettings
+│   └── views.py           # Security, Theme toggles, Profile management
 ├── students/              # Main application module
 │   ├── models.py          # Student, SMSHistory, ProgramChangeHistory
 │   ├── reports.py         # Reporting & export logic
-│   ├── utils.py           # ID generation and utility functions
-│   └── views.py           # Dashboard, Student profile, Transfers
+│   └── views.py           # Dashboard, Intelligence Search, Transfers
 ├── static/                # Global static assets (css, js, images)
 ├── templates/             # Global templates and layout components
 ├── .env                   # Environment variables (Not in Version Control)
@@ -50,14 +59,7 @@ Admission/
 └── manage.py              # Django management script
 ```
 
-## 🔐 Security & RBAC
-
-The system implements a custom RBAC layer:
-- **Roles**: Logical groupings of permissions (e.g., "Registrar", "Accounts").
-- **Permissions**: Defined by `module` and `task` strings matching the `@require_access` decorators in views.
-- **Self-Service**: Every staff member can manage their own profile and security credentials via a dedicated portal.
-
-## 📊 Deployment Workflow
+## 🔐 Deployment Workflow
 
 1. **Local Development**: Work on PC using SQLite for speed and offline capability.
 2. **Push**: `git push origin main` to the GitHub repository.
