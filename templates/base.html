@@ -24,6 +24,47 @@
   <!-- SweetAlert2 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    /* Premium Iconized Sidebar */
+    .main-sidebar { transition: width 0.3s ease; }
+    .nav-sidebar .nav-item { margin-bottom: 2px; }
+    .nav-sidebar .nav-link { 
+      border-radius: 8px !important; 
+      margin: 0 8px; 
+      padding: 10px 12px;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .nav-sidebar .nav-link:hover {
+      background: rgba(255,255,255,0.05) !important;
+      transform: translateX(5px);
+    }
+    .nav-sidebar .nav-link.active {
+      background: #3b82f6 !important;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+    .nav-icon { 
+      font-size: 1.1rem !important; 
+      margin-right: 12px !important; 
+      width: 30px !important;
+      text-align: center;
+    }
+    .nav-header {
+      font-size: 0.65rem !important;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #64748b !important;
+      padding: 20px 20px 10px !important;
+      text-transform: uppercase;
+    }
+    .sidebar-dark-primary { background-color: #0f172a !important; }
+    .brand-link { border-bottom: 1px solid rgba(255,255,255,0.05) !important; padding: 1rem !important; }
+    
+    /* User Panel Enhancement */
+    .user-panel { border-bottom: 1px solid rgba(255,255,255,0.05) !important; }
+    .user-panel .info a { font-weight: 700; font-size: 0.9rem; color: #f8fafc !important; }
+  </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -204,7 +245,7 @@
           </li>
           {% endif %}
 
-          {% if user.is_staff %}
+          {% if user.is_superuser %}
           <li class="nav-item">
             <a href="{% url 'admin:index' %}" class="nav-link">
               <i class="nav-icon fas fa-cogs"></i>

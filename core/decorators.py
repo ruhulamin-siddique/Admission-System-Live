@@ -22,8 +22,8 @@ def require_access(module, task):
                 return view_func(request, *args, **kwargs)
             
             messages.error(request, f"Access Denied: You do not have permission for '{module}.{task}'")
-            # Redirect to dashboard or a dedicated permission denied page
-            return redirect('dashboard')
+            # Redirect to profile page so they don't loop on the dashboard
+            return redirect('user_profile')
             
         return _wrapped_view
     return decorator
