@@ -481,7 +481,7 @@ def delete_student(request, student_id):
         return redirect('student_list')
     return redirect('student_profile', student_id=student_id)
 
-@require_access('students', 'edit_profile')
+@require_access('students', 'manage_migrations')
 def migration_center(request):
     """Refined Migration Center with Search-First logic and History."""
     query = request.GET.get('search', '').strip()
@@ -514,7 +514,7 @@ def migration_center(request):
         
     return render(request, template, context)
 
-@require_access('students', 'edit_profile')
+@require_access('students', 'cancel_admission')
 def cancellation_hub(request):
     """Search-First hub for managing admission cancellations and suspensions."""
     query = request.GET.get('search', '').strip()
@@ -538,13 +538,13 @@ def cancellation_hub(request):
     template = 'students/partials/cancellation_results.html' if request.headers.get('HX-Request') else 'students/cancellation_hub.html'
     return render(request, template, context)
 
-@require_access('students', 'edit_profile')
+@require_access('students', 'cancel_admission')
 def cancellation_list_modal(request):
     """Returns a partial list of cancelled students for the drill-down modal."""
     cancelled_students = Student.objects.filter(admission_status='Cancelled').order_by('-last_updated')
     return render(request, 'students/partials/cancelled_list_modal.html', {'students': cancelled_students})
 
-@require_access('students', 'edit_profile')
+@require_access('students', 'cancel_admission')
 def cancel_admission(request, student_id):
     """View to handle the actual cancellation logic with history logging."""
     student = get_object_or_404(Student, pk=student_id)
@@ -579,7 +579,7 @@ def cancel_admission(request, student_id):
     
     return render(request, 'students/cancel_form.html', {'student': student})
 
-@require_access('students', 'bulk_cancel')
+@require_access('students', 'cancel_admission')
 def api_bulk_cancel_admission(request):
     """Bulk cancel admissions for selected student IDs with HTMX support."""
     if request.method == 'POST':

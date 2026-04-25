@@ -1,3 +1,4 @@
+{% load core_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -172,6 +173,8 @@
     </ul>
 
     <!-- Global Command Search (Direct Placement) -->
+    {% has_access 'students' 'view_directory' as can_search %}
+    {% if can_search %}
     <form action="{% url 'student_list' %}" method="get" class="form-inline ml-3 d-inline-block mb-0" style="position: relative; min-width: 400px;">
         <i class="fas fa-search search-icon-inside" style="color: #4b5563; z-index: 10;"></i>
         <input type="text" 
@@ -188,6 +191,7 @@
         <!-- The Result Overlay -->
         <div id="search-results-target"></div>
     </form>
+    {% endif %}
 
     <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto align-items-center">
@@ -207,6 +211,7 @@
       </li>
 
       <!-- Notifications Dropdown Menu -->
+      {% if user.profile.role %}
       <li class="nav-item dropdown">
         <a class="nav-link nav-link-round" data-toggle="dropdown" href="#">
           <i class="far fa-bell"></i>
@@ -249,6 +254,7 @@
           <a href="{% url 'audit_logs' %}" class="dropdown-item dropdown-footer font-weight-bold text-primary">View All System Logs</a>
         </div>
       </li>
+      {% endif %}
 
       <!-- User Profile Dropdown -->
       <li class="nav-item dropdown user-menu">
@@ -317,7 +323,6 @@
       <!-- Sidebar Menu -->
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="menu" data-accordion="false">
-          {% load core_tags %}
           
           <li class="nav-header">MAIN</li>
           {% has_access 'dashboard' 'view' as can_view_db %}
@@ -332,6 +337,9 @@
 
           <li class="nav-header">ADMISSION</li>
           {% has_access 'students' 'view_directory' as can_view_students %}
+          {% has_access 'students' 'add_student' as can_add_student %}
+          {% has_access 'students' 'edit_profile' as can_edit_students %}
+
           {% if can_view_students %}
           <li class="nav-item">
             <a href="{% url 'student_list' %}" class="nav-link {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}">
@@ -341,7 +349,6 @@
           </li>
           {% endif %}
           
-          {% has_access 'students' 'add_student' as can_add_student %}
           {% if can_add_student %}
           <li class="nav-item">
             <a href="{% url 'add_student' %}" class="nav-link {% if request.resolver_match.url_name == 'add_student' %}active{% endif %}">
@@ -351,19 +358,25 @@
           </li>
           {% endif %}
 
+          {% has_access 'students' 'manage_migrations' as can_migrate %}
+          {% if can_migrate %}
           <li class="nav-item">
             <a href="{% url 'migration_center' %}" class="nav-link {% if request.resolver_match.url_name == 'migration_center' %}active{% endif %}">
               <i class="nav-icon fas fa-exchange-alt"></i>
               <p>Department Change</p>
             </a>
           </li>
+          {% endif %}
 
+          {% has_access 'students' 'cancel_admission' as can_cancel %}
+          {% if can_cancel %}
           <li class="nav-item">
             <a href="{% url 'cancellation_hub' %}" class="nav-link {% if request.resolver_match.url_name == 'cancellation_hub' %}active{% endif %}">
               <i class="nav-icon fas fa-user-times"></i>
               <p>Admission Cancel</p>
             </a>
           </li>
+          {% endif %}
 
           {% has_access 'security' 'manage_users' as can_import %}
           {% if can_import %}
@@ -375,9 +388,9 @@
           </li>
           {% endif %}
 
-          <li class="nav-header">ACADEMIC & REPORTS</li>
           {% has_access 'reports' 'view_analytics' as can_view_reports %}
           {% if can_view_reports %}
+          <li class="nav-header">ACADEMIC & REPORTS</li>
           <li class="nav-item">
             <a href="{% url 'reports_center' %}" class="nav-link {% if 'reports' in request.path %}active{% endif %}">
               <i class="nav-icon fas fa-chart-pie"></i>
@@ -386,10 +399,10 @@
           </li>
           {% endif %}
 
-          <li class="nav-header">SYSTEM</li>
-          
           {% has_access 'security' 'manage_users' as can_manage_users %}
           {% if can_manage_users %}
+          <li class="nav-header">SYSTEM</li>
+          
           <li class="nav-item {% if 'security' in request.path %}menu-open{% endif %}">
             <a href="#" class="nav-link {% if 'security' in request.path %}active{% endif %}">
               <i class="nav-icon fas fa-user-shield"></i>

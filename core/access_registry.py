@@ -14,11 +14,12 @@ ACCESS_REGISTRY = {
         "display": "Student Management",
         "icon": "fas fa-users",
         "tasks": {
-            "view_directory": ("View Student Directory", "Browse and search the student database."),
+            "view_directory": ("Intelligence Search & Directory", "Access the Global Search and browse the student database."),
             "add_student": ("Admit New Student", "Process new admissions and enroll students."),
             "edit_profile": ("Edit Student Profile", "Update student biographical and academic info."),
+            "manage_migrations": ("Program Migrations", "Manage department changes and student program history."),
+            "cancel_admission": ("Admission Cancellation", "Manage individual and bulk admission cancellations."),
             "delete_record": ("Delete Student", "Permanently remove student records from system."),
-            "bulk_cancel": ("Bulk Admission Cancel", "Allows administrators to cancel multiple admissions at once."),
             "export_excel": ("Export to Excel", "Generate and download the 44-column Excel master list."),
         }
     },
