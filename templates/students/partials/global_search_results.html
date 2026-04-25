@@ -1,0 +1,40 @@
+<div class="list-group list-group-flush">
+    {% for s in students %}
+    <a href="{% url 'student_profile' s.student_id %}" class="list-group-item list-group-item-action px-3 py-2 border-0">
+        <div class="d-flex align-items-center">
+            <div class="mr-3">
+                {% if s.photo_path %}
+                <img src="{{ s.photo_url }}" class="rounded shadow-sm" style="width: 40px; height: 48px; object-fit: cover;">
+                {% else %}
+                <div class="bg-soft-blue text-primary rounded d-flex align-items-center justify-content-center font-weight-bold" style="width: 40px; height: 48px; font-size: 0.8rem;">
+                    {{ s.student_name|make_list|first }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+                <div class="font-weight-bold text-truncate" style="font-size: 0.95rem; color: #1e293b;">{{ s.student_name }}</div>
+                <div class="small text-muted text-truncate">
+                    <span class="text-primary font-weight-bold mr-1">{{ s.student_id }}</span> 
+                    | <span class="ml-1">{{ s.program }}</span>
+                </div>
+            </div>
+            <div class="ml-2">
+                <span class="badge {% if s.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} badge-pill px-2 py-1" style="font-size: 0.65rem;">
+                    {{ s.admission_status|upper }}
+                </span>
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <div class="p-4 text-center">
+        <div class="text-muted mb-2"><i class="fas fa-search fa-2x opacity-25"></i></div>
+        <p class="text-muted small mb-0">No students found matching "<strong>{{ query }}</strong>"</p>
+    </div>
+    {% endfor %}
+    
+    {% if students %}
+    <a href="{% url 'student_list' %}?search={{ query }}" class="list-group-item list-group-item-action bg-light text-center py-2 font-weight-bold text-primary small border-top">
+        See All Results in Directory <i class="fas fa-arrow-right ml-1"></i>
+    </a>
+    {% endif %}
+</div>

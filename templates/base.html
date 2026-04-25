@@ -66,21 +66,28 @@
     .user-panel .info a { font-weight: 700; font-size: 0.9rem; color: #f8fafc !important; }
 
     /* Command Center Header Styles */
-    .navbar-search-block { width: 350px; position: relative; }
+    .navbar-search-block { width: 100%; position: relative; }
     .navbar-search-input { 
-        background: rgba(0,0,0,0.05) !important; 
-        border: 1px solid rgba(0,0,0,0.1) !important; 
-        border-radius: 10px !important;
+        width: 350px;
+        background: #fff !important; 
+        border: 2px solid #cbd5e1 !important; 
+        border-radius: 12px !important;
         padding-left: 35px !important;
         font-weight: 600;
+        color: #1e293b !important;
         transition: all 0.3s;
     }
     .dark-mode .navbar-search-input {
-        background: rgba(255,255,255,0.05) !important;
-        border-color: rgba(255,255,255,0.1) !important;
-        color: white;
+        background: #1e293b !important;
+        border-color: #475569 !important;
+        color: white !important;
     }
-    .navbar-search-input:focus { width: 450px; background: white !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important; }
+    .navbar-search-input:focus { 
+        width: 500px !important; 
+        border-color: #3b82f6 !important; 
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+        outline: none;
+    }
     .search-icon-inside { position: absolute; left: 12px; top: 10px; color: #94a3b8; z-index: 5; }
     
     .nav-link-round {
@@ -110,6 +117,32 @@
 
     .pin-active { color: #3b82f6 !important; }
 
+    /* Global Search Intelligence Overlay */
+    #search-results-target {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        width: 450px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15), 0 5px 15px rgba(0,0,0,0.05);
+        z-index: 2000;
+        overflow: hidden;
+        display: none;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .dark-mode #search-results-target {
+        background: rgba(30, 41, 59, 0.95);
+        border-color: rgba(255,255,255,0.1);
+    }
+    #search-results-target.show { display: block; animation: slideDown 0.2s ease-out; }
+    
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Dark Mode Visibility Fixes */
     .dark-mode select option {
         background-color: #343a40 !important;
@@ -132,19 +165,29 @@
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand {% if user.profile.theme_mode == 'dark' %}navbar-dark{% else %}navbar-white navbar-light{% endif %}">
     <!-- Left navbar links -->
-    <ul class="navbar-nav align-items-center">
+    <ul class="navbar-nav">
       <li class="nav-item">
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
-      
-      <!-- Global Command Search -->
-      <li class="nav-item d-none d-md-block ml-3">
-        <form action="{% url 'student_list' %}" method="get" class="navbar-search-block">
-            <i class="fas fa-search search-icon-inside"></i>
-            <input type="text" name="search" class="form-control navbar-search-input" placeholder="Search student ID, name or mobile..." aria-label="Search">
-        </form>
-      </li>
     </ul>
+
+    <!-- Global Command Search (Direct Placement) -->
+    <form action="{% url 'student_list' %}" method="get" class="form-inline ml-3 d-inline-block mb-0" style="position: relative; min-width: 400px;">
+        <i class="fas fa-search search-icon-inside" style="color: #4b5563; z-index: 10;"></i>
+        <input type="text" 
+               name="q" 
+               class="form-control navbar-search-input" 
+               placeholder="Search students..." 
+               autocomplete="off"
+               style="width: 100% !important; border: 2px solid #3b82f6 !important; background: #fff !important;"
+               hx-get="{% url 'api_global_search' %}"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#search-results-target"
+               onfocus="document.getElementById('search-results-target').classList.add('show')"
+        >
+        <!-- The Result Overlay -->
+        <div id="search-results-target"></div>
+    </form>
 
     <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto align-items-center">
@@ -167,20 +210,43 @@
       <li class="nav-item dropdown">
         <a class="nav-link nav-link-round" data-toggle="dropdown" href="#">
           <i class="far fa-bell"></i>
-          <span class="badge badge-danger navbar-badge" style="top: 5px; right: 5px;">3</span>
+          {% if notification_count > 0 %}
+          <span class="badge badge-danger navbar-badge" style="top: 5px; right: 5px;">{{ notification_count }}</span>
+          {% endif %}
         </a>
-        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right shadow-lg border-0" style="border-radius: 12px;">
-          <span class="dropdown-item dropdown-header font-weight-bold">3 Notifications</span>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right shadow-lg border-0" style="border-radius: 12px; width: 320px;">
+          <span class="dropdown-item dropdown-header font-weight-bold">{{ notification_count }} Recent Activities</span>
           <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-user-plus mr-2 text-success"></i> 12 New Admissions today
+          
+          {% for note in recent_notifications %}
+          <a href="{% url 'audit_logs' %}" class="dropdown-item py-3">
+            <div class="d-flex align-items-center">
+              <div class="mr-3">
+                {% if note.action_type == 'CREATE' %}
+                    <i class="fas fa-plus-circle text-success" style="font-size: 1.2rem;"></i>
+                {% elif note.action_type == 'UPDATE' %}
+                    <i class="fas fa-edit text-info" style="font-size: 1.2rem;"></i>
+                {% elif note.action_type == 'DELETE' %}
+                    <i class="fas fa-trash-alt text-danger" style="font-size: 1.2rem;"></i>
+                {% else %}
+                    <i class="fas fa-shield-alt text-warning" style="font-size: 1.2rem;"></i>
+                {% endif %}
+              </div>
+              <div style="white-space: normal; line-height: 1.2;">
+                <p class="mb-0 text-sm font-weight-bold text-dark">{{ note.description|truncatechars:60 }}</p>
+                <small class="text-muted">{{ note.timestamp|timesince }} ago by {{ note.user.username }}</small>
+              </div>
+            </div>
           </a>
           <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-exchange-alt mr-2 text-info"></i> 2 Department Changes
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
+          {% empty %}
+          <div class="p-4 text-center">
+            <i class="fas fa-bell-slash text-muted mb-2 fa-2x"></i>
+            <p class="text-muted small mb-0">No recent activities found.</p>
+          </div>
+          {% endfor %}
+          
+          <a href="{% url 'audit_logs' %}" class="dropdown-item dropdown-footer font-weight-bold text-primary">View All System Logs</a>
         </div>
       </li>
 
@@ -246,22 +312,7 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-      <!-- Sidebar user panel (optional) -->
-      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-        <div class="image">
-            {% if user.profile.photo %}
-            <img src="{{ user.profile.photo.url }}" class="img-circle elevation-2" alt="User Image" style="width: 35px; height: 35px; object-fit: cover;">
-            {% else %}
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
-                {{ user.username|make_list|first|upper }}
-            </div>
-            {% endif %}
-        </div>
-        <div class="info">
-          <a href="{% url 'user_profile' %}" class="d-block" title="My Profile">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %} <i class="fas fa-user-circle ml-1 small text-muted"></i></a>
-          <small class="text-muted d-block">{{ user.profile.role.name|default:"Staff account" }}</small>
-        </div>
-      </div>
+      <!-- Sidebar user panel removed as it is now in the top header -->
 
       <!-- Sidebar Menu -->
       <nav class="mt-2">
@@ -310,7 +361,7 @@
           <li class="nav-item">
             <a href="{% url 'cancellation_hub' %}" class="nav-link {% if request.resolver_match.url_name == 'cancellation_hub' %}active{% endif %}">
               <i class="nav-icon fas fa-user-times"></i>
-              <p>Admission Cancellation</p>
+              <p>Admission Cancel</p>
             </a>
           </li>
 
@@ -513,6 +564,15 @@
             body: JSON.stringify({ fixed: isFixed })
         });
     }
+
+    // Global Search Focus Management
+    document.addEventListener('click', function(e) {
+        const target = document.getElementById('search-results-target');
+        const input = document.querySelector('.navbar-search-input');
+        if (!target.contains(e.target) && e.target !== input) {
+            target.classList.remove('show');
+        }
+    });
   </script>
 </body>
 </html>

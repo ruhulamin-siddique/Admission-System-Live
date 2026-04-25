@@ -4,6 +4,7 @@ from django.db.models import Count, Q, Case, When, IntegerField, Sum, Max, Value
 from django.db.models.functions import Cast, Coalesce, Lower, Right, TruncMonth
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import Student, ProgramChangeHistory, AdmissionStatusHistory
 from .utils import generate_next_ugc_id, import_students_from_excel, execute_program_change_web
@@ -1245,4 +1246,27 @@ def analytics_dashboard(request):
     return render(request, 'students/reports/analytics.html', {
         'data': data,
         'selected_year': year
+    })
+
+@login_required
+def api_global_search(request):
+    """Real-time global search engine for the header."""
+    from django.http import HttpResponse
+    query = request.GET.get('q', '').strip()
+    if not query or len(query) < 2:
+        return HttpResponse("") # Return empty if query is too short
+
+    from django.db.models import Q
+    students = Student.objects.filter(
+        Q(student_id__icontains=query) |
+        Q(student_name__icontains=query) |
+        Q(student_mobile__icontains=query) |
+        Q(student_email__icontains=query) |
+        Q(father_name__icontains=query) |
+        Q(father_mobile__icontains=query)
+    ).only('student_id', 'student_name', 'program', 'admission_status', 'photo_path')[:8]
+
+    return render(request, 'students/partials/global_search_results.html', {
+        'students': students,
+        'query': query
     })
