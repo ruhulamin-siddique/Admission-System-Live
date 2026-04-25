@@ -64,47 +64,169 @@
     /* User Panel Enhancement */
     .user-panel { border-bottom: 1px solid rgba(255,255,255,0.05) !important; }
     .user-panel .info a { font-weight: 700; font-size: 0.9rem; color: #f8fafc !important; }
+
+    /* Command Center Header Styles */
+    .navbar-search-block { width: 350px; position: relative; }
+    .navbar-search-input { 
+        background: rgba(0,0,0,0.05) !important; 
+        border: 1px solid rgba(0,0,0,0.1) !important; 
+        border-radius: 10px !important;
+        padding-left: 35px !important;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .dark-mode .navbar-search-input {
+        background: rgba(255,255,255,0.05) !important;
+        border-color: rgba(255,255,255,0.1) !important;
+        color: white;
+    }
+    .navbar-search-input:focus { width: 450px; background: white !important; box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important; }
+    .search-icon-inside { position: absolute; left: 12px; top: 10px; color: #94a3b8; z-index: 5; }
+    
+    .nav-link-round {
+        width: 38px; height: 38px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s; margin-left: 8px;
+    }
+    .nav-link-round:hover { background: rgba(0,0,0,0.05); }
+    .dark-mode .nav-link-round:hover { background: rgba(255,255,255,0.05); }
+
+    /* Profile Dropdown Premium */
+    .user-menu-dropdown { width: 280px; border-radius: 15px; border: 0; box-shadow: 0 20px 40px rgba(0,0,0,0.1); margin-top: 10px; }
+    .user-menu-header { 
+        background: linear-gradient(135deg, #1e40af, #3b82f6); 
+        color: white; padding: 20px; border-radius: 15px 15px 0 0; text-align: center;
+    }
+    .user-menu-avatar {
+        width: 60px; height: 60px; background: white; color: #1e40af;
+        border-radius: 20px; display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.5rem; font-weight: 800; margin-bottom: 10px;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    .user-menu-links .dropdown-item { padding: 12px 20px; font-weight: 600; color: #475569; display: flex; align-items: center; }
+    .user-menu-links .dropdown-item i { width: 25px; color: #94a3b8; font-size: 1.1rem; }
+    .user-menu-links .dropdown-item:hover { background: #f8fafc; color: #1e40af; }
+    .user-menu-footer { padding: 15px; background: #f8fafc; border-radius: 0 0 15px 15px; }
+
+    .pin-active { color: #3b82f6 !important; }
+
+    /* Dark Mode Visibility Fixes */
+    .dark-mode select option {
+        background-color: #343a40 !important;
+        color: #fff !important;
+    }
+    .dark-mode .form-control:focus {
+        color: #fff !important;
+        background-color: #3f474e !important;
+    }
+    .dark-mode .select2-container--default .select2-selection--single {
+        background-color: #343a40 !important;
+        border-color: #6c757d !important;
+        color: #fff !important;
+    }
   </style>
 </head>
-<body class="hold-transition sidebar-mini layout-fixed {% if user.profile.theme_mode == 'dark' %}dark-mode{% endif %}">
+<body class="hold-transition sidebar-mini layout-fixed {% if user.profile.theme_mode == 'dark' %}dark-mode{% endif %} {% if user.profile.navbar_fixed %}layout-navbar-fixed{% endif %}">
 <div class="wrapper">
 
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand {% if user.profile.theme_mode == 'dark' %}navbar-dark{% else %}navbar-white navbar-light{% endif %}">
     <!-- Left navbar links -->
-    <ul class="navbar-nav">
+    <ul class="navbar-nav align-items-center">
       <li class="nav-item">
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="{% url 'dashboard' %}" class="nav-link font-weight-bold text-primary">
-            {% if sys_settings.logo_url %}
-            <img src="{{ sys_settings.logo_url }}" alt="Logo" style="height: 24px;" class="mr-1 mb-1">
-            {% endif %}
-            {{ sys_settings.institution_name|default:"ADMISSION SUITE" }}
-        </a>
+      
+      <!-- Global Command Search -->
+      <li class="nav-item d-none d-md-block ml-3">
+        <form action="{% url 'student_list' %}" method="get" class="navbar-search-block">
+            <i class="fas fa-search search-icon-inside"></i>
+            <input type="text" name="search" class="form-control navbar-search-input" placeholder="Search student ID, name or mobile..." aria-label="Search">
+        </form>
       </li>
     </ul>
 
     <!-- Right navbar links -->
-    <ul class="navbar-nav ml-auto">
+    <ul class="navbar-nav ml-auto align-items-center">
+      
+      <!-- Navbar Pin Toggle -->
       <li class="nav-item">
-        <a class="nav-link" href="#" role="button" onclick="toggleDarkMode()" title="Toggle Dark/Light Mode">
+        <a class="nav-link nav-link-round" href="#" role="button" onclick="toggleNavbarPin()" title="Pin/Unpin Header">
+          <i class="fas fa-thumbtack {% if user.profile.navbar_fixed %}pin-active{% endif %}" id="pin-icon"></i>
+        </a>
+      </li>
+
+      <!-- Dark Mode Toggle -->
+      <li class="nav-item">
+        <a class="nav-link nav-link-round" href="#" role="button" onclick="toggleDarkMode()" title="Toggle Dark/Light Mode">
           <i class="fas {% if user.profile.theme_mode == 'dark' %}fa-sun{% else %}fa-moon{% endif %}" id="theme-icon"></i>
         </a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
-          <i class="fas fa-expand-arrows-alt"></i>
+
+      <!-- Notifications Dropdown Menu -->
+      <li class="nav-item dropdown">
+        <a class="nav-link nav-link-round" data-toggle="dropdown" href="#">
+          <i class="far fa-bell"></i>
+          <span class="badge badge-danger navbar-badge" style="top: 5px; right: 5px;">3</span>
         </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right shadow-lg border-0" style="border-radius: 12px;">
+          <span class="dropdown-item dropdown-header font-weight-bold">3 Notifications</span>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <i class="fas fa-user-plus mr-2 text-success"></i> 12 New Admissions today
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <i class="fas fa-exchange-alt mr-2 text-info"></i> 2 Department Changes
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
+        </div>
       </li>
-      <li class="nav-item">
-        <form action="{% url 'logout' %}" method="post" class="d-inline">
-          {% csrf_token %}
-          <button type="submit" class="nav-link btn btn-link py-0 border-0" title="Logout">
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
-        </form>
+
+      <!-- User Profile Dropdown -->
+      <li class="nav-item dropdown user-menu">
+        <a href="#" class="nav-link nav-link-round p-0 ml-3" data-toggle="dropdown">
+            {% if user.profile.photo %}
+            <img src="{{ user.profile.photo.url }}" class="rounded-circle shadow-sm" style="width: 36px; height: 36px; object-fit: cover;" alt="User">
+            {% else %}
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center font-weight-bold shadow-sm" style="width: 36px; height: 36px; font-size: 0.9rem;">
+                {{ user.username|make_list|first|upper }}
+            </div>
+            {% endif %}
+        </a>
+        <div class="dropdown-menu dropdown-menu-right user-menu-dropdown animate__animated animate__fadeIn">
+            <div class="user-menu-header">
+                <div class="user-menu-avatar" style="{% if user.profile.photo %}background: url('{{ user.profile.photo.url }}') center/cover no-repeat; color: transparent;{% endif %}">
+                    {% if not user.profile.photo %}
+                    {{ user.username|make_list|first|upper }}
+                    {% endif %}
+                </div>
+                <div class="font-weight-bold text-lg">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}</div>
+                <div class="small text-white-50">{{ user.profile.role.name|default:"Staff Member" }}</div>
+            </div>
+            <div class="user-menu-links">
+                <a href="{% url 'user_profile' %}" class="dropdown-item">
+                    <i class="fas fa-user-circle"></i> My Account
+                </a>
+                <a href="{% url 'password_change' %}" class="dropdown-item">
+                    <i class="fas fa-shield-alt"></i> Security Settings
+                </a>
+                {% if user.is_superuser %}
+                <a href="{% url 'admin:index' %}" class="dropdown-item">
+                    <i class="fas fa-tools"></i> System Backend
+                </a>
+                {% endif %}
+            </div>
+            <div class="user-menu-footer">
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-block btn-sm font-weight-bold">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Log Out
+                    </button>
+                </form>
+            </div>
+        </div>
       </li>
     </ul>
   </nav>
@@ -127,9 +249,13 @@
       <!-- Sidebar user panel (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
         <div class="image">
+            {% if user.profile.photo %}
+            <img src="{{ user.profile.photo.url }}" class="img-circle elevation-2" alt="User Image" style="width: 35px; height: 35px; object-fit: cover;">
+            {% else %}
             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
                 {{ user.username|make_list|first|upper }}
             </div>
+            {% endif %}
         </div>
         <div class="info">
           <a href="{% url 'user_profile' %}" class="d-block" title="My Profile">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %} <i class="fas fa-user-circle ml-1 small text-muted"></i></a>
@@ -314,6 +440,9 @@
   </script>
 
   <footer class="main-footer">
+    <div class="float-right d-none d-sm-block">
+      <b>Developed by:</b> <a href="https://github.com/ruhulamin-siddique" target="_blank" class="text-primary font-weight-bold">Ruhulamin Siddique</a>
+    </div>
     <strong>Copyright &copy; 2026 Admission Suite.</strong>
     All rights reserved.
   </footer>
@@ -360,6 +489,28 @@
             body: JSON.stringify({ mode: newMode })
         }).then(response => {
             if (!response.ok) console.error("Failed to save theme preference");
+        });
+    }
+
+    function toggleNavbarPin() {
+        const body = document.body;
+        const icon = document.getElementById('pin-icon');
+        body.classList.toggle('layout-navbar-fixed');
+        const isFixed = body.classList.contains('layout-navbar-fixed');
+        
+        if (isFixed) {
+            icon.classList.add('pin-active');
+        } else {
+            icon.classList.remove('pin-active');
+        }
+        
+        fetch("{% url 'toggle_navbar_pin' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ fixed: isFixed })
         });
     }
   </script>

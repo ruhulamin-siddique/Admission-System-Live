@@ -37,6 +37,8 @@ class UserProfile(models.Model):
         default='light', 
         choices=[('light', 'Light'), ('dark', 'Dark')]
     )
+    navbar_fixed = models.BooleanField(default=True)
+    photo = models.ImageField(upload_to='staff_photos/', null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.role.name if self.role else 'No Role'}"

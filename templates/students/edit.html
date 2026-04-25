@@ -425,6 +425,18 @@
                                         <button type="button" class="btn btn-upload-trigger w-100" onclick="document.getElementById('student_photo_input').click()">
                                             <i class="fas fa-cloud-arrow-up mr-2"></i> Change Passport Photo
                                         </button>
+                                        
+                                        {% if student.photo_url %}
+                                        <div class="mt-2 text-center">
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" id="remove_photo_check" name="remove_photo" value="true">
+                                                <label class="custom-control-label text-danger small font-weight-bold" for="remove_photo_check">
+                                                    <i class="fas fa-trash-alt mr-1"></i> Remove Current Photo
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
                                         <p class="small text-muted mt-2 mb-0">Max size 2MB. JPG/PNG only.</p>
                                     </div>
                                     

@@ -146,6 +146,7 @@ class UserSelfProfileForm(forms.Form):
     first_name = forms.CharField(max_length=150, required=False)
     last_name = forms.CharField(max_length=150, required=False)
     email = forms.EmailField(required=False)
+    photo = forms.ImageField(required=False)
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
@@ -166,4 +167,9 @@ class UserSelfProfileForm(forms.Form):
         self.user.last_name = self.cleaned_data['last_name'].strip()
         self.user.email = self.cleaned_data['email']
         self.user.save(update_fields=['first_name', 'last_name', 'email'])
+        
+        profile = self.user.profile
+        if self.cleaned_data.get('photo'):
+            profile.photo = self.cleaned_data['photo']
+            profile.save(update_fields=['photo'])
         return self.user

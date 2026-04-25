@@ -63,8 +63,10 @@
     <div class="col-lg-4 mb-4">
         <div class="card profile-shell">
             <div class="card-body text-center">
-                <div class="profile-avatar mb-3">
+                <div class="profile-avatar mb-3" style="{% if user.profile.photo %}background: url('{{ user.profile.photo.url }}') center/cover no-repeat;{% endif %}">
+                    {% if not user.profile.photo %}
                     {{ user.username|make_list|first|upper }}
+                    {% endif %}
                 </div>
                 <h3 class="font-weight-bold mb-1">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}</h3>
                 <div class="profile-meta mb-3">@{{ user.username }}</div>
@@ -107,7 +109,7 @@
                 <p class="text-muted small mb-0">Every authenticated user can maintain their own profile details here. Role and scope remain administrator-controlled.</p>
             </div>
             <div class="card-body">
-                <form method="post">
+                <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="row">
                         <div class="col-md-6 form-group">
@@ -128,6 +130,11 @@
                         <div class="col-md-6 form-group">
                             <label>Email Address</label>
                             <input type="email" name="email" value="{{ profile_form.email.value|default:'' }}" class="form-control" placeholder="name@university.edu">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Profile Picture</label>
+                            <input type="file" name="photo" class="form-control-file">
+                            <small class="text-muted">Upload a professional headshot (JPG/PNG).</small>
                         </div>
                     </div>
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-2">

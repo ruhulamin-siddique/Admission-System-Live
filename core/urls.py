@@ -16,4 +16,5 @@ urlpatterns = [
     path('security/settings/', views.system_settings, name='system_settings'),
     path('security/audit-logs/', views.audit_logs, name='audit_logs'),
     path('security/toggle-theme/', views.toggle_theme, name='toggle_theme'),
+    path('security/toggle-navbar-pin/', views.toggle_navbar_pin, name='toggle_navbar_pin'),
 ]

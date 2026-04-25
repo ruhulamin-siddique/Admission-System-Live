@@ -789,6 +789,12 @@ def edit_student(request, student_id):
             for field, value in original_values.items():
                 setattr(student, field, value)
 
+            # Handle Photo Removal
+            if request.POST.get('remove_photo') == 'true':
+                student.photo_path = None
+                from core.utils import log_activity
+                log_activity(request, 'UPDATE', 'students', f'Removed photo for {student.student_name}', object_id=student.student_id)
+
             # Handle Photo Upload
             photo_path = _handle_student_photo(request, student)
             if photo_path:

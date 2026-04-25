@@ -35,6 +35,21 @@ def toggle_theme(request):
             pass
     return JsonResponse({'status': 'error'}, status=400)
 
+@login_required
+def toggle_navbar_pin(request):
+    """AJAX view to persist navbar fixed/sticky preference."""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            fixed = data.get('fixed')
+            profile = request.user.profile
+            profile.navbar_fixed = bool(fixed)
+            profile.save(update_fields=['navbar_fixed'])
+            return JsonResponse({'status': 'success'})
+        except Exception:
+            pass
+    return JsonResponse({'status': 'error'}, status=400)
+
 
 def _ensure_missing_user_profiles():
     missing_users = list(User.objects.filter(profile__isnull=True))
@@ -333,7 +348,7 @@ def user_profile(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
-        profile_form = UserSelfProfileForm(request.POST, user=request.user)
+        profile_form = UserSelfProfileForm(request.POST, request.FILES, user=request.user)
         if profile_form.is_valid():
             profile_form.save()
             messages.success(request, 'Your profile has been updated successfully.')
