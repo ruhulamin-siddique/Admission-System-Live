@@ -8,6 +8,10 @@
 <style>
     .info-box-icon { transition: transform 0.3s; }
     .info-box:hover .info-box-icon { transform: scale(1.1); }
+    .clickable-item { cursor: pointer; transition: background 0.2s; border-radius: 8px; }
+    .clickable-item:hover { background: rgba(0,0,0,0.05) !important; }
+    .text-indigo { color: #6610f2; }
+    .text-navy { color: #001f3f; }
 </style>
 {% endblock %}
 
@@ -103,13 +107,16 @@
                             </div>
                             <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
                                 {% for item in stats.periodic.today.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 clickable-item" 
+                                     hx-get="{% url 'api_periodic_students' %}?period=today&program={{ item.program|urlencode }}"
+                                     hx-target="#periodicModalBody"
+                                     data-toggle="modal" data-target="#periodicStudentsModal">
                                     <span class="text-dark small font-weight-bold">{{ item.short_name }}</span>
                                     <span class="badge badge-light border px-2 py-1">{{ item.count }}</span>
                                 </div>
                                 {% empty %}
                                 <div class="text-center py-4">
-                                    <p class="text-muted small mb-0 italic">Zero admissions today.</p>
+                                    <p class="text-muted small mb-0 font-italic">Zero admissions today.</p>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -130,7 +137,10 @@
                             </div>
                             <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
                                 {% for item in stats.periodic.week.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 clickable-item"
+                                     hx-get="{% url 'api_periodic_students' %}?period=week&program={{ item.program|urlencode }}"
+                                     hx-target="#periodicModalBody"
+                                     data-toggle="modal" data-target="#periodicStudentsModal">
                                     <span class="text-dark small font-weight-bold">{{ item.short_name }}</span>
                                     <span class="badge badge-light border px-2 py-1">{{ item.count }}</span>
                                 </div>
@@ -157,7 +167,10 @@
                             </div>
                             <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
                                 {% for item in stats.periodic.month.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-0">
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 clickable-item"
+                                     hx-get="{% url 'api_periodic_students' %}?period=month&program={{ item.program|urlencode }}"
+                                     hx-target="#periodicModalBody"
+                                     data-toggle="modal" data-target="#periodicStudentsModal">
                                     <span class="text-dark small font-weight-bold">{{ item.short_name }}</span>
                                     <span class="badge badge-light border px-2 py-1">{{ item.count }}</span>
                                 </div>
@@ -456,6 +469,28 @@
     .text-pink { color: #e83e8c; }
     tr:hover { background: rgba(0,0,0,0.02) !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
 </style>
+
+<!-- Periodic Students Drill-down Modal -->
+<div class="modal fade" id="periodicStudentsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header bg-info text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-users-viewfinder mr-2"></i> Periodic Admission List</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" id="periodicModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Fetching student records...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}

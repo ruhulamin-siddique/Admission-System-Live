@@ -23,6 +23,7 @@ urlpatterns = [
     path('students/export/all/', views.export_students_all, name='export_students_all'),
     path('api/preview-id/', views.api_preview_id, name='api_preview_id'),
     path('api/global-search/', views.api_global_search, name='api_global_search'),
+    path('api/periodic-students/', views.api_periodic_students, name='api_periodic_students'),
     
     # Reports & Dynamic Exports
     path('reports/center/', views.reports_center, name='reports_center'),

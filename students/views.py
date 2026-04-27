@@ -654,6 +654,38 @@ def _get_history_suggestions():
         'existing_years': years
     }
 
+@require_access('dashboard', 'view')
+def api_periodic_students(request):
+    """Returns a partial list of students for the periodic drill-down modal."""
+    period = request.GET.get('period')
+    program = request.GET.get('program')
+    
+    now = timezone.now()
+    today_date = now.date()
+    
+    qs = Student.objects.all()
+    
+    if period == 'today':
+        qs = qs.filter(admission_date=today_date)
+    elif period == 'week':
+        start_of_week = today_date - timezone.timedelta(days=today_date.weekday())
+        qs = qs.filter(admission_date__gte=start_of_week)
+    elif period == 'month':
+        start_of_month = today_date.replace(day=1)
+        qs = qs.filter(admission_date__gte=start_of_month)
+        
+    if program:
+        qs = qs.filter(program=program)
+        
+    students = qs.order_by('-created_at')[:50] # Limit to 50 for quick view
+    
+    return render(request, 'students/partials/periodic_student_list.html', {
+        'students': students,
+        'period': period,
+        'program': program,
+        'count': qs.count()
+    })
+
 def _handle_student_photo(request, student):
     """Saves student photo and returns the relative path."""
     photo = request.FILES.get('student_photo')
