@@ -113,8 +113,10 @@ class ActivityLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     action_type = models.CharField(max_length=20, choices=ACTION_CHOICES)
     module = models.CharField(max_length=50) # e.g. 'students', 'security'
+    scope = models.CharField(max_length=100, null=True, blank=True, help_text="e.g. Department name for scoped notifications")
     object_id = models.CharField(max_length=100, null=True, blank=True)
     description = models.TextField()
+    is_system_alert = models.BooleanField(default=False, help_text="If true, visible to all authorized staff regardless of scope")
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 

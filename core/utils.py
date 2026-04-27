@@ -1,10 +1,11 @@
 import requests
 from .models import ActivityLog, SystemSettings
 
-def log_activity(request, action_type, module, description, object_id=None):
+def log_activity(request, action_type, module, description, object_id=None, scope=None, is_system_alert=False):
     """
     Helper to record user activities.
     Captures user, action, module, description, IP address, and timestamp.
+    'scope' can be used to filter notifications by department/program.
     """
     user = request.user if request.user.is_authenticated else None
     
@@ -19,8 +20,10 @@ def log_activity(request, action_type, module, description, object_id=None):
         user=user,
         action_type=action_type,
         module=module,
+        scope=scope,
         object_id=object_id,
         description=description,
+        is_system_alert=is_system_alert,
         ip_address=ip
     )
 
