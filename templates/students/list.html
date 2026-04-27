@@ -205,6 +205,35 @@
         border-radius: 18px;
         box-shadow: 0 22px 48px rgba(15, 23, 42, 0.18);
         overflow: hidden;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    #info-overlay-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 9998;
+        display: none;
+    }
+
+    @media (max-width: 767.98px) {
+        #info-overlay {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) scale(1) !important;
+            margin: 0 !important;
+            width: 90% !important;
+            max-width: 360px !important;
+            z-index: 9999 !important;
+        }
+        #info-overlay-backdrop {
+            display: block;
+        }
     }
 
     .student-info-trigger {
@@ -611,6 +640,9 @@
     </div>
 </div>
 
+<!-- Info Overlay Backdrop -->
+<div id="info-overlay-backdrop" onclick="document.getElementById('info-overlay').style.display='none'; this.style.display='none';"></div>
+
 <!-- Info Overlay Container -->
 <div id="info-overlay" class="position-absolute shadow-lg" style="display: none; z-index: 9999;"></div>
 
@@ -647,25 +679,34 @@ function clearDirectoryFilters() {
 
 function positionOverlay(btn) {
     const overlay = document.getElementById('info-overlay');
-    const rect = btn.getBoundingClientRect();
+    const backdrop = document.getElementById('info-overlay-backdrop');
+    const isMobile = window.innerWidth < 768;
+    
     overlay.style.display = 'block';
     
-    // Position beside the column (to the right of the trigger button)
-    let top = window.scrollY + rect.top - 20;
-    let left = window.scrollX + rect.right + 20;
-    
-    // Boundary check: if it goes off-screen to the right, show it to the left of the button
-    const viewportWidth = document.documentElement.clientWidth;
-    if (left + 340 > window.scrollX + viewportWidth) {
-        left = window.scrollX + rect.left - 360;
+    if (isMobile) {
+        backdrop.style.display = 'block';
+        // CSS handles centering for mobile
+    } else {
+        const rect = btn.getBoundingClientRect();
+        backdrop.style.display = 'none';
+        
+        let top = window.scrollY + rect.top - 20;
+        let left = window.scrollX + rect.right + 20;
+        
+        const viewportWidth = document.documentElement.clientWidth;
+        if (left + 340 > window.scrollX + viewportWidth) {
+            left = window.scrollX + rect.left - 360;
+        }
+        
+        overlay.style.top = top + 'px';
+        overlay.style.left = left + 'px';
     }
-    
-    overlay.style.top = top + 'px';
-    overlay.style.left = left + 'px';
     
     const closer = (e) => {
         if (!overlay.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
             overlay.style.display = 'none';
+            if (backdrop) backdrop.style.display = 'none';
             document.removeEventListener('click', closer);
         }
     };

@@ -12,9 +12,11 @@ class AdmissionSecurityMiddleware:
         # Define URLs that are allowed without authentication
         self.exempt_urls = [
             reverse('login'),
+            '/register/',
+            '/check-status/',
             settings.STATIC_URL,
             settings.MEDIA_URL,
-            '/admin/login/', # Optional: keeps standard admin accessible but we prefer professional
+            '/admin/',
         ]
 
     def __call__(self, request):

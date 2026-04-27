@@ -13,6 +13,12 @@ urlpatterns = [
     path('security/user/create/', views.user_create, name='user_create'),
     path('security/user/toggle/<int:user_id>/', views.user_toggle_status, name='user_toggle_status'),
     path('security/user/reset-password/<int:user_id>/', views.user_reset_password, name='user_reset_password'),
+    
+    # Registration & Approvals (Managed at Root Level)
+    path('security/user/approve/<int:user_id>/', views.user_approve, name='user_approve'),
+    path('security/user/disapprove/<int:user_id>/', views.user_disapprove, name='user_disapprove'),
+    path('security/user/delete/<int:user_id>/', views.user_delete, name='user_delete'),
+
     path('security/settings/', views.system_settings, name='system_settings'),
     path('security/audit-logs/', views.audit_logs, name='audit_logs'),
     path('security/toggle-theme/', views.toggle_theme, name='toggle_theme'),

@@ -69,7 +69,7 @@
     /* Command Center Header Styles */
     .navbar-search-block { width: 100%; position: relative; }
     .navbar-search-input { 
-        width: 350px;
+        width: 300px;
         background: #fff !important; 
         border: 2px solid #cbd5e1 !important; 
         border-radius: 12px !important;
@@ -84,12 +84,23 @@
         color: white !important;
     }
     .navbar-search-input:focus { 
-        width: 500px !important; 
+        width: 450px !important; 
         border-color: #3b82f6 !important; 
         box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
         outline: none;
     }
-    .search-icon-inside { position: absolute; left: 12px; top: 10px; color: #94a3b8; z-index: 5; }
+    @media (max-width: 991.98px) {
+        .navbar-search-input { width: 180px !important; font-size: 0.85rem; }
+        .navbar-search-input:focus { width: 220px !important; }
+        #search-results-target { width: 320px !important; }
+    }
+    @media (max-width: 767.98px) {
+        .navbar-search-input { width: 140px !important; padding-left: 30px !important; }
+        .navbar-search-input:focus { width: 170px !important; }
+        .search-icon-inside { left: 8px !important; top: 12px !important; font-size: 0.9rem; }
+        #search-results-target { width: 280px !important; left: -50px !important; }
+    }
+    .search-icon-inside { position: absolute; left: 12px; top: 10px; color: #94a3b8; z-index: 10; }
     
     .nav-link-round {
         width: 38px; height: 38px; border-radius: 50%;
@@ -175,7 +186,7 @@
     <!-- Global Command Search (Direct Placement) -->
     {% has_access 'students' 'view_directory' as can_search %}
     {% if can_search %}
-    <form action="{% url 'student_list' %}" method="get" class="form-inline ml-3 d-inline-block mb-0" style="position: relative; min-width: 400px;">
+    <form action="{% url 'student_list' %}" method="get" class="form-inline ml-3 d-inline-block mb-0" style="position: relative;">
         <i class="fas fa-search search-icon-inside" style="color: #4b5563; z-index: 10;"></i>
         <input type="text" 
                name="q" 

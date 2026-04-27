@@ -23,8 +23,21 @@ class RolePermission(models.Model):
         return f"{self.role.name}: {self.module}.{self.task}"
 
 class UserProfile(models.Model):
+    REGISTRATION_STATUS_CHOICES = [
+        ('PENDING', 'Pending Approval'),
+        ('APPROVED', 'Approved'),
+        ('DISAPPROVED', 'Disapproved'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # University Verification Fields
+    employee_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    designation = models.CharField(max_length=100, null=True, blank=True)
+    phone_number = models.CharField(max_length=15, null=True, blank=True)
+    department = models.CharField(max_length=100, null=True, blank=True)
+    
     department_scope = models.CharField(
         max_length=100, 
         null=True, 
@@ -32,6 +45,11 @@ class UserProfile(models.Model):
         help_text="If set, restricts access to only this Program/Department's data."
     )
     is_active = models.BooleanField(default=True)
+    registration_status = models.CharField(
+        max_length=20, 
+        choices=REGISTRATION_STATUS_CHOICES, 
+        default='APPROVED'  # Existing users are assumed approved
+    )
     theme_mode = models.CharField(
         max_length=10, 
         default='light', 

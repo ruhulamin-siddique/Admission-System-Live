@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from .access_registry import ACCESS_REGISTRY
 from .decorators import require_access
 from .forms import (
+    RegistrationForm,
     RoleForm,
     StaffUserCreateForm,
     UserAccessForm,
@@ -240,9 +241,11 @@ def user_management(request):
         users = users.filter(profile__role_id=selected_role)
 
     if selected_status == 'active':
-        users = users.filter(is_active=True)
+        users = users.filter(is_active=True, profile__registration_status='APPROVED')
     elif selected_status == 'inactive':
-        users = users.filter(is_active=False)
+        users = users.filter(is_active=False).exclude(profile__registration_status='PENDING')
+    elif selected_status == 'pending':
+        users = users.filter(profile__registration_status='PENDING')
     elif selected_status == 'unassigned':
         users = users.filter(profile__role__isnull=True)
     elif selected_status == 'scoped':
@@ -264,6 +267,9 @@ def user_management(request):
             getattr(profile, 'department_scope', ''),
         )
         managed_user.display_name = managed_user.get_full_name() or managed_user.username
+        managed_user.reg_status = getattr(profile, 'registration_status', 'APPROVED')
+
+    pending_count = User.objects.filter(profile__registration_status='PENDING').count()
 
     return render(request, 'core/user_management.html', {
         'users': users,
@@ -278,6 +284,7 @@ def user_management(request):
         'scoped_users': scoped_users,
         'unassigned_users': unassigned_users,
         'filtered_count': filtered_count,
+        'pending_count': pending_count,
     })
 
 
@@ -449,3 +456,112 @@ def system_settings(request):
         messages.success(request, "Institutional branding and SMS configuration updated.")
         return redirect('system_settings')
     return render(request, 'core/system_settings.html', {'settings': settings})
+
+
+def register(request):
+    """Public registration view for new suite users."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+        
+    if request.method == "POST":
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f'Registration successful for {user.username}. Your account is currently awaiting administrative approval.')
+            return redirect('login')
+        else:
+            _add_form_errors(request, form, 'Registration failed.')
+    else:
+        form = RegistrationForm()
+        
+    return render(request, 'core/register.html', {'form': form})
+
+
+def check_status(request):
+    """Public view to allow users to check their account approval status."""
+    status_info = None
+    if request.method == "POST":
+        identifier = request.POST.get('identifier', '').strip()
+        user = User.objects.filter(Q(username__iexact=identifier) | Q(email__iexact=identifier)).first()
+        
+        if user:
+            profile = user.profile
+            status_info = {
+                'username': user.username,
+                'status': profile.registration_status,
+                'date_joined': user.date_joined,
+            }
+        else:
+            messages.error(request, "No account found with that username or email.")
+            
+    return render(request, 'core/check_status.html', {'status_info': status_info})
+
+
+@require_access('security', 'manage_users')
+def user_approve(request, user_id):
+    """Approves a pending user registration."""
+    if request.method != "POST":
+        return redirect('user_management')
+        
+    user = get_object_or_404(User, id=user_id)
+    profile = user.profile
+    profile.registration_status = 'APPROVED'
+    profile.is_active = True
+    profile.save()
+    
+    user.is_active = True
+    user.save(update_fields=['is_active'])
+    
+    messages.success(request, f'Account for {user.username} has been approved.')
+    from .utils import log_activity
+    log_activity(request, 'SECURITY', 'security', f'Approved registration for: {user.username}', object_id=str(user.id))
+    return redirect('user_management')
+
+
+@require_access('security', 'manage_users')
+def user_disapprove(request, user_id):
+    """Disapproves a pending user registration."""
+    if request.method != "POST":
+        return redirect('user_management')
+        
+    user = get_object_or_404(User, id=user_id)
+    profile = user.profile
+    profile.registration_status = 'DISAPPROVED'
+    profile.is_active = False
+    profile.save()
+    
+    user.is_active = False
+    user.save(update_fields=['is_active'])
+    
+    messages.warning(request, f'Account for {user.username} has been disapproved.')
+    from .utils import log_activity
+    log_activity(request, 'SECURITY', 'security', f'Disapproved registration for: {user.username}', object_id=str(user.id))
+    return redirect('user_management')
+
+
+@require_access('security', 'manage_users')
+def user_delete(request, user_id):
+    """Permanently removes a user account."""
+    if request.method != "POST":
+        return redirect('user_management')
+        
+    user = get_object_or_404(User, id=user_id)
+    if user == request.user:
+        messages.error(request, "You cannot delete your own account.")
+        return redirect('user_management')
+        
+    if user.is_superuser and not request.user.is_superuser:
+        messages.error(request, "Only a superuser can delete another superuser.")
+        return redirect('user_management')
+        
+    if user.is_active:
+        messages.error(request, "Active users cannot be deleted. Please deactivate the account first.")
+        return redirect('user_management')
+        
+    username = user.username
+    user.delete()
+    
+    messages.success(request, f'Account for {username} has been permanently deleted.')
+    from .utils import log_activity
+    log_activity(request, 'DELETE', 'security', f'Permanently deleted user account: {username}', object_id=str(user_id))
+    return redirect('user_management')

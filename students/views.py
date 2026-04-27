@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Count, Q, Case, When, IntegerField, Sum, Max, Value
 from django.db.models.functions import Cast, Coalesce, Lower, Right, TruncMonth
@@ -200,7 +201,8 @@ def dashboard(request):
         'latest_batch_name': latest_batch,
         'latest_batch_intake': latest_batch_intake,
         'total_batch_students': total_batch_students,
-        'periodic': periodic_stats
+        'periodic': periodic_stats,
+        'pending_registrations': User.objects.filter(profile__registration_status='PENDING').count()
     }
     return render(request, 'students/dashboard.html', {'stats': stats})
 

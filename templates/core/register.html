@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create Account | Admission Suite</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e293b;
+            padding: 40px 0;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-logo i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .auth-logo h2 {
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            height: 44px;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            padding: 0 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            background: #fff;
+        }
+
+        .btn-auth {
+            background: var(--primary);
+            color: white;
+            border: none;
+            height: 50px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            width: 100%;
+            margin-top: 15px;
+            transition: all 0.2s;
+        }
+
+        .btn-auth:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .auth-footer a {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .alert {
+            border-radius: 12px;
+            border: none;
+            font-size: 0.85rem;
+        }
+        
+        .institution-name {
+            display: block;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-container">
+    <div class="auth-logo">
+        <i class="fas fa-graduation-cap"></i>
+        <h2>ADMISSION SUITE</h2>
+        <span class="institution-name">Official Staff Registration</span>
+    </div>
+
+    <div class="auth-card">
+        <h4 class="text-center font-weight-bold mb-4" style="color: #0f172a;">Identity Verification</h4>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>First Name</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <small class="text-danger d-block mt-1">{{ form.first_name.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <small class="text-danger d-block mt-1">{{ form.last_name.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Employee ID</label>
+                        {{ form.employee_id }}
+                        {% if form.employee_id.errors %}
+                            <small class="text-danger d-block mt-1">{{ form.employee_id.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Department</label>
+                        {{ form.department }}
+                        {% if form.department.errors %}
+                            <small class="text-danger d-block mt-1">{{ form.department.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Designation</label>
+                        {{ form.designation }}
+                        {% if form.designation.errors %}
+                            <small class="text-danger d-block mt-1">{{ form.designation.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        {{ form.phone_number }}
+                        {% if form.phone_number.errors %}
+                            <small class="text-danger d-block mt-1">{{ form.phone_number.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>University Email</label>
+                {{ form.email }}
+                <small class="text-muted d-block mt-1">Enter your verified university edumail</small>
+                {% if form.email.errors %}
+                    <small class="text-danger d-block mt-1 font-weight-bold">{{ form.email.errors.0 }}</small>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>Account Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <small class="text-danger d-block mt-1">{{ form.username.errors.0 }}</small>
+                {% endif %}
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Password</label>
+                        {{ form.password1 }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        {{ form.password2 }}
+                    </div>
+                </div>
+            </div>
+            
+            {% if form.password1.errors or form.password2.errors or form.non_field_errors %}
+                <div class="alert alert-danger py-2 small mb-3">
+                    {{ form.password1.errors.0 }}
+                    {{ form.password2.errors.0 }}
+                    {{ form.non_field_errors.0 }}
+                </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-auth">Complete Registration</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already verified? <a href="{% url 'login' %}">Sign In</a></p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.form-control').addClass('form-control');
+    });
+</script>
+</body>
+</html>

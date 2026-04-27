@@ -105,6 +105,10 @@ class UserAccessForm(forms.Form):
     first_name = forms.CharField(max_length=150, required=False)
     last_name = forms.CharField(max_length=150, required=False)
     email = forms.EmailField(required=False)
+    employee_id = forms.CharField(max_length=50, required=False)
+    designation = forms.CharField(max_length=100, required=False)
+    department = forms.CharField(max_length=100, required=False)
+    phone_number = forms.CharField(max_length=15, required=False)
     role = forms.ModelChoiceField(queryset=Role.objects.none(), required=False)
     department_scope = forms.ChoiceField(choices=(), required=False)
 
@@ -122,6 +126,12 @@ class UserAccessForm(forms.Form):
             self.fields['email'].initial = user.email
             self.fields['role'].initial = getattr(user.profile, 'role', None)
             self.fields['department_scope'].initial = getattr(user.profile, 'department_scope', '')
+            
+            profile = user.profile
+            self.fields['employee_id'].initial = profile.employee_id
+            self.fields['designation'].initial = profile.designation
+            self.fields['department'].initial = profile.department
+            self.fields['phone_number'].initial = profile.phone_number
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()
@@ -138,7 +148,13 @@ class UserAccessForm(forms.Form):
         profile = self.user.profile
         profile.role = self.cleaned_data['role']
         profile.department_scope = self.cleaned_data['department_scope']
-        profile.save(update_fields=['role', 'department_scope'])
+        
+        profile.employee_id = self.cleaned_data['employee_id']
+        profile.designation = self.cleaned_data['designation']
+        profile.department = self.cleaned_data['department']
+        profile.phone_number = self.cleaned_data['phone_number']
+        
+        profile.save()
         return self.user
 
 
@@ -173,3 +189,55 @@ class UserSelfProfileForm(forms.Form):
             profile.photo = self.cleaned_data['photo']
             profile.save(update_fields=['photo'])
         return self.user
+
+
+class RegistrationForm(UserCreationForm):
+    first_name = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'First Name'}))
+    last_name = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'Last Name'}))
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'placeholder': 'University Email'}))
+    employee_id = forms.CharField(max_length=50, required=True, widget=forms.TextInput(attrs={'placeholder': 'Employee ID'}))
+    designation = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'Designation'}))
+    department = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'Department'}))
+    phone_number = forms.CharField(max_length=11, required=True, widget=forms.TextInput(attrs={'placeholder': 'Phone (01XXXXXXXXX)'}))
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('first_name', 'last_name', 'username', 'email')
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').lower()
+        if not email.endswith('@baust.edu.bd'):
+            raise forms.ValidationError("Please use your verified university edumail.")
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("This email is already registered.")
+        return email
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get('phone_number', '')
+        import re
+        if not re.match(r'^01[3-9]\d{8}$', phone):
+            raise forms.ValidationError("Please enter a valid 11-digit Bangladeshi phone number.")
+        return phone
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data['email']
+        user.first_name = self.cleaned_data['first_name'].strip()
+        user.last_name = self.cleaned_data['last_name'].strip()
+        user.is_active = False
+        user.is_staff = True
+        
+        if commit:
+            user.save()
+            profile = user.profile
+            profile.registration_status = 'PENDING'
+            profile.is_active = False
+            
+            # Map university fields
+            profile.employee_id = self.cleaned_data['employee_id']
+            profile.designation = self.cleaned_data['designation']
+            profile.department = self.cleaned_data['department']
+            profile.phone_number = self.cleaned_data['phone_number']
+            
+            profile.save()
+        return user

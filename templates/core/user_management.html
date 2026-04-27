@@ -146,11 +146,11 @@
         <div class="card security-kpi-card">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
-                    <div class="text-muted text-uppercase small font-weight-bold">No Role</div>
-                    <div class="h3 mb-0 font-weight-bold">{{ unassigned_users }}</div>
+                    <div class="text-muted text-uppercase small font-weight-bold">Pending Approval</div>
+                    <div class="h3 mb-0 font-weight-bold {% if pending_count > 0 %}text-danger{% endif %}">{{ pending_count }}</div>
                 </div>
-                <div class="security-kpi-icon bg-secondary text-white">
-                    <i class="fas fa-user-lock"></i>
+                <div class="security-kpi-icon bg-warning text-dark">
+                    <i class="fas fa-user-clock"></i>
                 </div>
             </div>
         </div>
@@ -178,6 +178,7 @@
                     <label class="small font-weight-bold text-muted text-uppercase">Status</label>
                     <select name="status" class="form-control">
                         <option value="">All Statuses</option>
+                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending Approval</option>
                         <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
                         <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
                         <option value="scoped" {% if selected_status == 'scoped' %}selected{% endif %}>Scoped Only</option>
@@ -221,10 +222,10 @@
             <thead class="bg-light">
                 <tr>
                     <th>Staff Member</th>
+                    <th>ID & Contact</th>
+                    <th>Designation / Dept</th>
                     <th>Role</th>
-                    <th>Program Scope</th>
                     <th>Status</th>
-                    <th>Last Login</th>
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
@@ -244,38 +245,57 @@
                         </div>
                     </td>
                     <td>
+                        <div class="small font-weight-bold">{{ u.profile.employee_id|default:"---" }}</div>
+                        <div class="small text-muted">{{ u.profile.phone_number|default:"No phone" }}</div>
+                    </td>
+                    <td>
+                        <div class="small font-weight-bold">{{ u.profile.designation|default:"---" }}</div>
+                        <div class="small text-muted">{{ u.profile.department|default:"No dept" }}</div>
+                    </td>
+                    <td>
                         {% if u.profile.role %}
-                        <span class="badge badge-info px-3 py-2">{{ u.profile.role.name }}</span>
+                        <span class="badge badge-info px-2 py-1 small">{{ u.profile.role.name }}</span>
                         {% else %}
-                        <span class="badge badge-secondary px-3 py-2">No Role Assigned</span>
+                        <span class="badge badge-secondary px-2 py-1 small">No Role</span>
                         {% endif %}
                     </td>
                     <td>
-                        {% if u.profile.department_scope %}
-                        <span class="badge badge-warning px-3 py-2">{{ u.scope_label }}</span>
-                        {% else %}
-                        <span class="text-muted small">Global Access</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if u.is_active %}
+                        {% if u.reg_status == 'PENDING' %}
+                        <span class="badge badge-warning status-badge"><i class="fas fa-clock mr-1"></i> Pending</span>
+                        {% elif u.reg_status == 'DISAPPROVED' %}
+                        <span class="badge badge-secondary status-badge"><i class="fas fa-times-circle mr-1"></i> Disapproved</span>
+                        {% elif u.is_active %}
                         <span class="badge badge-success status-badge">Active</span>
                         {% else %}
                         <span class="badge badge-danger status-badge">Inactive</span>
                         {% endif %}
+                        
                         {% if u.is_superuser %}
                         <span class="badge badge-primary status-badge ml-1">Superuser</span>
                         {% endif %}
                     </td>
-                    <td class="small text-muted">
-                        {% if u.last_login %}
-                        {{ u.last_login|date:"d M Y, h:i A" }}
-                        {% else %}
-                        Never logged in
-                        {% endif %}
-                    </td>
                     <td>
                         <div class="action-cluster">
+                            {% if u.reg_status == 'PENDING' %}
+                            <form method="post" action="{% url 'user_approve' u.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success" title="Approve Access">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'user_disapprove' u.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-warning" title="Disapprove Access">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'user_delete' u.id %}" class="d-inline" onsubmit="return confirm('Permanently delete this pending registration?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete Account">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                            {% else %}
                             <button class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#editUser{{ u.id }}" title="Edit account and access">
                                 <i class="fas fa-user-edit"></i>
                             </button>
@@ -287,14 +307,24 @@
                             {% endif %}
 
                             {% if not u.is_superuser %}
-                            <form method="post" action="{% url 'user_toggle_status' u.id %}">
+                            <form method="post" action="{% url 'user_toggle_status' u.id %}" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm {% if u.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}">
                                     <i class="fas {% if u.is_active %}fa-user-slash{% else %}fa-user-check{% endif %}"></i>
                                 </button>
                             </form>
+                            
+                            {% if not u.is_active %}
+                            <form method="post" action="{% url 'user_delete' u.id %}" class="d-inline" onsubmit="return confirm('Permanently delete this user account? This cannot be undone.')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Account Permanently">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                             {% else %}
                             <span class="badge badge-dark px-3 py-2">Protected</span>
+                            {% endif %}
                             {% endif %}
                         </div>
 
@@ -322,9 +352,29 @@
                                                     <input type="text" name="last_name" value="{{ u.last_name }}" class="form-control" placeholder="Last name">
                                                 </div>
                                             </div>
-                                            <div class="form-group">
-                                                <label>Email Address</label>
-                                                <input type="email" name="email" value="{{ u.email }}" class="form-control" placeholder="staff@university.edu">
+                                            <div class="row">
+                                                <div class="col-md-4 form-group">
+                                                    <label>Employee ID</label>
+                                                    <input type="text" name="employee_id" value="{{ u.profile.employee_id|default:'' }}" class="form-control" placeholder="ID">
+                                                </div>
+                                                <div class="col-md-4 form-group">
+                                                    <label>Designation</label>
+                                                    <input type="text" name="designation" value="{{ u.profile.designation|default:'' }}" class="form-control" placeholder="Designation">
+                                                </div>
+                                                <div class="col-md-4 form-group">
+                                                    <label>Department</label>
+                                                    <input type="text" name="department" value="{{ u.profile.department|default:'' }}" class="form-control" placeholder="Department">
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 form-group">
+                                                    <label>Email Address</label>
+                                                    <input type="email" name="email" value="{{ u.email }}" class="form-control" placeholder="staff@baust.edu.bd">
+                                                </div>
+                                                <div class="col-md-6 form-group">
+                                                    <label>Phone Number</label>
+                                                    <input type="text" name="phone_number" value="{{ u.profile.phone_number|default:'' }}" class="form-control" placeholder="01XXXXXXXXX">
+                                                </div>
                                             </div>
                                             <div class="row">
                                                 <div class="col-md-6 form-group">
