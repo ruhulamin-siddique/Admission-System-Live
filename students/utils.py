@@ -136,6 +136,16 @@ def import_students_from_excel(file_obj, update_existing=False):
         updated_list = []
         processed_ids = set()
         
+        # Build program lookup table to normalize program names
+        from master_data.models import Program
+        program_lookup = {}
+        for p in Program.objects.all():
+            short_upper = (p.short_name or p.name).strip().upper()
+            long_upper = p.name.strip().upper()
+            target_name = p.short_name or p.name
+            program_lookup[short_upper] = target_name
+            program_lookup[long_upper] = target_name
+        
         for index, row in df.iterrows():
             student_data = {}
             # Map Excel columns to model fields
@@ -190,6 +200,11 @@ def import_students_from_excel(file_obj, update_existing=False):
             for name_field in ['student_name', 'father_name', 'mother_name']:
                 if student_data.get(name_field):
                     student_data[name_field] = str(student_data[name_field]).upper()
+                    
+            # Program standardization
+            if student_data.get('program'):
+                raw_prog = str(student_data['program']).strip().upper()
+                student_data['program'] = program_lookup.get(raw_prog, str(student_data['program']).strip().upper())
             
             records_to_process.append(Student(**student_data))
             processed_ids.add(s_id)

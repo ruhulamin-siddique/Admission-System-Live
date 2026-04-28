@@ -50,15 +50,21 @@ def dashboard(request):
     program_map = {p.name: p.short_name or p.name for p in Program.objects.all()}
 
     # Program Distribution
-    program_dist_qs = Student.objects.values('program').annotate(count=Count('student_id')).order_by('-count')
-    program_dist = []
+    program_dist_qs = Student.objects.values('program').annotate(count=Count('student_id'))
+    agg_dist = {}
     for item in program_dist_qs:
         full_name = item['program'] or 'Unknown'
-        program_dist.append({
-            'program': full_name,
-            'short_name': program_map.get(full_name, full_name),
-            'count': item['count']
-        })
+        short = program_map.get(full_name, full_name).strip().upper()
+        if short not in agg_dist:
+            agg_dist[short] = {
+                'program': full_name,
+                'short_name': short,
+                'count': 0
+            }
+        agg_dist[short]['count'] += item['count']
+        
+    program_dist = list(agg_dist.values())
+    program_dist.sort(key=lambda x: x['count'], reverse=True)
 
     # Gender Distribution (Enhanced with Coalesce)
     from django.db.models.functions import Coalesce
@@ -110,20 +116,36 @@ def dashboard(request):
             quota=Count('student_id', filter=Q(is_armed_forces_child=True) | Q(is_freedom_fighter_child=True) | Q(is_july_joddha_2024=True))
         ).order_by('-total')
 
+        aggregated_intake = {}
         for item in latest_intake_qs:
             full_name = item['program'] or 'Unknown'
-            latest_batch_intake.append({
-                'program': full_name,
-                'short_name': program_map.get(full_name, full_name),
-                'count': item['total'],
-                'male': item['male'],
-                'female': item['female'],
-                'active': item['active'],
-                'cancelled': item['cancelled'],
-                'non_residential': item['non_residential'],
-                'revenue': float(item['revenue'] or 0),
-                'quota': item['quota']
-            })
+            short = program_map.get(full_name, full_name).strip().upper()
+            
+            if short not in aggregated_intake:
+                aggregated_intake[short] = {
+                    'program': full_name,
+                    'short_name': short,
+                    'count': 0,
+                    'male': 0,
+                    'female': 0,
+                    'active': 0,
+                    'cancelled': 0,
+                    'non_residential': 0,
+                    'revenue': 0.0,
+                    'quota': 0
+                }
+                
+            aggregated_intake[short]['count'] += item['total']
+            aggregated_intake[short]['male'] += item['male']
+            aggregated_intake[short]['female'] += item['female']
+            aggregated_intake[short]['active'] += item['active']
+            aggregated_intake[short]['cancelled'] += item['cancelled']
+            aggregated_intake[short]['non_residential'] += item['non_residential']
+            aggregated_intake[short]['revenue'] += float(item['revenue'] or 0)
+            aggregated_intake[short]['quota'] += item['quota']
+
+        latest_batch_intake = list(aggregated_intake.values())
+        latest_batch_intake.sort(key=lambda x: x['count'], reverse=True)
 
     # Periodic Admission Stats
     now = timezone.now()
@@ -136,14 +158,20 @@ def dashboard(request):
     month_qs = Student.objects.filter(admission_date__gte=start_of_month)
 
     def _get_periodic_breakdown(qs):
-        breakdown = []
-        for item in qs.values('program').annotate(count=Count('student_id')).order_by('-count'):
+        agg_bd = {}
+        for item in qs.values('program').annotate(count=Count('student_id')):
             full_name = item['program'] or 'Unknown'
-            breakdown.append({
-                'program': full_name,
-                'short_name': program_map.get(full_name, full_name),
-                'count': item['count']
-            })
+            short = program_map.get(full_name, full_name).strip().upper()
+            if short not in agg_bd:
+                agg_bd[short] = {
+                    'program': full_name,
+                    'short_name': short,
+                    'count': 0
+                }
+            agg_bd[short]['count'] += item['count']
+            
+        breakdown = list(agg_bd.values())
+        breakdown.sort(key=lambda x: x['count'], reverse=True)
         return breakdown
 
     periodic_stats = {
