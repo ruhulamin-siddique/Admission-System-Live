@@ -122,11 +122,11 @@ def import_students_from_excel(file_obj, update_existing=False):
         # Standardize column names (lowercase and snake_case)
         df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
         
-        # Get list of valid model fields
-        valid_fields = [f.name for f in Student._meta.get_fields()]
+        # Get mapping of valid model fields to their instances
+        valid_fields = {f.name: f for f in Student._meta.get_fields()}
         # Exclude internal/meta fields from update
         exclude_from_update = {'student_id', 'created_at', 'last_updated'}
-        update_fields = [f for f in valid_fields if f in df.columns and f not in exclude_from_update]
+        update_fields = [f for f in valid_fields.keys() if f in df.columns and f not in exclude_from_update]
 
         records_to_process = []
         errors = []
@@ -139,8 +139,17 @@ def import_students_from_excel(file_obj, update_existing=False):
             for col in df.columns:
                 if col in valid_fields:
                     val = row[col]
+                    field = valid_fields[col]
+                    
                     if pd.isna(val):
                         val = None
+                        
+                    if isinstance(field, models.BooleanField):
+                        if val is None:
+                            val = False
+                        else:
+                            val = str(val).strip().lower() in ['true', '1', 'yes', 'y', 't']
+                            
                     student_data[col] = val
             
             # 1. Extract and Clean ID
