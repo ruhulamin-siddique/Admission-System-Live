@@ -389,12 +389,22 @@
           </li>
           {% endif %}
 
-          {% has_access 'security' 'manage_users' as can_import %}
+          {% has_access 'students' 'bulk_import' as can_import %}
           {% if can_import %}
           <li class="nav-item">
             <a href="{% url 'import_students' %}" class="nav-link {% if request.resolver_match.url_name == 'import_students' %}active{% endif %}">
               <i class="nav-icon fas fa-file-import"></i>
               <p>Bulk Import</p>
+            </a>
+          </li>
+          {% endif %}
+
+          {% has_access 'students' 'data_integrity' as can_scan %}
+          {% if can_scan %}
+          <li class="nav-item">
+            <a href="{% url 'data_integrity' %}" class="nav-link {% if request.resolver_match.url_name == 'data_integrity' %}active{% endif %}">
+              <i class="nav-icon fas fa-clone"></i>
+              <p>Duplicate Scanner</p>
             </a>
           </li>
           {% endif %}

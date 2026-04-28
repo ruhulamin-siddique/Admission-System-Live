@@ -1,0 +1,95 @@
+{% load core_tags %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="font-weight-bold text-dark mb-0">Scan Results</h4>
+    <span class="badge badge-pill badge-primary px-3 py-2 shadow-sm" style="font-size: 1rem;">
+        {{ match_groups|length }} Match Group(s) Found
+    </span>
+</div>
+
+{% if match_groups %}
+    {% for group in match_groups %}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; overflow: hidden;" id="group-{{ forloop.counter }}">
+        <div class="card-header bg-warning text-dark py-3 border-bottom-0">
+            <h5 class="card-title font-weight-bold mb-0">
+                <i class="fas fa-exclamation-triangle mr-2"></i> Potential Duplicates Group #{{ forloop.counter }}
+            </h5>
+            <div class="card-tools">
+                <button type="button" class="btn btn-tool text-dark" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0 bg-light">
+            <div class="p-3 border-bottom text-center">
+                <span class="text-muted small text-uppercase font-weight-bold">Matched on:</span><br>
+                {% for key, value in group.criteria.items %}
+                    <span class="badge badge-dark mt-1">{{ key|title }}: {{ value }}</span>
+                {% endfor %}
+            </div>
+            
+            <form hx-post="{% url 'api_merge_duplicates' %}" hx-target="#group-{{ forloop.counter }}" hx-swap="outerHTML">
+                {% csrf_token %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0 bg-white">
+                        <thead class="bg-light">
+                            <tr>
+                                <th style="width: 20%;" class="align-middle text-center border-right">Action</th>
+                                {% for student in group.students %}
+                                <th class="text-center p-3" style="width: {{ 80|divide:group.students.count }}%;">
+                                    <div class="custom-control custom-radio custom-control-inline">
+                                        <input type="radio" id="primary_{{ student.student_id }}" name="primary_id" value="{{ student.student_id }}" class="custom-control-input" required {% if forloop.first %}checked{% endif %}>
+                                        <label class="custom-control-label font-weight-bold text-success" for="primary_{{ student.student_id }}">Keep as Primary</label>
+                                    </div>
+                                    <input type="hidden" name="duplicate_ids" value="{{ student.student_id }}">
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Key Identifier -->
+                            <tr>
+                                <td class="font-weight-bold text-right text-muted bg-light border-right">Student ID</td>
+                                {% for student in group.students %}
+                                <td class="text-center font-weight-bold text-primary">{{ student.student_id }}</td>
+                                {% endfor %}
+                            </tr>
+                            
+                            <!-- Fields to Compare -->
+                            {% for field in group.students.first._meta.fields %}
+                            {% if field.name not in 'id,student_id,created_at,last_updated,photo_path' %}
+                            <tr>
+                                <td class="font-weight-bold text-right text-muted bg-light border-right">{{ field.verbose_name|title }}</td>
+                                {% for student in group.students %}
+                                {% with val=student|getattribute:field.name %}
+                                <td class="text-center {% if not val %}text-muted italic{% endif %}">
+                                    {{ val|default:"<span class='text-black-50'>- Blank -</span>"|safe }}
+                                </td>
+                                {% endwith %}
+                                {% endfor %}
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="card-footer bg-white p-3 text-center d-flex justify-content-center align-items-center gap-3">
+                    <button type="submit" class="btn btn-success btn-lg rounded-pill shadow-sm px-4 mr-3 font-weight-bold">
+                        <i class="fas fa-code-branch mr-2"></i> Merge & Keep Primary
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="document.getElementById('group-{{ forloop.counter }}').remove()">
+                        <i class="fas fa-times mr-2"></i> Dismiss Group
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-success border-0 shadow-sm text-center py-5" style="border-radius: 12px;">
+        <i class="fas fa-check-circle fa-4x mb-3 text-success"></i>
+        <h4 class="font-weight-bold">Database is Clean!</h4>
+        <p class="mb-0 text-muted">No duplicate records were found matching your selected criteria.</p>
+    </div>
+{% endif %}

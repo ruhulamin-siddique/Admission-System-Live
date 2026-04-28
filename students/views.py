@@ -925,7 +925,7 @@ def api_preview_id(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
-@require_access('security', 'manage_users')
+@require_access('students', 'bulk_import')
 def import_students(request):
     """View to handle bulk Excel import and return an HTMX partial report."""
     if request.method == "POST" and request.FILES.get('excel_file'):
@@ -945,7 +945,7 @@ def import_students(request):
         return render(request, 'students/partials/import_report.html', {'result': result, 'update_existing': update_existing})
     return render(request, 'students/import.html')
 
-@require_access('security', 'manage_users')
+@require_access('students', 'bulk_import')
 def import_preview(request):
     """Parses Excel and returns HTML partial for preview modal."""
     if request.method == "POST" and request.FILES.get('excel_file'):
@@ -1032,7 +1032,7 @@ def import_preview(request):
             return response
     return JsonResponse({'error': 'No file provide or invalid request'}, status=400)
 
-@require_access('security', 'manage_users')
+@require_access('students', 'bulk_import')
 def download_import_template(request):
     """Generates an empty Excel template for student import."""
     columns = [
@@ -1368,9 +1368,149 @@ def api_global_search(request):
         Q(student_email__icontains=query) |
         Q(father_name__icontains=query) |
         Q(father_mobile__icontains=query)
-    ).only('student_id', 'student_name', 'program', 'admission_status', 'photo_path')[:8]
+    ).only('student_id', 'student_name', 'program', 'batch', 'admission_status', 'photo_path')[:8]
 
     return render(request, 'students/partials/global_search_results.html', {
         'students': students,
         'query': query
     })
+
+@require_access('students', 'data_integrity')
+def data_integrity(request):
+    """Main page for Data Integrity and Deduplication Scanner."""
+    fields = [
+        {'name': 'student_name', 'label': 'Student Name'},
+        {'name': 'father_name', 'label': "Father's Name"},
+        {'name': 'mother_name', 'label': "Mother's Name"},
+        {'name': 'student_mobile', 'label': 'Mobile Number'},
+        {'name': 'student_email', 'label': 'Email Address'},
+        {'name': 'dob', 'label': 'Date of Birth'},
+        {'name': 'national_id_birth_certificate', 'label': 'NID / Birth Cert.'},
+    ]
+    return render(request, 'students/data_integrity.html', {'fields': fields})
+
+@require_access('students', 'data_integrity')
+def api_scan_duplicates(request):
+    """HTMX endpoint to run the dynamic deduplication scan."""
+    selected_fields = request.POST.getlist('fields')
+    if not selected_fields:
+        return HttpResponse("<div class='alert alert-warning border-0 shadow-sm'><i class='fas fa-exclamation-triangle mr-2'></i> Please select at least one field to scan.</div>")
+    
+    # Dynamic ORM query to find groups with same selected fields
+    duplicates = Student.objects.values(*selected_fields).annotate(count=Count('student_id')).filter(count__gt=1).order_by('-count')
+    
+    match_groups = []
+    for dup in duplicates:
+        # Build filter kwargs from the duplicate group, ignoring null/empty strings
+        filter_kwargs = {field: dup[field] for field in selected_fields if dup[field] and str(dup[field]).strip() != ''}
+        
+        # We only want to match if all selected fields have valid data to match on
+        if len(filter_kwargs) == len(selected_fields):
+            students = Student.objects.filter(**filter_kwargs)
+            if students.count() > 1:
+                match_groups.append({
+                    'criteria': filter_kwargs,
+                    'students': students
+                })
+            
+    return render(request, 'students/partials/duplicate_scan_results.html', {
+        'match_groups': match_groups,
+        'selected_fields': selected_fields
+    })
+
+@require_access('students', 'data_integrity')
+def api_merge_duplicates(request):
+    """HTMX endpoint to merge records."""
+    if request.method == "POST":
+        primary_id = request.POST.get('primary_id')
+        duplicate_ids = request.POST.getlist('duplicate_ids')
+        
+        try:
+            primary = Student.objects.get(student_id=primary_id)
+            duplicates = Student.objects.filter(student_id__in=duplicate_ids).exclude(student_id=primary_id)
+            
+            with transaction.atomic():
+                for dup in duplicates:
+                    # Merge empty fields from duplicate into primary
+                    for field in primary._meta.fields:
+                        if field.name not in ['student_id', 'created_at', 'last_updated']:
+                            primary_val = getattr(primary, field.name)
+                            dup_val = getattr(dup, field.name)
+                            if not primary_val and dup_val:
+                                setattr(primary, field.name, dup_val)
+                    
+                    # Delete the duplicate record safely
+                    dup.delete()
+                    
+                primary.save()
+            return HttpResponse(f"<div class='alert alert-success border-0 shadow-sm'><i class='fas fa-check-circle mr-2'></i> Successfully merged into Primary ID: <strong>{primary_id}</strong>. The duplicate records have been deleted.</div>")
+        except Exception as e:
+            return HttpResponse(f"<div class='alert alert-danger border-0 shadow-sm'><i class='fas fa-times-circle mr-2'></i> Merge failed: {str(e)}</div>")
+    return HttpResponse("Invalid request.")
+
+@require_access('students', 'bulk_update')
+def api_bulk_update_modal(request):
+    """Returns the initial bulk update modal structure."""
+    if request.method == "POST":
+        student_ids = request.POST.get('student_ids', '').split(',')
+        student_ids = [s for s in student_ids if s.strip()]
+        if not student_ids:
+            return HttpResponse("No students selected.")
+            
+        updatable_fields = [
+            {'name': 'gender', 'label': 'Gender'},
+            {'name': 'religion', 'label': 'Religion'},
+            {'name': 'blood_group', 'label': 'Blood Group'},
+            {'name': 'batch', 'label': 'Batch (Foreign Key)'},
+            {'name': 'is_non_residential', 'label': 'Non-Residential'},
+            {'name': 'is_freedom_fighter_child', 'label': 'Freedom Fighter Child'},
+            {'name': 'is_july_joddha_2024', 'label': 'July Joddha 2024'},
+            {'name': 'admission_status', 'label': 'Admission Status'},
+        ]
+        
+        return render(request, 'students/partials/bulk_update_modal.html', {
+            'student_ids': ','.join(student_ids),
+            'student_count': len(student_ids),
+            'updatable_fields': updatable_fields
+        })
+
+@require_access('students', 'bulk_update')
+def api_bulk_update_field_input(request):
+    """Returns the appropriate HTML input for the selected field."""
+    field_name = request.GET.get('field_name')
+    context = {'field_name': field_name}
+    
+    if field_name == 'batch':
+        from master_data.models import Batch
+        context['batches'] = Batch.objects.all()
+        
+    return render(request, 'students/partials/bulk_update_input.html', context)
+
+@require_access('students', 'bulk_update')
+def api_bulk_update_execute(request):
+    """Executes the mass update."""
+    if request.method == "POST":
+        student_ids = request.POST.get('student_ids', '').split(',')
+        field_name = request.POST.get('field_name')
+        new_value = request.POST.get('new_value')
+        
+        if not field_name:
+            return HttpResponse("<div class='alert alert-danger'>Please select a field.</div>")
+            
+        if field_name in ['is_non_residential', 'is_freedom_fighter_child', 'is_july_joddha_2024']:
+            new_value = True if new_value == 'True' else False
+            
+        if field_name == 'batch' and new_value:
+            from master_data.models import Batch
+            try:
+                new_value = Batch.objects.get(id=new_value)
+            except:
+                return HttpResponse("<div class='alert alert-danger'>Invalid Batch Selected.</div>")
+                
+        try:
+            with transaction.atomic():
+                updated_count = Student.objects.filter(student_id__in=student_ids).update(**{field_name: new_value})
+            return HttpResponse(f"<script>Swal.fire('Success', '{updated_count} students updated successfully!', 'success').then(() => location.reload());</script>")
+        except Exception as e:
+            return HttpResponse(f"<div class='alert alert-danger'>Update failed: {str(e)}</div>")
+    return HttpResponse("Invalid Request.")

@@ -204,7 +204,20 @@ def import_students_from_excel(file_obj, update_existing=False):
             # Program standardization
             if student_data.get('program'):
                 raw_prog = str(student_data['program']).strip().upper()
-                student_data['program'] = program_lookup.get(raw_prog, str(student_data['program']).strip().upper())
+                student_data['program'] = program_lookup.get(raw_prog, raw_prog)
+                
+            # Status standardization
+            if student_data.get('admission_status'):
+                stat = str(student_data['admission_status']).strip().title()
+                if stat in ['Active', 'Admitted', 'Current', 'Running']:
+                    stat = 'Approved'
+                elif stat in ['Canceled', 'Cancel', 'Cancelled']:
+                    stat = 'Cancelled'
+                elif stat in ['Graduated', 'Alumni']:
+                    stat = 'Graduated'
+                elif stat not in ['Pending', 'Approved', 'Cancelled', 'Graduated']:
+                    stat = 'Pending' # Fallback
+                student_data['admission_status'] = stat
             
             records_to_process.append(Student(**student_data))
             processed_ids.add(s_id)

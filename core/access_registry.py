@@ -21,6 +21,9 @@ ACCESS_REGISTRY = {
             "cancel_admission": ("Admission Cancellation", "Manage individual and bulk admission cancellations."),
             "delete_record": ("Delete Student", "Permanently remove student records from system."),
             "export_excel": ("Export to Excel", "Generate and download the 44-column Excel master list."),
+            "bulk_import": ("Bulk Excel Import", "Upload and process mass student registrations."),
+            "data_integrity": ("Data Integrity Scanner", "Scan the database and merge duplicate records."),
+            "bulk_update": ("Mass Data Harmonizer", "Modify fields across multiple selected students at once."),
         }
     },
     "reports": {

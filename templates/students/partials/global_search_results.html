@@ -12,16 +12,19 @@
                 {% endif %}
             </div>
             <div class="flex-grow-1 overflow-hidden">
-                <div class="font-weight-bold text-truncate" style="font-size: 0.95rem; color: #1e293b;">{{ s.student_name }}</div>
-                <div class="small text-muted text-truncate">
-                    <span class="text-primary font-weight-bold mr-1">{{ s.student_id }}</span> 
-                    | <span class="ml-1">{{ s.program }}</span>
+                <div class="font-weight-bold d-flex align-items-center flex-wrap" style="font-size: 0.95rem; color: #1e293b;">
+                    <span>{{ s.student_name }}</span>
+                    {% if s.admission_status != 'Approved' %}
+                    <span class="badge badge-danger badge-pill ml-2" style="font-size: 0.6rem;">{{ s.admission_status|upper }}</span>
+                    {% endif %}
+                </div>
+                <div class="small text-muted text-monospace mt-1" style="font-size: 0.85rem;">
+                    <i class="fas fa-id-card opacity-50 mr-1"></i> {{ s.student_id }}
                 </div>
             </div>
-            <div class="ml-2">
-                <span class="badge {% if s.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} badge-pill px-2 py-1" style="font-size: 0.65rem;">
-                    {{ s.admission_status|upper }}
-                </span>
+            <div class="ml-2 text-right" style="min-width: 70px;">
+                <div class="font-weight-bold text-dark" style="font-size: 0.85rem;">{{ s.program|default:"-" }}</div>
+                <div class="text-muted mt-1" style="font-size: 0.75rem;">Batch: <strong>{{ s.batch|default:"-" }}</strong></div>
             </div>
         </div>
     </a>

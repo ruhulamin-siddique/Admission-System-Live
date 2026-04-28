@@ -1,3 +1,4 @@
+{% load core_tags %}
 <div class="d-flex justify-content-between align-items-center px-4 py-2 bg-white flex-wrap" style="gap: 10px;">
     <div class="small text-muted">
         {% if selected_sort == 'batch_dept_serial' %}
@@ -31,6 +32,15 @@
         <table class="table table-hover m-0">
             <thead>
                 <tr>
+                    {% has_access 'students' 'bulk_update' as can_bulk_update %}
+                    {% if can_bulk_update %}
+                    <th style="width: 40px;" class="text-center align-middle" style="padding-left: 15px;">
+                        <div class="custom-control custom-checkbox mb-0 d-flex align-items-center justify-content-center" style="min-height: 1rem;">
+                            <input type="checkbox" class="custom-control-input" id="selectAllStudents" onclick="toggleAllStudents(this)">
+                            <label class="custom-control-label m-0" for="selectAllStudents" style="line-height: 1;"></label>
+                        </div>
+                    </th>
+                    {% endif %}
                     <th style="width: 40px;" class="text-center">SL</th>
                     <th style="width: 60px;" class="text-center">Photo</th>
                     <th style="width: 280px;">ID & Name</th>

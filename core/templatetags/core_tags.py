@@ -65,3 +65,10 @@ def get_item(dictionary, key):
     if isinstance(dictionary, dict):
         return dictionary.get(key)
     return ""
+
+@register.filter(name='getattribute')
+def getattribute(value, arg):
+    """Gets an attribute of an object dynamically from a string name"""
+    if hasattr(value, str(arg)):
+        return getattr(value, arg)
+    return ""
