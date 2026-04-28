@@ -899,10 +899,12 @@ def api_preview_id(request):
 
 @require_access('security', 'manage_users')
 def import_students(request):
-    """View to handle bulk Excel import."""
+    """View to handle bulk Excel import and return an HTMX partial report."""
     if request.method == "POST" and request.FILES.get('excel_file'):
         update_existing = request.POST.get('update_existing') == 'on'
         result = import_students_from_excel(request.FILES['excel_file'], update_existing=update_existing)
+        
+        # Determine success/failure messages
         if result['success']:
             action = "updated/imported" if update_existing else "imported"
             messages.success(request, f"Successfully {action} {result['count']} students.")
@@ -910,7 +912,9 @@ def import_students(request):
                 messages.warning(request, f"Skipped {result['total_errors']} records due to errors.")
         else:
             messages.error(request, f"Import failed: {result['error']}")
-        return redirect('student_list')
+            
+        # Return the partial view instead of redirecting
+        return render(request, 'students/partials/import_report.html', {'result': result, 'update_existing': update_existing})
     return render(request, 'students/import.html')
 
 @require_access('security', 'manage_users')
@@ -944,6 +948,42 @@ def import_preview(request):
             # Convert NaN to empty string for clean template rendering
             data = preview_df.replace({pd.NA: '', float('nan'): ''}).to_dict(orient='records')
             
+            existing_ids = set(Student.objects.values_list('student_id', flat=True))
+            new_count = 0
+            update_count = 0
+            
+            for row in data:
+                # Find the actual header for student_id handling case and spaces
+                s_id_key = next((k for k, v in mapping.items() if v == 'student_id'), None)
+                s_id = str(row.get(s_id_key, '')).strip() if s_id_key else ''
+                
+                if len(s_id) == 15 and s_id.startswith('80'):
+                    s_id = '0' + s_id
+                
+                if s_id in existing_ids:
+                    row['row_status'] = 'Update'
+                    update_count += 1
+                else:
+                    row['row_status'] = 'New'
+                    new_count += 1
+            
+            # If show_all, new_count/update_count is accurate for whole file, else we need to count whole df
+            if not show_all:
+                all_s_ids = []
+                s_id_key = next((k for k, v in mapping.items() if v == 'student_id'), None)
+                if s_id_key:
+                    all_s_ids = df[s_id_key].astype(str).str.strip().tolist()
+                
+                new_count = 0
+                update_count = 0
+                for s_id in all_s_ids:
+                    if len(s_id) == 15 and s_id.startswith('80'):
+                        s_id = '0' + s_id
+                    if s_id in existing_ids:
+                        update_count += 1
+                    else:
+                        new_count += 1
+            
             response = render(request, 'students/partials/import_preview.html', {
                 'headers': original_headers,
                 'mapping': mapping,
@@ -951,6 +991,8 @@ def import_preview(request):
                 'valid_fields': valid_fields,
                 'core_fields': core_fields,
                 'total_records': total_records,
+                'new_count': new_count,
+                'update_count': update_count,
                 'update_existing': request.POST.get('update_existing') == 'on',
                 'is_full_list': show_all
             })

@@ -13,8 +13,13 @@
                 </h3>
             </div>
             <!-- /.card-header -->
-            <form method="POST" enctype="multipart/form-data" id="import-form">
-                {% csrf_token %}
+            <div id="import-result-container">
+                <form method="POST" enctype="multipart/form-data" id="import-form"
+                      hx-post="{% url 'import_students' %}"
+                      hx-encoding="multipart/form-data"
+                      hx-target="#import-result-container"
+                      hx-swap="innerHTML">
+                    {% csrf_token %}
                 <div class="card-body p-4">
                     <div class="registration-guide bg-light p-3 rounded mb-4 border-left border-info" style="border-left-width: 4px !important;">
                         <h6 class="font-weight-bold text-info ml-1"><i class="fas fa-info-circle mr-1"></i> Quick Instructions</h6>
@@ -47,11 +52,13 @@
                         </div>
                     </div>
 
-                    <div id="upload-progress" class="progress progress-xs active mt-4" style="display: none; height: 4px;">
-                        <div class="progress-bar bg-success progress-bar-striped" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                    <div id="upload-progress-container" style="display: none;">
+                        <div class="progress progress-xs active mt-4" style="height: 6px; border-radius: 3px;">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                            </div>
                         </div>
+                        <p class="text-center small mt-2 pulse-text font-weight-bold text-success">Executing Import... Please wait.</p>
                     </div>
-                    <p id="upload-status" class="text-center small mt-2 pulse-text" style="display: none;">Finalizing import, please wait...</p>
                 </div>
                 <!-- /.card-body -->
 
@@ -68,7 +75,8 @@
                     </button>
                     <a href="{% url 'student_list' %}" class="btn btn-link text-muted">Back to Directory</a>
                 </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -117,11 +125,10 @@
         
         // Show progress on main page
         document.getElementById('preview-btn').disabled = true;
-        document.getElementById('upload-progress').style.display = 'block';
-        document.getElementById('upload-status').style.display = 'block';
+        document.getElementById('upload-progress-container').style.display = 'block';
         
-        // Submit the original form
-        document.getElementById('import-form').submit();
+        // Dispatch event to trigger HTMX submission
+        htmx.trigger('#import-form', 'submit');
     }
 
     // HTMX Triggered Events

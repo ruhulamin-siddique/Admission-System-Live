@@ -130,7 +130,10 @@ def import_students_from_excel(file_obj, update_existing=False):
 
         records_to_process = []
         errors = []
-        existing_ids = set(Student.objects.values_list('student_id', flat=True)) if not update_existing else set()
+        existing_ids = set(Student.objects.values_list('student_id', flat=True))
+        # Keep track of what we will update vs insert
+        inserted_list = []
+        updated_list = []
         processed_ids = set()
         
         for index, row in df.iterrows():
@@ -149,6 +152,11 @@ def import_students_from_excel(file_obj, update_existing=False):
                             val = False
                         else:
                             val = str(val).strip().lower() in ['true', '1', 'yes', 'y', 't']
+                    elif isinstance(field, models.DateField) and val is not None:
+                        try:
+                            val = pd.to_datetime(val).date()
+                        except Exception:
+                            val = None
                             
                     student_data[col] = val
             
@@ -185,6 +193,11 @@ def import_students_from_excel(file_obj, update_existing=False):
             
             records_to_process.append(Student(**student_data))
             processed_ids.add(s_id)
+            
+            if s_id in existing_ids:
+                updated_list.append(s_id)
+            else:
+                inserted_list.append(s_id)
 
         # Atomic Bulk Operation
         with transaction.atomic():
@@ -202,7 +215,11 @@ def import_students_from_excel(file_obj, update_existing=False):
         return {
             'success': True,
             'count': len(records_to_process),
-            'errors': errors[:20], # Show more errors for convenience
+            'inserted_count': len(inserted_list),
+            'updated_count': len(updated_list),
+            'inserted_list': inserted_list[:50], # Sample for report
+            'updated_list': updated_list[:50],   # Sample for report
+            'errors': errors[:50],               # Show more errors for report
             'total_errors': len(errors)
         }
     except Exception as e:

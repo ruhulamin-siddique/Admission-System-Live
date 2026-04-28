@@ -18,6 +18,12 @@
                 <span class="badge badge-pill shadow-sm py-2 px-3 bg-white border border-primary text-primary mr-2">
                     <i class="fas fa-list-ol mr-1"></i> {{ total_records }} Total Rows
                 </span>
+                <span class="badge badge-pill shadow-sm py-2 px-3 bg-success text-white mr-2">
+                    <i class="fas fa-plus-circle mr-1"></i> {{ new_count }} New
+                </span>
+                <span class="badge badge-pill shadow-sm py-2 px-3 bg-warning text-dark mr-2">
+                    <i class="fas fa-edit mr-1"></i> {{ update_count }} Updates
+                </span>
                 {% if update_existing %}
                 <span class="badge badge-pill shadow-sm py-2 px-3 bg-danger status-pulse">
                     <i class="fas fa-sync-alt mr-1"></i> Update Mode On
@@ -36,6 +42,7 @@
             <table class="table table-hover text-nowrap mb-0" id="preview-table">
                 <thead>
                     <tr>
+                        <th class="preview-th core-field-col" style="width: 90px; text-align: center;">Status</th>
                         {% for header in headers %}
                         {% with std_header=mapping|get_item:header %}
                         <th class="preview-th {% if std_header in valid_fields %}linked-col{% else %}ignored-col{% endif %} {% if std_header in core_fields %}core-field-col{% else %}full-field{% endif %}" 
@@ -56,6 +63,17 @@
                 <tbody>
                     {% for row in data %}
                     <tr>
+                        <td class="core-field-td text-center">
+                            {% if row.row_status == 'Update' %}
+                                {% if update_existing %}
+                                <span class="badge badge-warning text-dark"><i class="fas fa-sync-alt mr-1"></i>Update</span>
+                                {% else %}
+                                <span class="badge badge-secondary" title="Will be skipped because Update Mode is off"><i class="fas fa-ban mr-1"></i>Skip</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge badge-success"><i class="fas fa-plus mr-1"></i>New</span>
+                            {% endif %}
+                        </td>
                         {% for header in headers %}
                         {% with std_header=mapping|get_item:header %}
                         <td class="{% if std_header in core_fields %}core-field-td{% else %}full-field{% endif %}"
@@ -67,7 +85,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="{{ headers|length }}" class="text-center py-5">
+                        <td colspan="{{ headers|length|add:'1' }}" class="text-center py-5">
                             <div class="text-muted"><i class="fas fa-folder-open fa-3x mb-3 d-block"></i> No data found in the selected Excel file.</div>
                         </td>
                     </tr>
