@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Academic Intake Quality | Admission Suite{% endblock %}
+{% block page_title %}Academic Intake Quality Analysis{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quality-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease;
+    }
+    .quality-card:hover {
+        transform: translateY(-5px);
+    }
+    .table-premium thead th {
+        background-color: #f8fafc;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        font-weight: 700;
+        color: #64748b;
+        border-top: none;
+    }
+    .gpa-badge {
+        width: 45px;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card quality-card">
+            <div class="card-body p-3">
+                <form method="get" class="form-inline">
+                    <i class="fas fa-filter mr-2 text-primary"></i>
+                    <select name="year" class="form-control form-control-sm mr-2 border-0 bg-light" onchange="this.form.submit()">
+                        <option value="">All Intake Years</option>
+                        {% for y in years %}
+                            <option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>Year {{ y }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="program" class="form-control form-control-sm mr-2 border-0 bg-light" onchange="this.form.submit()">
+                        <option value="">All Departments</option>
+                        {% for p in programs %}
+                            <option value="{{ p }}" {% if selected_program == p %}selected{% endif %}>{{ p }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="batch" class="form-control form-control-sm mr-2 border-0 bg-light" onchange="this.form.submit()">
+                        <option value="">All Batches</option>
+                        {% for b in batches %}
+                            <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>Batch {{ b }}</option>
+                        {% endfor %}
+                    </select>
+                    <a href="{% url 'reports_center' %}" class="btn btn-sm btn-outline-secondary ml-auto">
+                        <i class="fas fa-arrow-left mr-1"></i> Back to Center
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card quality-card shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-microscope mr-2 text-info"></i> Program-wise GPA Distribution
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-valign-middle mb-0 table-premium">
+                        <thead>
+                            <tr>
+                                <th class="pl-4">Academic Program</th>
+                                <th class="text-center" colspan="4">SSC GPA Distribution</th>
+                                <th class="text-center" colspan="4">HSC GPA Distribution</th>
+                            </tr>
+                            <tr>
+                                <th class="pl-4 border-top-0"></th>
+                                <th class="text-center border-top-0 text-xs">5.00</th>
+                                <th class="text-center border-top-0 text-xs">4.50-4.99</th>
+                                <th class="text-center border-top-0 text-xs">4.00-4.49</th>
+                                <th class="text-center border-top-0 text-xs">< 4.00</th>
+                                <th class="text-center border-top-0 text-xs">5.00</th>
+                                <th class="text-center border-top-0 text-xs">4.50-4.99</th>
+                                <th class="text-center border-top-0 text-xs">4.00-4.49</th>
+                                <th class="text-center border-top-0 text-xs">< 4.00</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in report_data %}
+                            <tr>
+                                <td class="pl-4 font-weight-bold text-dark">{{ row.program }}</td>
+                                <!-- SSC -->
+                                <td class="text-center">
+                                    <span class="badge {% if row.gpa_5_ssc > 0 %}badge-success{% else %}badge-light text-muted{% endif %} gpa-badge">{{ row.gpa_5_ssc }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if row.gpa_45_499_ssc > 0 %}badge-info{% else %}badge-light text-muted{% endif %} gpa-badge">{{ row.gpa_45_499_ssc }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if row.gpa_40_449_ssc > 0 %}badge-primary{% else %}badge-light text-muted{% endif %} gpa-badge">{{ row.gpa_40_449_ssc }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge badge-light text-muted gpa-badge">{{ row.gpa_less_4_ssc }}</span>
+                                </td>
+                                <!-- HSC -->
+                                <td class="text-center border-left">
+                                    <span class="badge {% if row.gpa_5_hsc > 0 %}badge-success{% else %}badge-light text-muted{% endif %} gpa-badge">{{ row.gpa_5_hsc }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if row.gpa_45_499_hsc > 0 %}badge-info{% else %}badge-light text-muted{% endif %} gpa-badge">{{ row.gpa_45_499_hsc }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if row.gpa_40_449_hsc > 0 %}badge-primary{% else %}badge-light text-muted{% endif %} gpa-badge">{{ row.gpa_40_449_hsc }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge badge-light text-muted gpa-badge">{{ row.gpa_less_4_hsc }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                                    <p class="text-muted">No academic intake data found for the selected filters.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

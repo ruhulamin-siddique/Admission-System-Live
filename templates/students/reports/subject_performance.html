@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}Subject Performance | Admission Suite{% endblock %}
+{% block page_title %}PCM Performance Intelligence{% endblock %}
+
+{% block extra_css %}
+<style>
+    .performance-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease;
+        background: #fff;
+    }
+    .performance-card:hover { transform: translateY(-5px); }
+    .kpi-val { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+    .subject-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #64748b; }
+    .table-premium thead th {
+        background: #f8fafc;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+        font-weight: 800;
+        color: #475569;
+        border: none;
+    }
+    .badge-mark { width: 40px; font-weight: 700; }
+    .gradient-math { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+    .gradient-phy { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .gradient-che { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        const data = {{ data_json|safe }};
+        
+        // 1. Radar Chart: Subject Strength by Department
+        const programs = data.programs.slice(0, 8);
+        new Chart(document.getElementById('radarChart'), {
+            type: 'radar',
+            data: {
+                labels: programs.map(p => p.program),
+                datasets: [
+                    {
+                        label: 'Physics',
+                        data: programs.map(p => p.phy),
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderColor: '#10b981',
+                        pointBackgroundColor: '#10b981'
+                    },
+                    {
+                        label: 'Chemistry',
+                        data: programs.map(p => p.che),
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                        borderColor: '#f59e0b',
+                        pointBackgroundColor: '#f59e0b'
+                    },
+                    {
+                        label: 'Math',
+                        data: programs.map(p => p.mat),
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: '#3b82f6',
+                        pointBackgroundColor: '#3b82f6'
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    r: { beginAtZero: true, max: 5 }
+                },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // 2. Batch Trend Chart
+        const batches = data.batches.slice(-15);
+        new Chart(document.getElementById('batchTrendChart'), {
+            type: 'line',
+            data: {
+                labels: batches.map(b => b.batch),
+                datasets: [{
+                    label: 'Avg. PCM Combined',
+                    data: batches.map(b => (b.phy + b.che + b.mat) / 3),
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: false } }
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="font-weight-bold mb-0">Science Subject Intelligence</h2>
+        <p class="text-muted">Analyzing core competence in Physics, Chemistry, and Math.</p>
+    </div>
+    <div class="col-md-6 text-right">
+        <form method="get" class="d-inline-block">
+            <div class="input-group">
+                <select name="year" class="form-control form-control-sm mr-2 rounded-pill" onchange="this.form.submit()">
+                    <option value="">All Intake Years</option>
+                    {% for y in years %}
+                        <option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>Year {{ y }}</option>
+                    {% endfor %}
+                </select>
+                <select name="program" class="form-control form-control-sm mr-2 rounded-pill" onchange="this.form.submit()">
+                    <option value="">All Programs</option>
+                    {% for p in programs %}
+                        <option value="{{ p }}" {% if selected_program == p %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+                <select name="batch" class="form-control form-control-sm mr-2 rounded-pill" onchange="this.form.submit()">
+                    <option value="">All Batches</option>
+                    {% for b in batches %}
+                        <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>Batch {{ b }}</option>
+                    {% endfor %}
+                </select>
+                <a href="{% url 'reports_center' %}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                    <i class="fas fa-arrow-left mr-1"></i> Back
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card performance-card gradient-phy">
+            <div class="card-body text-center py-4">
+                <span class="subject-label text-white-50">Avg. Physics (HSC)</span>
+                <div class="kpi-val mt-2">{{ data.global.avg_hsc_phy|floatformat:2|default:"0.00" }}</div>
+                <div class="small mt-2">Overall Base Proficiency</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card performance-card gradient-che">
+            <div class="card-body text-center py-4">
+                <span class="subject-label text-white-50">Avg. Chemistry (HSC)</span>
+                <div class="kpi-val mt-2">{{ data.global.avg_hsc_che|floatformat:2|default:"0.00" }}</div>
+                <div class="small mt-2">Logical Reasoning Index</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card performance-card gradient-math">
+            <div class="card-body text-center py-4">
+                <span class="subject-label text-white-50">Avg. Math (HSC)</span>
+                <div class="kpi-val mt-2">{{ data.global.avg_hsc_mat|floatformat:2|default:"0.00" }}</div>
+                <div class="small mt-2">Quantitative Aptitude Base</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Radar Visualization -->
+    <div class="col-lg-6 mb-4">
+        <div class="card performance-card h-100">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h5 class="font-weight-bold mb-0">Program-wise PCM Radar</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="radarChart" style="min-height: 400px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trend Analysis -->
+    <div class="col-lg-6 mb-4">
+        <div class="card performance-card h-100">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h5 class="font-weight-bold mb-0">Batch Performance Trend</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="batchTrendChart"></canvas>
+                </div>
+                <div class="mt-4 p-3 bg-light rounded-lg">
+                    <h6 class="font-weight-bold mb-2">Trend Insights</h6>
+                    <p class="small text-muted mb-0">Tracking the combined proficiency of science subjects across admission cohorts to identify intake quality fluctuations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Data Grid -->
+<div class="row">
+    <div class="col-12">
+        <div class="card performance-card shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="font-weight-bold mb-0">Granular Performance Metrics (HSC Base)</h5>
+                <span class="badge badge-light px-3 py-2 rounded-pill">{{ data.total_count }} Students Analyzed</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-valign-middle table-premium mb-0">
+                        <thead>
+                            <tr>
+                                <th class="pl-4">Batch</th>
+                                <th>Program</th>
+                                <th class="text-center">Avg. Physics</th>
+                                <th class="text-center">Avg. Chemistry</th>
+                                <th class="text-center">Avg. Math</th>
+                                <th class="text-center">Sample Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in data.batches %}
+                            <tr>
+                                <td class="pl-4 font-weight-bold">{{ row.batch }}</td>
+                                <td><span class="badge badge-info px-2 py-1">{{ row.program }}</span></td>
+                                <td class="text-center">
+                                    <span class="badge {% if row.phy >= 4.5 %}badge-success{% elif row.phy >= 4.0 %}badge-primary{% else %}badge-warning text-white{% endif %} badge-mark">
+                                        {{ row.phy|floatformat:1 }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if row.che >= 4.5 %}badge-success{% elif row.che >= 4.0 %}badge-primary{% else %}badge-warning text-white{% endif %} badge-mark">
+                                        {{ row.che|floatformat:1 }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if row.mat >= 4.5 %}badge-success{% elif row.mat >= 4.0 %}badge-primary{% else %}badge-warning text-white{% endif %} badge-mark">
+                                        {{ row.mat|floatformat:1 }}
+                                    </span>
+                                </td>
+                                <td class="text-center text-muted font-weight-bold">{{ row.count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-5">No batch-wise performance data found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

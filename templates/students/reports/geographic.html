@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Geographic Outreach | Admission Suite{% endblock %}
+{% block page_title %}Student Geographic Distribution{% endblock %}
+
+{% block extra_css %}
+<style>
+    .geo-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    .division-item {
+        padding: 15px;
+        border-radius: 12px;
+        background: #f8fafc;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+    .division-item:hover {
+        background: #fff;
+        border-color: #3b82f6;
+        transform: translateX(5px);
+    }
+    .progress-compact {
+        height: 6px;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        const data = {{ data_json|safe }};
+        
+        // 1. Division Distribution (Pie)
+        new Chart(document.getElementById('divisionChart'), {
+            type: 'pie',
+            data: {
+                labels: data.division_split.map(i => i.present_division || 'Unknown'),
+                datasets: [{
+                    data: data.division_split.map(i => i.count),
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // 2. Top Districts (Bar)
+        new Chart(document.getElementById('districtChart'), {
+            type: 'bar',
+            data: {
+                labels: data.district_split.slice(0, 15).map(i => i.present_district || 'Unknown'),
+                datasets: [{
+                    label: 'Students',
+                    data: data.district_split.slice(0, 15).map(i => i.count),
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="font-weight-bold text-dark">Regional Outreach Hub</h2>
+        <p class="text-muted">Analyzing the geographic footprint of the current student body.</p>
+    </div>
+    <div class="col-md-4 text-right">
+        <form method="get" class="form-inline">
+            <select name="year" class="form-control form-control-sm d-inline-block w-auto mr-2 rounded-pill" onchange="this.form.submit()">
+                <option value="">All Intake Years</option>
+                {% for y in years %}
+                    <option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>Year {{ y }}</option>
+                {% endfor %}
+            </select>
+            <select name="program" class="form-control form-control-sm d-inline-block w-auto mr-2 rounded-pill" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for p in programs %}
+                    <option value="{{ p }}" {% if selected_program == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+            <select name="batch" class="form-control form-control-sm d-inline-block w-auto mr-2 rounded-pill" onchange="this.form.submit()">
+                <option value="">All Batches</option>
+                {% for b in batches %}
+                    <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>Batch {{ b }}</option>
+                {% endfor %}
+            </select>
+            <a href="{% url 'reports_center' %}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Division Split -->
+    <div class="col-lg-5 mb-4">
+        <div class="card geo-card h-100">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold">Division Breakdown</h3></div>
+            <div class="card-body">
+                <canvas id="divisionChart" style="min-height: 300px;"></canvas>
+                <div class="mt-4">
+                    {% for div in data.division_split %}
+                    <div class="division-item">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="font-weight-bold">{{ div.present_division|default:"Unspecified" }}</span>
+                            <span class="text-primary font-weight-bold">{{ div.count }}</span>
+                        </div>
+                        <div class="progress progress-compact">
+                            <div class="progress-bar" style="width: {% widthratio div.count data.total_students 100 %}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- District Intensity -->
+    <div class="col-lg-7 mb-4">
+        <div class="card geo-card h-100">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">Top 15 Districts by Density</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="districtChart" style="min-height: 350px;"></canvas>
+                <div class="mt-4">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>District</th>
+                                    <th>Count</th>
+                                    <th>% of Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dist in data.district_split|slice:":20" %}
+                                <tr>
+                                    <td>{{ dist.present_district|default:"Unspecified" }}</td>
+                                    <td><span class="badge badge-info">{{ dist.count }}</span></td>
+                                    <td>{% widthratio dist.count data.total_students 100 %}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

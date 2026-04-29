@@ -20,14 +20,53 @@ import json
 import os
 from django.conf import settings
 
+def link_callback(uri, rel):
+    """
+    Convert HTML URIs to absolute system paths so xhtml2pdf can access those
+    resources on local disk.
+    """
+    import os
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
+
+    # Handle media files
+    if settings.MEDIA_URL and uri.startswith(settings.MEDIA_URL):
+        path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+    # Handle static files
+    elif settings.STATIC_URL and uri.startswith(settings.STATIC_URL):
+        path = os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+    else:
+        return uri
+
+    # make sure that file exists
+    if not os.path.isfile(path):
+        # Fallback to staticfiles finders if not in STATIC_ROOT (useful during dev)
+        found_path = finders.find(uri.replace(settings.STATIC_URL, "")) if settings.STATIC_URL else None
+        if found_path:
+            return found_path
+        return uri
+    return path
+
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
     html = template.render(context_dict)
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=link_callback)
     if not pdf.err:
         return HttpResponse(result.getvalue(), content_type='application/pdf')
     return None
+
+@require_access('students', 'view')
+def print_blank_form(request):
+    """Generates a blank PDF admission form for manual data collection."""
+    context = {
+        'current_time': timezone.now()
+    }
+    response = render_to_pdf('students/pdf/blank_form.html', context)
+    if response:
+        response['Content-Disposition'] = 'filename="Blank_Admission_Form.pdf"'
+        return response
+    return HttpResponse("Error generating PDF", status=500)
 
 @require_access('dashboard', 'view')
 def dashboard(request):
@@ -1115,13 +1154,21 @@ def student_profile(request, student_id):
 @require_access('reports', 'view_analytics')
 def academic_intake_report(request):
     """Generates the Academic Intake Quality Report."""
-    year_filter = request.GET.get('year')
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year_filter = request.GET.get('year', latest_year)
     batch_filter = request.GET.get('batch')
+    program_filter = request.GET.get('program')
+    
     students = Student.objects.exclude(program__isnull=True).exclude(program='')
     if year_filter:
         students = students.filter(admission_year=year_filter)
     if batch_filter:
         students = students.filter(batch=batch_filter)
+    if program_filter:
+        students = students.filter(program=program_filter)
+        
     report_data = students.values('program').annotate(
         gpa_5_ssc=Count(Case(When(ssc_gpa=5.0, then=1), output_field=IntegerField())),
         gpa_45_499_ssc=Count(Case(When(ssc_gpa__gte=4.5, ssc_gpa__lt=5.0, then=1), output_field=IntegerField())),
@@ -1132,14 +1179,18 @@ def academic_intake_report(request):
         gpa_40_449_hsc=Count(Case(When(hsc_gpa__gte=4.0, hsc_gpa__lt=4.5, then=1), output_field=IntegerField())),
         gpa_less_4_hsc=Count(Case(When(hsc_gpa__lt=4.0, then=1), output_field=IntegerField())),
     ).order_by('program')
-    years = Student.objects.values_list('admission_year', flat=True).distinct().order_by('-admission_year')
-    batches = Student.objects.values_list('batch', flat=True).distinct().order_by('batch')
+    
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    
     return render(request, 'students/academic_intake.html', {
         'report_data': report_data,
-        'years': [y for y in years if y],
-        'batches': [b for b in batches if b],
-        'selected_year': year_filter,
-        'selected_batch': batch_filter
+        'years': list(years),
+        'programs': list(programs),
+        'batches': list(batches),
+        'selected_year': str(year_filter) if year_filter else None,
+        'selected_batch': batch_filter,
+        'selected_program': program_filter
     })
 
 import pandas as pd
@@ -1208,15 +1259,19 @@ def export_students_all(request):
 @require_access('reports', 'generate_pdf')
 def download_master_sheet(request, student_id):
     """Generates a high-impact PDF Master Sheet for a student."""
+    from core.models import SystemSettings
     student = get_object_or_404(Student, pk=student_id)
-    context = {'student': student, 'today': timezone.now()}
-    pdf = render_to_pdf('students/reports/pdf/master_sheet.html', context)
-    if pdf:
-        response = HttpResponse(pdf, content_type='application/pdf')
+    sys_settings = SystemSettings.objects.first()
+    context = {
+        'student': student, 
+        'today': timezone.now(),
+        'sys_settings': sys_settings
+    }
+    pdf_response = render_to_pdf('students/reports/pdf/master_sheet.html', context)
+    if pdf_response:
         filename = f"MasterSheet_{student_id}.pdf"
-        content = f"inline; filename={filename}"
-        response['Content-Disposition'] = content
-        return response
+        pdf_response['Content-Disposition'] = f"inline; filename={filename}"
+        return pdf_response
     return HttpResponse("Error generating PDF", status=400)
 
 @require_access('reports', 'view_analytics')
@@ -1335,7 +1390,247 @@ def export_cancellations_dynamic(request):
     response['Content-Disposition'] = f'attachment; filename="Cancellations_Audit_{timezone.now().strftime("%Y%m%d")}.xlsx"'
     return response
 
-from .reports import get_academic_analytics, get_financial_summary
+from .reports import (
+    get_academic_analytics, get_financial_summary, 
+    get_institutional_intelligence, get_geographic_insights, 
+    get_research_demographics, get_subject_performance,
+    get_reference_intelligence, get_financial_intelligence,
+    get_diversity_intelligence, get_age_gap_analysis,
+    get_migration_intelligence
+)
+
+@require_access('reports', 'view_analytics')
+def institutional_report(request):
+    """Feeder institution intelligence dashboard."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    batch = request.GET.get('batch')
+    program = request.GET.get('program')
+    
+    data = get_institutional_intelligence(year=year, batch=batch, program=program)
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    
+    return render(request, 'students/reports/institutional.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': list(years),
+        'batches': list(batches),
+        'programs': list(programs),
+        'selected_year': str(year) if year else None,
+        'selected_batch': batch,
+        'selected_program': program
+    })
+
+@require_access('reports', 'view_analytics')
+def geographic_report(request):
+    """Geographic outreach and student distribution dashboard."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    batch = request.GET.get('batch')
+    program = request.GET.get('program')
+    
+    data = get_geographic_insights(year=year, batch=batch, program=program)
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    
+    return render(request, 'students/reports/geographic.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': list(years),
+        'batches': list(batches),
+        'programs': list(programs),
+        'selected_year': str(year) if year else None,
+        'selected_batch': batch,
+        'selected_program': program
+    })
+
+@require_access('reports', 'view_analytics')
+def socio_economic_report(request):
+    """Research-grade demographics: Occupation and Financial aid splits."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    batch = request.GET.get('batch')
+    program = request.GET.get('program')
+    
+    data = get_research_demographics(year=year, batch=batch, program=program)
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    
+    return render(request, 'students/reports/socio_economic.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': list(years),
+        'batches': list(batches),
+        'programs': list(programs),
+        'selected_year': str(year) if year else None,
+        'selected_batch': batch,
+        'selected_program': program
+    })
+
+@require_access('reports', 'view_analytics')
+def subject_report(request):
+    """Science subject performance analysis (Physics, Chemistry, Math)."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    data = get_subject_performance(year=year, program=program, batch=batch)
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    
+    return render(request, 'students/reports/subject_performance.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': list(years),
+        'programs': list(programs),
+        'batches': list(batches),
+        'selected_year': str(year) if year else None,
+        'selected_program': program,
+        'selected_batch': batch
+    })
+
+@require_access('reports', 'view_analytics')
+def reference_report(request):
+    """Reference efficiency and recruitment source analysis."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    data = get_reference_intelligence(year=year, program=program, batch=batch)
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    
+    return render(request, 'students/reports/reference_intelligence.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': list(years),
+        'programs': list(programs),
+        'batches': list(batches),
+        'selected_year': str(year) if year else None,
+        'selected_program': program,
+        'selected_batch': batch
+    })
+
+@require_access('reports', 'view_analytics')
+def financial_intelligence_report(request):
+    """Revenue forecasting and financial impact analysis."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    data = get_financial_intelligence(year=year, program=program, batch=batch)
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    
+    return render(request, 'students/reports/financial_intelligence.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': list(years),
+        'programs': list(programs),
+        'batches': list(batches),
+        'selected_year': str(year) if year else None,
+        'selected_program': program,
+        'selected_batch': batch
+    })
+
+@require_access('reports', 'view_analytics')
+def diversity_report(request):
+    """Gender parity and religious diversity dashboard."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    data = get_diversity_intelligence(year=year, program=program, batch=batch)
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    
+    return render(request, 'students/reports/diversity_intelligence.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': list(years),
+        'programs': list(programs),
+        'batches': list(batches),
+        'selected_year': str(year) if year else None,
+        'selected_program': program,
+        'selected_batch': batch
+    })
+
+@require_access('reports', 'view_analytics')
+def age_gap_report(request):
+    """Age distribution and gap-year analysis."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    data = get_age_gap_analysis(year=year, program=program, batch=batch)
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    
+    return render(request, 'students/reports/age_gap_analysis.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': list(years),
+        'programs': list(programs),
+        'batches': list(batches),
+        'selected_year': str(year) if year else None,
+        'selected_program': program,
+        'selected_batch': batch
+    })
+
+@require_access('reports', 'view_analytics')
+def migration_report(request):
+    """Program migration patterns and student flow analysis."""
+    data = get_migration_intelligence()
+    return render(request, 'students/reports/migration_intelligence.html', {
+        'data': data,
+        'data_json': json.dumps(data)
+    })
+
+@require_access('reports', 'view_analytics')
+def subject_report(request):
+    """Science subject performance analysis (Physics, Chemistry, Math)."""
+    year = request.GET.get('year')
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    data = get_subject_performance(year=year, program=program, batch=batch)
+    
+    years = Student.objects.values_list('admission_year', flat=True).distinct().order_by('-admission_year')
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    
+    return render(request, 'students/reports/subject_performance.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'years': [y for y in years if y],
+        'programs': list(programs),
+        'batches': list(batches),
+        'selected_year': year,
+        'selected_program': program,
+        'selected_batch': batch
+    })
 
 @require_access('reports', 'view_analytics')
 def reports_center(request):
@@ -1343,13 +1638,41 @@ def reports_center(request):
     return render(request, 'students/reports/report_center.html')
 
 @require_access('reports', 'view_analytics')
-def analytics_dashboard(request):
-    """Visual dashboard for academic and demographic analytics."""
+def demographic_insights(request):
+    """Visual dashboard for student demographic distributions."""
     year = request.GET.get('year')
     data = get_academic_analytics(year=year)
+    years = Student.objects.values_list('admission_year', flat=True).distinct().order_by('-admission_year')
+    return render(request, 'students/reports/demographics.html', {
+        'data': data,
+        'data_json': json.dumps(data),
+        'selected_year': year,
+        'years': [y for y in years if y]
+    })
+
+@require_access('reports', 'view_analytics')
+def analytics_dashboard(request):
+    """Visual dashboard for academic and demographic analytics."""
+    years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
+    latest_year = years[0] if years.exists() else None
+    
+    year = request.GET.get('year', latest_year)
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    data = get_academic_analytics(year=year, program=program, batch=batch)
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
+    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
+    
     return render(request, 'students/reports/analytics.html', {
         'data': data,
-        'selected_year': year
+        'data_json': json.dumps(data),
+        'selected_year': str(year) if year else None,
+        'selected_program': program,
+        'selected_batch': batch,
+        'years': list(years),
+        'programs': list(programs),
+        'batches': list(batches)
     })
 
 @login_required
@@ -1387,7 +1710,16 @@ def data_integrity(request):
         {'name': 'dob', 'label': 'Date of Birth'},
         {'name': 'national_id_birth_certificate', 'label': 'NID / Birth Cert.'},
     ]
-    return render(request, 'students/data_integrity.html', {'fields': fields})
+    
+    from master_data.models import Program, Batch
+    programs = Program.objects.all().order_by('name')
+    batches = Batch.objects.all().order_by('-sort_order')
+    
+    return render(request, 'students/data_integrity.html', {
+        'fields': fields,
+        'programs': programs,
+        'batches': batches,
+    })
 
 @require_access('students', 'data_integrity')
 def api_scan_duplicates(request):
@@ -1396,27 +1728,155 @@ def api_scan_duplicates(request):
     if not selected_fields:
         return HttpResponse("<div class='alert alert-warning border-0 shadow-sm'><i class='fas fa-exclamation-triangle mr-2'></i> Please select at least one field to scan.</div>")
     
-    # Dynamic ORM query to find groups with same selected fields
-    duplicates = Student.objects.values(*selected_fields).annotate(count=Count('student_id')).filter(count__gt=1).order_by('-count')
+    from django.db.models.functions import Lower, Trim, Replace, Right
+    from django.db.models import Value, F, Count
+
+    annotations = {}
+    normalized_fields = []
+
+    for field in selected_fields:
+        norm_name = f"norm_{field}"
+        normalized_fields.append(norm_name)
+        
+        if field in ['student_name', 'father_name', 'mother_name']:
+            # Lowercase, remove spaces, dots, and hyphens
+            annotations[norm_name] = Replace(
+                Replace(
+                    Replace(
+                        Lower(field), 
+                        Value('.'), Value('')
+                    ), 
+                    Value('-'), Value('')
+                ), 
+                Value(' '), Value('')
+            )
+        elif 'mobile' in field or 'phone' in field:
+            # Phone number normalization (Last 11 digits)
+            clean_phone = Replace(Replace(field, Value(' '), Value('')), Value('-'), Value(''))
+            annotations[norm_name] = Right(clean_phone, 11)
+        elif field in ['student_email']:
+            annotations[norm_name] = Trim(Lower(field))
+        else:
+            annotations[norm_name] = F(field)
+
+    # Apply database filters to narrow the working area
+    filter_program = request.POST.get('filter_program')
+    filter_batch = request.POST.get('filter_batch')
+    filter_status = request.POST.get('filter_status')
+    
+    base_qs = Student.objects.all()
+    if filter_program:
+        base_qs = base_qs.filter(program=filter_program)
+    if filter_batch:
+        base_qs = base_qs.filter(batch=filter_batch)
+    if filter_status:
+        base_qs = base_qs.filter(admission_status=filter_status)
+
+    # Dynamic ORM query to find groups with same normalized fields
+    qs = base_qs.annotate(**annotations)
+    duplicates = qs.values(*normalized_fields).annotate(count=Count('student_id')).filter(count__gt=1).order_by('-count')
     
     match_groups = []
     for dup in duplicates:
         # Build filter kwargs from the duplicate group, ignoring null/empty strings
-        filter_kwargs = {field: dup[field] for field in selected_fields if dup[field] and str(dup[field]).strip() != ''}
+        filter_kwargs = {norm_field: dup[norm_field] for norm_field in normalized_fields if dup[norm_field] and str(dup[norm_field]).strip() != ''}
         
         # We only want to match if all selected fields have valid data to match on
         if len(filter_kwargs) == len(selected_fields):
-            students = Student.objects.filter(**filter_kwargs)
+            students = qs.filter(**filter_kwargs)
             if students.count() > 1:
+                # Build human readable criteria for display
+                criteria_display = {f.replace('norm_', ''): v for f, v in filter_kwargs.items()}
                 match_groups.append({
-                    'criteria': filter_kwargs,
+                    'criteria': criteria_display,
                     'students': students
                 })
             
+    all_fields = [f for f in Student._meta.fields if f.name not in ['id', 'student_id', 'created_at', 'last_updated', 'photo_path']]
+
     return render(request, 'students/partials/duplicate_scan_results.html', {
         'match_groups': match_groups,
-        'selected_fields': selected_fields
+        'selected_fields': selected_fields,
+        'all_fields': all_fields
     })
+
+@require_access('students', 'data_integrity')
+def api_export_duplicates(request):
+    """Generates an Excel report of the duplicate scan."""
+    import pandas as pd
+    from django.http import HttpResponse
+    from io import BytesIO
+    from django.db.models.functions import Lower, Trim, Replace, Right
+    from django.db.models import Value, F, Count
+
+    selected_fields = request.POST.getlist('fields')
+    if not selected_fields:
+        return HttpResponse("No fields selected for export.", status=400)
+    
+    annotations = {}
+    normalized_fields = []
+
+    for field in selected_fields:
+        norm_name = f"norm_{field}"
+        normalized_fields.append(norm_name)
+        if field in ['student_name', 'father_name', 'mother_name']:
+            annotations[norm_name] = Replace(Replace(Replace(Lower(field), Value('.'), Value('')), Value('-'), Value('')), Value(' '), Value(''))
+        elif 'mobile' in field or 'phone' in field:
+            clean_phone = Replace(Replace(field, Value(' '), Value('')), Value('-'), Value(''))
+            annotations[norm_name] = Right(clean_phone, 11)
+        elif field in ['student_email']:
+            annotations[norm_name] = Trim(Lower(field))
+        else:
+            annotations[norm_name] = F(field)
+
+    filter_program = request.POST.get('filter_program')
+    filter_batch = request.POST.get('filter_batch')
+    filter_status = request.POST.get('filter_status')
+    
+    base_qs = Student.objects.all()
+    if filter_program: base_qs = base_qs.filter(program=filter_program)
+    if filter_batch: base_qs = base_qs.filter(batch=filter_batch)
+    if filter_status: base_qs = base_qs.filter(admission_status=filter_status)
+
+    qs = base_qs.annotate(**annotations)
+    duplicates = qs.values(*normalized_fields).annotate(count=Count('student_id')).filter(count__gt=1).order_by('-count')
+    
+    data = []
+    group_num = 1
+    for dup in duplicates:
+        filter_kwargs = {norm_field: dup[norm_field] for norm_field in normalized_fields if dup[norm_field] and str(dup[norm_field]).strip() != ''}
+        if len(filter_kwargs) == len(selected_fields):
+            students = qs.filter(**filter_kwargs)
+            if students.count() > 1:
+                criteria_str = ", ".join([f"{f.replace('norm_', '').title()}: {v}" for f, v in filter_kwargs.items()])
+                for s in students:
+                    data.append({
+                        'Group ID': f"Group {group_num}",
+                        'Match Criteria': criteria_str,
+                        'Student ID': s.student_id,
+                        'Name': s.student_name,
+                        'Program': s.program,
+                        'Batch': s.batch,
+                        'Mobile': s.student_mobile,
+                        'Status': s.admission_status,
+                    })
+                group_num += 1
+
+    df = pd.DataFrame(data)
+    
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Duplicates')
+        # Auto-adjust column widths
+        worksheet = writer.sheets['Duplicates']
+        for idx, col in enumerate(df.columns):
+            max_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.column_dimensions[chr(65 + idx)].width = max_len
+
+    output.seek(0)
+    response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="Duplicate_Students_Report.xlsx"'
+    return response
 
 @require_access('students', 'data_integrity')
 def api_merge_duplicates(request):

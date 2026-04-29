@@ -57,6 +57,9 @@
         border: 1px solid rgba(255,255,255,0.1);
         box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
+    @media (max-width: 768px) {
+        .identity-passport-header { padding: 1rem; margin-bottom: 1rem; }
+    }
     .identity-passport-header::after {
         content: '\f2c2';
         font-family: 'Font Awesome 6 Free';
@@ -85,6 +88,12 @@
         font-weight: 900;
         flex-wrap: wrap;
         text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    @media (max-width: 768px) {
+        .id-display-large {
+            font-size: 1.4rem;
+            gap: 4px;
+        }
     }
     .id-seg-premium {
         color: #fff;
@@ -126,6 +135,9 @@
         align-items: center;
         gap: 8px;
         border: 1px dashed rgba(255,255,255,0.2);
+    }
+    @media (max-width: 768px) {
+        .id-guide-strip { padding: 4px 8px; font-size: 0.65rem; margin-top: 8px; }
     }
     .guide-pulse {
         width: 8px;
@@ -316,7 +328,7 @@
                         <a class="nav-link" data-toggle="tab" href="#family" role="tab"><i class="fas fa-users mr-2"></i>3. Family</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#academic" role="tab"><i class="fas fa-graduation-cap mr-2"></i>4. History</a>
+                        <a class="nav-link" data-toggle="tab" href="#academic" role="tab"><i class="fas fa-graduation-cap mr-2"></i>4. Academic Background</a>
                     </li>
                 </ul>
 
@@ -484,15 +496,21 @@
 
                                     <!-- Photo Upload Section -->
                                     <div class="photo-upload-card shadow-sm border-0 bg-light">
-                                        <div class="form-section-title mt-0 mb-3" style="font-size: 0.8rem;"><i class="fas fa-camera mr-2"></i>Student Photograph</div>
+                                        <div class="form-section-title mt-0 mb-3 d-flex align-items-center justify-content-between" style="font-size: 0.8rem;">
+                                            <span><i class="fas fa-camera mr-2"></i>Student Photograph</span>
+                                            <button type="button" class="btn btn-link p-0 text-primary" data-toggle="tooltip" data-placement="left" 
+                                                    title="OPTIMIZATION GUIDE: Please upload a low-resolution photo (Max 300KB). Recommended dimensions: 300x300 px. Supported: JPG, PNG, JPEG.">
+                                                <i class="fas fa-circle-info"></i>
+                                            </button>
+                                        </div>
                                         <div class="photo-preview-container" id="photo-preview-box">
                                             <i class="fas fa-user-tie"></i>
                                         </div>
-                                        <input type="file" name="student_photo" id="student_photo_input" class="d-none" accept="image/*" onchange="previewStudentPhoto(this)">
+                                        <input type="file" name="student_photo" id="student_photo_input" class="d-none" accept="image/jpeg,image/png,image/jpg" onchange="validateAndPreviewPhoto(this)">
                                         <button type="button" class="btn btn-upload-trigger w-100" onclick="document.getElementById('student_photo_input').click()">
                                             <i class="fas fa-cloud-arrow-up mr-2"></i> Upload Passport Photo
                                         </button>
-                                        <p class="small text-muted mt-2 mb-0">Max size 2MB. JPG/PNG only.</p>
+                                        <p class="small text-muted mt-2 mb-0" id="photo-status-text">Low-Res Recommended (Max 300KB)</p>
                                     </div>
                                 </div>
                             </div>
@@ -937,15 +955,39 @@
         $('[title]').tooltip();
     });
 
-    // Photo Preview Logic
-    function previewStudentPhoto(input) {
+    // Photo Validation & Preview Logic
+    function validateAndPreviewPhoto(input) {
+        const statusText = document.getElementById('photo-status-text');
+        const box = document.getElementById('photo-preview-box');
+        
         if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const fileSize = file.size / 1024; // in KB
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+
+            // 1. Type Validation
+            if (!validTypes.includes(file.type)) {
+                alert("Invalid file type. Please upload a JPG or PNG image.");
+                input.value = "";
+                return;
+            }
+
+            // 2. Size Validation (Max 300KB)
+            if (fileSize > 300) {
+                statusText.innerHTML = `<span class="text-danger font-weight-bold"><i class="fas fa-triangle-exclamation"></i> File too large (${Math.round(fileSize)}KB). Max 300KB allowed.</span>`;
+                box.style.borderColor = "#dc3545";
+                input.value = "";
+                return;
+            }
+
+            // Success Path
             const reader = new FileReader();
             reader.onload = function(e) {
-                const box = document.getElementById('photo-preview-box');
                 box.innerHTML = `<img src="${e.target.result}" class="img-fluid" style="width:100%; height:100%; object-fit:cover;">`;
+                box.style.borderColor = "#28a745";
+                statusText.innerHTML = `<span class="text-success font-weight-bold"><i class="fas fa-check-circle"></i> Optimized Image Loaded (${Math.round(fileSize)}KB)</span>`;
             }
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(file);
         }
     }
 </script>

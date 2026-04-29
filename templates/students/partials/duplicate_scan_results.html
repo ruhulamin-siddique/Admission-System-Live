@@ -56,8 +56,7 @@
                             </tr>
                             
                             <!-- Fields to Compare -->
-                            {% for field in group.students.first._meta.fields %}
-                            {% if field.name not in 'id,student_id,created_at,last_updated,photo_path' %}
+                            {% for field in all_fields %}
                             <tr>
                                 <td class="font-weight-bold text-right text-muted bg-light border-right">{{ field.verbose_name|title }}</td>
                                 {% for student in group.students %}
@@ -68,7 +67,6 @@
                                 {% endwith %}
                                 {% endfor %}
                             </tr>
-                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>

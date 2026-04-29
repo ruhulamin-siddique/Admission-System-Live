@@ -129,7 +129,7 @@ class StudentForm(forms.ModelForm):
         
         # Populate dynamic choices
         self.fields['program'].widget.choices = [('', 'Select Program')] + [
-            (p.name, p.name) for p in Program.objects.all().order_by('name')
+            (p.short_name if p.short_name else p.name, p.name) for p in Program.objects.all().order_by('name')
         ]
         self.fields['cluster'].widget.choices = [('', 'Select Cluster')] + [
             (c.name, c.name) for c in Cluster.objects.all().order_by('name')

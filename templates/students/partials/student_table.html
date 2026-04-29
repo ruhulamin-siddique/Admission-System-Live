@@ -90,18 +90,21 @@
 
     <!-- 9. Action -->
     <td class="td-action text-right">
-        <div class="d-flex justify-content-end align-items-center" style="gap: 8px;">
+        <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
             <button type="button" 
                     class="row-action-link row-action-link--success" 
                     onclick="copyStudentData('{{ student.student_name|escapejs }}', '{{ student.student_id|escapejs }}', '{{ student.program|escapejs }}', '{{ student.batch|escapejs }}')"
-                    title="Copy Data">
-                <i class="fas fa-copy"></i>
+                    title="Quick Copy Data">
+                <i class="fas fa-clone" style="font-size: 13px;"></i>
             </button>
-            <a href="{% url 'student_profile' student.student_id %}" class="row-action-link row-action-link--primary" title="View Profile">
-                <i class="far fa-comment-dots fa-lg"></i>
+            <a href="{% url 'download_master_sheet' student.student_id %}" class="row-action-link" style="background: rgba(209, 73, 91, 0.1); color: var(--danger-red);" title="Download Master Sheet (PDF)">
+                <i class="fas fa-file-pdf" style="font-size: 13px;"></i>
             </a>
-            <a href="{% url 'edit_student' student.student_id %}" class="row-action-link row-action-link--warning" title="Edit Student">
-                <i class="fas fa-pencil-alt"></i>
+            <a href="{% url 'student_profile' student.student_id %}" class="row-action-link row-action-link--primary" title="View Full Profile">
+                <i class="fas fa-address-card" style="font-size: 13px;"></i>
+            </a>
+            <a href="{% url 'edit_student' student.student_id %}" class="row-action-link row-action-link--warning" title="Edit Records">
+                <i class="fas fa-user-pen" style="font-size: 13px;"></i>
             </a>
         </div>
     </td>
