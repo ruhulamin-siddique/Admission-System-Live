@@ -5,30 +5,17 @@
         @page {
             size: A4;
             margin: 0.8cm;
-            margin-bottom: 2.5cm;
+            margin-bottom: 3cm; /* Increased for signature footer */
             @frame footer {
                 -pdf-frame-content: footerContent;
-                bottom: 0.8cm;
+                bottom: 0.5cm;
                 margin-left: 0.8cm;
                 margin-right: 0.8cm;
-                height: 1.5cm;
+                height: 2.2cm;
             }
         }
         #footerContent {
-            text-align: center;
-            color: #6c757d;
-            font-size: 8pt;
-        }
-        .signature-block {
-            margin-top: 40px;
-            width: 100%;
-        }
-        .sig-box {
-            width: 250px;
-            text-align: center;
-            border-top: 1.5px solid #000;
-            padding-top: 5px;
-            float: right;
+            color: #495057;
         }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
@@ -87,14 +74,6 @@
             font-weight: bold;
             text-transform: uppercase;
         }
-        .footer {
-            margin-top: 20px;
-            font-size: 7.5pt;
-            text-align: center;
-            color: #6c757d;
-            border-top: 1px solid #dee2e6;
-            padding-top: 10px;
-        }
         .photo-box {
             width: 105px;
             height: 125px;
@@ -105,6 +84,23 @@
     </style>
 </head>
 <body>
+    <div id="footerContent">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="border: none; text-align: left; font-size: 8pt; vertical-align: bottom; padding: 0;">
+                    BAUST Admission Suite | Generated on {{ today|date:"d M Y H:i" }}
+                    <br>Page <pdf:pagenumber> of <pdf:pagecount>
+                </td>
+                <td style="border: none; text-align: right; width: 250px; padding: 0;">
+                    <div style="border-top: 1.5px solid #000; padding-top: 4px; text-align: center;">
+                        <p style="margin: 0; font-weight: bold; font-size: 10.5pt; color: #000;">Deputy Registrar (Academic)</p>
+                        <p style="margin: 0; font-size: 8.5pt; color: #333;">BAUST, Saidpur Cantonment</p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
     <div class="header">
         <table style="width: 100%; border: none;">
             <tr>
@@ -285,17 +281,5 @@
             <td class="data-value">{{ student.others|default:"0.00" }} BDT</td>
         </tr>
     </table>
-
-    <div class="signature-block">
-        <div class="sig-box">
-            <p style="margin: 0; font-weight: bold; font-size: 11pt;">Deputy Registrar (Academic)</p>
-            <p style="margin: 0; font-size: 9pt;">BAUST, Saidpur Cantonment</p>
-        </div>
-        <div style="clear: both;"></div>
-    </div>
-
-    <div id="footerContent">
-        This is an official document of BAUST. Generated on {{ today|date:"d M Y H:i" }} | Page <pdf:pagenumber> of <pdf:pagecount>
-    </div>
 </body>
 </html>

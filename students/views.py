@@ -59,13 +59,16 @@ def render_to_pdf(template_src, context_dict={}):
 @require_access('students', 'view')
 def print_blank_form(request):
     """Generates a blank PDF admission form for manual data collection."""
+    from core.models import SystemSettings
+    sys_settings = SystemSettings.objects.first()
     context = {
-        'current_time': timezone.now()
+        'current_time': timezone.now(),
+        'sys_settings': sys_settings
     }
-    response = render_to_pdf('students/pdf/blank_form.html', context)
-    if response:
-        response['Content-Disposition'] = 'filename="Blank_Admission_Form.pdf"'
-        return response
+    pdf_response = render_to_pdf('students/pdf/blank_form.html', context)
+    if pdf_response:
+        pdf_response['Content-Disposition'] = 'filename="Blank_Admission_Form.pdf"'
+        return pdf_response
     return HttpResponse("Error generating PDF", status=500)
 
 @require_access('dashboard', 'view')
