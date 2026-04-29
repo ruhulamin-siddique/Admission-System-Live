@@ -98,18 +98,19 @@
             border: 1.5px dashed #adb5bd;
             text-align: center;
             background-color: #f8f9fa;
-            float: right;
+            float: left; /* Changed from right to left */
             line-height: 120px;
             font-size: 8pt;
             color: #6c757d;
             font-weight: bold;
+            margin-right: 15px; /* Added margin for separation */
         }
         .clear { clear: both; }
         .office-box {
             border: 2px solid #004085;
             padding: 10px;
             background-color: #f0f7ff;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         .page-break { page-break-before: always; }
     </style>
@@ -135,34 +136,39 @@
     <div class="header">
         <table style="width: 100%; border: none;">
             <tr>
-                <td style="width: 14%; border: none; vertical-align: middle; text-align: left; padding: 0;">
+                <td style="width: 20%; border: none; vertical-align: top; padding: 0;">
+                    <div class="photo-box">PASTE PHOTO HERE</div>
+                </td>
+                <td style="width: 10%; border: none; vertical-align: middle; text-align: left; padding: 0;">
                     {% if sys_settings.logo_url %}
-                        <img src="{{ sys_settings.logo_url }}" style="height: 95px; width: 95px;">
+                        <img src="{{ sys_settings.logo_url }}" style="height: 80px; width: 80px;">
                     {% endif %}
                 </td>
-                <td style="width: 86%; border: none; text-align: center; vertical-align: middle; padding: 0;">
-                    <h1 style="color: #004085; font-size: 18pt; margin: 0; font-weight: bold; white-space: nowrap; letter-spacing: -0.3px;">BANGLADESH ARMY UNIVERSITY OF SCIENCE & TECHNOLOGY, (BAUST)</h1>
-                    <p style="margin: 2px 0; font-size: 13pt; color: #333; font-weight: bold;">SAIDPUR CANTONMENT</p>
-                    <p style="margin: 3px 0; font-size: 10pt; color: #004085; font-weight: bold; text-decoration: underline;">OFFICIAL STUDENT ADMISSION FORM</p>
+                <td style="width: 70%; border: none; text-align: center; vertical-align: middle; padding: 0;">
+                    <h1 style="color: #004085; font-size: 17pt; margin: 0; font-weight: bold; white-space: nowrap; letter-spacing: -0.3px;">BANGLADESH ARMY UNIVERSITY OF SCIENCE & TECHNOLOGY, (BAUST)</h1>
+                    <p style="margin: 1px 0; font-size: 12pt; color: #333; font-weight: bold;">SAIDPUR CANTONMENT</p>
+                    <p style="margin: 2px 0; font-size: 10pt; color: #004085; font-weight: bold; text-decoration: underline;">OFFICIAL STUDENT ADMISSION FORM</p>
                 </td>
             </tr>
         </table>
     </div>
 
-    <div class="photo-box">PASTE PHOTO HERE</div>
-
-    <div style="width: 78%;">
+    <div style="width: 100%;">
         <div class="office-box">
-            <p style="margin: 0 0 8px 0; font-weight: bold; color: #004085; text-decoration: underline; font-size: 9pt;">FOR OFFICE USE ONLY</p>
+            <p style="margin: 0 0 5px 0; font-weight: bold; color: #004085; text-decoration: underline; font-size: 9pt;">FOR OFFICE USE ONLY</p>
             <table style="width: 100%; border: none;">
                 <tr>
                     <td style="border: none; padding: 0;">
                         <span class="label">Assigned ID:</span>
-                        <div class="dotted-line" style="width: 180px;"></div>
+                        <div class="dotted-line" style="width: 220px;"></div>
                     </td>
                     <td style="border: none; padding: 0;">
                         <span class="label">Roll No:</span>
-                        <div class="dotted-line" style="width: 100px;"></div>
+                        <div class="dotted-line" style="width: 120px;"></div>
+                    </td>
+                    <td style="border: none; padding: 0;">
+                        <span class="label">Date:</span>
+                        <div class="dotted-line" style="width: 120px;"></div>
                     </td>
                 </tr>
             </table>
