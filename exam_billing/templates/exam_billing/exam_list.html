@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Billing Exams{% endblock %}
+{% block content %}
+<div class="content-header"><div class="container-fluid d-flex justify-content-between"><h1>Billing Exams</h1><a class="btn btn-primary" href="{% url 'billing_exam_create' %}">New Exam</a></div></div>
+<section class="content"><div class="container-fluid"><div class="card"><div class="card-body table-responsive p-0">
+<table class="table table-striped">
+  <thead><tr><th>Exam</th><th>Type</th><th>Semester</th><th>Status</th><th>Departments</th><th></th></tr></thead>
+  <tbody>{% for exam in exams %}
+    <tr><td>{{ exam.name }}</td><td>{{ exam.exam_type }}</td><td>{{ exam.semester_label }}</td><td><span class="badge badge-info">{{ exam.get_status_display }}</span></td><td>{{ exam.programs.count }}</td><td class="text-right"><a class="btn btn-sm btn-outline-primary" href="{% url 'billing_exam_detail' exam.id %}">Open</a></td></tr>
+  {% empty %}<tr><td colspan="6" class="text-center text-muted p-4">No exams created.</td></tr>{% endfor %}</tbody>
+</table>
+</div></div></div></section>
+{% endblock %}
+

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Integrity Scanner | Admission Suite{% endblock %}
+{% block page_title %}Data Integrity Scanner{% endblock %}
+
+{% block content %}
+<div class="row pt-4">
+    <div class="col-12">
+        <div class="card shadow-lg border-0 rounded-lg">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold text-dark mb-0">
+                    <i class="fas fa-shield-alt text-primary mr-2"></i> Duplicate Record Scanner
+                </h3>
+            </div>
+            <div class="card-body p-4 bg-light">
+                <div class="alert alert-info border-0 shadow-sm" style="border-radius: 10px;">
+                    <h6 class="font-weight-bold"><i class="fas fa-info-circle mr-2"></i> How it works</h6>
+                    <p class="mb-0 small">Select the fields you want to use as matching criteria. The engine will scan the database and group together any students who have identical data for <strong>all</strong> of the selected fields.</p>
+                </div>
+
+                <form id="scanner-form"
+                      hx-post="{% url 'api_scan_duplicates' %}"
+                      hx-target="#scan-results"
+                      hx-indicator="#scan-loader"
+                      class="mt-4">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="font-weight-bold text-dark mb-3">1. Filter Target Area (Optional):</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="small font-weight-bold text-muted">Program</label>
+                                    <select name="filter_program" class="form-control border-0 shadow-sm custom-select">
+                                        <option value="">All Programs</option>
+                                        {% for p in programs %}
+                                        <option value="{{ p.name }}">{{ p.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="small font-weight-bold text-muted">Batch</label>
+                                    <select name="filter_batch" class="form-control border-0 shadow-sm custom-select">
+                                        <option value="">All Batches</option>
+                                        {% for b in batches %}
+                                        <option value="{{ b.name }}">{{ b.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="small font-weight-bold text-muted">Status</label>
+                                    <select name="filter_status" class="form-control border-0 shadow-sm custom-select">
+                                        <option value="">All Statuses</option>
+                                        <option value="Approved">Approved</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                        <option value="Graduated">Graduated</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="font-weight-bold text-dark mb-3">2. Select Matching Criteria:</h5>
+                    <div class="row">
+                        {% for field in fields %}
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="custom-control custom-checkbox custom-control-inline bg-white border rounded p-2 shadow-sm w-100" style="transition: all 0.2s;">
+                                <input type="checkbox" class="custom-control-input field-checkbox" id="field_{{ field.name }}" name="fields" value="{{ field.name }}">
+                                <label class="custom-control-label font-weight-bold text-secondary ml-2 w-100" for="field_{{ field.name }}" style="cursor: pointer;">
+                                    {{ field.label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="text-center mt-4 d-flex justify-content-center align-items-center flex-wrap">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow mx-2 mb-2" id="scan-btn">
+                            <i class="fas fa-search mr-2"></i> Run Deep Scan
+                        </button>
+                        <button type="button" class="btn btn-success btn-lg rounded-pill px-4 shadow mx-2 mb-2" id="download-btn" onclick="downloadExcel()">
+                            <i class="fas fa-file-excel mr-2"></i> Download Excel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div id="scan-loader" class="text-center py-5 htmx-indicator" style="display: none;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+            <h5 class="mt-3 text-muted font-weight-bold">Analyzing Database...</h5>
+            <p class="small text-muted">This might take a moment depending on your database size.</p>
+        </div>
+        
+        <div id="scan-results">
+            <!-- Results will be injected here via HTMX -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-control-input:checked ~ .custom-control-label { color: #0d6efd !important; }
+    .custom-control.bg-white:hover { border-color: #0d6efd !important; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+    .htmx-request#scan-btn { pointer-events: none; opacity: 0.6; }
+    .htmx-request.htmx-indicator { display: block !important; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.field-checkbox');
+        const submitBtn = document.getElementById('scan-btn');
+        
+        function validateSelection() {
+            const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+            if(checked === 0) {
+                submitBtn.disabled = true;
+                submitBtn.title = "Select at least one field";
+                document.getElementById('download-btn').disabled = true;
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.title = "";
+                document.getElementById('download-btn').disabled = false;
+            }
+        }
+        
+        checkboxes.forEach(cb => cb.addEventListener('change', validateSelection));
+        validateSelection(); // Initial check
+    });
+
+    function downloadExcel() {
+        const form = document.getElementById('scanner-form');
+        // Create a hidden form to submit natively (bypassing HTMX)
+        const hiddenForm = document.createElement('form');
+        hiddenForm.method = 'POST';
+        hiddenForm.action = '{% url "api_export_duplicates" %}';
+        hiddenForm.target = '_blank'; // Optional: open in new tab
+        
+        // Copy all inputs
+        const formData = new FormData(form);
+        for (let [key, value] of formData.entries()) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            hiddenForm.appendChild(input);
+        }
+        
+        document.body.appendChild(hiddenForm);
+        hiddenForm.submit();
+        document.body.removeChild(hiddenForm);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Export Center | Admission Suite{% endblock %}
+{% load core_tags %}
+{% block page_title %}High-Fidelity Data Export Center{% endblock %}
+
+{% block extra_css %}
+<style>
+    .export-card { border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.05); overflow: hidden; }
+    .nav-export { background: #f8f9fa; border: none; padding: 10px; border-radius: 12px; }
+    .nav-export .nav-link { border-radius: 10px; border: none; font-weight: 700; color: #6c757d; padding: 12px 20px; }
+    .nav-export .nav-link.active { background: #ffffff; color: #007bff; shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    
+    .field-group-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; color: #007bff; margin-bottom: 15px; display: block; border-left: 4px solid #007bff; padding-left: 10px; }
+    .checkbox-tile { display: flex; align-items: center; padding: 0.75rem 1rem; background: #fdfdfe; border: 2px solid #f1f3f5; border-radius: 12px; cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
+    .checkbox-tile:hover { border-color: #007bff; background: #f8f9ff; }
+    .checkbox-tile input:checked + span { color: #007bff; font-weight: 700; }
+    
+    .filter-section { background: #f8f9fa; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-4">
+    <div class="row">
+        <div class="col-xl-10 offset-xl-1">
+            <div class="row mb-3 align-items-center">
+                <div class="col-md-6">
+                    <h2 class="font-weight-bold mb-0 text-dark">Export Hub</h2>
+                </div>
+                <div class="col-md-6 text-right">
+                    <a href="{% url 'reports_center' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i> Back to Reports Center
+                    </a>
+                </div>
+            </div>
+            <div class="card export-card">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <ul class="nav nav-pills nav-export d-flex" id="exportTabs" role="tablist">
+                        <li class="nav-item flex-fill">
+                            <a class="nav-link active text-center" id="students-tab" data-toggle="pill" href="#students" role="tab"><i class="fas fa-users mr-2"></i> Master Student Export</a>
+                        </li>
+                        <li class="nav-item flex-fill">
+                            <a class="nav-link text-center" id="migrations-tab" data-toggle="pill" href="#migrations" role="tab"><i class="fas fa-exchange-alt mr-2"></i> Migration Audit Logs</a>
+                        </li>
+                        <li class="nav-item flex-fill">
+                            <a class="nav-link text-center" id="cancellations-tab" data-toggle="pill" href="#cancellations" role="tab"><i class="fas fa-user-slash mr-2"></i> Cancellation Audit Logs</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body p-4 p-lg-5">
+                    <div class="tab-content" id="exportTabsContent">
+                        
+                        <!-- TAB 1: MASTER STUDENT EXPORT -->
+                        <div class="tab-pane fade show active" id="students" role="tabpanel">
+                            <form action="{% url 'export_students_dynamic' %}" method="POST">
+                                {% csrf_token %}
+                                <div class="filter-section">
+                                    <h5 class="font-weight-bold mb-4"><i class="fas fa-filter mr-2 text-primary"></i> Step 1: Define Your Dataset</h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-muted">Search Query (Name/ID)</label>
+                                                <input type="text" name="search" class="form-control rounded-pill border-2" placeholder="Leave empty for all records">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-muted">Filter by Program</label>
+                                                <select name="program" class="form-control rounded-pill border-2">
+                                                    <option value="All">All Programs</option>
+                                                    <option value="CSE">CSE</option>
+                                                    <option value="EEE">EEE</option>
+                                                    <option value="CE">CE</option>
+                                                    <option value="ME">ME</option>
+                                                    <option value="IPE">IPE</option>
+                                                    <option value="BBA">BBA</option>
+                                                    <option value="English">English</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-muted">Enrollment Status</label>
+                                                <select name="status" class="form-control rounded-pill border-2">
+                                                    <option value="All">All Statuses</option>
+                                                    <option value="Active">Active</option>
+                                                    <option value="Inactive">Inactive</option>
+                                                    <option value="Cancelled">Cancelled</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mt-2">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-muted">Admission Date Range</label>
+                                                <div class="d-flex" style="gap: 10px;">
+                                                    <input type="date" name="start_date" class="form-control rounded-pill border-2">
+                                                    <span class="align-self-center">to</span>
+                                                    <input type="date" name="end_date" class="form-control rounded-pill border-2">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="field-selection mt-5">
+                                    <h5 class="font-weight-bold mb-4"><i class="fas fa-check-square mr-2 text-primary"></i> Step 2: Select Fields to Export</h5>
+                                    <div class="mb-4">
+                                        <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-3 mr-2" id="selectAllFields">Select All</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-3" id="deselectAllFields">Deselect All</button>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        {% for group_name, fields in field_groups.items %}
+                                        <div class="col-md-4 mb-4">
+                                            <span class="field-group-title">{{ group_name }}</span>
+                                            {% for field in fields %}
+                                            <label class="checkbox-tile w-100">
+                                                <input type="checkbox" name="fields" value="{{ field }}" class="mr-2 field-checkbox" checked>
+                                                <span class="small">{{ field|title|replace_underscore }}</span>
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="text-center mt-5">
+                                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-lg font-weight-black">
+                                        <i class="fas fa-file-download mr-2"></i> Generate High-Quality Excel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- TAB 2: MIGRATION AUDIT -->
+                        <div class="tab-pane fade" id="migrations" role="tabpanel">
+                             <div class="text-center py-4">
+                                <h3><i class="fas fa-exchange-alt fa-2x mb-3 text-indigo"></i></h3>
+                                <h4 class="font-weight-bold">Program Migration History</h4>
+                                <p class="text-muted">Generate audit logs for students who transitioned between departments.</p>
+                             </div>
+                             <form action="{% url 'export_migrations_dynamic' %}" method="GET" class="filter-section mt-4">
+                                <div class="row justify-content-center">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="small font-weight-bold">Search ID/Program</label>
+                                            <input type="text" name="search" class="form-control rounded-pill" placeholder="Optional search...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="small font-weight-bold">Migration Period</label>
+                                            <div class="d-flex" style="gap: 10px;">
+                                                <input type="date" name="start_date" class="form-control rounded-pill">
+                                                <span class="align-self-center">to</span>
+                                                <input type="date" name="end_date" class="form-control rounded-pill">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-4">
+                                    <button type="submit" class="btn btn-indigo btn-lg rounded-pill px-5 shadow-lg" style="background: #6610f2; color: white;">Export Migration Logs</button>
+                                </div>
+                             </form>
+                        </div>
+
+                        <!-- TAB 3: CANCELLATION AUDIT -->
+                        <div class="tab-pane fade" id="cancellations" role="tabpanel">
+                            <div class="text-center py-4">
+                                <h3><i class="fas fa-user-slash fa-2x mb-3 text-danger"></i></h3>
+                                <h4 class="font-weight-bold text-danger">Admission Cancellation Audit</h4>
+                                <p class="text-muted">Export detailed records of retracted or suspended admissions.</p>
+                             </div>
+                             <form action="{% url 'export_cancellations_dynamic' %}" method="GET" class="filter-section mt-4">
+                                <div class="row justify-content-center">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="small font-weight-bold">Search Student ID</label>
+                                            <input type="text" name="search" class="form-control rounded-pill" placeholder="Optional search...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="small font-weight-bold">Cancellation Period</label>
+                                            <div class="d-flex" style="gap: 10px;">
+                                                <input type="date" name="start_date" class="form-control rounded-pill">
+                                                <span class="align-self-center">to</span>
+                                                <input type="date" name="end_date" class="form-control rounded-pill">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-4">
+                                    <button type="submit" class="btn btn-danger btn-lg rounded-pill px-5 shadow-lg">Export Cancellation Logs</button>
+                                </div>
+                             </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllBtn = document.getElementById('selectAllFields');
+        const deselectAllBtn = document.getElementById('deselectAllFields');
+        const checkboxes = document.querySelectorAll('.field-checkbox');
+
+        selectAllBtn.addEventListener('click', () => {
+            checkboxes.forEach(cb => cb.checked = true);
+        });
+
+        deselectAllBtn.addEventListener('click', () => {
+            checkboxes.forEach(cb => cb.checked = false);
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load billing_tags %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="content-header"><div class="container-fluid"><h1>{{ title }} <small class="text-muted">{{ exam_program.program.short_name }}</small></h1></div></div>
+<section class="content"><div class="container-fluid">
+{% include "exam_billing/_nav.html" %}
+{% if sheet == 'faculty' and exam_program.is_editable %}<a class="btn btn-sm btn-outline-info mb-3" href="{% url 'billing_copy_faculty' exam_program.id %}">Copy Faculty From Directory</a>{% endif %}
+<div class="card"><div class="card-header"><h3 class="card-title">{{ title }} Sheet</h3></div><div class="card-body table-responsive p-0">
+<table class="table table-bordered table-sm"><thead><tr>{% for key,label in columns %}<th>{{ label }}</th>{% endfor %}<th></th></tr></thead><tbody>{% for row in rows %}<tr>{% for key,label in columns %}<td>{{ row|dotted_get:key }}</td>{% endfor %}<td class="text-right">{% if exam_program.is_editable %}<a class="btn btn-xs btn-outline-danger" href="{% url 'billing_program_sheet_delete' exam_program.id sheet row.id %}">Remove</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="{{ columns|length|add:1 }}" class="text-center text-muted p-4">No rows yet.</td></tr>{% endfor %}</tbody></table>
+</div></div>
+{% if exam_program.is_editable %}
+<form method="post" class="card">{% csrf_token %}<div class="card-header"><h3 class="card-title">Add Row</h3></div><div class="card-body"><div class="row">{% for field in form %}<div class="col-md-4 mb-3"><label>{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div></div><div class="card-footer"><button class="btn btn-primary">Save Row</button></div></form>
+{% else %}<div class="alert alert-info">This department bill is submitted or locked. Inputs are read-only.</div>{% endif %}
+</div></section>
+{% endblock %}
+

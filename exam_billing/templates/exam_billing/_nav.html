@@ -1,0 +1,14 @@
+<div class="btn-group btn-group-sm mb-3" role="group">
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_workspace' exam_program.id %}">Summary</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'faculty' %}">Faculty-Bills</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'courses' %}">Fundamentals</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'qsetter' %}">Q Setter</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'examiner' %}">Examiner</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'scrutinizer' %}">Scrutinizer</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'cecc' %}">CECC</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'ec' %}">EC</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'rpsc' %}">RPSC</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'qmsc' %}">QMSC</a>
+  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'qpsc' %}">QPSC</a>
+</div>
+

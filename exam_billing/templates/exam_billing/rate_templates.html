@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Billing Rate Settings{% endblock %}
+{% block content %}
+<div class="content-header"><div class="container-fluid"><h1>Global Billing Defaults</h1></div></div>
+<section class="content"><div class="container-fluid"><form method="post" class="card">{% csrf_token %}
+<div class="card-body"><div class="row">{% for field in form %}<div class="col-md-4 mb-3"><label>{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div></div>
+<div class="card-footer"><button class="btn btn-primary">Save Defaults</button></div>
+</form></div></section>
+{% endblock %}
+

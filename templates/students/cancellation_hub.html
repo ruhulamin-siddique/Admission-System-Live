@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancellation Hub | Admission Suite{% endblock %}
+{% block page_title %}Admission Cancellation & Status Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card-clickable { cursor: pointer; transition: all 0.3s; border: none; border-radius: 16px; overflow: hidden; }
+    .stat-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .search-box-pill { border-radius: 50px; border: 2px solid #dee2e6; padding: 1.25rem 2rem; transition: all 0.3s; }
+    .search-box-pill:focus { border-color: #dc3545; box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <!-- Stat Card with Modal Trigger -->
+        <div class="col-md-4">
+            <div class="card stat-card-clickable shadow-sm bg-danger text-white" id="cancelled-count-card"
+                  data-toggle="modal" data-target="#cancelledListModal"
+                  hx-get="{% url 'cancellation_list_modal' %}"
+                  hx-target="#modal-content-area"
+                  hx-trigger="click, refreshCancelledCount from:body">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-0 font-weight-black">{{ cancelled_count }}</h2>
+                            <p class="mb-0 opacity-75 font-weight-bold">Cancelled Admissions</p>
+                        </div>
+                        <div class="opacity-50">
+                            <i class="fas fa-user-slash fa-3x"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 small">
+                        <i class="fas fa-search-plus mr-1"></i> Click to view full audit list
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+                <div class="card-body d-flex align-items-center">
+                    <div class="w-100">
+                        <h4 class="font-weight-bold mb-3"><i class="fas fa-shield-alt mr-2 text-danger"></i> Secure Status Management</h4>
+                        <div class="row">
+                            <div class="col-12">
+                                <input type="text" name="search" class="form-control form-control-lg search-box-pill" 
+                                       placeholder="Find active student by ID or Name to manage status..."
+                                       hx-get="{% url 'cancellation_hub' %}"
+                                       hx-trigger="keyup changed delay:300ms, clearSearchResults from:body"
+                                       hx-target="#search-results">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results Area -->
+    <div id="search-results">
+        {% if query %}
+            {% include 'students/partials/cancellation_results.html' %}
+        {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-search fa-4x mb-3 opacity-25"></i>
+                <p class="lead">Search for a student to initiate cancellation or suspension.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bulk Cancellation Modal -->
+<div class="modal fade" id="bulkCancelModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden;">
+            <div class="modal-header bg-dark text-white border-0 py-4">
+                <h5 class="modal-title font-weight-black"><i class="fas fa-ban mr-2"></i> Bulk Admission Cancellation</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form hx-post="{% url 'api_bulk_cancel_admission' %}" 
+                  hx-target="#bulk-cancellation-feedback"
+                  hx-on::after-request="if(event.detail.successful) { setTimeout(() => $('#bulkCancelModal').modal('hide'), 1500); }">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div id="bulk-cancellation-feedback"></div>
+                    
+                    <div class="alert alert-soft-danger border-0 mb-4">
+                        <i class="fas fa-exclamation-triangle mr-2"></i> You are about to cancel admission for <strong><span id="bulk-count-display">0</span> students</strong>.
+                    </div>
+
+                    <div class="selected-names-list mb-4 p-3 bg-light rounded small" style="max-height: 150px; overflow-y: auto;" id="selected-names-preview">
+                        <!-- Names will be injected here -->
+                    </div>
+
+                    <!-- Hidden inputs for selected IDs -->
+                    <div id="selected-ids-container"></div>
+
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase text-muted">Reason Category</label>
+                        <select name="reason_category" class="form-control" required>
+                            <option value="Temporary">Temporary Cancellation</option>
+                            <option value="Migration">Program Migration</option>
+                            <option value="Discipline">Disciplinary Action</option>
+                            <option value="Financial">Financial Issues</option>
+                            <option value="Other" selected>Other / Administrative</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase text-muted">Administrative Notes</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Explain the reason for this bulk action..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3">
+                    <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Keep Active</button>
+                    <button type="submit" class="btn btn-danger px-4 rounded-pill font-weight-bold shadow-sm">
+                        <i class="fas fa-check-circle mr-1"></i> Confirm Bulk Cancellation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cancelled Students Audit Modal -->
+<div class="modal fade" id="cancelledListModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden;">
+            <div class="modal-header bg-danger text-white border-0 py-4">
+                <h5 class="modal-title font-weight-black"><i class="fas fa-list-alt mr-2"></i> Historical Cancellation Audit</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" id="modal-content-area">
+                <div class="p-5 text-center">
+                    <div class="spinner-border text-danger" role="status">
+                        <span class="sr-only">Loading audit data...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleAll(source) {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(cb => cb.checked = source.checked);
+        updateSelection();
+    }
+
+    function updateSelection() {
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        const count = selected.length;
+        const bar = document.getElementById('bulk-action-bar');
+        const countDisplay = document.getElementById('selected-count');
+        
+        if (count > 0) {
+            bar.classList.remove('d-none');
+            countDisplay.innerText = count;
+        } else {
+            bar.classList.add('d-none');
+        }
+    }
+
+    function prepareBulkCancel() {
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        const countDisplay = document.getElementById('bulk-count-display');
+        const idsContainer = document.getElementById('selected-ids-container');
+        const namesPreview = document.getElementById('selected-names-preview');
+        
+        countDisplay.innerText = selected.length;
+        idsContainer.innerHTML = '';
+        namesPreview.innerHTML = '';
+        
+        selected.forEach(cb => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'student_ids';
+            input.value = cb.value;
+            idsContainer.appendChild(input);
+            
+            const nameSpan = document.createElement('div');
+            nameSpan.className = 'mb-1';
+            nameSpan.innerHTML = `<i class="fas fa-user-minus mr-2 text-danger"></i>${cb.getAttribute('data-name')} (${cb.value})`;
+            namesPreview.appendChild(nameSpan);
+        });
+        
+        $('#bulkCancelModal').modal('show');
+    }
+
+    // HTMX Listener for results refresh
+    document.body.addEventListener('clearSearchResults', function(evt) {
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput.value) {
+            // Re-trigger search to update list (processed students will disappear due to .exclude(status='Cancelled'))
+            htmx.trigger(searchInput, 'keyup');
+        }
+    });
+</script>
+{% endblock %}

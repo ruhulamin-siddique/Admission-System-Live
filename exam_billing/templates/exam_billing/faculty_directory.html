@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Faculty Directory{% endblock %}
+{% block content %}
+<div class="content-header"><div class="container-fluid"><h1>Faculty Directory</h1></div></div>
+<section class="content"><div class="container-fluid"><div class="row">
+<div class="col-md-4"><form method="post" class="card">{% csrf_token %}<div class="card-header"><h3 class="card-title">Add Faculty</h3></div><div class="card-body">{% for field in form %}<div class="mb-3"><label>{{ field.label }}</label>{{ field }}</div>{% endfor %}</div><div class="card-footer"><button class="btn btn-primary">Save</button></div></form></div>
+<div class="col-md-8"><div class="card"><div class="card-body table-responsive p-0"><table class="table table-striped"><thead><tr><th>Name</th><th>Designation</th><th>Department</th><th></th></tr></thead><tbody>{% for f in faculty_list %}<tr><td>{{ f.name }}</td><td>{{ f.designation }}</td><td>{{ f.program.short_name }}</td><td class="text-right"><a class="btn btn-sm btn-outline-danger" href="{% url 'billing_faculty_delete' f.id %}">Deactivate</a></td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted p-4">No faculty profiles.</td></tr>{% endfor %}</tbody></table></div></div></div>
+</div></div></section>
+{% endblock %}
+

@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Program Migration | Admission Suite{% endblock %}
+{% block page_title %}High-Fidelity Program Migration{% endblock %}
+
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800;900&display=swap');
+    
+    .migration-card { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; }
+    .migration-header { background: #6610f2; color: white; padding: 1.5rem; }
+    
+    .context-box { background: #f8f9fa; border-radius: 12px; padding: 1.25rem; border-left: 5px solid #6c757d; height: 100%; }
+    .target-box { background: #ffffff; border-radius: 12px; padding: 1.25rem; border: 2px solid #e7f1ff; height: 100%; transition: all 0.3s; }
+    .target-box:focus-within { border-color: #6610f2; box-shadow: 0 0 0 4px rgba(102, 16, 242, 0.1); }
+    
+    .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #6c757d; font-weight: 800; margin-bottom: 2px; }
+    .stat-value { font-size: 1.1rem; font-weight: 700; color: #343a40; }
+    
+    /* ID Preview Engine Styling */
+    .id-preview-container { background: #1a1e21; border-radius: 16px; padding: 2rem; position: relative; margin-top: 1.5rem; }
+    .id-display { display: flex; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; font-weight: 900; justify-content: center; }
+    .id-segment { padding: 4px 10px; border-radius: 8px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    
+    /* Segment Colors */
+    .seg-uni { color: #0d6efd; background: rgba(13, 110, 253, 0.1); }
+    .seg-year { color: #198754; background: rgba(25, 135, 84, 0.1); }
+    .seg-sem { color: #fd7e14; background: rgba(253, 126, 20, 0.1); }
+    .seg-hall { color: #6f42c1; background: rgba(111, 66, 193, 0.1); }
+    .seg-prog { color: #d63384; background: rgba(214, 51, 132, 0.1); }
+    .seg-serial { color: #adb5bd; background: rgba(173, 181, 189, 0.1); }
+
+    .migration-divider { display: flex; align-items: center; justify-content: center; padding: 2rem 0; }
+    .arrow-icon { width: 50px; height: 50px; border-radius: 50%; background: #6610f2; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 10px rgba(102, 16, 242, 0.3); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="card migration-card">
+                <div class="migration-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-1 font-weight-black"><i class="fas fa-random mr-2"></i> Program Migration Hub</h3>
+                        <p class="mb-0 opacity-75 small">Transitioning student to a new academic path</p>
+                    </div>
+                    <a href="{% url 'student_profile' student.student_id %}" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                        <i class="fas fa-user mr-1"></i> View Profile
+                    </a>
+                </div>
+
+                <form method="POST" id="migrationForm">
+                    {% csrf_token %}
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="row items-stretch">
+                            <!-- CURRENT STATE -->
+                            <div class="col-lg-5">
+                                <div class="context-box">
+                                    <h5 class="font-weight-bold mb-4 text-muted"><i class="fas fa-history mr-2"></i> Current Identity</h5>
+                                    
+                                    <div class="row gy-4">
+                                        <div class="col-12 mb-3">
+                                            <div class="stat-label">Official Student ID</div>
+                                            <div class="stat-value text-primary" style="font-family: 'JetBrains Mono'; font-size: 1.5rem;">{{ student.student_id }}</div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="stat-label">Name</div>
+                                            <div class="stat-value">{{ student.student_name }}</div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="stat-label">Program</div>
+                                            <div class="stat-value">{{ student.program }}</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="stat-label">Batch</div>
+                                            <div class="stat-value">{{ student.batch|default:"N/A" }}</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="stat-label">Level</div>
+                                            <div class="stat-value">{{ student.program_type }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- DIVIDER -->
+                            <div class="col-lg-2 migration-divider d-none d-lg-flex">
+                                <div class="arrow-icon"><i class="fas fa-long-arrow-alt-right"></i></div>
+                            </div>
+
+                            <!-- TARGET STATE -->
+                            <div class="col-lg-5">
+                                <div class="target-box shadow-sm">
+                                    <h5 class="font-weight-bold mb-4 text-indigo"><i class="fas fa-bullseye mr-2"></i> Target Destiny</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-uppercase">New Program</label>
+                                                <select name="new_program" class="form-control form-control-lg border-2" required>
+                                                     <option value="">Select Target Program</option>
+                                                     {% for p in programs %}
+                                                         <option value="{{ p.name }}" {% if student.program == p.name %}selected{% endif %}>{{ p.name }}</option>
+                                                     {% endfor %}
+                                                 </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-uppercase">Target Cluster</label>
+                                                <select name="new_cluster" class="form-control" required>
+                                                     <option value="">Select Cluster</option>
+                                                     {% for c in clusters %}
+                                                         <option value="{{ c.name }}" {% if student.cluster == c.name %}selected{% endif %}>{{ c.name }}</option>
+                                                     {% endfor %}
+                                                 </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-uppercase">Effective Year</label>
+                                                <input type="number" name="new_year" class="form-control" value="2026" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-uppercase">Semester</label>
+                                                <select name="new_semester" class="form-control" required>
+                                                     <option value="">Select Semester</option>
+                                                     {% for s in semesters %}
+                                                         <option value="{{ s.name }}" {% if student.semester_name == s.name %}selected{% endif %}>{{ s.name }}</option>
+                                                     {% endfor %}
+                                                 </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-bold text-uppercase">Hall Assignment</label>
+                                                <select name="hall_name" class="form-control" required>
+                                                     <option value="">Select Hall</option>
+                                                     <option value="Non-Residential" {% if student.hall_attached == 'Non-Residential' %}selected{% endif %}>Non-Residential</option>
+                                                     {% for h in halls %}
+                                                         <option value="{{ h.name }}" {% if student.hall_attached == h.name %}selected{% endif %}>{{ h.name }}</option>
+                                                     {% endfor %}
+                                                 </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <div class="form-group mb-0">
+                                                <label class="small font-weight-bold text-uppercase">Change Reason (Notes)</label>
+                                                <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Student preferred CSE based on merit list"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PREVIEW BAR -->
+                        <div class="id-preview-container shadow-lg text-center">
+                            <div class="text-muted small font-weight-black text-uppercase letter-spacing-2 mb-3" style="color: #6610f2 !important;">PROPOSED UGC STUDENT ID</div>
+                            <div id="id-display" class="id-display">
+                                <span class="id-segment text-muted">GENERATING...</span>
+                            </div>
+                            <div class="mt-3 text-white-50 small">
+                                <i class="fas fa-info-circle mr-1"></i> This ID is predicted based on the current department registration sequence.
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-4 mb-0 border-0 shadow-sm" style="background: #e7f1ff; color: #004085; border-radius: 12px;">
+                            <div class="d-flex">
+                                <i class="fas fa-bell mt-1 mr-3 fa-lg"></i>
+                                <div>
+                                    <h6 class="font-weight-bold mb-1">Automated Notification Status: ACTIVE</h6>
+                                    <p class="mb-0 small">An automated SMS with the new ID will be sent to <strong>{{ student.student_mobile|default:"[No Mobile Registered]" }}</strong> upon confirmation.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center">
+                        <button type="reset" class="btn btn-link text-muted font-weight-bold text-decoration-none">Reset Configuration</button>
+                        <button type="submit" class="btn btn-lg btn-indigo px-5 rounded-pill font-weight-black shadow-lg" 
+                                style="background: #6610f2; color: white;" 
+                                onclick="return confirm('CRITICAL ACTION: This will permanently migrate the student to a new ID. Proceed?')">
+                            <i class="fas fa-check-circle mr-2"></i> Confirm Migration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Mapping Logic for Program -> Cluster & Level
+        const programMapping = JSON.parse('{{ program_mapping_json|safe }}');
+
+        // ID Prediction Engine
+        function updateIDPreview() {
+            const selectedProg = $('[name="new_program"]').val();
+            let progType = '{{ student.program_type }}';
+            
+            // If program mapping exists, override cluster and type for preview
+            if (selectedProg && programMapping[selectedProg]) {
+                progType = programMapping[selectedProg].type;
+            }
+
+            const formData = {
+                admission_year: $('[name="new_year"]').val(),
+                semester_name: $('[name="new_semester"]').val(),
+                hall_name: $('[name="hall_name"]').val(),
+                program: selectedProg,
+                cluster: $('[name="new_cluster"]').val(),
+                program_type: progType,
+                mba_credits: '{{ student.mba_credits|default:0 }}'
+            };
+
+            $.ajax({
+                url: "{% url 'api_preview_id' %}",
+                data: formData,
+                success: function(response) {
+                    if (response.suggested_id && response.components) {
+                        const comps = response.components;
+                        const html = `
+                            <span class="id-segment seg-uni">${comps.university}</span>
+                            <span class="id-segment seg-year">${comps.year}</span>
+                            <span class="id-segment seg-sem">${comps.semester}</span>
+                            <span class="id-segment seg-hall">${comps.hall}</span>
+                            <span class="id-segment seg-prog">${comps.cluster}${comps.subject}${comps.level}</span>
+                            <span class="id-segment seg-serial">${comps.serial}</span>
+                        `;
+                        $('#id-display').html(html);
+                    }
+                },
+                error: function() {
+                    $('#id-display').html('<span class="text-danger small">ID PREVIEW ERROR</span>');
+                }
+            });
+        }
+
+        // Auto-select Cluster and Trigger Preview
+        $('[name="new_program"]').on('change', function() {
+            const selectedProg = $(this).val();
+            if (selectedProg && programMapping[selectedProg]) {
+                const data = programMapping[selectedProg];
+                // Auto-select Cluster
+                $('[name="new_cluster"]').val(data.cluster).trigger('change');
+            }
+        });
+
+        // Trigger updates on other fields
+        $('[name="new_cluster"], [name="new_year"], [name="new_semester"], [name="hall_name"]').on('change', updateIDPreview);
+        
+        // Initial load
+        updateIDPreview();
+    });
+</script>
+{% endblock %}

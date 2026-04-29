@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}External API | Admission Suite{% endblock %}
+{% block page_title %}External API Management{% endblock %}
+
+{% block extra_css %}
+<style>
+  .api-stat { border: 0; border-radius: 8px; box-shadow: 0 10px 24px rgba(15,23,42,.06); }
+  .api-card { border: 0; border-radius: 8px; box-shadow: 0 12px 30px rgba(15,23,42,.07); }
+  .scope-list label { display: block; margin-bottom: .4rem; font-weight: 600; color: #475569; }
+  .secret-box { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 1rem; font-family: Consolas, monospace; word-break: break-all; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if created_key %}
+<div class="alert alert-warning shadow-sm">
+  <div class="font-weight-bold mb-1"><i class="fas fa-key mr-2"></i>New API key. It will only be shown once.</div>
+  <div class="secret-box">{{ created_key }}</div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="card api-stat bg-primary text-white">
+      <div class="card-body"><div class="small text-uppercase">Active Clients</div><div class="h3 mb-0">{{ active_clients }}</div></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card api-stat">
+      <div class="card-body"><div class="small text-uppercase text-muted">Total Requests</div><div class="h3 mb-0">{{ total_requests }}</div></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card api-stat">
+      <div class="card-body"><div class="small text-uppercase text-muted">Denied/Error</div><div class="h3 mb-0 text-danger">{{ denied_requests }}</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-4">
+    <div class="card api-card">
+      <div class="card-header bg-white"><h3 class="card-title font-weight-bold">Developer Access</h3></div>
+      <div class="card-body">
+        <div class="small text-muted text-uppercase font-weight-bold mb-2">Base URL</div>
+        <code>{{ request.scheme }}://{{ request.get_host }}/external-api/v1/</code>
+        <hr>
+        <div class="small text-muted text-uppercase font-weight-bold mb-2">Authentication</div>
+        <code>Authorization: Bearer adm_...</code>
+        <hr>
+        <div class="small text-muted text-uppercase font-weight-bold mb-2">Core Endpoints</div>
+        <div><code>GET /health/</code></div>
+        <div><code>GET /students/?page=1&page_size=50</code></div>
+        <div><code>GET /students/{student_id}/</code></div>
+        <div><code>GET /reports/summary/</code></div>
+      </div>
+    </div>
+    <div class="card api-card">
+      <div class="card-header bg-white">
+        <h3 class="card-title font-weight-bold">{% if editing_client %}Edit API Client{% else %}Issue API Client{% endif %}</h3>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{% if editing_client %}update{% else %}create{% endif %}">
+        {% if editing_client %}<input type="hidden" name="client_id" value="{{ editing_client.id }}">{% endif %}
+        <div class="card-body">
+          <div class="form-group">
+            <label>Client Name</label>
+            {{ form.name }}
+          </div>
+          <div class="form-group">
+            <label>Contact Name</label>
+            {{ form.contact_name }}
+          </div>
+          <div class="form-group">
+            <label>Contact Email</label>
+            {{ form.contact_email }}
+          </div>
+          <div class="form-group scope-list">
+            <label>Scopes</label>
+            {{ form.scopes }}
+          </div>
+          <div class="form-group">
+            <label>Allowed IPs</label>
+            {{ form.allowed_ips }}
+            <small class="text-muted">Optional. Use comma or one IP per line.</small>
+          </div>
+          <div class="form-group">
+            <label>Rate Limit Per Minute</label>
+            {{ form.rate_limit_per_minute }}
+          </div>
+          <div class="form-check mb-3">
+            {{ form.is_active }}
+            <label class="form-check-label">Active</label>
+          </div>
+          <div class="form-group">
+            <label>Internal Notes</label>
+            {{ form.notes }}
+          </div>
+        </div>
+        <div class="card-footer bg-white">
+          <button type="submit" class="btn btn-primary font-weight-bold btn-block">
+            <i class="fas fa-save mr-1"></i> {% if editing_client %}Save Client{% else %}Generate Secure Key{% endif %}
+          </button>
+          {% if editing_client %}<a href="{% url 'api_client_management' %}" class="btn btn-light btn-block">Cancel Edit</a>{% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card api-card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0">API Clients</h3>
+        <a href="{% url 'api_request_logs' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-list mr-1"></i> Request Logs</a>
+      </div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th>Client</th><th>Key Prefix</th><th>Scopes</th><th>Requests</th><th>Last Used</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in clients %}
+            <tr>
+              <td>
+                <div class="font-weight-bold">{{ client.name }}</div>
+                <small class="text-muted">{{ client.contact_email|default:"No contact email" }}</small>
+              </td>
+              <td><code>{{ client.key_prefix }}</code></td>
+              <td>
+                {% for scope in client.scopes %}<span class="badge badge-info mr-1">{{ scope }}</span>{% endfor %}
+              </td>
+              <td>{{ client.request_count }}</td>
+              <td><small>{{ client.last_used_at|date:"d M Y H:i"|default:"Never" }}</small></td>
+              <td class="text-right">
+                <a href="?edit={{ client.id }}" class="btn btn-sm btn-light" title="Edit"><i class="fas fa-edit"></i></a>
+                <form method="post" action="{% url 'api_client_toggle' client.id %}" class="d-inline">{% csrf_token %}
+                  <button class="btn btn-sm {% if client.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}" title="Toggle active"><i class="fas {% if client.is_active %}fa-ban{% else %}fa-check{% endif %}"></i></button>
+                </form>
+                <form method="post" action="{% url 'api_client_rotate' client.id %}" class="d-inline">{% csrf_token %}
+                  <button class="btn btn-sm btn-outline-primary" title="Rotate key"><i class="fas fa-sync-alt"></i></button>
+                </form>
+                <form method="post" action="{% url 'api_client_delete' client.id %}" class="d-inline">{% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger" title="Delete or revoke"><i class="fas fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center py-5 text-muted">No API clients have been issued yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card api-card">
+      <div class="card-header bg-white"><h3 class="card-title font-weight-bold">Recent API Requests</h3></div>
+      <div class="card-body p-0 table-responsive">
+        <table class="table mb-0">
+          <tbody>
+            {% for log in recent_logs %}
+            <tr>
+              <td><span class="badge {% if log.status == 'SUCCESS' %}badge-success{% else %}badge-danger{% endif %}">{{ log.status }}</span></td>
+              <td><code>{{ log.method }}</code> {{ log.path }}</td>
+              <td>{{ log.client.name|default:log.key_prefix }}</td>
+              <td>{{ log.status_code }}</td>
+              <td>{{ log.created_at|date:"d M H:i:s" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td class="text-center py-4 text-muted">No external requests logged.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll('input, textarea, select').forEach((el) => {
+    if (!el.classList.contains('form-check-input')) el.classList.add('form-control');
+  });
+  document.querySelectorAll('input[type="checkbox"]').forEach((el) => {
+    el.classList.remove('form-control');
+    el.classList.add('form-check-input', 'mr-2');
+  });
+</script>
+{% endblock %}

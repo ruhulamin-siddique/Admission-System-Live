@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ exam_program.program.short_name }} Billing{% endblock %}
+{% block content %}
+<div class="content-header"><div class="container-fluid d-flex justify-content-between"><h1>{{ exam_program.program.short_name|default:exam_program.program.name }} - {{ exam_program.exam }}</h1><span class="badge badge-info align-self-center">{{ exam_program.get_status_display }}</span></div></div>
+<section class="content"><div class="container-fluid">
+{% include "exam_billing/_nav.html" %}
+<div class="row">
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon bg-info"><i class="fas fa-users"></i></span><div class="info-box-content"><span class="info-box-text">Faculty</span><span class="info-box-number">{{ faculty_count }}</span></div></div></div>
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon bg-success"><i class="fas fa-book"></i></span><div class="info-box-content"><span class="info-box-text">Courses</span><span class="info-box-number">{{ course_count }}</span></div></div></div>
+  <div class="col-md-4"><div class="info-box"><span class="info-box-icon bg-primary"><i class="fas fa-money-bill"></i></span><div class="info-box-content"><span class="info-box-text">Total</span><span class="info-box-number">{{ summary.grand_total }}</span></div></div></div>
+</div>
+<div class="card"><div class="card-header d-flex justify-content-between"><h3 class="card-title">Faculty-Bills Summary</h3><a class="btn btn-sm btn-outline-success ml-auto" href="{% url 'billing_summary_csv' exam_program.id %}">Export CSV</a></div><div class="card-body table-responsive p-0">
+<table class="table table-bordered table-sm"><thead><tr><th>Name</th><th>Designation</th><th>Total</th><th>CECC</th><th>EC</th><th>RPSC</th><th>QMSC</th><th>QPSC</th><th>Q Setr</th><th>Scrpt Exa</th><th>Scrutiny</th><th></th></tr></thead><tbody>
+{% for row in summary.rows %}<tr><td>{{ row.faculty.name }}</td><td>{{ row.designation }}</td><td><strong>{{ row.total }}</strong></td><td>{{ row.cecc }}</td><td>{{ row.ec }}</td><td>{{ row.rpsc }}</td><td>{{ row.qmsc }}</td><td>{{ row.qpsc }}</td><td>{{ row.question_setting }}</td><td>{{ row.script_examining }}</td><td>{{ row.scrutiny }}</td><td><a class="btn btn-xs btn-outline-primary" href="{% url 'billing_individual_bill' exam_program.id row.faculty.id %}">Ind Bill</a></td></tr>
+{% empty %}<tr><td colspan="12" class="text-center text-muted p-4">No calculated bills yet.</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="mb-4">
+  {% if exam_program.is_editable %}<a class="btn btn-warning" href="{% url 'billing_program_submit' exam_program.id %}">Submit Department Bill</a>{% endif %}
+  <a class="btn btn-outline-secondary" href="{% url 'billing_exam_detail' exam_program.exam.id %}">Back to Exam</a>
+</div>
+</div></section>
+{% endblock %}
+

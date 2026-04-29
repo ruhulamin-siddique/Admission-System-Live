@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+
+{% block title %}Role Matrix | Admission Suite{% endblock %}
+{% block page_title %}Security & Role Matrix{% endblock %}
+
+{% block extra_css %}
+<style>
+    .role-summary-card,
+    .role-matrix-card {
+        border: 0;
+        border-radius: 18px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+    }
+
+    .role-summary-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    /* Sticky Header for Matrix */
+    .matrix-table-wrapper {
+        max-height: 75vh;
+        overflow-y: auto;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .matrix-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0 !important;
+    }
+
+    .matrix-header-cell {
+        min-width: 200px;
+        vertical-align: top !important;
+        padding: 1.25rem !important;
+        background: #f8fafc !important;
+    }
+
+    .module-row {
+        background: #f1f5f9 !important;
+        font-weight: 800;
+        color: #1e293b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.85rem;
+    }
+
+    .permission-name {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 0.95rem;
+    }
+
+    .permission-description {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    /* Custom Switch Styling */
+    .custom-switch .custom-control-label::before {
+        height: 1.5rem;
+        width: 2.75rem;
+        border-radius: 1rem;
+    }
+    .custom-switch .custom-control-label::after {
+        width: calc(1.5rem - 4px);
+        height: calc(1.5rem - 4px);
+        background-color: #adb5bd;
+        border-radius: 1rem;
+    }
+    .custom-switch .custom-control-input:checked ~ .custom-control-label::after {
+        background-color: #fff;
+        transform: translateX(1.25rem);
+    }
+
+    .select-all-btn {
+        font-size: 0.7rem;
+        font-weight: bold;
+        padding: 4px 10px;
+        border-radius: 6px;
+        transition: all 0.2s;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #64748b;
+    }
+
+    .select-all-btn:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+        border-color: #cbd5e1;
+        text-decoration: none;
+    }
+    
+    .role-action-link {
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+    <div class="mb-3 mb-md-0">
+        <h4 class="font-weight-bold text-dark mb-1"><i class="fas fa-user-shield mr-2 text-primary"></i>Security Identity Hub</h4>
+        <p class="text-muted mb-0 small">Fine-tune institutional access by role. Changes are saved independently per role for safety.</p>
+    </div>
+    <button class="btn btn-primary shadow-sm px-4 rounded-pill font-weight-bold" data-toggle="modal" data-target="#addRoleModal">
+        <i class="fas fa-plus mr-2"></i> Create Security Role
+    </button>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card role-summary-card h-100 border-left border-primary" style="border-left-width: 4px !important;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted text-uppercase small font-weight-bold mb-1">Defined Roles</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ role_count }}</div>
+                </div>
+                <div class="role-summary-icon text-primary" style="background: rgba(59, 130, 246, 0.1);">
+                    <i class="fas fa-id-card"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card role-summary-card h-100 border-left border-success" style="border-left-width: 4px !important;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted text-uppercase small font-weight-bold mb-1">Active Modules</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ module_count }}</div>
+                </div>
+                <div class="role-summary-icon text-success" style="background: rgba(34, 197, 94, 0.1);">
+                    <i class="fas fa-th-large"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card role-summary-card h-100 border-left border-warning" style="border-left-width: 4px !important;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted text-uppercase small font-weight-bold mb-1">Registry Tasks</div>
+                    <div class="h3 mb-0 font-weight-bold">{{ task_count }}</div>
+                </div>
+                <div class="role-summary-icon text-warning" style="background: rgba(245, 158, 11, 0.1);">
+                    <i class="fas fa-tasks"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card role-matrix-card">
+    <div class="card-header bg-white border-0 py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title font-weight-bold mb-0 text-dark">
+                <i class="fas fa-layer-group mr-2 text-primary"></i> Access Control Matrix
+            </h5>
+            <div class="text-muted small">
+                <span class="mr-3"><i class="fas fa-mouse-pointer mr-1"></i> Interactive Toggles</span>
+                <span><i class="fas fa-save mr-1"></i> Per-Role Saving</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if roles %}
+        <div class="matrix-table-wrapper">
+            <table class="table matrix-table m-0">
+                <thead>
+                    <tr>
+                        <th class="p-4" style="width: 340px; z-index: 110;">
+                            <span class="text-uppercase small font-weight-bold text-muted">Permission Capability</span>
+                        </th>
+                        {% for role in roles %}
+                        <th class="matrix-header-cell text-center">
+                            <form method="post" action="{% url 'role_management' %}" id="form-role-{{ role.id }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="role_id" value="{{ role.id }}">
+                                
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <h6 class="font-weight-bold text-dark mb-0 mr-1" data-toggle="tooltip" title="{{ role.description|default:'No description' }}">{{ role.name }}</h6>
+                                    
+                                    <div class="dropdown">
+                                        <button class="btn btn-link btn-sm text-muted p-1" type="button" data-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right shadow-sm border-0" style="border-radius: 12px;">
+                                            <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="openEditRoleModal('{{ role.id }}', '{{ role.name|escapejs }}', '{{ role.description|escapejs }}')">
+                                                <i class="fas fa-edit mr-2"></i> Edit Role
+                                            </a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openDeleteRoleModal('{{ role.id }}', '{{ role.name|escapejs }}', {{ role.user_count }})">
+                                                <i class="fas fa-trash-alt mr-2"></i> Delete Role
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-center align-items-center mb-2" style="gap: 5px;">
+                                    <button type="button" class="btn btn-light btn-sm text-success px-2 py-1 shadow-sm" style="border-radius: 6px;" title="Check All" onclick="toggleAllForRole('{{ role.id }}', true)">
+                                        <i class="fas fa-check-double"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-light btn-sm text-danger px-2 py-1 shadow-sm" style="border-radius: 6px;" title="Clear All" onclick="toggleAllForRole('{{ role.id }}', false)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    <button type="submit" class="btn btn-success btn-sm font-weight-bold shadow-sm px-3" style="border-radius: 6px;" title="Save Changes">
+                                        Save
+                                    </button>
+                                </div>
+                            </form>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mod_key, module in registry.items %}
+                    <tr class="module-row">
+                        <td colspan="{{ roles|length|add:1 }}" class="py-3 px-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="font-weight-bolder text-primary"><i class="{{ module.icon }} mr-2"></i> {{ module.display }}</span>
+                                <div class="d-flex">
+                                    {% for role in roles %}
+                                    <div style="width: 200px;" class="text-center">
+                                        <button type="button" class="btn btn-xs select-all-btn" onclick="toggleAllForModule('{{ role.id }}', '{{ mod_key }}', true)">
+                                            <i class="fas fa-check-double mr-1"></i> All {{ module.display }}
+                                        </button>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for task_key, task_info in module.tasks.items %}
+                    <tr>
+                        <td class="px-4 py-3">
+                            <div class="permission-name">{{ task_info.0 }}</div>
+                            <div class="permission-description">{{ task_info.1 }}</div>
+                        </td>
+                        {% for role in roles %}
+                        <td class="text-center align-middle">
+                            {% with perm_key=mod_key|add:":"|add:task_key %}
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox"
+                                       class="custom-control-input role-{{ role.id }} mod-{{ mod_key }} role-{{ role.id }}-mod-{{ mod_key }}"
+                                       id="switch-{{ role.id }}-{{ mod_key }}-{{ task_key }}"
+                                       name="{{ perm_key }}"
+                                       form="form-role-{{ role.id }}"
+                                       {% for permission in role.permissions.all %}{% if permission.module == mod_key and permission.task == task_key %}checked{% endif %}{% endfor %}>
+                                <label class="custom-control-label" for="switch-{{ role.id }}-{{ mod_key }}-{{ task_key }}"></label>
+                            </div>
+                            {% endwith %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center">
+            <div class="mb-3">
+                <i class="fas fa-shield-alt fa-4x text-muted opacity-25"></i>
+            </div>
+            <h5 class="text-muted">No Security Roles Found</h5>
+            <p class="text-muted mb-4">Start by defining roles like 'Admin', 'Registrar', or 'Accounts'.</p>
+            <button class="btn btn-primary px-4 rounded-pill" data-toggle="modal" data-target="#addRoleModal">
+                Create First Role
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Create Role -->
+<div class="modal fade" id="addRoleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px;">
+            <form method="post" action="{% url 'role_management' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_role">
+                <div class="modal-header bg-primary text-white border-0 py-3">
+                    <h5 class="modal-title font-weight-bold"><i class="fas fa-plus-circle mr-2"></i> New Security Role</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase text-muted mb-2">Role Name</label>
+                        <input type="text" name="name" class="form-control form-control-lg border-0 bg-light" required placeholder="e.g. Senior Admission Officer">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="small font-weight-bold text-uppercase text-muted mb-2">Internal Description</label>
+                        <textarea name="description" rows="3" class="form-control border-0 bg-light" placeholder="Define the scope of this identity."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-muted" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4 rounded-pill font-weight-bold shadow">Initialize Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Role -->
+<div class="modal fade" id="editRoleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px;">
+            <form method="post" action="{% url 'role_management' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit_role">
+                <input type="hidden" name="role_id" id="edit-role-id">
+                <div class="modal-header bg-dark text-white border-0 py-3">
+                    <h5 class="modal-title font-weight-bold"><i class="fas fa-cog mr-2"></i> Edit Role Meta</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase text-muted mb-2">Role Identity Name</label>
+                        <input type="text" name="name" id="edit-role-name" class="form-control form-control-lg border-0 bg-light" required>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="small font-weight-bold text-uppercase text-muted mb-2">Description</label>
+                        <textarea name="description" id="edit-role-description" rows="3" class="form-control border-0 bg-light"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-link text-muted" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-dark px-4 rounded-pill font-weight-bold shadow">Update Identity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Delete Role -->
+<div class="modal fade" id="deleteRoleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px;">
+            <form method="post" action="{% url 'role_management' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_role">
+                <input type="hidden" name="role_id" id="delete-role-id">
+                <div class="modal-header bg-danger text-white border-0 py-3">
+                    <h5 class="modal-title font-weight-bold"><i class="fas fa-trash-alt mr-2"></i> Permanent Removal</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <h5 class="font-weight-bold text-danger">Are you sure?</h5>
+                    <p class="text-muted mb-4">You are about to delete the <strong id="delete-role-name" class="text-dark"></strong> role. This will revoke access for all associated staff.</p>
+                    <div id="delete-usage-warning" class="alert alert-warning border-0 small d-none shadow-sm">
+                        <i class="fas fa-exclamation-triangle mr-2 text-warning"></i> This role is assigned to <strong id="delete-role-usage"></strong> staff members. Re-assign them first.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">No, Keep It</button>
+                    <button type="submit" id="confirm-delete-btn" class="btn btn-danger px-5 rounded-pill font-weight-bold shadow">Delete Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Security Power Grid Handlers
+    function toggleAllForRole(roleId, state) {
+        $(`.role-${roleId}`).prop('checked', state);
+    }
+
+    function toggleAllForModule(roleId, modKey, state) {
+        $(`.role-${roleId}-mod-${modKey}`).prop('checked', state);
+    }
+
+    // Modal Identity Handlers
+    function openEditRoleModal(id, name, description) {
+        $('#edit-role-id').val(id);
+        $('#edit-role-name').val(name);
+        $('#edit-role-description').val(description);
+        $('#editRoleModal').modal('show');
+    }
+
+    function openDeleteRoleModal(id, name, usage) {
+        $('#delete-role-id').val(id);
+        $('#delete-role-name').text(name);
+        
+        if (usage > 0) {
+            $('#delete-role-usage').text(usage);
+            $('#delete-usage-warning').removeClass('d-none');
+            $('#confirm-delete-btn').prop('disabled', true).addClass('opacity-50');
+        } else {
+            $('#delete-usage-warning').addClass('d-none');
+            $('#confirm-delete-btn').prop('disabled', false).removeClass('opacity-50');
+        }
+        
+        $('#deleteRoleModal').modal('show');
+    }
+    
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip()
+    })
+</script>
+{% endblock %}

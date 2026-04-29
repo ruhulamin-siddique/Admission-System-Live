@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @page {
+            size: A4;
+            margin: 0.8cm;
+            margin-bottom: 3cm; /* Increased for signature footer */
+            @frame footer {
+                -pdf-frame-content: footerContent;
+                bottom: 0.5cm;
+                margin-left: 0.8cm;
+                margin-right: 0.8cm;
+                height: 2.2cm;
+            }
+        }
+        #footerContent {
+            color: #495057;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.35;
+            color: #222;
+        }
+        .header {
+            border-bottom: 2.5px solid #004085;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            background-color: #e9ecef;
+            border-left: 5px solid #004085;
+            padding: 4px 12px;
+            font-weight: bold;
+            font-size: 11pt;
+            margin-top: 10px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            color: #004085;
+            letter-spacing: 0.5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4px;
+        }
+        th, td {
+            padding: 5px 10px;
+            text-align: left;
+            vertical-align: top;
+            border: 1px solid #ced4da;
+        }
+        th {
+            background-color: #f1f3f5;
+            width: 24%;
+            font-weight: bold;
+            color: #495057;
+            font-size: 9.5pt;
+        }
+        td {
+            color: #000;
+        }
+        .data-value {
+            font-weight: bold;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background-color: #198754;
+            color: white;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .photo-box {
+            width: 105px;
+            height: 125px;
+            border: 2px solid #dee2e6;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div id="footerContent">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="border: none; text-align: left; font-size: 8pt; vertical-align: bottom; padding: 0;">
+                    BAUST Admission Suite | Generated on {{ today|date:"d M Y H:i" }}
+                    <br>Page <pdf:pagenumber> of <pdf:pagecount>
+                </td>
+                <td style="border: none; text-align: right; width: 250px; padding: 0;">
+                    <div style="border-top: 1.5px solid #000; padding-top: 4px; text-align: center;">
+                        <p style="margin: 0; font-weight: bold; font-size: 10.5pt; color: #000;">Deputy Registrar (Academic)</p>
+                        <p style="margin: 0; font-size: 8.5pt; color: #333;">BAUST, Saidpur Cantonment</p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="header">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="width: 14%; border: none; vertical-align: middle; text-align: left; padding: 0;">
+                    {% if sys_settings.logo_url %}
+                        <img src="{{ sys_settings.logo_url }}" style="height: 95px; width: 95px;">
+                    {% endif %}
+                </td>
+                <td style="width: 86%; border: none; text-align: center; vertical-align: middle; padding: 0;">
+                    <h1 style="color: #004085; font-size: 18pt; margin: 0; font-weight: bold; white-space: nowrap; letter-spacing: -0.3px;">BANGLADESH ARMY UNIVERSITY OF SCIENCE & TECHNOLOGY, (BAUST)</h1>
+                    <p style="margin: 2px 0; font-size: 13pt; color: #333; font-weight: bold;">SAIDPUR CANTONMENT</p>
+                    <p style="margin: 3px 0; font-size: 9pt; color: #555; font-style: italic; font-weight: bold;">Official Academic Master Sheet - Official Record</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="margin-bottom: 12px;">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="width: 78%; border: none; vertical-align: middle; padding-left: 0;">
+                    <p style="margin: 0; font-size: 18pt; font-weight: bold; color: #000; text-transform: uppercase;">{{ student.student_name }}</p>
+                    <p style="margin: 4px 0; font-size: 13pt; font-family: 'Courier', monospace; color: #004085; font-weight: bold;">UGC ID: {{ student.student_id }}</p>
+                    <p style="margin: 4px 0; font-size: 10.5pt;">Record Status: <span class="status-badge">{{ student.admission_status }}</span></p>
+                </td>
+                <td style="width: 22%; border: none; text-align: right; vertical-align: top; padding-right: 0;">
+                    {% if student.photo_url %}
+                        <img src="{{ student.photo_url }}" class="photo-box" style="object-fit: cover;">
+                    {% else %}
+                        <div class="photo-box">
+                            <p style="padding-top: 50px; font-size: 8pt; color: #adb5bd; font-weight: bold;">NO<br>PHOTO</p>
+                        </div>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">Academic & Institutional Profile</div>
+    <table>
+        <tr>
+            <th>Program / Department</th>
+            <td class="data-value">{{ student.program|default:"---" }}</td>
+            <th>Batch / Session</th>
+            <td class="data-value">{{ student.batch|default:"---" }} ({{ student.semester_name|default:"" }} {{ student.admission_year|default:"" }})</td>
+        </tr>
+        <tr>
+            <th>Program Level</th>
+            <td class="data-value">{{ student.program_type|default:"---" }}</td>
+            <th>College Cluster</th>
+            <td class="data-value">{{ student.cluster|default:"---" }}</td>
+        </tr>
+        <tr>
+            <th>Admission Date</th>
+            <td class="data-value">{{ student.admission_date|date:"d M Y"|default:"---" }}</td>
+            <th>Hall / Residence</th>
+            <td class="data-value">{{ student.hall_attached|default:"---" }} {% if student.is_non_residential %}(Non-Res){% endif %}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Parental & Guardian Information</div>
+    <table>
+        <tr>
+            <th>Father's Name</th>
+            <td class="data-value">{{ student.father_name|default:"---" }}</td>
+            <th>Father's Occupation</th>
+            <td class="data-value">{{ student.father_occupation|default:"---" }}</td>
+        </tr>
+        <tr>
+            <th>Mother's Name</th>
+            <td class="data-value">{{ student.mother_name|default:"---" }}</td>
+            <th>Emergency Contact</th>
+            <td class="data-value">{{ student.emergency_contact|default:"---" }}</td>
+        </tr>
+        <tr>
+            <th>Father's Mobile</th>
+            <td class="data-value">{{ student.father_mobile|default:"---" }}</td>
+            <th>Mother's Mobile</th>
+            <td class="data-value">{{ student.mother_mobile|default:"---" }}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Personal Identity Details</div>
+    <table>
+        <tr>
+            <th>Gender / Religion</th>
+            <td class="data-value">{{ student.gender|default:"---" }} / {{ student.religion|default:"---" }}</td>
+            <th>Date of Birth</th>
+            <td class="data-value">{{ student.dob|date:"d M Y"|default:"---" }}</td>
+        </tr>
+        <tr>
+            <th>Blood Group</th>
+            <td class="data-value">{{ student.blood_group|default:"---" }}</td>
+            <th>NID / Birth Reg</th>
+            <td class="data-value">{{ student.national_id|default:"---" }}</td>
+        </tr>
+        <tr>
+            <th>Student Mobile</th>
+            <td class="data-value">{{ student.student_mobile|default:"---" }}</td>
+            <th>Email Address</th>
+            <td class="data-value">{{ student.student_email|default:"---" }}</td>
+        </tr>
+        <tr>
+            <th>Permanent Address</th>
+            <td colspan="3" class="data-value">{{ student.permanent_address|default:"---" }}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Academic Background (SSC & HSC Records)</div>
+    <div style="margin-bottom: 8px;">
+        <p style="font-weight: bold; font-size: 10pt; margin-bottom: 4px; color: #495057;">Secondary School Certificate (SSC)</p>
+        <table>
+            <tr>
+                <th>School / Institution</th>
+                <td colspan="3" class="data-value">{{ student.ssc_school|default:"---" }}</td>
+            </tr>
+            <tr>
+                <th>Board</th>
+                <td class="data-value">{{ student.ssc_board|default:"---" }}</td>
+                <th>Passing Year</th>
+                <td class="data-value">{{ student.ssc_year|default:"---" }}</td>
+            </tr>
+            <tr>
+                <th>Roll Number</th>
+                <td class="data-value">{{ student.ssc_roll|default:"---" }}</td>
+                <th>Registration No</th>
+                <td class="data-value">{{ student.ssc_reg|default:"---" }}</td>
+            </tr>
+            <tr>
+                <th>GPA / Result</th>
+                <td class="data-value" style="font-size: 11pt; color: #004085;">{{ student.ssc_gpa|default:"0.00" }}</td>
+                <th>Major Subjects</th>
+                <td class="data-value">Phy: {{ student.ssc_physics|default:"N/A" }} | Che: {{ student.ssc_chemistry|default:"N/A" }} | Math: {{ student.ssc_math|default:"N/A" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div>
+        <p style="font-weight: bold; font-size: 10pt; margin-bottom: 4px; color: #495057;">Higher Secondary Certificate (HSC)</p>
+        <table>
+            <tr>
+                <th>College / Institution</th>
+                <td colspan="3" class="data-value">{{ student.hsc_college|default:"---" }}</td>
+            </tr>
+            <tr>
+                <th>Board</th>
+                <td class="data-value">{{ student.hsc_board|default:"---" }}</td>
+                <th>Passing Year</th>
+                <td class="data-value">{{ student.hsc_year|default:"---" }}</td>
+            </tr>
+            <tr>
+                <th>Roll Number</th>
+                <td class="data-value">{{ student.hsc_roll|default:"---" }}</td>
+                <th>Registration No</th>
+                <td class="data-value">{{ student.hsc_reg|default:"---" }}</td>
+            </tr>
+            <tr>
+                <th>GPA / Result</th>
+                <td class="data-value" style="font-size: 11pt; color: #004085;">{{ student.hsc_gpa|default:"0.00" }}</td>
+                <th>Major Subjects</th>
+                <td class="data-value">Phy: {{ student.hsc_physics|default:"N/A" }} | Che: {{ student.hsc_chemistry|default:"N/A" }} | Math: {{ student.hsc_math|default:"N/A" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">Financial & Scholarship Summary</div>
+    <table>
+        <tr>
+            <th>Admission Payment</th>
+            <td class="data-value">{{ student.admission_payment|default:"0.00" }} BDT</td>
+            <th>Second Installment</th>
+            <td class="data-value">{{ student.second_installment|default:"0.00" }} BDT</td>
+        </tr>
+        <tr>
+            <th>Scholarship / Waiver</th>
+            <td class="data-value" style="color: #198754;">{{ student.waiver|default:"0" }}%</td>
+            <th>Other Charges</th>
+            <td class="data-value">{{ student.others|default:"0.00" }} BDT</td>
+        </tr>
+    </table>
+</body>
+</html>

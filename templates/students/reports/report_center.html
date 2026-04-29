@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}Report Center | Admission Suite{% endblock %}
+{% block page_title %}Institutional Intelligence Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        border-radius: 18px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
+        height: 100%;
+        border: 1px solid rgba(0,0,0,0.05);
+        background: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .report-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        border-color: #3b82f6;
+    }
+    .report-card::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 4px;
+        background: linear-gradient(90deg, #3b82f6, #10b981);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .report-card:hover::after {
+        opacity: 1;
+    }
+    .report-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        font-size: 1.4rem;
+        transition: all 0.3s;
+    }
+    .report-card:hover .report-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+    .category-header {
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: #64748b;
+        text-transform: uppercase;
+        margin: 40px 0 20px;
+        display: flex;
+        align-items: center;
+    }
+    .category-header::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e2e8f0;
+        margin-left: 20px;
+    }
+    .dark-mode .report-card { background: #1e293b; border-color: rgba(255,255,255,0.05); }
+    .dark-mode .category-header::after { background: #334155; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Section: Academic & Intake -->
+<div class="category-header">Academic & Intake Quality</div>
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'analytics_dashboard' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-primary text-white shadow-sm">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Intake Quality Audit</h5>
+                <p class="text-muted text-sm">Visual dashboard breaking down GPA distributions and enrollment trends.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-primary font-weight-bold text-sm">
+                Analyze Quality <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'academic_intake_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-success text-white shadow-sm">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Academic Intake Report</h5>
+                <p class="text-muted text-sm">Detailed tabular report of SSC/HSC performance across batches.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-success font-weight-bold text-sm">
+                View Detail Report <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'subject_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-indigo text-white shadow-sm" style="background-color: #6366f1 !important;">
+                    <i class="fas fa-atom"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Subject Performance Analysis</h5>
+                <p class="text-muted text-sm">Competence audit for Physics, Chemistry, and Math across batches.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-indigo font-weight-bold text-sm" style="color: #6366f1 !important;">
+                Analyze Competence <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'age_gap_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-danger text-white shadow-sm" style="background-color: #ef4444 !important;">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Age & Gap Analysis</h5>
+                <p class="text-muted text-sm">Analyzing student maturity and time since high school graduation.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-danger font-weight-bold text-sm">
+                View Intake Maturity <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section: Financial & Strategic -->
+<div class="category-header">Strategic & Financial Intelligence</div>
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'financial_intelligence_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-success text-white shadow-sm" style="background-color: #10b981 !important;">
+                    <i class="fas fa-sack-dollar"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Revenue Forecasting</h5>
+                <p class="text-muted text-sm">Gross vs Net revenue tracking and scholarship impact analysis.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-success font-weight-bold text-sm">
+                Financial Audit <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'reference_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-info text-white shadow-sm" style="background-color: #06b6d4 !important;">
+                    <i class="fas fa-bullhorn"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Reference Intelligence</h5>
+                <p class="text-muted text-sm">Tracking recruitment source efficiency and influence nodes.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-info font-weight-bold text-sm">
+                Track Recruitment <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'migration_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-warning text-white shadow-sm" style="background-color: #f59e0b !important;">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Migration Trends</h5>
+                <p class="text-muted text-sm">Analyzing student flow patterns and internal program retention.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-warning font-weight-bold text-sm">
+                Analyze Retention <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section: Research & Outreach -->
+<div class="category-header">Demographic & Geographic Intelligence</div>
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'diversity_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-pink text-white shadow-sm" style="background-color: #ec4899 !important;">
+                    <i class="fas fa-venus-mars"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Diversity Dashboard</h5>
+                <p class="text-muted text-sm">Gender parity and religious diversity metrics across departments.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-pink font-weight-bold text-sm">
+                Explore Inclusion <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'geographic_insights_v2' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-orange text-white shadow-sm" style="background-color: #f97316 !important;">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Geographic Outreach</h5>
+                <p class="text-muted text-sm">Heatmap of student distribution by Division and District.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-orange font-weight-bold text-sm">
+                View Heatmap <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'socio_economic_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-purple text-white shadow-sm" style="background-color: #a855f7 !important;">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Socio-Economic Research</h5>
+                <p class="text-muted text-sm">Advanced splits of parental occupation and aid distribution.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-purple font-weight-bold text-sm" style="color: #a855f7 !important;">
+                Analyze Profile <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section: Institutional Intelligence -->
+<div class="category-header">Institutional Intelligence & Exports</div>
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'institutional_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-slate text-white shadow-sm" style="background-color: #475569 !important;">
+                    <i class="fas fa-university"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Feeder Institution Analysis</h5>
+                <p class="text-muted text-sm">Top schools and colleges providing students for every batch.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-slate font-weight-bold text-sm">
+                Identify Sourcing <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'export_center' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-teal text-white shadow-sm" style="background-color: #14b8a6 !important;">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Dynamic Export Hub</h5>
+                <p class="text-muted text-sm">Generate high-fidelity reports with multi-dimensional filters.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-teal font-weight-bold text-sm">
+                Configure Export <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

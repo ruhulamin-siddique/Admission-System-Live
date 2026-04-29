@@ -1,0 +1,1056 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Directory | Admission Suite{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Premium Design Tokens matching Image */
+    :root {
+        --primary-blue: #2b3a8c;
+        --primary-blue-dark: #1f2a68;
+        --accent-yellow: #ffcb2d;
+        --accent-yellow-soft: #ffe58f;
+        --success-green: #168f5c;
+        --success-green-dark: #0c6b43;
+        --danger-red: #d1495b;
+        --danger-red-dark: #a73040;
+        --border-color: #dee2e6;
+        --header-bg: #e9ecef;
+        --surface-soft: #f6f8fc;
+        --text-dark: #1f2937;
+    }
+
+    .premium-card { 
+        border-radius: 4px; 
+        border: 1px solid var(--border-color);
+        box-shadow: none;
+        overflow: hidden; 
+        background: #fff;
+    }
+
+    .filter-section { 
+        background: #fff; 
+        padding: 15px; 
+        border-bottom: 2px solid var(--primary-blue); 
+    }
+
+    .filter-group { 
+        position: relative; 
+        border: 1px solid #ced4da; 
+        border-radius: 4px; 
+        padding: 2px 8px; 
+        margin-bottom: 10px; 
+    }
+
+    .filter-group label { 
+        position: absolute; 
+        top: -8px; 
+        left: 8px; 
+        background: #fff; 
+        padding: 0 4px; 
+        font-size: 10px; 
+        font-weight: 600; 
+        color: #6c757d; 
+    }
+
+    .filter-group select, .filter-group input { 
+        border: none; 
+        width: 100%; 
+        font-size: 13px; 
+        background: transparent; 
+        outline: none; 
+        height: 28px; 
+    }
+
+    .analytics-bar { 
+        background: var(--accent-yellow); 
+        color: var(--text-dark); 
+        padding: 8px 15px; 
+        font-weight: 800; 
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        border-radius: 0;
+    }
+
+    .total-badge {
+        background: #fff;
+        border-radius: 20px;
+        padding: 2px 12px;
+        margin-left: 10px;
+        font-size: 0.9rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .table thead th { 
+        background: var(--header-bg); 
+        color: #495057; 
+        font-size: 13px; 
+        font-weight: 700; 
+        padding: 10px;
+        border: 1px solid var(--border-color) !important;
+        vertical-align: middle;
+    }
+
+    .table td { 
+        padding: 9px 10px; 
+        vertical-align: middle;
+        border: 1px solid var(--border-color) !important;
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    .btn-filter {
+        background: linear-gradient(135deg, var(--primary-blue), #3347ad);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 0 20px;
+        font-weight: 700;
+        height: 38px;
+        box-shadow: 0 10px 22px rgba(43, 58, 140, 0.18);
+    }
+
+    .btn-clear-filters,
+    .btn-excel {
+        background: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13px;
+        border: 1px solid rgba(31, 41, 55, 0.12);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .btn-excel {
+        color: var(--success-green);
+    }
+
+    .btn-download-all {
+        background: linear-gradient(135deg, #13569b, #0f766e);
+        color: #fff;
+        border-radius: 10px;
+        border: none;
+        font-weight: 700;
+        font-size: 13px;
+        box-shadow: 0 10px 22px rgba(15, 92, 128, 0.2);
+    }
+
+    .btn-clear-filters {
+        color: var(--danger-red);
+    }
+
+    .directory-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+        text-decoration: none !important;
+    }
+
+    .directory-action-btn:hover,
+    .directory-action-btn:focus {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .btn-filter:hover,
+    .btn-filter:focus {
+        background: linear-gradient(135deg, var(--primary-blue-dark), var(--primary-blue));
+        color: #fff;
+        box-shadow: 0 14px 28px rgba(43, 58, 140, 0.24);
+    }
+
+    .btn-clear-filters:hover,
+    .btn-clear-filters:focus {
+        background: rgba(209, 73, 91, 0.08);
+        border-color: rgba(209, 73, 91, 0.32);
+        color: var(--danger-red-dark);
+        box-shadow: 0 12px 24px rgba(209, 73, 91, 0.12);
+    }
+
+    .btn-excel:hover,
+    .btn-excel:focus {
+        background: rgba(22, 143, 92, 0.08);
+        border-color: rgba(22, 143, 92, 0.25);
+        color: var(--success-green-dark);
+        box-shadow: 0 12px 24px rgba(22, 143, 92, 0.12);
+    }
+
+    .btn-download-all:hover,
+    .btn-download-all:focus {
+        background: linear-gradient(135deg, #0f467e, #0b5c56);
+        color: #fff;
+        box-shadow: 0 14px 28px rgba(15, 92, 128, 0.26);
+    }
+
+    .htmx-indicator { 
+        display: none; 
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+    }
+    .htmx-request .htmx-indicator { display: block; }
+
+    /* Custom Scrollbar */
+    .table-responsive::-webkit-scrollbar { height: 8px; }
+    .table-responsive::-webkit-scrollbar-track { background: #f1f1f1; }
+    .table-responsive::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    
+    #info-overlay {
+        background: transparent;
+        width: min(340px, calc(100vw - 20px));
+        border-radius: 18px;
+        box-shadow: 0 22px 48px rgba(15, 23, 42, 0.18);
+        overflow: hidden;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    #info-overlay-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 9998;
+        display: none;
+    }
+
+    @media (max-width: 767.98px) {
+        #info-overlay {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) scale(1) !important;
+            margin: 0 !important;
+            width: 90% !important;
+            max-width: 360px !important;
+            z-index: 9999 !important;
+        }
+        #info-overlay-backdrop {
+            display: block;
+        }
+    }
+
+    .student-info-trigger {
+        width: 28px;
+        height: 28px;
+        border: 1px solid rgba(43, 58, 140, 0.12);
+        border-radius: 999px;
+        background: linear-gradient(180deg, #ffffff, #eef2ff);
+        color: var(--primary-blue);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 18px rgba(43, 58, 140, 0.08);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+    }
+
+    .student-info-trigger:hover,
+    .student-info-trigger:focus {
+        background: linear-gradient(135deg, var(--primary-blue), #3e55d0);
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(43, 58, 140, 0.16);
+        outline: none;
+    }
+
+    .row-action-link {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+        text-decoration: none !important;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .row-action-link:hover,
+    .row-action-link:focus {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .row-action-link--primary {
+        background: rgba(43, 58, 140, 0.08);
+        color: var(--primary-blue);
+    }
+
+    .row-action-link--primary:hover,
+    .row-action-link--primary:focus {
+        background: rgba(43, 58, 140, 0.16);
+        color: var(--primary-blue-dark);
+    }
+
+    .row-action-link--warning {
+        background: rgba(255, 203, 45, 0.2);
+        color: #946200;
+    }
+
+    .row-action-link--warning:hover,
+    .row-action-link--warning:focus {
+        background: rgba(255, 203, 45, 0.35);
+        color: #7a5000;
+    }
+    
+    .row-action-link--success {
+        background: rgba(22, 143, 92, 0.1);
+        color: var(--success-green);
+    }
+    
+    .row-action-link--success:hover,
+    .row-action-link--success:focus {
+        background: rgba(22, 143, 92, 0.2);
+        color: var(--success-green-dark);
+    }
+
+    .filter-action-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .quick-info-card {
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 18px;
+        overflow: hidden;
+    }
+
+    .quick-info-header {
+        background: linear-gradient(145deg, #173462, #2b3a8c);
+        color: #fff;
+        padding: 16px;
+    }
+
+    .quick-info-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.14);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1rem;
+        color: #fff;
+    }
+
+    .quick-info-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .quick-info-eyebrow {
+        font-size: 0.68rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        opacity: 0.8;
+        margin-bottom: 2px;
+    }
+
+    .quick-info-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .quick-info-subtitle {
+        font-size: 0.8rem;
+        opacity: 0.82;
+    }
+
+    .quick-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        padding: 14px 16px 8px;
+        background: linear-gradient(180deg, #ffffff, #fafbff);
+    }
+
+    .quick-info-grid--compact {
+        gap: 8px;
+    }
+
+    .quick-stat {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 14px;
+        padding: 10px 11px;
+        background: #fff;
+    }
+
+    .quick-stat-label,
+    .quick-section-title,
+    .quick-address-label {
+        display: block;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    .quick-stat-value {
+        display: block;
+        margin-top: 5px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .quick-info-section,
+    .quick-info-address {
+        padding: 0 16px 12px;
+        background: #fff;
+    }
+
+    .quick-info-section--tight {
+        padding-bottom: 8px;
+    }
+
+    .quick-section-title {
+        margin-bottom: 10px;
+    }
+
+    .quick-detail-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border-top: 1px solid rgba(15, 23, 42, 0.06);
+        font-size: 0.82rem;
+        color: #475569;
+    }
+
+    .quick-detail-row strong {
+        color: var(--text-dark);
+        text-align: right;
+        font-weight: 700;
+    }
+
+    .quick-address-block {
+        border-top: 1px solid rgba(15, 23, 42, 0.06);
+        padding: 9px 0 0;
+        margin-top: 9px;
+    }
+
+    .quick-address-block p {
+        margin: 6px 0 0;
+        font-size: 0.8rem;
+        color: #475569;
+        line-height: 1.45;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .info-card-loading {
+        padding: 18px;
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 18px;
+    }
+
+    .loading-shimmer {
+        border-radius: 10px;
+        background: linear-gradient(90deg, #eef2f7 0%, #f8fafc 50%, #eef2f7 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.1s linear infinite;
+    }
+
+    .loading-shimmer + .loading-shimmer {
+        margin-top: 10px;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    @media (max-width: 767.98px) {
+        .filter-action-group {
+            flex-direction: column;
+        }
+
+        .quick-info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        /* Mobile Card Morphing CSS */
+        .table-responsive {
+            border: none;
+            overflow-x: visible !important;
+        }
+        .table thead {
+            display: none !important;
+        }
+        .table tbody tr {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            background: #fff;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            padding: 15px;
+            position: relative;
+        }
+        .table tbody td {
+            display: block;
+            border: none !important;
+            padding: 6px 0 !important;
+            text-align: left !important;
+        }
+        
+        .table tbody td.td-checkbox {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 0 !important;
+            width: auto !important;
+            z-index: 2;
+        }
+        .table tbody td.td-sl { display: none !important; }
+        .table tbody td.td-photo {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 0 !important;
+            width: 48px !important;
+            z-index: 2;
+        }
+        .table tbody td.td-name {
+            width: 100% !important;
+            order: 1;
+            padding-left: 65px !important; 
+            padding-right: 30px !important; 
+            min-height: 48px;
+            margin-bottom: 5px;
+            display: flex !important;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        /* Row 2: Program & Intake */
+        .table tbody td.td-program {
+            width: 50% !important;
+            order: 2;
+            padding-left: 10px !important;
+            padding-right: 5px !important;
+            border-top: 1px dashed rgba(0,0,0,0.05) !important;
+        }
+        .table tbody td.td-intake {
+            width: 50% !important;
+            order: 3;
+            padding-left: 5px !important;
+            padding-right: 10px !important;
+            border-top: 1px dashed rgba(0,0,0,0.05) !important;
+            text-align: right !important;
+        }
+        .table tbody td.td-intake > div { text-align: right !important; }
+        
+        /* Row 3: Parents & Mobile */
+        .table tbody td.td-parents {
+            width: 50% !important;
+            order: 4;
+            padding-left: 10px !important;
+            padding-right: 5px !important;
+            border-top: 1px dashed rgba(0,0,0,0.05) !important;
+        }
+        .table tbody td.td-mobile {
+            width: 50% !important;
+            order: 5;
+            padding-left: 5px !important;
+            padding-right: 10px !important;
+            border-top: 1px dashed rgba(0,0,0,0.05) !important;
+            text-align: right !important;
+        }
+        .table tbody td.td-mobile > div { text-align: right !important; }
+        
+        /* Row 4: Flags */
+        .table tbody td.td-special {
+            width: 100% !important;
+            order: 6;
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+            border-top: none !important;
+            text-align: center !important;
+            justify-content: center;
+        }
+        
+        /* Row 5: Actions */
+        .table tbody td.td-action {
+            width: 100% !important;
+            order: 7;
+            border-top: 1px solid var(--border-color) !important;
+            padding-top: 12px !important;
+            margin-top: 5px;
+            background: #f8fafc;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            text-align: center !important;
+        }
+        .table tbody td.td-action > div {
+            justify-content: center !important;
+            width: 100%;
+        }
+        .row-action-link {
+            width: 42px;
+            height: 42px;
+            margin: 0 5px;
+        }
+        
+        #bulk-action-bar {
+            width: 90% !important;
+            padding: 10px 15px !important;
+            gap: 10px !important;
+        }
+        #bulk-action-bar .btn-warning {
+            padding: 6px 12px !important;
+            font-size: 0.9rem;
+        }
+
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% load core_tags %}
+
+<!-- Analytics Bar matching Image -->
+<div class="analytics-bar">
+    <span>Total:</span>
+    <span id="total-count-display" class="total-badge">{{ total_count }}</span>
+</div>
+<div class="card premium-card mb-4">
+    <div class="filter-section">
+        <!-- Mobile Filter Toggle -->
+        <div class="d-md-none mb-3">
+            <button class="btn btn-outline-primary w-100 font-weight-bold" type="button" data-toggle="collapse" data-target="#directory-filter-form" aria-expanded="false">
+                <i class="fas fa-filter mr-2"></i> Toggle Filters
+            </button>
+        </div>
+
+        <form id="directory-filter-form" class="collapse d-md-block"
+              hx-get="{% url 'student_list' %}" 
+              hx-target="#directory-results" 
+              hx-trigger="submit, change from:select, keyup changed delay:500ms from:input"
+              hx-indicator="#table-loader"
+              hx-push-url="true">
+            
+            <div class="row">
+                <!-- Row 1 -->
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Search by Name/Roll</label>
+                        <input type="text" name="search" placeholder="Enter search..." value="{{ query }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Enrollment Year</label>
+                        <select name="year">
+                            <option value="">All</option>
+                            {% for y in filter_metadata.years %}
+                            <option value="{{ y }}" {% if y|stringformat:"s" == selected_year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Cluster</label>
+                        <select name="dept">
+                            <option value="">All</option>
+                            {% for d in filter_metadata.clusters %}
+                            <option value="{{ d }}" {% if d == selected_dept %}selected{% endif %}>{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Program</label>
+                        <select name="program">
+                            <option value="">All</option>
+                            {% for p in filter_metadata.programs %}
+                            <option value="{{ p }}" {% if p == selected_program %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="filter-group">
+                        <label>Batch Name</label>
+                        <select name="batch">
+                            <option value="">All</option>
+                            {% for b in filter_metadata.batches %}
+                            <option value="{{ b }}" {% if b == selected_batch %}selected{% endif %}>{{ b }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Program Type</label>
+                        <select name="type">
+                            <option value="">All</option>
+                            <option value="Bachelor" {% if selected_type == 'Bachelor' %}selected{% endif %}>Bachelor</option>
+                            <option value="Masters" {% if selected_type == 'Masters' %}selected{% endif %}>Masters</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Gender</label>
+                        <select name="gender">
+                            <option value="">All</option>
+                            {% for g in filter_metadata.genders %}
+                            <option value="{{ g }}" {% if g == selected_gender %}selected{% endif %}>{{ g }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Status</label>
+                        <select name="status">
+                            <option value="">All</option>
+                            {% for s in filter_metadata.statuses %}
+                            <option value="{{ s }}" {% if s == selected_status %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Special Category</label>
+                        <select name="special_category">
+                            <option value="">All Categories</option>
+                            <option value="non_residential" {% if selected_special_category == 'non_residential' %}selected{% endif %}>Non-Residential</option>
+                            <option value="freedom_fighter" {% if selected_special_category == 'freedom_fighter' %}selected{% endif %}>Freedom Fighter Child</option>
+                            <option value="armed_forces" {% if selected_special_category == 'armed_forces' %}selected{% endif %}>Armed Forces Child</option>
+                            <option value="july_joddha" {% if selected_special_category == 'july_joddha' %}selected{% endif %}>July Joddha 2024</option>
+                            <option value="credit_transfer" {% if selected_special_category == 'credit_transfer' %}selected{% endif %}>Credit Transfer</option>
+                            <option value="temp_cancel" {% if selected_special_category == 'temp_cancel' %}selected{% endif %}>Temp Cancel</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Sort By</label>
+                        <select name="sort">
+                            {% for sort_value, sort_label in sort_options %}
+                            <option value="{{ sort_value }}" {% if selected_sort == sort_value %}selected{% endif %}>{{ sort_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-action-group">
+                        <button type="submit" class="btn btn-filter directory-action-btn flex-fill">Filter</button>
+                        <button type="button" 
+                                class="btn btn-clear-filters directory-action-btn flex-fill"
+                                onclick="clearDirectoryFilters()"
+                                hx-get="{% url 'student_list' %}?per_page={{ per_page }}&sort={{ selected_sort }}"
+                                hx-target="#directory-results"
+                                hx-indicator="#table-loader"
+                                hx-push-url="true">
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="directory-per-page" name="per_page" value="{{ per_page }}">
+        </form>
+    </div>
+
+    <div id="directory-results">
+        {% include 'students/partials/directory_results.html' %}
+    </div>
+</div>
+
+<!-- Floating Action Bar for Bulk Update -->
+{% has_access 'students' 'bulk_update' as can_bulk_update %}
+{% if can_bulk_update %}
+<div id="bulk-action-bar" class="position-fixed shadow-lg" style="bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 1050; transition: bottom 0.3s ease-in-out; background: linear-gradient(135deg, #1f2937, #111827); padding: 15px 25px; border-radius: 50px; display: flex; align-items: center; gap: 20px;">
+    <div class="text-white font-weight-bold">
+        <span id="selected-count" class="badge badge-primary mr-2" style="font-size: 1.1rem; padding: 6px 12px; border-radius: 20px;">0</span> Students Selected
+    </div>
+    <button class="btn btn-warning font-weight-bold rounded-pill px-4 shadow-sm" onclick="openBulkUpdateModal()">
+        <i class="fas fa-magic mr-2"></i> Mass Update
+    </button>
+    <button class="btn btn-outline-light rounded-circle" style="width: 38px; height: 38px; padding: 0;" onclick="clearSelection()" title="Clear Selection">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
+{% endif %}
+
+<!-- Bulk Update Modal Container -->
+<div class="modal fade" id="bulkUpdateModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div id="bulkUpdateModalContent"></div>
+</div>
+
+<!-- Info Overlay Backdrop -->
+<div id="info-overlay-backdrop" onclick="document.getElementById('info-overlay').style.display='none'; this.style.display='none';"></div>
+
+<!-- Info Overlay Container -->
+<div id="info-overlay" class="position-absolute shadow-lg" style="display: none; z-index: 9999;"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const shortInfoCache = new Map();
+const shortInfoInFlight = new Map();
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.body.addEventListener('htmx:responseError', (e) => {
+        console.error('HTMX Error:', e.detail.xhr.status);
+        alert('Server unreachable or error occurred. Please refresh.');
+    });
+});
+
+function clearDirectoryFilters() {
+    const form = document.getElementById('directory-filter-form');
+    if (!form) return;
+    
+    // Clear all selects (except hidden ones or special ones)
+    form.querySelectorAll('select').forEach(select => {
+        if (select.name !== 'per_page' && select.name !== 'sort') {
+            select.value = "";
+        }
+    });
+    
+    // Clear all text inputs
+    form.querySelectorAll('input[type="text"]').forEach(input => {
+        input.value = "";
+    });
+}
+
+function positionOverlay(btn) {
+    const overlay = document.getElementById('info-overlay');
+    const backdrop = document.getElementById('info-overlay-backdrop');
+    const isMobile = window.innerWidth < 768;
+    
+    overlay.style.display = 'block';
+    
+    if (isMobile) {
+        backdrop.style.display = 'block';
+        // CSS handles centering for mobile
+    } else {
+        const rect = btn.getBoundingClientRect();
+        backdrop.style.display = 'none';
+        
+        let top = window.scrollY + rect.top - 20;
+        let left = window.scrollX + rect.right + 20;
+        
+        const viewportWidth = document.documentElement.clientWidth;
+        if (left + 340 > window.scrollX + viewportWidth) {
+            left = window.scrollX + rect.left - 360;
+        }
+        
+        overlay.style.top = top + 'px';
+        overlay.style.left = left + 'px';
+    }
+    
+    const closer = (e) => {
+        if (!overlay.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+            overlay.style.display = 'none';
+            if (backdrop) backdrop.style.display = 'none';
+            document.removeEventListener('click', closer);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', closer), 10);
+}
+
+function copyStudentData(name, id, program, batch) {
+    const text = `Student: ${name}\nID: ${id}\nProgram: ${program}\nBatch: ${batch}`;
+    navigator.clipboard.writeText(text).then(() => {
+        const toast = document.createElement('div');
+        toast.className = 'bg-dark text-white px-4 py-2 rounded shadow-lg';
+        toast.style.cssText = 'position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:10000; font-weight:700; font-size:13px;';
+        toast.innerHTML = '<i class="fas fa-check-circle text-success mr-2"></i> DATA COPIED TO CLIPBOARD';
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => toast.remove(), 500);
+        }, 2000);
+    });
+}
+
+document.addEventListener('change', (e) => {
+    if (e.target.classList.contains('directory-per-page-control')) {
+        const perPageInput = document.getElementById('directory-per-page');
+        if (perPageInput) {
+            perPageInput.value = e.target.value;
+        }
+    }
+});
+
+function renderInfoLoadingState() {
+    return `
+        <div class="info-card-loading">
+            <div class="loading-shimmer" style="height: 22px; width: 54%;"></div>
+            <div class="loading-shimmer" style="height: 66px; width: 100%; margin-top: 16px;"></div>
+            <div class="loading-shimmer" style="height: 52px; width: 100%;"></div>
+            <div class="loading-shimmer" style="height: 52px; width: 100%;"></div>
+        </div>
+    `;
+}
+
+function fetchStudentInfo(url) {
+    if (shortInfoCache.has(url)) {
+        return Promise.resolve(shortInfoCache.get(url));
+    }
+
+    if (shortInfoInFlight.has(url)) {
+        return shortInfoInFlight.get(url);
+    }
+
+    const request = fetch(url, {
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Unable to load quick info (${response.status})`);
+            }
+            return response.text();
+        })
+        .then((html) => {
+            shortInfoCache.set(url, html);
+            shortInfoInFlight.delete(url);
+            return html;
+        })
+        .catch((error) => {
+            shortInfoInFlight.delete(url);
+            throw error;
+        });
+
+    shortInfoInFlight.set(url, request);
+    return request;
+}
+
+function showStudentInfo(btn) {
+    const overlay = document.getElementById('info-overlay');
+    const url = btn.dataset.shortInfoUrl;
+
+    if (!url) {
+        return;
+    }
+
+    positionOverlay(btn);
+    overlay.innerHTML = renderInfoLoadingState();
+
+    fetchStudentInfo(url)
+        .then((html) => {
+            overlay.innerHTML = html;
+            positionOverlay(btn);
+        })
+        .catch(() => {
+            overlay.innerHTML = `
+                <div class="info-card-loading">
+                    <div class="text-danger font-weight-bold mb-2">Quick details unavailable</div>
+                    <div class="small text-muted">Please try again or open the full student profile.</div>
+                </div>
+            `;
+            positionOverlay(btn);
+        });
+}
+
+document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.student-info-trigger');
+    if (!trigger) {
+        return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    showStudentInfo(trigger);
+});
+
+document.addEventListener('mouseover', (e) => {
+    const trigger = e.target.closest('.student-info-trigger');
+    if (!trigger) {
+        return;
+    }
+
+    const url = trigger.dataset.shortInfoUrl;
+    if (url && !shortInfoCache.has(url) && !shortInfoInFlight.has(url)) {
+        fetchStudentInfo(url).catch(() => null);
+    }
+});
+
+document.body.addEventListener('htmx:beforeSwap', () => {
+    const overlay = document.getElementById('info-overlay');
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+});
+
+// Bulk Selection Logic
+function toggleAllStudents(source) {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+    updateFloatingBar();
+}
+
+function updateFloatingBar() {
+    const checked = document.querySelectorAll('.student-checkbox:checked');
+    const bar = document.getElementById('bulk-action-bar');
+    const countDisplay = document.getElementById('selected-count');
+    
+    if(countDisplay) countDisplay.textContent = checked.length;
+    
+    if (bar) {
+        if (checked.length > 0) {
+            bar.style.bottom = '30px';
+        } else {
+            bar.style.bottom = '-100px';
+            const selectAll = document.getElementById('selectAllStudents');
+            if(selectAll) selectAll.checked = false;
+        }
+    }
+}
+
+function clearSelection() {
+    document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+    const selectAll = document.getElementById('selectAllStudents');
+    if(selectAll) selectAll.checked = false;
+    updateFloatingBar();
+}
+
+function getSelectedIds() {
+    const checked = document.querySelectorAll('.student-checkbox:checked');
+    return Array.from(checked).map(cb => cb.value).join(',');
+}
+
+function openBulkUpdateModal() {
+    const ids = getSelectedIds();
+    if (!ids) return;
+    
+    // Use HTMX to load the modal content
+    htmx.ajax('POST', '{% url "api_bulk_update_modal" %}', {
+        target: '#bulkUpdateModalContent',
+        values: { 'student_ids': ids, 'csrfmiddlewaretoken': '{{ csrf_token }}' }
+    }).then(() => {
+        $('#bulkUpdateModal').modal('show');
+    });
+}
+</script>
+{% endblock %}

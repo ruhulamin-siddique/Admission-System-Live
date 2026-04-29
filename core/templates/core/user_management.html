@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management | Admission Suite{% endblock %}
+{% block page_title %}Staff & User Security{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <button class="btn btn-primary shadow-sm" data-toggle="modal" data-target="#addUserModal">
+            <i class="fas fa-plus-circle mr-2"></i> Onboard New Staff member
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card card-outline card-success shadow-lg">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-users-cog mr-2"></i> System User Directory</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>User Info</th>
+                            <th>Current Role</th>
+                            <th>Department Scope</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td>
+                                <div><strong>{{ u.username }}</strong></div>
+                                <div class="small text-muted">{{ u.email|default:"No Email" }}</div>
+                            </td>
+                            <td>
+                                <span class="badge {% if u.profile.role %}badge-info{% else %}badge-secondary{% endif %}">
+                                    {{ u.profile.role.name|default:"No Role Assigned" }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if u.profile.department_scope %}
+                                <span class="badge badge-warning">{{ u.profile.department_scope }} ONLY</span>
+                                {% else %}
+                                <span class="text-muted small">Global Access</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.is_active %}
+                                <span class="badge badge-success">Active</span>
+                                {% else %}
+                                <span class="badge badge-danger">Inactive</span>
+                                {% endif %}
+                                {% if u.is_superuser %}<span class="badge badge-primary ml-1">Superuser</span>{% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#editUser{{ u.id }}" title="Edit Access">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" data-toggle="modal" data-target="#resetPass{{ u.id }}" title="Reset Password">
+                                        <i class="fas fa-unlock-alt"></i>
+                                    </button>
+                                    {% if not u.is_superuser %}
+                                    <a href="{% url 'user_toggle_status' u.id %}" class="btn btn-sm {% if u.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                        <i class="fas {% if u.is_active %}fa-user-slash{% else %}fa-user-check{% endif %}"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Access Management Modal -->
+                                <div class="modal fade" id="editUser{{ u.id }}" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content text-wrap">
+                                            <form method="POST">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title">Edit Access for {{ u.username }}</h5>
+                                                    <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                                                </div>
+                                                <div class="modal-body" style="white-space: normal;">
+                                                    <div class="form-group text-left">
+                                                        <label>Assign Security Role</label>
+                                                        <select name="role_id" class="form-control">
+                                                            <option value="">-- No Access Role --</option>
+                                                            {% for role in roles %}
+                                                            <option value="{{ role.id }}" {% if u.profile.role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                        <small class="text-muted">Determines what tasks and reports this user can see.</small>
+                                                    </div>
+                                                    <div class="form-group text-left">
+                                                        <label>Departmental Scope (Scoping)</label>
+                                                        <select name="department_scope" class="form-control">
+                                                            <option value="">-- Global (View All Programs) --</option>
+                                                            <option value="CSE" {% if u.profile.department_scope == "CSE" %}selected{% endif %}>CSE (Computer Science)</option>
+                                                            <option value="EEE" {% if u.profile.department_scope == "EEE" %}selected{% endif %}>EEE (Electrical)</option>
+                                                            <option value="CE" {% if u.profile.department_scope == "CE" %}selected{% endif %}>CE (Civil)</option>
+                                                            <option value="BBA" {% if u.profile.department_scope == "BBA" %}selected{% endif %}>BBA (Business)</option>
+                                                            <option value="MBA" {% if u.profile.department_scope == "MBA" %}selected{% endif %}>MBA (Graduate)</option>
+                                                        </select>
+                                                        <small class="text-muted">If selected, this user will only see students within this specific program.</small>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Password Reset Modal -->
+                                <div class="modal fade" id="resetPass{{ u.id }}" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog modal-sm" role="document">
+                                        <div class="modal-content">
+                                            <form method="POST" action="{% url 'user_reset_password' u.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header bg-warning">
+                                                    <h5 class="modal-title">Reset Password</h5>
+                                                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                                </div>
+                                                <div class="modal-body text-left">
+                                                    <div class="form-group">
+                                                        <label>New Temporary Password</label>
+                                                        <input type="password" name="new_password" class="form-control" required placeholder="••••••••">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-warning">Reset Now</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Onboard User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'user_create' %}">
+                {% csrf_token %}
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title font-weight-bold">Onboard New Staff member</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body text-left">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" name="username" class="form-control" required placeholder="e.g., asiddiqur">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" class="form-control" required placeholder="staff@university.edu">
+                    </div>
+                    <div class="form-group">
+                        <label>Temporary Password</label>
+                        <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label>Initial Role</label>
+                        <select name="role_id" class="form-control" required>
+                            <option value="">-- Select Security Role --</option>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success px-4">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

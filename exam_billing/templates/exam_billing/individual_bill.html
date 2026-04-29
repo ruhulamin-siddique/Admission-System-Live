@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Individual Bill{% endblock %}
+{% block extra_css %}
+<style>
+@media print {.main-sidebar,.main-header,.content-header,.no-print{display:none!important}.content-wrapper{margin:0!important}.card{box-shadow:none!important;border:0!important}}
+.bill-table th,.bill-table td{border:1px solid #222!important;padding:6px!important}
+</style>
+{% endblock %}
+{% block content %}
+<div class="content-header no-print"><div class="container-fluid d-flex justify-content-between"><h1>Individual Bill</h1><button onclick="window.print()" class="btn btn-primary">Print</button></div></div>
+<section class="content"><div class="container-fluid"><div class="card"><div class="card-body">
+<div class="text-center mb-4"><h4>Bangladesh Army University of Science and Technology</h4><h5>{{ exam_program.exam }} - Department of {{ exam_program.program.short_name|default:exam_program.program.name }}</h5></div>
+<table class="table table-borderless"><tr><th style="width:160px">Name</th><td>{{ bill.faculty.name }}</td><th>Designation</th><td>{{ bill.designation }}</td></tr></table>
+<table class="table bill-table"><thead><tr><th>Bill Head</th><th class="text-right">Amount</th></tr></thead><tbody>
+<tr><td>Question Paper Setting Bills</td><td class="text-right">{{ bill.question_setting }}</td></tr>
+<tr><td>Answer Script Evaluation Bills</td><td class="text-right">{{ bill.script_examining }}</td></tr>
+<tr><td>Answer Script Scrutiny Bills</td><td class="text-right">{{ bill.scrutiny }}</td></tr>
+<tr><td>All Committee Bills</td><td class="text-right">{{ bill.committee_total }}</td></tr>
+<tr><th>Grand Total</th><th class="text-right">{{ bill.total }}</th></tr>
+</tbody></table>
+<p><strong>Amount in words:</strong> {{ bill.amount_in_words }}</p>
+<div class="row mt-5"><div class="col">Sign. of Biller: __________________</div><div class="col">Date: __________________</div></div>
+<div class="row mt-5"><div class="col">CoE: __________________</div><div class="col">Director Finance: __________________</div></div>
+</div></div></div></section>
+{% endblock %}
