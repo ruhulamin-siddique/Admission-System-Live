@@ -20,98 +20,53 @@
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 10pt;
-            line-height: 1.4;
-            color: #222;
+            line-height: 1.35;
+            color: #000;
         }
         .header {
-            border-bottom: 2.5px solid #004085;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .section-title {
             background-color: #e9ecef;
-            border-left: 5px solid #004085;
+            border: 1px solid #000;
             padding: 4px 12px;
             font-weight: bold;
             font-size: 11pt;
-            margin-top: 12px;
-            margin-bottom: 8px;
+            margin-top: 10px;
+            margin-bottom: 0;
             text-transform: uppercase;
-            color: #004085;
+            color: #000;
             letter-spacing: 0.5px;
         }
-        .row {
-            display: block;
-            width: 100%;
-            margin-bottom: 10px;
-            clear: both;
-        }
-        .col {
-            float: left;
-            padding-right: 10px;
-        }
-        .label {
-            font-weight: bold;
-            font-size: 9pt;
-            color: #495057;
-        }
-        .dotted-line {
-            border-bottom: 1px dotted #888;
-            display: inline-block;
-            height: 14pt;
-            vertical-align: bottom;
-        }
-        .box {
-            width: 16px;
-            height: 18px;
-            border: 1px solid #666;
-            display: inline-block;
-            margin-right: -1px;
-            vertical-align: middle;
-        }
-        .checkbox {
-            width: 12px;
-            height: 12px;
-            border: 1.5px solid #004085;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 4px;
-        }
-        table.grid {
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 5px;
+            margin-bottom: 0;
         }
-        table.grid th, table.grid td {
-            border: 1px solid #ced4da;
-            padding: 6px;
+        table.input-table th, table.input-table td {
+            border: 1px solid #000;
+            padding: 8px 10px;
             text-align: left;
+            vertical-align: middle;
+            height: 26pt; /* Ample space for handwriting */
         }
-        table.grid th {
+        table.input-table th {
             background-color: #f1f3f5;
+            width: 22%; /* Slightly narrower labels to give more space to boxes */
             font-weight: bold;
             font-size: 9pt;
         }
         .photo-box {
             width: 100px;
             height: 120px;
-            border: 1.5px dashed #adb5bd;
+            border: 1px solid #000;
             text-align: center;
-            background-color: #f8f9fa;
-            float: left; /* Changed from right to left */
+            background-color: #fff;
             line-height: 120px;
             font-size: 8pt;
-            color: #6c757d;
             font-weight: bold;
-            margin-right: 15px; /* Added margin for separation */
         }
         .clear { clear: both; }
-        .office-box {
-            border: 2px solid #004085;
-            padding: 10px;
-            background-color: #f0f7ff;
-            margin-bottom: 10px;
-        }
         .page-break { page-break-before: always; }
     </style>
 </head>
@@ -136,172 +91,153 @@
     <div class="header">
         <table style="width: 100%; border: none;">
             <tr>
-                <td style="width: 20%; border: none; vertical-align: top; padding: 0;">
-                    <div class="photo-box">PASTE PHOTO HERE</div>
-                </td>
-                <td style="width: 10%; border: none; vertical-align: middle; text-align: left; padding: 0;">
+                <td style="width: 15%; border: none; vertical-align: middle; text-align: left; padding: 0;">
                     {% if sys_settings.logo_url %}
-                        <img src="{{ sys_settings.logo_url }}" style="height: 80px; width: 80px;">
+                        <img src="{{ sys_settings.logo_url }}" style="height: 90px; width: 90px;">
                     {% endif %}
                 </td>
-                <td style="width: 70%; border: none; text-align: center; vertical-align: middle; padding: 0;">
-                    <h1 style="color: #004085; font-size: 17pt; margin: 0; font-weight: bold; white-space: nowrap; letter-spacing: -0.3px;">BANGLADESH ARMY UNIVERSITY OF SCIENCE & TECHNOLOGY, (BAUST)</h1>
-                    <p style="margin: 1px 0; font-size: 12pt; color: #333; font-weight: bold;">SAIDPUR CANTONMENT</p>
-                    <p style="margin: 2px 0; font-size: 10pt; color: #004085; font-weight: bold; text-decoration: underline;">OFFICIAL STUDENT ADMISSION FORM</p>
+                <td style="width: 85%; border: none; text-align: center; vertical-align: middle; padding: 0;">
+                    <h1 style="color: #000; font-size: 18pt; margin: 0; font-weight: bold; white-space: nowrap; letter-spacing: -0.3px;">BANGLADESH ARMY UNIVERSITY OF SCIENCE & TECHNOLOGY, (BAUST)</h1>
+                    <p style="margin: 2px 0; font-size: 13pt; color: #333; font-weight: bold;">SAIDPUR CANTONMENT</p>
+                    <p style="margin: 3px 0; font-size: 11pt; color: #000; font-weight: bold; text-decoration: underline;">OFFICIAL STUDENT ADMISSION FORM</p>
                 </td>
             </tr>
         </table>
     </div>
 
-    <div style="width: 100%;">
-        <div class="office-box">
-            <p style="margin: 0 0 5px 0; font-weight: bold; color: #004085; text-decoration: underline; font-size: 9pt;">FOR OFFICE USE ONLY</p>
-            <table style="width: 100%; border: none;">
-                <tr>
-                    <td style="border: none; padding: 0;">
-                        <span class="label">Assigned ID:</span>
-                        <div class="dotted-line" style="width: 220px;"></div>
-                    </td>
-                    <td style="border: none; padding: 0;">
-                        <span class="label">Roll No:</span>
-                        <div class="dotted-line" style="width: 120px;"></div>
-                    </td>
-                    <td style="border: none; padding: 0;">
-                        <span class="label">Date:</span>
-                        <div class="dotted-line" style="width: 120px;"></div>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
-    <div class="clear"></div>
+    <table style="width: 100%; border: none; margin-top: 10px;">
+        <tr>
+            <td style="width: 80%; border: none; vertical-align: top; padding: 0;">
+                <div class="section-title">FOR OFFICE USE ONLY</div>
+                <table class="input-table">
+                    <tr>
+                        <th>Assigned ID</th>
+                        <td style="width: 30%;"></td>
+                        <th>Roll No</th>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <th>Admission Date</th>
+                        <td></td>
+                        <th>Signature</th>
+                        <td></td>
+                    </tr>
+                </table>
+            </td>
+            <td style="width: 20%; border: none; vertical-align: top; text-align: right; padding: 10px 0 0 10px;">
+                <div class="photo-box" style="float: right;">PASTE PHOTO</div>
+            </td>
+        </tr>
+    </table>
 
     <div class="section-title">Section 1: Admission & Program Details</div>
-    <div class="row">
-        <div class="col" style="width: 45%;">
-            <span class="label">Desired Program/Dept:</span>
-            <div class="dotted-line" style="width: 100%;"></div>
-        </div>
-        <div class="col" style="width: 20%;">
-            <span class="label">Academic Year:</span>
-            <div class="dotted-line" style="width: 100%;"></div>
-        </div>
-        <div class="col" style="width: 30%;">
-            <span class="label">Semester:</span><br>
-            <div class="checkbox"></div> Spring &nbsp;
-            <div class="checkbox"></div> Fall &nbsp;
-            <div class="checkbox"></div> Summer
-        </div>
-        <div class="clear"></div>
-    </div>
+    <table class="input-table">
+        <tr>
+            <th>Desired Program/Dept</th>
+            <td colspan="3"></td>
+        </tr>
+        <tr>
+            <th>Academic Year</th>
+            <td></td>
+            <th>Semester</th>
+            <td>[ ] Spring &nbsp; [ ] Fall &nbsp; [ ] Summer</td>
+        </tr>
+    </table>
 
-    <div class="section-title">Section 2: Personal Information (BLOCK LETTERS)</div>
-    <div class="row">
-        <span class="label">Student's Full Name:</span><br>
-        <div style="margin-top: 5px;">
-            {% for i in "1234567890123456789012345678" %}<div class="box"></div>{% endfor %}
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col" style="width: 30%;">
-            <span class="label">Date of Birth:</span><br>
-            <div class="box"></div><div class="box"></div> / <div class="box"></div><div class="box"></div> / <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
-        </div>
-        <div class="col" style="width: 35%;">
-            <span class="label">Gender:</span><br>
-            <div class="checkbox"></div> Male &nbsp;
-            <div class="checkbox"></div> Female &nbsp;
-            <div class="checkbox"></div> Other
-        </div>
-        <div class="col" style="width: 30%;">
-            <span class="label">Blood Group:</span><br>
-            <div class="dotted-line" style="width: 100%;"></div>
-        </div>
-        <div class="clear"></div>
-    </div>
-
-    <div class="row">
-        <div class="col" style="width: 25%;">
-            <span class="label">Religion:</span>
-            <div class="dotted-line" style="width: 100%;"></div>
-        </div>
-        <div class="col" style="width: 40%;">
-            <span class="label">NID / Birth Registration No:</span>
-            <div class="dotted-line" style="width: 100%;"></div>
-        </div>
-        <div class="col" style="width: 30%;">
-            <span class="label">Student Mobile:</span>
-            <div class="dotted-line" style="width: 100%;"></div>
-        </div>
-        <div class="clear"></div>
-    </div>
+    <div class="section-title">Section 2: Personal Information</div>
+    <table class="input-table">
+        <tr>
+            <th>Student's Full Name</th>
+            <td colspan="3"></td>
+        </tr>
+        <tr>
+            <th>Date of Birth</th>
+            <td></td>
+            <th>Gender</th>
+            <td>[ ] Male &nbsp; [ ] Female &nbsp; [ ] Other</td>
+        </tr>
+        <tr>
+            <th>Religion</th>
+            <td></td>
+            <th>Blood Group</th>
+            <td></td>
+        </tr>
+        <tr>
+            <th>NID / Birth Reg No</th>
+            <td></td>
+            <th>Student Mobile</th>
+            <td></td>
+        </tr>
+    </table>
 
     <div class="section-title">Section 3: Parent & Guardian Information</div>
-    <table class="grid">
+    <table class="input-table">
         <tr>
-            <th width="20%">Father's Name</th>
-            <td width="30%"></td>
-            <th width="20%">Occupation</th>
-            <td width="30%"></td>
+            <th>Father's Name</th>
+            <td colspan="3"></td>
         </tr>
         <tr>
             <th>Mother's Name</th>
+            <td colspan="3"></td>
+        </tr>
+        <tr>
+            <th>Father's Occupation</th>
             <td></td>
-            <th>Father's Mobile</th>
+            <th>Mother's Occupation</th>
             <td></td>
         </tr>
         <tr>
+            <th>Father's Mobile</th>
+            <td></td>
             <th>Mother's Mobile</th>
             <td></td>
+        </tr>
+        <tr>
             <th>Emergency Contact</th>
-            <td></td>
+            <td colspan="3"></td>
         </tr>
     </table>
 
     <div class="section-title">Section 4: Address Details</div>
-    <div class="row">
-        <div class="col" style="width: 48%; border: 1px solid #ced4da; padding: 10px; height: 120px;">
-            <p style="font-weight: bold; margin: 0 0 5px 0; font-size: 9pt; text-decoration: underline;">Present Address</p>
-            <div class="dotted-line" style="width: 100%; height: 25px;"></div>
-            <div class="dotted-line" style="width: 100%; height: 25px;"></div>
-            <div class="dotted-line" style="width: 100%; height: 25px;"></div>
-        </div>
-        <div class="col" style="width: 48%; border: 1px solid #ced4da; padding: 10px; height: 120px;">
-            <p style="font-weight: bold; margin: 0 0 5px 0; font-size: 9pt; text-decoration: underline;">Permanent Address</p>
-            <div class="dotted-line" style="width: 100%; height: 25px;"></div>
-            <div class="dotted-line" style="width: 100%; height: 25px;"></div>
-            <div class="dotted-line" style="width: 100%; height: 25px;"></div>
-        </div>
-        <div class="clear"></div>
-    </div>
-
-    <div class="page-break"></div>
-
-    <div class="section-title">Section 5: Academic History (SSC & HSC)</div>
-    <table class="grid">
+    <table class="input-table">
         <tr>
-            <th width="15%">Level</th>
-            <th width="40%">School/College Name</th>
-            <th width="15%">Board</th>
-            <th width="10%">Year</th>
-            <th width="10%">Roll</th>
-            <th width="10%">GPA</th>
+            <th style="height: 50pt;">Present Address</th>
+            <td></td>
         </tr>
-        <tr style="height: 35px;">
-            <td><strong>SSC</strong></td>
-            <td></td><td></td><td></td><td></td><td></td>
-        </tr>
-        <tr style="height: 35px;">
-            <td><strong>HSC</strong></td>
-            <td></td><td></td><td></td><td></td><td></td>
+        <tr>
+            <th style="height: 50pt;">Permanent Address</th>
+            <td></td>
         </tr>
     </table>
 
-    <p style="font-weight: bold; margin: 10px 0 5px 0; font-size: 9pt; color: #495057;">HSC Subject Wise Grade/GPA (Science Only):</p>
-    <table class="grid">
+    <div class="page-break"></div>
+
+    <div class="section-title">Section 5: Academic History</div>
+    <table class="input-table">
+        <thead>
+            <tr>
+                <th style="text-align: center; width: 15%;">Level</th>
+                <th style="text-align: center; width: 40%;">School/College Name</th>
+                <th style="text-align: center;">Board</th>
+                <th style="text-align: center;">Year</th>
+                <th style="text-align: center;">Roll</th>
+                <th style="text-align: center;">GPA</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="height: 35px;"><td>SSC</td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr style="height: 35px;"><td>HSC</td><td></td><td></td><td></td><td></td><td></td></tr>
+        </tbody>
+    </table>
+
+    <p style="font-weight: bold; margin: 10px 0 5px 0;">HSC Subject Wise Grade/GPA (Science):</p>
+    <table class="input-table">
         <tr>
-            <th>Physics</th><th>Chemistry</th><th>Mathematics</th><th>English</th><th>ICT</th>
+            <th style="text-align: center;">Physics</th>
+            <th style="text-align: center;">Chemistry</th>
+            <th style="text-align: center;">Mathematics</th>
+            <th style="text-align: center;">English</th>
+            <th style="text-align: center;">ICT</th>
         </tr>
         <tr style="height: 30px;">
             <td></td><td></td><td></td><td></td><td></td>
@@ -309,26 +245,21 @@
     </table>
 
     <div class="section-title">Section 6: Others & Declaration</div>
-    <div class="row">
-        <div class="col" style="width: 60%;">
-            <span class="label">Referred By:</span>
-            <div class="dotted-line" style="width: 100%;"></div>
-        </div>
-        <div class="col" style="width: 38%;">
-            <span class="label">Quota (if any):</span><br>
-            <div class="checkbox"></div> Armed Forces &nbsp;
-            <div class="checkbox"></div> FF &nbsp;
-            <div class="checkbox"></div> Other
-        </div>
-        <div class="clear"></div>
-    </div>
+    <table class="input-table">
+        <tr>
+            <th>Referred By</th>
+            <td></td>
+            <th>Quota (if any)</th>
+            <td>[ ] Armed Forces &nbsp; [ ] FF &nbsp; [ ] Other</td>
+        </tr>
+    </table>
 
-    <div style="margin-top: 20px; border: 1px solid #ced4da; padding: 15px; background-color: #fdfdfd;">
-        <p style="font-weight: bold; margin: 0 0 8px 0; text-decoration: underline;">Applicant's Declaration:</p>
+    <div style="margin-top: 15px; border: 1px solid #000; padding: 10px;">
+        <p style="font-weight: bold; margin: 0 0 5px 0; text-decoration: underline;">Applicant's Declaration:</p>
         <p style="font-size: 8.5pt; text-align: justify; margin: 0;">
             I hereby declare that all the information provided in this form is correct and complete to the best of my knowledge. I understand that any false statement or omission may result in the cancellation of my admission. I agree to abide by the rules and regulations of BAUST during my study.
         </p>
-        <div style="margin-top: 40px;">
+        <div style="margin-top: 35px;">
             <table style="width: 100%; border: none;">
                 <tr>
                     <td style="border: none; padding: 0;">
