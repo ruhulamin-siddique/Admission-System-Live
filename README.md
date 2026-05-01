@@ -1,10 +1,10 @@
 # Admission Suite - Professional Admission Management System
 
 > **Developed by**: Ruhulamin Siddique  
-> **Last Updated**: 2026-04-25  
+> **Last Updated**: 2026-05-01
 > **Status**: Production Ready 🚀
 
-A high-performance, secure, and modern Django-based web application designed for managing student admissions, academic records, and institutional reporting.
+A high-performance, secure, and modern Django-based web application designed for managing student admissions, academic records, and institutional examination billing.
 
 ## 👨‍💻 Developer Information
 - **Lead Developer**: Ruhulamin Siddique
@@ -18,6 +18,12 @@ A high-performance, secure, and modern Django-based web application designed for
 - **Live Notification Feed**: Instant activity tracking (New Admissions, Updates, Security) directly in the navbar.
 - **Theme Engine**: Persistent **Dark Mode** toggle with AdminLTE native integration.
 - **Sticky Layout**: One-click "Pin/Unpin" header toggle preserved across sessions.
+
+### 💰 Exam Billing & Remuneration (NEW)
+- **Automated Calculations**: Sophisticated engine for computing faculty remuneration across multiple exam parts (Question Setting, Script Examination, Moderation, etc.).
+- **Premium Analytics**: Real-time projected payable tracking and departmental progress monitoring.
+- **Document Generation**: One-click generation of professional PDF bills, attendance sheets, and summary statements.
+- **Faculty Directory**: Centralized profile management with employee ID and academic department synchronization.
 
 ### 👤 Staff Identity Hub 2.0
 - **Premium Dashboards**: Every staff member has a glassmorphism-styled personal dashboard.
@@ -44,18 +50,12 @@ A high-performance, secure, and modern Django-based web application designed for
 Admission/
 ├── admission_system/      # Project configuration (settings, main URLs)
 ├── core/                  # Security, RBAC, User Profiles, Activity Logging
-│   ├── middleware.py      # Login required & activity enforcement
-│   ├── context_processors # Global system settings & live notifications
-│   ├── models.py          # Role, UserProfile, ActivityLog, SystemSettings
-│   └── views.py           # Security, Theme toggles, Profile management
-├── students/              # Main application module
-│   ├── models.py          # Student, SMSHistory, ProgramChangeHistory
-│   ├── reports.py         # Reporting & export logic
-│   └── views.py           # Dashboard, Intelligence Search, Transfers
+├── exam_billing/          # Remuneration module (Exams, Faculty, Billing)
+├── students/              # Admission module (Student Records, Reports)
+├── master_data/           # Academic settings (Programs, Halls, Sessions)
 ├── static/                # Global static assets (css, js, images)
 ├── templates/             # Global templates and layout components
 ├── .env                   # Environment variables (Not in Version Control)
-├── passenger_wsgi.py      # cPanel Entry Point
 └── manage.py              # Django management script
 ```
 
