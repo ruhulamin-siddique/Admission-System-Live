@@ -2,10 +2,27 @@
 {% block title %}Fundamentals - {{ exam_program.program.short_name }}{% endblock %}
 
 {% block content %}
-<div class="content-header">
-    <div class="container-fluid d-flex justify-content-between">
-        <h1>{{ exam_program.program.short_name }} - Fundamentals</h1>
-        <span class="badge badge-info align-self-center">{{ exam_program.get_status_display }}</span>
+<div class="billing-module">
+{% include "exam_billing/partials/_print_header.html" with title="Program Fundamentals & Student Counts" %}
+
+<div class="content-header no-print">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-sm-6">
+                <h1 class="m-0 font-weight-bold text-dark">{{ exam_program.program.short_name }} - Fundamentals</h1>
+                <p class="text-muted mb-0 small">{{ exam_program.exam }}</p>
+            </div>
+            <div class="col-sm-6 text-right">
+                <div class="btn-group">
+                    <button onclick="window.print()" class="btn btn-primary shadow-sm px-3">
+                        <i class="fas fa-print mr-2"></i> Print / Save PDF
+                    </button>
+                    <a href="{% url 'billing_sheet_excel' exam_program.id 'courses' %}" class="btn btn-success shadow-sm px-3">
+                        <i class="fas fa-file-excel mr-2"></i> Export Excel
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

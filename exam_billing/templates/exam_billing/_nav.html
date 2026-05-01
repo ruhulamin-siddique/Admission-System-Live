@@ -1,19 +1,84 @@
 {% load billing_tags %}
+<style>
+.billing-nav-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    background: var(--billing-nav-bg, #f1f5f9) !important;
+    padding: 6px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--billing-nav-border, #e2e8f0) !important;
+    margin-bottom: 1.5rem !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.dark-mode .billing-nav-container {
+    background: rgba(15, 23, 42, 0.8) !important;
+    border-color: rgba(51, 65, 85, 0.5) !important;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3) !important;
+}
+
+.billing-nav-item {
+    padding: 6px 14px !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    color: var(--billing-nav-text, #64748b) !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    border: 1px solid transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    margin: 1px !important;
+}
+
+.billing-nav-item i {
+    margin-right: 8px !important;
+    font-size: 0.95rem !important;
+    color: var(--billing-primary, #3b82f6) !important;
+}
+
+.billing-nav-item:hover {
+    background: rgba(59, 130, 246, 0.1) !important;
+    color: var(--billing-primary, #3b82f6) !important;
+    transform: translateY(-1px) !important;
+}
+
+.billing-nav-item.active {
+    background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2) !important;
+    transform: scale(1.01) !important;
+}
+
+.billing-nav-item.active i {
+    color: #ffffff !important;
+}
+
+@media print {
+    .billing-nav-container, .no-print {
+        display: none !important;
+    }
+}
+</style>
 {% with request.resolver_match.url_name as url_name %}
 {% with request.resolver_match.kwargs.sheet as current_sheet %}
-<div class="btn-group btn-group-sm mb-4 shadow-sm" role="group">
-  <a class="btn {% if url_name == 'billing_program_workspace' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'billing_program_workspace' exam_program.id %}">
-    <i class="fas fa-list-alt mr-1"></i> Summary
+<div class="billing-nav-container" role="group">
+  <a class="billing-nav-item {% if url_name == 'billing_program_workspace' %}active{% endif %}" href="{% url 'billing_program_workspace' exam_program.id %}">
+    <i class="fas fa-list-alt"></i> Summary
   </a>
-  <a class="btn {% if url_name == 'billing_program_fundamentals' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'billing_program_fundamentals' exam_program.id %}">
-    <i class="fas fa-database mr-1"></i> Fundamentals
+  <a class="billing-nav-item {% if url_name == 'billing_program_fundamentals' %}active{% endif %}" href="{% url 'billing_program_fundamentals' exam_program.id %}">
+    <i class="fas fa-database"></i> Fundamentals
   </a>
   {% for s_key in "qsetter,examiner,scrutinizer,cecc,ec,rpsc,qmsc,qpsc"|split:"," %}
-  <a class="btn {% if current_sheet == s_key %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'billing_program_sheet' exam_program.id s_key %}">
+  <a class="billing-nav-item {% if current_sheet == s_key %}active{% endif %}" href="{% url 'billing_program_sheet' exam_program.id s_key %}">
     {{ s_key|title|replace:"Qsetter,Q Setter"|replace:"Qpsc,QPSC"|replace:"Qmsc,QMSC"|replace:"Cecc,CECC"|replace:"Rpsc,RPSC"|replace:"Ec,EC" }}
   </a>
   {% endfor %}
 </div>
 {% endwith %}
 {% endwith %}
-

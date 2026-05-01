@@ -93,7 +93,8 @@ def exam_list(request):
     exams = BillingExam.objects.prefetch_related('programs__program').all()
     if not user_can_view_all_departments(request.user):
         exams = exams.filter(programs__program__in=get_allowed_programs(request.user)).distinct()
-    return render(request, 'exam_billing/exam_list.html', {'exams': exams})
+    form = BillingExamForm(user=request.user)
+    return render(request, 'exam_billing/exam_list.html', {'exams': exams, 'form': form})
 
 
 @login_required
@@ -654,9 +655,18 @@ def program_sheet(request, pk, sheet):
         for item in queryset.exclude(level='All').select_related('faculty'):
             key = (item.level, item.term)
             if key not in tab_groups:
-                tab_groups[key] = {'level': item.level, 'term': item.term, 'tabulators': []}
-            tab_groups[key]['tabulators'].append(item)
-        rows = {'chairman': chairman, 'tabulators': sorted(tab_groups.values(), key=lambda x: (x['level'], x['term']))}
+                tab_groups[key] = {'level': item.level, 'term': item.term, 'tab1': None, 'tab2': None}
+            if item.role == 'Tabulator 1':
+                tab_groups[key]['tab1'] = item
+            elif item.role == 'Tabulator 2':
+                tab_groups[key]['tab2'] = item
+        
+        # Only include groups that have at least one tabulator assigned
+        filtered_tabulators = [g for g in tab_groups.values() if g['tab1'] or g['tab2']]
+        rows = {
+            'chairman': chairman, 
+            'tabulators': sorted(filtered_tabulators, key=lambda x: (x['level'], x['term']))
+        }
     # ---- qsetter / examiner / scrutinizer grouped by course -----------------
     elif sheet in ['qsetter', 'examiner', 'scrutinizer']:
         grouped_rows = {}
@@ -700,6 +710,46 @@ def program_sheet_delete(request, pk, sheet, row_id):
     if sheet == 'courses':
         return redirect('billing_program_fundamentals', pk=pk)
     return redirect('billing_program_sheet', pk=pk, sheet=sheet)
+
+
+@login_required
+@require_access('exam_billing', 'manage_department_data')
+def program_row_edit(request, pk, sheet, row_id):
+    exam_program = get_object_or_404(ExamProgram.objects.select_related('exam', 'program'), pk=pk)
+    require_exam_program_access(request.user, exam_program)
+    if not exam_program.is_editable:
+        messages.error(request, 'This department bill is locked or submitted.')
+        return redirect('billing_program_sheet', pk=pk, sheet=sheet)
+        
+    config = _sheet_config(sheet)
+    obj = get_object_or_404(config['model'].all_objects.filter(exam_program=exam_program), pk=row_id)
+    
+    # Special handling for QMSC forms (Chairman vs Member)
+    if sheet == 'qmsc':
+        from .forms import QMSCChairmanForm, QMSCMemberForm
+        form_class = QMSCChairmanForm if obj.role == 'Chairman' else QMSCMemberForm
+    else:
+        form_class = config['form']
+    
+    if request.method == 'POST':
+        form = form_class(request.POST, instance=obj, exam_program=exam_program) if config['needs_ep'] else form_class(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'{config["title"]} row updated.')
+            log_activity(request, 'UPDATE', 'exam_billing', f'Updated {sheet} row for {exam_program}', object_id=str(obj.id), scope=exam_program.program.short_name)
+            if sheet == 'courses':
+                return redirect('billing_program_fundamentals', pk=pk)
+            return redirect('billing_program_sheet', pk=pk, sheet=sheet)
+    else:
+        form = form_class(instance=obj, exam_program=exam_program) if config['needs_ep'] else form_class(instance=obj)
+        
+    return render(request, 'exam_billing/row_edit.html', {
+        'exam_program': exam_program,
+        'form': form,
+        'title': f"Edit {config['title']} Entry",
+        'sheet': sheet,
+        'obj': obj,
+    })
 
 
 @login_required
@@ -958,6 +1008,58 @@ def printable_package(request, pk):
     })
 
 
+@login_required
+@require_access('exam_billing', 'export_print')
+def export_sheet_excel(request, pk, sheet):
+    exam_program = get_object_or_404(ExamProgram.objects.select_related('exam', 'program'), pk=pk)
+    require_exam_program_access(request.user, exam_program)
+    
+    config = _sheet_config(sheet)
+    queryset = config['queryset'](exam_program)
+    
+    # Handle RPSC specially as it has no columns defined in config (handled in template)
+    if sheet == 'rpsc':
+        data = []
+        for i, obj in enumerate(queryset):
+            data.append({
+                'SL': i+1,
+                'Level': obj.level,
+                'Term': obj.term,
+                'Role': obj.role,
+                'Faculty': obj.faculty.name,
+                'Designation': obj.faculty.designation
+            })
+    else:
+        data = []
+        for i, obj in enumerate(queryset):
+            row = {'SL': i+1}
+            for path, label in config.get('columns', []):
+                val = obj
+                for part in path.split('.'):
+                    if val:
+                        val = getattr(val, part, '')
+                row[label] = val
+            data.append(row)
+        
+    df = pd.DataFrame(data)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name=config['title'][:31], index=False)
+        
+        # Formatting
+        workbook = writer.book
+        worksheet = writer.sheets[config['title'][:31]]
+        header_format = workbook.add_format({'bold': True, 'bg_color': '#D7E4BC', 'border': 1})
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+            worksheet.set_column(col_num, col_num, 20)
+
+    filename = f"{exam_program.program.short_name}_{sheet}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+    response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
 def _sheet_config(sheet):
     configs = {
         'faculty': {
@@ -984,6 +1086,7 @@ def _sheet_config(sheet):
         'qsetter':     {'title': 'Q Setter',   'model': QuestionSetterAssignment,  'form': QuestionSetterAssignmentForm,  'needs_ep': True, 'queryset': lambda ep: QuestionSetterAssignment.objects.select_related('faculty', 'course').filter(exam_program=ep), 'columns': [('course.course_code', 'Course'), ('faculty.name', 'Question Setter'), ('part', 'Part')]},
         'examiner':    {'title': 'Examiner',   'model': ScriptExaminerAssignment,  'form': ScriptExaminerAssignmentForm,  'needs_ep': True, 'queryset': lambda ep: ScriptExaminerAssignment.objects.select_related('faculty', 'course').filter(exam_program=ep), 'columns': [('course.course_code', 'Course'), ('faculty.name', 'Examiner'), ('part', 'Part')]},
         'scrutinizer': {'title': 'Scrutinizer','model': ScriptScrutinizerAssignment,'form': ScriptScrutinizerAssignmentForm,'needs_ep': True, 'queryset': lambda ep: ScriptScrutinizerAssignment.objects.select_related('faculty', 'course').filter(exam_program=ep), 'columns': [('course.course_code', 'Course'), ('faculty.name', 'Scrutinizer'), ('part', 'Part')]},
+        'summaries':   {'title': 'Student Counts','model': ExamLevelTermSummary,    'form': ExamLevelTermSummaryForm,     'needs_ep': True, 'queryset': lambda ep: ExamLevelTermSummary.objects.filter(exam_program=ep),                     'columns': [('level', 'Level'), ('term', 'Term'), ('total_students', 'Total Students')]},
     }
     if sheet not in configs:
         raise PermissionDenied

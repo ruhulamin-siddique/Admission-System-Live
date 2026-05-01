@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Admission Suite | AdminLTE 3{% endblock %}</title>
+  <title>{% block title %}Bangladesh Army University of Science and Technology | AdminLTE 3{% endblock %}</title>
 
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -318,13 +318,25 @@
   <!-- Main Sidebar Container -->
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
-    <a href="{% url 'dashboard' %}" class="brand-link" style="background-color: {{ sys_settings.theme_color|default:'#004085' }};">
+    <a href="{% url 'dashboard' %}" class="brand-link d-flex align-items-center" style="background-color: {{ sys_settings.theme_color|default:'#004085' }}; height: 57px; overflow: hidden;">
       {% if sys_settings.logo_url %}
-      <img src="{{ sys_settings.logo_url }}" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+      <img src="{{ sys_settings.logo_url }}" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8; max-height: 33px; margin-left: 0.5rem;">
       {% else %}
-      <i class="fas fa-graduation-cap ml-3 mr-2"></i>
+      <i class="fas fa-graduation-cap ml-3 mr-2" style="font-size: 1.2rem; color: white;"></i>
       {% endif %}
-      <span class="brand-text font-weight-light">{{ sys_settings.institution_name|default:"ADMISSION SUITE" }}</span>
+      <span class="brand-text font-weight-bold ml-2 text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px; color: white;">
+        {% if 'exam-billing' in request.path %}
+            Exam Billing
+        {% elif 'external-api' in request.path %}
+            API Gateway
+        {% elif 'settings' in request.path %}
+            Master Data
+        {% elif 'core' in request.path and 'staff' in request.path %}
+            Staff & Security
+        {% else %}
+            Admission
+        {% endif %}
+      </span>
     </a>
 
     <!-- Sidebar -->
@@ -583,7 +595,7 @@
     <div class="float-right d-none d-sm-block">
       <b>Developed by:</b> <a href="https://github.com/ruhulamin-siddique" target="_blank" class="text-primary font-weight-bold">Ruhulamin Siddique</a>
     </div>
-    <strong>Copyright &copy; 2026 Admission Suite.</strong>
+    <strong>Copyright &copy; 2026 Bangladesh Army University of Science and Technology.</strong>
     All rights reserved.
   </footer>
 

@@ -1,0 +1,263 @@
+/* Billing Module Theme Variables */
+:root {
+    --billing-card-bg: #ffffff;
+    --billing-header-bg: #f8fafc;
+    --billing-text: #1e293b;
+    --billing-text-muted: #64748b;
+    --billing-border: #e2e8f0;
+    --billing-table-head: #f1f5f9;
+    --billing-row-hover: #f8fafc;
+    --billing-primary: #3b82f6;
+    --billing-nav-bg: #f1f5f9;
+    --billing-nav-border: #e2e8f0;
+    --billing-nav-text: #64748b;
+    --billing-nav-active-bg: #ffffff;
+    --billing-nav-active-text: #2563eb;
+}
+
+.dark-mode {
+    --billing-card-bg: #1e293b;
+    --billing-header-bg: #0f172a;
+    --billing-text: #f1f5f9;
+    --billing-text-muted: #94a3b8;
+    --billing-border: #334155;
+    --billing-table-head: #0f172a;
+    --billing-row-hover: #1e293b;
+    --billing-primary: #60a5fa;
+    --billing-nav-bg: #0f172a;
+    --billing-nav-border: #334155;
+    --billing-nav-text: #94a3b8;
+    --billing-nav-active-bg: #1e293b;
+    --billing-nav-active-text: #60a5fa;
+}
+
+/* Premium Navigation Tabs - Redesigned for Modern Capsule Style */
+.billing-nav-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    background: var(--billing-nav-bg) !important;
+    padding: 10px !important;
+    border-radius: 20px !important;
+    border: 1px solid var(--billing-nav-border) !important;
+    margin-bottom: 2.5rem !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.dark-mode .billing-nav-container {
+    background: rgba(15, 23, 42, 0.8) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+}
+
+.billing-nav-item {
+    padding: 10px 20px !important;
+    border-radius: 14px !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    color: var(--billing-nav-text) !important;
+    text-decoration: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 1px solid transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    margin: 2px !important;
+}
+
+.billing-nav-item i {
+    margin-right: 10px !important;
+    font-size: 1.1rem !important;
+    color: var(--billing-primary) !important;
+    transition: all 0.3s ease !important;
+}
+
+.billing-nav-item:hover {
+    background: rgba(59, 130, 246, 0.08) !important;
+    color: var(--billing-primary) !important;
+    transform: translateY(-2px) !important;
+}
+
+.dark-mode .billing-nav-item:hover {
+    background: rgba(96, 165, 250, 0.1) !important;
+}
+
+.billing-nav-item.active {
+    background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25) !important;
+    transform: scale(1.02) !important;
+}
+
+.billing-nav-item.active i {
+    color: #ffffff !important;
+}
+
+.dark-mode .billing-nav-item.active {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4) !important;
+}
+
+/* Base Overrides for Billing Module */
+.billing-module .card {
+    background-color: var(--billing-card-bg) !important;
+    border-color: var(--billing-border) !important;
+    color: var(--billing-text) !important;
+}
+
+.billing-module .card-header {
+    background-color: var(--billing-header-bg) !important;
+    border-bottom-color: var(--billing-border) !important;
+}
+
+.billing-module .table {
+    color: var(--billing-text) !important;
+}
+
+.billing-module .table-bordered, 
+.billing-module .table-bordered td, 
+.billing-module .table-bordered th {
+    border-color: var(--billing-border) !important;
+}
+
+.billing-module .table thead th {
+    background-color: var(--billing-table-head) !important;
+    color: var(--billing-text) !important;
+}
+
+.billing-module .table-hover tbody tr:hover {
+    background-color: var(--billing-row-hover) !important;
+}
+
+.billing-module .text-muted {
+    color: var(--billing-text-muted) !important;
+}
+
+.billing-module .bg-light {
+    background-color: var(--billing-table-head) !important;
+}
+
+/* Individual Bill Paper View (Screen) */
+.bill-container {
+    background-color: var(--billing-card-bg) !important;
+    color: var(--billing-text) !important;
+    border: 1px solid var(--billing-border);
+}
+
+.dark-mode .bill-table th, 
+.dark-mode .bill-table td, 
+.dark-mode .info-grid, 
+.dark-mode .info-cell {
+    border-color: var(--billing-text) !important; /* Use text color for contrast in dark mode print simulation */
+}
+
+.dark-mode .section-header {
+    background: #334155 !important;
+    color: #fff !important;
+}
+
+.dark-mode .bill-table th {
+    background: #0f172a !important;
+}
+
+/* Global Print Optimization */
+@media print {
+    /* Hide all UI chrome */
+    .main-sidebar, 
+    .main-header, 
+    .content-header, 
+    .billing-nav-container, 
+    .no-print, 
+    .btn, 
+    .card-footer, 
+    .breadcrumb,
+    #modals-here,
+    .main-footer {
+        display: none !important;
+    }
+
+    /* Reset layout for paper */
+    .content-wrapper {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    .billing-module {
+        background: white !important;
+        color: #000 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .container-fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* Card styling for print - convert to flat structure */
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        background: white !important;
+    }
+
+    .card-header {
+        border: none !important;
+        padding: 0 !important;
+        margin-bottom: 20px !important;
+    }
+
+    .card-title {
+        font-size: 1.4rem !important;
+        font-weight: bold !important;
+        color: #000 !important;
+        text-align: left !important;
+        width: 100% !important;
+        display: block !important;
+    }
+
+    /* Table styling for high-clarity print */
+    .table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        color: #000 !important;
+        font-size: 10.5pt !important;
+        margin-top: 10px !important;
+    }
+
+    .table-bordered,
+    .table-bordered th, 
+    .table-bordered td {
+        border: 1.5px solid #000 !important; /* Slightly thicker for clarity */
+        padding: 6px 8px !important;
+        color: #000 !important;
+        background: transparent !important;
+    }
+
+    .table thead th {
+        background-color: #f2f2f2 !important; /* Very light grey for header contrast */
+        color: #000 !important;
+        font-weight: bold !important;
+        text-transform: uppercase !important;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* Remove all interactive/UI artifacts */
+    .badge {
+        border: 1px solid #000 !important;
+        background: transparent !important;
+        color: #000 !important;
+        padding: 2px 4px !important;
+    }
+
+    /* Page breaks and flow */
+    .card { page-break-inside: auto; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    thead { display: table-header-group; } /* Repeat header on each page */
+}
+

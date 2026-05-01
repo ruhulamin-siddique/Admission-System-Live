@@ -69,7 +69,7 @@ class UserProfile(models.Model):
         return self.role.permissions.filter(module=module, task=task).exists()
 
 class SystemSettings(models.Model):
-    institution_name = models.CharField(max_length=255, default="ADMISSION SUITE")
+    institution_name = models.CharField(max_length=255, default="Bangladesh Army University of Science and Technology")
     institution_logo_url = models.URLField(max_length=500, blank=True, null=True)
     institution_logo = models.ImageField(upload_to='branding/', blank=True, null=True)
     institution_favicon = models.ImageField(upload_to='branding/', blank=True, null=True)

@@ -58,10 +58,11 @@
 </div>
 
 <div class="bill-container">
-    <div class="bill-header">
-        <img src="/static/img/logo.png" style="height: 60px; margin-bottom: 10px;" alt="University Logo" onerror="this.style.display='none'">
-        <h2>BANGLADESH ARMY UNIVERSITY OF SCIENCE AND TECHNOLOGY</h2>
-        <h5>INDIVIDUAL BILL SHEET FOR EXAMINATIONS</h5>
+    <div class="bill-header" style="text-align: center; font-family: 'Times New Roman', Times, serif; color: #000;">
+        <img src="{{ sys_settings.logo_url|default:'/static/img/logo.png' }}" style="height: 80px; margin-bottom: 10px;" alt="Logo" onerror="this.style.display='none'">
+        <h2 style="margin: 0; font-weight: bold; font-size: 20pt;">BANGLADESH ARMY UNIVERSITY OF SCIENCE AND TECHNOLOGY</h2>
+        <p style="margin: 0; font-weight: bold; font-size: 10pt;">Saidpur cantonment</p>
+        <h4 style="margin: 10px 0; font-weight: bold; text-decoration: underline;">INDIVIDUAL BILL SHEET FOR EXAMINATIONS</h4>
     </div>
 
     <div class="info-grid">

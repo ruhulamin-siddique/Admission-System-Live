@@ -101,12 +101,42 @@ class ExamCourseForm(StyledModelForm):
         fields = ['level', 'term', 'course_code', 'offering_department', 'no_of_scripts', 'syllabus', 'course_title']
 
     def __init__(self, *args, **kwargs):
-        exam_program = kwargs.pop('exam_program', None)
+        self.exam_program = kwargs.pop('exam_program', None)
         super().__init__(*args, **kwargs)
-        if exam_program:
-            self.fields['offering_department'].initial = exam_program.program.short_name
-            self.fields['offering_department'].widget.attrs['readonly'] = True
-            self.fields['offering_department'].widget.attrs['class'] += ' bg-light text-muted'
+
+        # Populate offering_department with short names from Program (Academic Setting)
+        programs = Program.objects.filter(level_code='1').order_by('short_name') # Usually engineering/undergrad
+        dept_choices = [('', '---------')] + list(set([(p.short_name, p.short_name) for p in programs if p.short_name]))
+        dept_choices.sort(key=lambda x: x[0])
+        
+        self.fields['offering_department'] = forms.ChoiceField(
+            choices=dept_choices,
+            required=False,
+            label="Dept",
+            widget=forms.Select(attrs={'class': 'form-control'})
+        )
+        
+        if self.exam_program and not self.instance.pk:
+            self.fields['offering_department'].initial = self.exam_program.program.short_name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        course_code = cleaned_data.get('course_code')
+        syllabus = cleaned_data.get('syllabus', '')
+        
+        if self.exam_program and course_code:
+            code_clean = course_code.upper().replace(' ', '')
+            qs = ExamCourse.objects.filter(
+                exam_program=self.exam_program, 
+                course_code=code_clean, 
+                syllabus=syllabus,
+                is_deleted=False
+            )
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f"Course {course_code} with syllabus '{syllabus}' already exists in this exam.")
+        return cleaned_data
 
 
 class ExamFacultyForm(StyledModelForm):
@@ -124,8 +154,9 @@ ROLE_CHOICES = [
     ('', '---------'),
     ('Chairman', 'Chairman'),
     ('Member', 'Member'),
+    ('Tabulator 1', 'Tabulator 1'),
+    ('Tabulator 2', 'Tabulator 2'),
 ]
-
 
 class AssignmentFormMixin:
     def __init__(self, *args, **kwargs):
@@ -142,6 +173,54 @@ class AssignmentFormMixin:
                 required=False,
                 widget=forms.Select(attrs={'class': 'form-control'}),
             )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        course = cleaned_data.get('course')
+        part = cleaned_data.get('part')
+        role = cleaned_data.get('role')
+        faculty = cleaned_data.get('faculty')
+        model = self.Meta.model
+
+        # 1. Course + Part uniqueness (Qsetter, Examiner, Scrutinizer)
+        if course and part:
+            qs = model.objects.filter(exam_program=self.exam_program, course=course, part=part, is_deleted=False)
+            if self.instance.pk: qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f"Course {course} already has an assignment for Part {part}.")
+
+        # 2. QMSC uniqueness
+        if model == QMSCAssignment:
+            if role == 'Member' and course:
+                qs = QMSCAssignment.objects.filter(exam_program=self.exam_program, course=course, role='Member', is_deleted=False)
+                if self.instance.pk: qs = qs.exclude(pk=self.instance.pk)
+                if qs.exists():
+                    raise forms.ValidationError(f"Course {course} already has a QMSC Member assigned.")
+            elif role == 'Chairman':
+                qs = QMSCAssignment.objects.filter(exam_program=self.exam_program, role='Chairman', is_deleted=False)
+                if self.instance.pk: qs = qs.exclude(pk=self.instance.pk)
+                if qs.exists():
+                    raise forms.ValidationError("A QMSC Chairman is already assigned to this department bill.")
+
+        # 3. Faculty uniqueness (CECC, EC, QPSC)
+        if faculty and model in [CECCAssignment, ECMember, QPSCMember]:
+            qs = model.objects.filter(exam_program=self.exam_program, faculty=faculty, is_deleted=False)
+            if self.instance.pk: qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f"{faculty.name} is already assigned to this sheet.")
+
+        # 4. RPSC uniqueness (Level + Term + Role)
+        if model == RPSCAssignment:
+            level = cleaned_data.get('level')
+            term = cleaned_data.get('term')
+            if level and term and role:
+                qs = RPSCAssignment.objects.filter(exam_program=self.exam_program, level=level, term=term, role=role, is_deleted=False)
+                if self.instance.pk: qs = qs.exclude(pk=self.instance.pk)
+                if qs.exists():
+                    raise forms.ValidationError(f"Role '{role}' is already assigned for Level {level} {term}.")
+
+        return cleaned_data
+
 
 
 class CECCAssignmentForm(AssignmentFormMixin, StyledModelForm):

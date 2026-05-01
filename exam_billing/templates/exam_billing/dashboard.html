@@ -1,39 +1,237 @@
 {% extends "base.html" %}
-{% block title %}Exam Billing Dashboard{% endblock %}
+{% block title %}Billing Dashboard | Bangladesh Army University of Science and Technology{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Metric Cards */
+    .metric-card {
+        border: none;
+        border-radius: 20px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        position: relative;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .metric-card .inner { padding: 1.5rem; color: white; }
+    .metric-card h3 { font-size: 2.2rem; font-weight: 800; margin-bottom: 5px; }
+    .metric-card p { font-size: 0.9rem; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-card .icon {
+        position: absolute;
+        right: -10px;
+        bottom: -10px;
+        font-size: 5rem;
+        opacity: 0.15;
+        transform: rotate(-15deg);
+        transition: all 0.3s ease;
+    }
+    .metric-card:hover .icon { transform: rotate(0deg) scale(1.1); opacity: 0.25; }
+
+    /* Gradients */
+    .bg-gradient-blue { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
+    .bg-gradient-green { background: linear-gradient(135deg, #065f46 0%, #10b981 100%); }
+    .bg-gradient-orange { background: linear-gradient(135deg, #9a3412 0%, #f97316 100%); }
+    .bg-gradient-purple { background: linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%); }
+
+    /* Action Cards */
+    .action-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.2s;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        color: #1e293b;
+        text-decoration: none !important;
+    }
+    .action-card:hover {
+        background: #f8fafc;
+        border-color: #3b82f6;
+        transform: translateX(5px);
+    }
+    .action-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    /* Table Polish */
+    .workspace-table thead th {
+        background: #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #64748b;
+        border: none;
+    }
+    .workspace-table td { vertical-align: middle; border-top: 1px solid #f1f5f9; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="content-header">
-  <div class="container-fluid d-flex justify-content-between align-items-center">
-    <h1 class="m-0">Exam Billing</h1>
-    <a href="{% url 'billing_exam_list' %}" class="btn btn-primary"><i class="fas fa-file-invoice"></i> Exams</a>
-  </div>
+    <div class="container-fluid">
+        <div class="row align-items-end">
+            <div class="col-sm-6">
+                <h1 class="m-0 font-weight-bold text-dark">Billing Analytics</h1>
+                <p class="text-muted mb-0">Institutional Examination Expenditure & Remuneration Overview</p>
+            </div>
+            <div class="col-sm-6 text-right">
+                <div class="btn-group">
+                    <a href="{% url 'billing_exam_list' %}" class="btn btn-primary shadow-sm px-4">
+                        <i class="fas fa-list-check mr-2"></i> Manage Exam Cycles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
 <section class="content">
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-3"><div class="small-box bg-info"><div class="inner"><h3>{{ exam_count }}</h3><p>Total Exams</p></div><div class="icon"><i class="fas fa-layer-group"></i></div></div></div>
-      <div class="col-md-3"><div class="small-box bg-success"><div class="inner"><h3>{{ open_count }}</h3><p>Open Exams</p></div><div class="icon"><i class="fas fa-unlock"></i></div></div></div>
-      <div class="col-md-3"><div class="small-box bg-warning"><div class="inner"><h3>{{ pending_count }}</h3><p>Pending Review</p></div><div class="icon"><i class="fas fa-clock"></i></div></div></div>
-      <div class="col-md-3"><div class="small-box bg-primary"><div class="inner"><h3>{{ total_payable|floatformat:0 }}</h3><p>Active Payable</p></div><div class="icon"><i class="fas fa-money-bill"></i></div></div></div>
+    <div class="container-fluid">
+        <!-- Hero Stats -->
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="card metric-card bg-gradient-blue shadow-lg">
+                    <div class="inner">
+                        <h3>{{ exam_count }}</h3>
+                        <p>Total Exam Cycles</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-layer-group"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="card metric-card bg-gradient-green shadow-lg">
+                    <div class="inner">
+                        <h3>{{ open_count }}</h3>
+                        <p>Active Workspaces</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-unlock"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="card metric-card bg-gradient-orange shadow-lg">
+                    <div class="inner">
+                        <h3>{{ pending_count }}</h3>
+                        <p>Awaiting Approval</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-clock"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="card metric-card bg-gradient-purple shadow-lg">
+                    <div class="inner">
+                        <h3>৳{{ total_payable|floatformat:0 }}</h3>
+                        <p>Projected Payable</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-money-bill-wave"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <!-- Recent Activity -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="card-title font-weight-bold"><i class="fas fa-briefcase text-primary mr-2"></i> Active Departmental Billing</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table workspace-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="pl-4">Examination Context</th>
+                                        <th>Department</th>
+                                        <th>Lifecycle Status</th>
+                                        <th class="text-right pr-4">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ep in recent_exam_programs %}
+                                    <tr>
+                                        <td class="pl-4">
+                                            <div class="font-weight-bold text-dark">{{ ep.exam.name }}</div>
+                                            <small class="text-muted">{{ ep.exam.exam_type|upper }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-light border px-2 py-1">{{ ep.program.short_name|default:ep.program.name }}</span>
+                                        </td>
+                                        <td>
+                                            {% if ep.status == 'open' %}
+                                                <span class="badge badge-success px-3 py-2" style="border-radius: 20px;">DRAFTING</span>
+                                            {% elif ep.status == 'submitted' %}
+                                                <span class="badge badge-warning px-3 py-2" style="border-radius: 20px;">IN REVIEW</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary px-3 py-2" style="border-radius: 20px;">{{ ep.get_status_display|upper }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-right pr-4">
+                                            <a class="btn btn-sm btn-primary rounded-pill px-4" href="{% url 'billing_program_workspace' ep.id %}">
+                                                Go to Workspace
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted p-5">
+                                            <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
+                                            <p>No active billing sessions found.</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="col-lg-4">
+                <div class="form-section-title mb-3 font-weight-bold text-muted text-uppercase small" style="letter-spacing: 1px;">Quick Actions</div>
+                
+                <a href="{% url 'billing_exam_list' %}" class="action-card mb-3 shadow-sm">
+                    <div class="action-icon bg-light text-primary"><i class="fas fa-plus"></i></div>
+                    <div>
+                        <div class="font-weight-bold">New Exam Cycle</div>
+                        <small class="text-muted">Initialize a new billing period</small>
+                    </div>
+                </a>
+
+                <a href="{% url 'billing_faculty_directory' %}" class="action-card mb-3 shadow-sm">
+                    <div class="action-icon bg-light text-success"><i class="fas fa-users"></i></div>
+                    <div>
+                        <div class="font-weight-bold">Faculty Directory</div>
+                        <small class="text-muted">Manage remunerated staff profiles</small>
+                    </div>
+                </a>
+
+                <a href="{% url 'billing_rate_templates' %}" class="action-card mb-3 shadow-sm">
+                    <div class="action-icon bg-light text-warning"><i class="fas fa-sliders"></i></div>
+                    <div>
+                        <div class="font-weight-bold">Rate Configurations</div>
+                        <small class="text-muted">Adjust global payment defaults</small>
+                    </div>
+                </a>
+
+                <div class="alert alert-info border-0 shadow-sm mt-4" style="border-radius: 16px;">
+                    <h6 class="font-weight-bold"><i class="fas fa-lightbulb mr-2"></i> Analytics Tip</h6>
+                    <small>Use the <b>Open Management Console</b> on individual exams to track department-wise progress in real-time.</small>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Department Workspaces</h3></div>
-      <div class="card-body table-responsive p-0">
-        <table class="table table-hover">
-          <thead><tr><th>Exam</th><th>Department</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-          {% for ep in recent_exam_programs %}
-            <tr>
-              <td>{{ ep.exam }}</td><td>{{ ep.program.short_name|default:ep.program.name }}</td><td><span class="badge badge-secondary">{{ ep.get_status_display }}</span></td>
-              <td class="text-right"><a class="btn btn-sm btn-outline-primary" href="{% url 'billing_program_workspace' ep.id %}">Open</a></td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="4" class="text-muted text-center p-4">No billing workspace yet.</td></tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 </section>
 {% endblock %}
 

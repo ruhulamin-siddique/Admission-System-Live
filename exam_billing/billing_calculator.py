@@ -105,11 +105,15 @@ def calculate_exam_program_summary(exam_program):
         amount = scrutinizer_rate(settings, item, scrutinizers) * money(item.course.no_of_scripts) * part_multiplier(item.part)
         _add(details, totals, item.faculty, 'scrutiny', amount, f'{item.course.course_code} Part {item.part}')
 
+    # Map faculty to their ExamFaculty records to get the snapshot data
+    exam_faculties = {ef.faculty_id: ef.id for ef in exam_program.faculty.all()}
+
     rows = []
     for faculty_id, buckets in totals.items():
         faculty = details[faculty_id][0]['faculty']
         row = {
             'faculty': faculty,
+            'exam_faculty_id': exam_faculties.get(faculty_id),
             'designation': faculty.designation,
             'cecc': money(buckets['cecc']),
             'ec': money(buckets['ec']),

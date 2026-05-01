@@ -329,6 +329,15 @@ class RPSCAssignment(AssignmentBase):
     level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='All')
     term  = models.CharField(max_length=10, choices=TERM_CHOICES, default='All')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['exam_program', 'level', 'term', 'role'],
+                condition=models.Q(is_deleted=False),
+                name='unique_rpsc_assignment_role_per_slot'
+            )
+        ]
+
 
 class QMSCAssignment(AssignmentBase):
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='qmsc_assignments')
@@ -338,6 +347,20 @@ class QMSCAssignment(AssignmentBase):
     external_member_name        = models.CharField(max_length=120, blank=True)
     external_member_designation = models.CharField(max_length=120, blank=True)
     # is_external removed — use external_member_name to detect external entries
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['exam_program', 'course'],
+                condition=models.Q(is_deleted=False, role='Member'),
+                name='unique_active_qmsc_member_per_course'
+            ),
+            models.UniqueConstraint(
+                fields=['exam_program'],
+                condition=models.Q(is_deleted=False, role='Chairman'),
+                name='unique_active_qmsc_chairman_per_program'
+            )
+        ]
 
 
 class QPSCMember(AssignmentBase):
@@ -358,12 +381,39 @@ class QuestionSetterAssignment(CourseDutyBase):
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='question_setters')
     course = models.ForeignKey(ExamCourse, on_delete=models.PROTECT, related_name='question_setters')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['exam_program', 'course', 'part'],
+                condition=models.Q(is_deleted=False),
+                name='unique_active_qsetter_per_course_part'
+            )
+        ]
+
 
 class ScriptExaminerAssignment(CourseDutyBase):
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='script_examiners')
     course = models.ForeignKey(ExamCourse, on_delete=models.PROTECT, related_name='script_examiners')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['exam_program', 'course', 'part'],
+                condition=models.Q(is_deleted=False),
+                name='unique_active_examiner_per_course_part'
+            )
+        ]
+
 
 class ScriptScrutinizerAssignment(CourseDutyBase):
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='script_scrutinizers')
     course = models.ForeignKey(ExamCourse, on_delete=models.PROTECT, related_name='script_scrutinizers')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['exam_program', 'course', 'part'],
+                condition=models.Q(is_deleted=False),
+                name='unique_active_scrutinizer_per_course_part'
+            )
+        ]

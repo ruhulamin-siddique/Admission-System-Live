@@ -1,0 +1,35 @@
+{% load static %}
+{% load billing_tags %}
+<div class="print-only-header d-none">
+    <div style="display: flex; align-items: center; justify-content: center; width: 100%; font-family: 'Times New Roman', Times, serif; color: #000;">
+        <!-- Left: Logo -->
+        <div style="flex: 0 0 120px; text-align: left;">
+            {% if sys_settings.logo_url %}
+                <img src="{{ sys_settings.logo_url }}" alt="Logo" style="max-height: 100px; width: auto; -webkit-print-color-adjust: exact;">
+            {% else %}
+                <i class="fas fa-university fa-4x mb-2"></i>
+            {% endif %}
+        </div>
+        
+        <!-- Center: Text -->
+        <div style="flex: 1; text-align: center; padding-right: 120px;"> <!-- Padding-right to balance the left logo for centering -->
+            <h1 style="margin: 0; font-weight: bold; font-size: 26pt; line-height: 1.2;">{{ sys_settings.institution_name|default:"Bangladesh Army University of Science and Technology" }}</h1>
+            <p style="margin: 0; font-weight: bold; font-size: 11pt;">Saidpur cantonment</p>
+            <h2 style="margin: 5px 0; font-weight: bold; font-size: 22pt;">{{ exam_program.exam.name|default:exam_program.exam }}</h2>
+            <h3 style="margin: 10px 0 0 0; font-weight: bold; font-size: 14pt;">
+                <u>{{ title|replace:"Workspace," }} for {{ exam_program.exam.name|default:exam_program.exam }} of the Department of {{ exam_program.program.short_name }}</u>
+            </h3>
+        </div>
+    </div>
+    <div style="margin-top: 15px; border-bottom: 0px solid #000;"></div>
+</div>
+
+<style>
+@media print {
+    .print-only-header {
+        display: block !important;
+        margin-bottom: 1.5rem !important;
+        border-bottom: none !important;
+    }
+}
+</style>

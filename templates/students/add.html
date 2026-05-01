@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
-{% block title %}Add New Student | Admission Suite{% endblock %}
-{% block page_title %}Professional Admission Suite{% endblock %}
+{% block title %}Add New Student | Bangladesh Army University of Science and Technology{% endblock %}
+{% block page_title %}{{ sys_settings.institution_name|default:"Bangladesh Army University of Science and Technology" }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -308,8 +308,8 @@
     <div class="col-xl-11">
         <div class="card admission-card overflow-hidden">
             <div class="card-header-gradient d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0 font-weight-black">
-                    <i class="fas fa-id-badge mr-2"></i> New Admission Hub
+                <h3 class="card-title mb-0 font-weight-black text-uppercase" style="letter-spacing: 1px;">
+                    <i class="fas fa-id-card-clip mr-2"></i> Student Enrollment Portal
                 </h3>
                 <a href="{% url 'student_list' %}" class="btn btn-sm btn-outline-light rounded-pill"><i class="fas fa-arrow-left"></i> Directory</a>
             </div>
