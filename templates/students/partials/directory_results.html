@@ -9,15 +9,23 @@
         <span class="ml-2">Total: <span id="total-count-display" class="total-badge">{{ total_count }}</span></span>
     </div>
     <div class="d-flex align-items-center" style="gap: 10px;">
-    <a href="{% url 'print_blank_form' %}" class="btn btn-outline-primary directory-action-btn px-3 py-1 mr-2" target="_blank">
-        <i class="fas fa-print mr-1"></i> Print Blank Form
-    </a>
-    <a href="{% url 'export_students' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn btn-excel directory-action-btn px-3 py-1">
-        <i class="fas fa-file-excel mr-1"></i> Download
-    </a>
-    <a href="{% url 'export_students_all' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn btn-download-all directory-action-btn px-3 py-1">
-        <i class="fas fa-download mr-1"></i> Download (All Info)
-    </a>
+        <a href="{% url 'export_students' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn directory-action-btn btn-download-main">
+            <i class="fas fa-file-excel"></i> Download Excel
+        </a>
+        <div class="dropdown">
+            <button class="btn directory-action-btn dropdown-toggle" type="button" id="downloadToolsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-tools"></i> Export Tools
+            </button>
+            <div class="dropdown-menu dropdown-menu-right shadow-lg border-0" aria-labelledby="downloadToolsDropdown" style="border-radius: 10px; padding: 5px;">
+                <a class="dropdown-item py-2" href="{% url 'export_students_all' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
+                    <i class="fas fa-database mr-2 text-primary"></i> Full Database Dump
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item py-2" href="{% url 'print_blank_form' %}" target="_blank" style="font-size: 13px; font-weight: 600;">
+                    <i class="fas fa-print mr-2 text-info"></i> Print Blank Form
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 

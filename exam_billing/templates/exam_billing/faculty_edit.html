@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Edit Faculty Profile | Admission Suite{% endblock %}
+
+{% block content %}
+<!-- Designations Datalist for Suggestions -->
+<datalist id="designation-list">
+    {% for d in designations %}
+        <option value="{{ d }}">
+    {% endfor %}
+</datalist>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-user-edit mr-2 text-primary"></i> Edit Faculty Profile</h1>
+            <a href="{% url 'billing_faculty_directory' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Directory
+            </a>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <form method="post" class="card shadow-sm border-top-primary">
+            {% csrf_token %}
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">Update Information for {{ faculty.name }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for field in form %}
+                    <div class="col-md-6 mb-4">
+                        {% if field.name == 'is_active' %}
+                            <div id="status-card" class="mt-4 p-4 bg-white rounded-lg border shadow-sm d-flex align-items-center justify-content-between" style="border-left: 4px solid {% if field.value %}#28a745{% else %}#dc3545{% endif %} !important; transition: all 0.3s ease;">
+                                <div>
+                                    <div class="h5 font-weight-bold mb-1" id="status-text">
+                                        {% if field.value %}
+                                            <i class="fas fa-check-circle text-success mr-2" id="status-icon"></i> Profile is Active
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-danger mr-2" id="status-icon"></i> Profile is Inactive
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-muted small">Toggle to change the faculty availability status for exams.</div>
+                                </div>
+                                <div class="custom-control custom-switch custom-switch-xl">
+                                    <input type="checkbox" name="is_active" class="custom-control-input" id="{{ field.id_for_label }}" {% if field.value %}checked{% endif %} onchange="updateStatusUI(this)">
+                                    <label class="custom-control-label" for="{{ field.id_for_label }}"></label>
+                                </div>
+                            </div>
+                        {% else %}
+                            <label class="font-weight-bold small text-uppercase text-muted">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <div class="text-danger small mt-1 font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i> {{ error }}</div>
+                            {% endfor %}
+                            {% if field.help_text %}
+                                <small class="form-text text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer bg-light d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary px-5 font-weight-bold shadow-sm">
+                    <i class="fas fa-save mr-2"></i> Save Faculty Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<style>
+    .border-top-primary { border-top: 3px solid #2b3a8c !important; }
+    .form-control:focus { border-color: #2b3a8c; box-shadow: 0 0 0 0.2rem rgba(43, 58, 140, 0.15); }
+    
+    /* Clean XL Switch for Status Card */
+    .custom-switch-xl .custom-control-label::before {
+        height: 1.75rem;
+        width: 3rem;
+        border-radius: 1rem;
+        cursor: pointer;
+    }
+    .custom-switch-xl .custom-control-label::after {
+        width: calc(1.75rem - 4px);
+        height: calc(1.75rem - 4px);
+        border-radius: 1rem;
+        cursor: pointer;
+    }
+    .custom-switch-xl .custom-control-input:checked ~ .custom-control-label::after {
+        transform: translateX(1.25rem);
+    }
+    .custom-switch-xl .custom-control-label {
+        padding-top: 0.1rem;
+    }
+</style>
+
+<script>
+function updateStatusUI(checkbox) {
+    const card = document.getElementById('status-card');
+    const text = document.getElementById('status-text');
+    
+    if (checkbox.checked) {
+        card.style.borderLeftColor = '#28a745';
+        text.innerHTML = '<i class="fas fa-check-circle text-success mr-2" id="status-icon"></i> Profile is Active';
+    } else {
+        card.style.borderLeftColor = '#dc3545';
+        text.innerHTML = '<i class="fas fa-times-circle text-danger mr-2" id="status-icon"></i> Profile is Inactive';
+    }
+}
+</script>
+{% endblock %}

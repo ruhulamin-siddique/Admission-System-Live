@@ -3,6 +3,7 @@ from django.db import models
 class Cluster(models.Model):
     name = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=10, unique=True, help_text="UGC Cluster Code (e.g., 05)")
+    is_engineering = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -35,11 +36,12 @@ class Program(models.Model):
         ordering = ['-sort_order', 'name']
 
 class Hall(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    full_name = models.CharField(max_length=150, unique=True, null=True, blank=True)
+    short_name = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=10, unique=True, help_text="Internal/UGC Hall Code (e.g., 01)")
 
     def __str__(self):
-        return self.name
+        return self.full_name if self.full_name else self.short_name
 
 class AdmissionYear(models.Model):
     year = models.IntegerField(unique=True)

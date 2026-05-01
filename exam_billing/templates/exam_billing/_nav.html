@@ -1,14 +1,19 @@
-<div class="btn-group btn-group-sm mb-3" role="group">
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_workspace' exam_program.id %}">Summary</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'faculty' %}">Faculty-Bills</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'courses' %}">Fundamentals</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'qsetter' %}">Q Setter</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'examiner' %}">Examiner</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'scrutinizer' %}">Scrutinizer</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'cecc' %}">CECC</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'ec' %}">EC</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'rpsc' %}">RPSC</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'qmsc' %}">QMSC</a>
-  <a class="btn btn-outline-primary" href="{% url 'billing_program_sheet' exam_program.id 'qpsc' %}">QPSC</a>
+{% load billing_tags %}
+{% with request.resolver_match.url_name as url_name %}
+{% with request.resolver_match.kwargs.sheet as current_sheet %}
+<div class="btn-group btn-group-sm mb-4 shadow-sm" role="group">
+  <a class="btn {% if url_name == 'billing_program_workspace' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'billing_program_workspace' exam_program.id %}">
+    <i class="fas fa-list-alt mr-1"></i> Summary
+  </a>
+  <a class="btn {% if url_name == 'billing_program_fundamentals' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'billing_program_fundamentals' exam_program.id %}">
+    <i class="fas fa-database mr-1"></i> Fundamentals
+  </a>
+  {% for s_key in "qsetter,examiner,scrutinizer,cecc,ec,rpsc,qmsc,qpsc"|split:"," %}
+  <a class="btn {% if current_sheet == s_key %}btn-primary{% else %}btn-outline-primary{% endif %}" href="{% url 'billing_program_sheet' exam_program.id s_key %}">
+    {{ s_key|title|replace:"Qsetter,Q Setter"|replace:"Qpsc,QPSC"|replace:"Qmsc,QMSC"|replace:"Cecc,CECC"|replace:"Rpsc,RPSC"|replace:"Ec,EC" }}
+  </a>
+  {% endfor %}
 </div>
+{% endwith %}
+{% endwith %}
 

@@ -14,8 +14,8 @@ class ProgramAdmin(admin.ModelAdmin):
 
 @admin.register(Hall)
 class HallAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code')
-    search_fields = ('name', 'code')
+    list_display = ('full_name', 'short_name', 'code')
+    search_fields = ('full_name', 'short_name', 'code')
 
 @admin.register(AdmissionYear)
 class AdmissionYearAdmin(admin.ModelAdmin):

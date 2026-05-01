@@ -72,7 +72,7 @@ class BillingRateTemplate(models.Model):
     scrutinizer_full_non_engineering_rate = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('5.00'))
     scrutinizer_half_engineering_rate = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('3.00'))
     scrutinizer_half_non_engineering_rate = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('3.00'))
-    qmsc_question_mode = models.CharField(max_length=20, choices=QUESTION_MODE_CHOICES, default='UNIQUE')
+    rpsc_question_mode = models.CharField(max_length=20, choices=QUESTION_MODE_CHOICES, default='UNIQUE')
     qpsc_question_mode = models.CharField(max_length=20, choices=QUESTION_MODE_CHOICES, default='DUPLICATE')
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -113,7 +113,7 @@ class ExamBillingSetting(models.Model):
     scrutinizer_full_non_engineering_rate = models.DecimalField(max_digits=10, decimal_places=2)
     scrutinizer_half_engineering_rate = models.DecimalField(max_digits=10, decimal_places=2)
     scrutinizer_half_non_engineering_rate = models.DecimalField(max_digits=10, decimal_places=2)
-    qmsc_question_mode = models.CharField(max_length=20, choices=BillingRateTemplate.QUESTION_MODE_CHOICES)
+    rpsc_question_mode = models.CharField(max_length=20, choices=BillingRateTemplate.QUESTION_MODE_CHOICES)
     qpsc_question_mode = models.CharField(max_length=20, choices=BillingRateTemplate.QUESTION_MODE_CHOICES)
 
     @classmethod
@@ -138,6 +138,7 @@ class ExamProgram(models.Model):
         ('submitted', 'Submitted'),
         ('approved', 'Approved'),
         ('locked', 'Locked'),
+        ('finalized', 'Finalized'),
     ]
 
     exam = models.ForeignKey(BillingExam, on_delete=models.CASCADE, related_name='programs')
@@ -148,6 +149,9 @@ class ExamProgram(models.Model):
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     approved_at = models.DateTimeField(null=True, blank=True)
     locked_at = models.DateTimeField(null=True, blank=True)
+    finalized_at = models.DateTimeField(null=True, blank=True)
+    cached_total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
+    cached_summary = models.JSONField(default=dict, blank=True)
 
     class Meta:
         unique_together = ('exam', 'program')
@@ -177,11 +181,23 @@ class ExamProgram(models.Model):
         self.locked_at = timezone.now()
         self.save(update_fields=['status', 'locked_at'])
 
+    def mark_finalized(self, total, summary):
+        self.status = 'finalized'
+        self.finalized_at = timezone.now()
+        self.cached_total = total
+        self.cached_summary = summary
+        self.save(update_fields=['status', 'finalized_at', 'cached_total', 'cached_summary'])
+
 
 class FacultyProfile(models.Model):
-    name = models.CharField(max_length=150)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='faculty_profile')
+    first_name = models.CharField(max_length=75)
+    last_name = models.CharField(max_length=75, blank=True)
+    
     designation = models.CharField(max_length=120, blank=True)
     employee_id = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(max_length=150, null=True, blank=True)
+    mobile = models.CharField(max_length=20, null=True, blank=True)
     program = models.ForeignKey(Program, on_delete=models.PROTECT, related_name='faculty_profiles')
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
@@ -191,8 +207,15 @@ class FacultyProfile(models.Model):
     objects = ActiveManager()
     all_objects = models.Manager()
 
+    @property
+    def name(self):
+        return f"{self.first_name} {self.last_name}".strip()
+
+    def __str__(self):
+        return f'{self.name} ({self.designation})'
+
     class Meta:
-        ordering = ['program__name', 'name']
+        ordering = ['program__name', 'first_name', 'last_name']
         constraints = [
             models.UniqueConstraint(
                 fields=['program', 'employee_id'],
@@ -201,8 +224,6 @@ class FacultyProfile(models.Model):
             )
         ]
 
-    def __str__(self):
-        return f'{self.name} ({self.designation})'
 
 
 class ExamFaculty(models.Model):
@@ -216,7 +237,7 @@ class ExamFaculty(models.Model):
 
     class Meta:
         unique_together = ('exam_program', 'faculty')
-        ordering = ['faculty__name']
+        ordering = ['faculty__first_name', 'faculty__last_name']
 
     def save(self, *args, **kwargs):
         if not self.designation_snapshot and self.faculty_id:
@@ -228,27 +249,54 @@ class ExamFaculty(models.Model):
 
 
 class ExamCourse(models.Model):
+    LEVEL_CHOICES = [('1', 'Level 1'), ('2', 'Level 2'), ('3', 'Level 3'), ('4', 'Level 4')]
+    TERM_CHOICES = [('I', 'Term I'), ('II', 'Term II')]
+
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='courses')
-    level = models.CharField(max_length=30)
-    term = models.CharField(max_length=30)
+    level = models.CharField(max_length=30, choices=LEVEL_CHOICES)
+    term = models.CharField(max_length=30, choices=TERM_CHOICES)
     course_code = models.CharField(max_length=50)
     offering_department = models.CharField(max_length=100, blank=True)
     no_of_scripts = models.PositiveIntegerField(default=0)
     syllabus = models.CharField(max_length=100, blank=True)
     course_title = models.CharField(max_length=255, blank=True)
-    total_students = models.PositiveIntegerField(default=0)
-    is_engineering = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
 
     objects = ActiveManager()
     all_objects = models.Manager()
 
+    @property
+    def is_engineering(self):
+        return self.exam_program.program.cluster.is_engineering
+
     class Meta:
-        unique_together = ('exam_program', 'course_code')
+        unique_together = ('exam_program', 'course_code', 'syllabus')
         ordering = ['level', 'term', 'course_code']
 
+    def save(self, *args, **kwargs):
+        if self.course_code:
+            self.course_code = self.course_code.upper().replace(' ', '')
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.course_code
+        return f'{self.course_code} ({self.syllabus})' if self.syllabus else self.course_code
+
+
+class ExamLevelTermSummary(models.Model):
+    LEVEL_CHOICES = [('1', 'Level 1'), ('2', 'Level 2'), ('3', 'Level 3'), ('4', 'Level 4')]
+    TERM_CHOICES = [('I', 'Term I'), ('II', 'Term II')]
+
+    exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='level_term_summaries')
+    level = models.CharField(max_length=30, choices=LEVEL_CHOICES)
+    term = models.CharField(max_length=30, choices=TERM_CHOICES)
+    total_students = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('exam_program', 'level', 'term')
+        ordering = ['level', 'term']
+
+    def __str__(self):
+        return f"{self.level}-{self.term} ({self.total_students})"
 
 
 class AssignmentBase(models.Model):
@@ -271,21 +319,25 @@ class CECCAssignment(AssignmentBase):
 
 class ECMember(AssignmentBase):
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='ec_members')
-    level = models.CharField(max_length=30, blank=True)
-    term = models.CharField(max_length=30, blank=True)
+    # level/term removed — EC committee is not per level/term
 
 
 class RPSCAssignment(AssignmentBase):
+    LEVEL_CHOICES = [('All', 'All'), ('1', 'Level 1'), ('2', 'Level 2'), ('3', 'Level 3'), ('4', 'Level 4')]
+    TERM_CHOICES  = [('All', 'All'), ('I', 'Term I'), ('II', 'Term II')]
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='rpsc_assignments')
-    level = models.CharField(max_length=30)
-    term = models.CharField(max_length=30)
-    total_students = models.PositiveIntegerField(default=0)
+    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='All')
+    term  = models.CharField(max_length=10, choices=TERM_CHOICES, default='All')
 
 
 class QMSCAssignment(AssignmentBase):
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='qmsc_assignments')
-    course = models.ForeignKey(ExamCourse, on_delete=models.PROTECT, related_name='qmsc_assignments')
-    is_external = models.BooleanField(default=False)
+    # Override faculty to be nullable (external-only entries may have no faculty)
+    faculty = models.ForeignKey(FacultyProfile, on_delete=models.PROTECT, null=True, blank=True)
+    course  = models.ForeignKey(ExamCourse, on_delete=models.PROTECT, related_name='qmsc_assignments', null=True, blank=True)
+    external_member_name        = models.CharField(max_length=120, blank=True)
+    external_member_designation = models.CharField(max_length=120, blank=True)
+    # is_external removed — use external_member_name to detect external entries
 
 
 class QPSCMember(AssignmentBase):

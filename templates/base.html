@@ -443,18 +443,25 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a href="{% url 'billing_faculty_directory' %}" class="nav-link">
+                <a href="{% url 'billing_faculty_directory' %}" class="nav-link {% if request.resolver_match.url_name == 'billing_faculty_directory' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i><p>Faculty Directory</p>
                 </a>
               </li>
-              {% has_access 'exam_billing' 'manage_global_settings' as can_billing_rates %}
-              {% if can_billing_rates %}
               <li class="nav-item">
-                <a href="{% url 'billing_rate_templates' %}" class="nav-link">
+                <a href="{% url 'billing_fundamentals_hub' %}" class="nav-link {% if 'fundamentals' in request.path %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>Fundamentals</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'billing_individual_bills_directory' %}" class="nav-link {% if 'individual-bills' in request.path %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>Individual Bills</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'billing_rate_templates' %}" class="nav-link {% if request.resolver_match.url_name == 'billing_rate_templates' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i><p>Bill Settings</p>
                 </a>
               </li>
-              {% endif %}
             </ul>
           </li>
           {% endif %}

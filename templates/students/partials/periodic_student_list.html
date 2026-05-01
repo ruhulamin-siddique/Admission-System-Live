@@ -4,6 +4,8 @@
             <tr>
                 <th>ID</th>
                 <th>Name</th>
+                <th>Adm. Date</th>
+                <th>Imported</th>
                 <th>Status</th>
                 <th class="text-right">Action</th>
             </tr>
@@ -11,10 +13,12 @@
         <tbody>
             {% for s in students %}
             <tr>
-                <td class="font-weight-bold">{{ s.student_id }}</td>
-                <td>{{ s.student_name }}</td>
+                <td class="font-weight-bold" style="font-size: 0.85rem;">{{ s.student_id }}</td>
+                <td style="font-size: 0.85rem;">{{ s.student_name }}</td>
+                <td style="font-size: 0.85rem;">{{ s.admission_date|date:"d M Y" }}</td>
+                <td style="font-size: 0.85rem;">{{ s.created_at|date:"d M Y" }}</td>
                 <td>
-                    <span class="badge {% if s.admission_status == 'Active' %}badge-success{% else %}badge-danger{% endif %} small">
+                    <span class="badge {% if s.admission_status == 'Active' %}badge-success{% elif s.admission_status == 'Cancelled' %}badge-danger{% else %}badge-info{% endif %} small">
                         {{ s.admission_status }}
                     </span>
                 </td>

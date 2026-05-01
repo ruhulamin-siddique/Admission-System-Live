@@ -107,6 +107,7 @@ class Student(models.Model):
                 self.batch_number = int(nums[0])
             else:
                 self.batch_number = 0
+
         # Auto-sync structured address to legacy text if provided
         def _build_address(v, u, d, div):
             parts = [p for p in [v, u, d, div] if p]
@@ -119,6 +120,10 @@ class Student(models.Model):
         if self.permanent_division or self.permanent_district:
             addr = _build_address(self.permanent_village, self.permanent_upazila, self.permanent_district, self.permanent_division)
             if addr: self.permanent_address = addr
+
+        # Auto-populate admission_date if null
+        if not self.admission_date:
+            self.admission_date = timezone.now().date()
 
         super().save(*args, **kwargs)
 

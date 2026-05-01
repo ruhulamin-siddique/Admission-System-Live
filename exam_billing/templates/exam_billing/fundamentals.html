@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Fundamentals - {{ exam_program.program.short_name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid d-flex justify-content-between">
+        <h1>{{ exam_program.program.short_name }} - Fundamentals</h1>
+        <span class="badge badge-info align-self-center">{{ exam_program.get_status_display }}</span>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        {% include "exam_billing/_nav.html" %}
+
+        <div class="row">
+            <!-- Left Side: Courses -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="card-title font-weight-bold">
+                            <i class="fas fa-book mr-2 text-success"></i> Courses and Script Counts
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover mb-0 high-density-table">
+                                <thead class="bg-light text-center small font-weight-bold">
+                                    <tr>
+                                        <th style="width: 40px;">SL</th>
+                                        <th style="width: 80px;">Level</th>
+                                        <th style="width: 80px;">Term</th>
+                                        <th style="width: 120px;">Course Code</th>
+                                        <th style="width: 80px;">Dept</th>
+                                        <th style="width: 80px;">Scripts</th>
+                                        <th style="width: 80px;">Syllabus</th>
+                                        <th>Course Title</th>
+                                        <th style="width: 60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in courses %}
+                                    <tr class="small">
+                                        <td class="text-center">{{ forloop.counter }}</td>
+                                        <td class="text-center">L-{{ course.level }}</td>
+                                        <td class="text-center">T-{{ course.term }}</td>
+                                        <td class="font-weight-bold">{{ course.course_code }}</td>
+                                        <td class="text-center">{{ course.offering_department|default:"-" }}</td>
+                                        <td class="text-center">{{ course.no_of_scripts }}</td>
+                                        <td class="text-center">{{ course.syllabus|default:"-" }}</td>
+                                        <td>
+                                            {{ course.course_title }}
+                                            {% if not course.is_engineering %}<span class="badge badge-warning ml-1">Non-Eng</span>{% endif %}
+                                        </td>
+                                        <td class="text-center align-middle" style="white-space: nowrap;">
+                                            {% if exam_program.is_editable %}
+                                            <button type="button" hx-get="{% url 'billing_course_edit' exam_program.id course.id %}" hx-target="#modals-here" class="btn btn-link text-info p-0 mr-1"><i class="fas fa-edit"></i></button>
+                                            <button type="submit" form="del-course-{{ course.id }}"
+                                                onclick="return confirm('Remove this course?')"
+                                                class="btn btn-link text-danger p-0 border-0 bg-transparent" title="Delete">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="9" class="text-center text-muted p-4 italic">No courses added yet.</td></tr>
+                                    {% endfor %}
+                                    
+                                    {% if exam_program.is_editable %}
+                                    <tr class="bg-light" id="add-course-row">
+                                        <td class="text-center align-middle"><i class="fas fa-plus text-success"></i></td>
+                                        <td class="p-1">{{ course_form.level }}</td>
+                                        <td class="p-1">{{ course_form.term }}</td>
+                                        <td class="p-1">{{ course_form.course_code }}</td>
+                                        <td class="p-1">{{ course_form.offering_department }}</td>
+                                        <td class="p-1">{{ course_form.no_of_scripts }}</td>
+                                        <td class="p-1">{{ course_form.syllabus }}</td>
+                                        <td class="p-1">{{ course_form.course_title }}</td>
+                                        <td class="p-1 text-center">
+                                            <button type="submit" form="add-course-form" class="btn btn-xs btn-success"><i class="fas fa-save"></i></button>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Student Counts -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3">
+                        <h3 class="card-title font-weight-bold">
+                            <i class="fas fa-users mr-2 text-primary"></i> Level/Term Student Totals
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover mb-0 high-density-table">
+                                <thead class="bg-light text-center small font-weight-bold">
+                                    <tr>
+                                        <th style="width: 100px;">Level</th>
+                                        <th style="width: 100px;">Term</th>
+                                        <th>Total Students</th>
+                                        <th style="width: 60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for summary in summaries %}
+                                    <tr class="small">
+                                        <td class="text-center">Level {{ summary.level }}</td>
+                                        <td class="text-center">Term {{ summary.term }}</td>
+                                        <td class="text-center font-weight-bold">{{ summary.total_students }}</td>
+                                        <td class="text-center align-middle" style="white-space: nowrap;">
+                                            {% if exam_program.is_editable %}
+                                            <button type="button" hx-get="{% url 'billing_summary_edit' exam_program.id summary.id %}" hx-target="#modals-here" class="btn btn-link text-info p-0 mr-1"><i class="fas fa-edit"></i></button>
+                                            <button type="submit" form="del-summary-{{ summary.id }}"
+                                                onclick="return confirm('Remove this student count?')"
+                                                class="btn btn-link text-danger p-0 border-0 bg-transparent" title="Delete">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center text-muted p-4 italic">No student counts added.</td></tr>
+                                    {% endfor %}
+
+                                    {% if exam_program.is_editable %}
+                                    <tr class="bg-light" id="add-summary-row">
+                                        <td class="p-1">{{ summary_form.level }}</td>
+                                        <td class="p-1">{{ summary_form.term }}</td>
+                                        <td class="p-1">{{ summary_form.total_students }}</td>
+                                        <td class="p-1 text-center">
+                                            <button type="submit" form="add-summary-form" class="btn btn-xs btn-primary"><i class="fas fa-save"></i></button>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white small text-muted">
+                        <i class="fas fa-info-circle mr-1"></i> These totals drive RPSC calculations for the entire department.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     ALL FORMS LIVE OUTSIDE TABLES (HTML5 requirement).
+     Buttons in the table reference these via form="..." attribute.
+============================================================ -->
+{% if exam_program.is_editable %}
+
+<!-- Add-Course form -->
+<form id="add-course-form" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_course">
+</form>
+
+<!-- Add-Summary form -->
+<form id="add-summary-form" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_summary">
+</form>
+
+<!-- Delete-Course forms (one per course row) -->
+{% for course in courses %}
+<form id="del-course-{{ course.id }}" method="post"
+      action="{% url 'billing_program_sheet_delete' exam_program.id 'courses' course.id %}">
+    {% csrf_token %}
+</form>
+{% endfor %}
+
+<!-- Delete-Summary forms (one per summary row) -->
+{% for summary in summaries %}
+<form id="del-summary-{{ summary.id }}" method="post"
+      action="{% url 'billing_summary_delete' exam_program.id summary.id %}">
+    {% csrf_token %}
+</form>
+{% endfor %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Wire add-row inputs to their respective forms
+        document.querySelectorAll('#add-course-row select, #add-course-row input').forEach(el => el.setAttribute('form', 'add-course-form'));
+        document.querySelectorAll('#add-summary-row select, #add-summary-row input').forEach(el => el.setAttribute('form', 'add-summary-form'));
+    });
+</script>
+{% endif %}
+
+<!-- Modal Container for HTMX edits -->
+<div id="modals-here"></div>
+
+<style>
+    .high-density-table td, .high-density-table th { padding: 0.4rem !important; vertical-align: middle; }
+    .high-density-table .form-control { 
+        height: calc(1.5em + 0.5rem + 2px) !important; 
+        padding: 0.25rem 0.5rem !important; 
+        font-size: 0.8rem !important;
+        border-radius: 4px !important;
+    }
+    .bg-light { background-color: #f8fafc !important; }
+    .italic { font-style: italic; }
+</style>
+{% endblock %}

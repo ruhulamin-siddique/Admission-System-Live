@@ -40,7 +40,11 @@ if not SECRET_KEY:
 elif not DEBUG and SECRET_KEY.startswith('django-insecure-'):
     raise RuntimeError('A production SECRET_KEY must not use Django insecure development prefixes.')
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'portal.baust.edu.bd,www.portal.baust.edu.bd,localhost,127.0.0.1').split(',')
+
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://portal.baust.edu.bd').split(',')
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition

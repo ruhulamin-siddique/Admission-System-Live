@@ -43,7 +43,7 @@ class FacultyProfileAdmin(admin.ModelAdmin):
 @admin.register(ExamCourse)
 class ExamCourseAdmin(admin.ModelAdmin):
     list_display = ('course_code', 'course_title', 'exam_program', 'level', 'term', 'no_of_scripts')
-    list_filter = ('exam_program__exam', 'exam_program__program', 'is_engineering')
+    list_filter = ('exam_program__exam', 'exam_program__program')
     search_fields = ('course_code', 'course_title')
 
 

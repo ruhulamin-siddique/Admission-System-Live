@@ -11,4 +11,14 @@ def dotted_get(obj, path):
         if value is None:
             return ''
     return value
+@register.filter
+def split(value, arg):
+    return value.split(arg)
 
+
+@register.filter
+def replace(value, arg):
+    if "," not in arg:
+        return value
+    old, new = arg.split(",")
+    return str(value).replace(old, new)

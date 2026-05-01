@@ -41,11 +41,13 @@ ACCESS_REGISTRY = {
         "tasks": {
             "view_dashboard": ("View Billing Dashboard", "Access exam billing dashboards and summaries."),
             "manage_exams": ("Manage Billing Exams", "Create exams and open departments/programs for billing."),
+            "delete_exam": ("Delete Exam", "Permanently remove an exam and all associated billing data."),
             "manage_department_data": ("Manage Department Billing Data", "Enter faculty, courses, and committee duty sheets."),
             "manage_global_settings": ("Manage Billing Settings", "Configure global default bill rates and rules."),
             "approve_finalize": ("Approve and Finalize Bills", "Approve, lock, reopen, and finalize department bills."),
             "view_all_departments": ("View All Departments", "See billing data across all departments/programs."),
             "export_print": ("Export and Print Bills", "Print individual bills and export billing summaries."),
+            "bulk_import_faculty": ("Bulk Import Faculty", "Upload faculty profiles in bulk using Excel templates."),
         }
     },
     "security": {

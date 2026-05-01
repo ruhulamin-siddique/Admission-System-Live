@@ -1,17 +1,447 @@
 {% extends "base.html" %}
 {% load billing_tags %}
-{% block title %}{{ title }}{% endblock %}
-{% block content %}
-<div class="content-header"><div class="container-fluid"><h1>{{ title }} <small class="text-muted">{{ exam_program.program.short_name }}</small></h1></div></div>
-<section class="content"><div class="container-fluid">
-{% include "exam_billing/_nav.html" %}
-{% if sheet == 'faculty' and exam_program.is_editable %}<a class="btn btn-sm btn-outline-info mb-3" href="{% url 'billing_copy_faculty' exam_program.id %}">Copy Faculty From Directory</a>{% endif %}
-<div class="card"><div class="card-header"><h3 class="card-title">{{ title }} Sheet</h3></div><div class="card-body table-responsive p-0">
-<table class="table table-bordered table-sm"><thead><tr>{% for key,label in columns %}<th>{{ label }}</th>{% endfor %}<th></th></tr></thead><tbody>{% for row in rows %}<tr>{% for key,label in columns %}<td>{{ row|dotted_get:key }}</td>{% endfor %}<td class="text-right">{% if exam_program.is_editable %}<a class="btn btn-xs btn-outline-danger" href="{% url 'billing_program_sheet_delete' exam_program.id sheet row.id %}">Remove</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="{{ columns|length|add:1 }}" class="text-center text-muted p-4">No rows yet.</td></tr>{% endfor %}</tbody></table>
-</div></div>
-{% if exam_program.is_editable %}
-<form method="post" class="card">{% csrf_token %}<div class="card-header"><h3 class="card-title">Add Row</h3></div><div class="card-body"><div class="row">{% for field in form %}<div class="col-md-4 mb-3"><label>{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div></div><div class="card-footer"><button class="btn btn-primary">Save Row</button></div></form>
-{% else %}<div class="alert alert-info">This department bill is submitted or locked. Inputs are read-only.</div>{% endif %}
-</div></section>
+
+{% block title %}{{ title }} Workspace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .high-density-table th, .high-density-table td { 
+        padding: 6px 10px !important; 
+        font-size: 0.9rem;
+        vertical-align: middle !important;
+    }
+    .high-density-table thead th {
+        background: #f4f6f9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        border-bottom: 2px solid #dee2e6 !important;
+    }
+    .merged-header {
+        background: #e9ecef !important;
+        text-align: center;
+        border-bottom: 1px solid #ced4da !important;
+    }
+    .form-label-modern {
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 4px;
+        display: block;
+    }
+</style>
 {% endblock %}
 
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="font-weight-bold">{{ title }}</h1>
+                <p class="text-muted mb-0">Managing {{ exam_program.program.name }} for {{ exam_program.exam.name }}</p>
+            </div>
+            <div class="no-print">
+                <a href="{% url 'billing_program_workspace' exam_program.id %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-chevron-left mr-1"></i> Back to Workspace
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        {% include "exam_billing/_nav.html" %}
+
+        {% if sheet in 'qsetter,examiner,scrutinizer' %}
+        <!-- Specialized Merged Layout -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover high-density-table mb-0">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" class="text-center" style="width: 60px;">Level</th>
+                                <th rowspan="2" class="text-center" style="width: 60px;">Term</th>
+                                <th rowspan="2" class="text-center">Course Code</th>
+                                <th colspan="2" class="merged-header">
+                                    {% if sheet == 'qsetter' %}Question Setter{% elif sheet == 'examiner' %}Script Examiner{% else %}Script Scrutinizer{% endif %} - Part A
+                                </th>
+                                <th colspan="2" class="merged-header">
+                                    {% if sheet == 'qsetter' %}Question Setter{% elif sheet == 'examiner' %}Script Examiner{% else %}Script Scrutinizer{% endif %} - Part B
+                                </th>
+                                <th rowspan="2" class="text-center no-print" style="width: 100px;">Actions</th>
+                            </tr>
+                            <tr>
+                                <th>Name</th>
+                                <th style="width: 180px;">Designation</th>
+                                <th>Name</th>
+                                <th style="width: 180px;">Designation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for group in rows %}
+                            <tr>
+                                <td class="text-center">{{ group.course.level }}</td>
+                                <td class="text-center">{{ group.course.term }}</td>
+                                <td class="font-weight-bold">{{ group.course.course_code }}</td>
+                                
+                                <!-- Part A -->
+                                <td>
+                                    {% if group.part_a %}{{ group.part_a.faculty.name }}{% elif group.full %}{{ group.full.faculty.name }}{% else %}-{% endif %}
+                                </td>
+                                <td class="small text-muted">
+                                    {% if group.part_a %}{{ group.part_a.faculty.designation }}{% elif group.full %}{{ group.full.faculty.designation }}{% else %}-{% endif %}
+                                </td>
+                                
+                                <!-- Part B -->
+                                <td>
+                                    {% if group.part_b %}{{ group.part_b.faculty.name }}{% elif group.full %}{{ group.full.faculty.name }}{% else %}-{% endif %}
+                                </td>
+                                <td class="small text-muted">
+                                    {% if group.part_b %}{{ group.part_b.faculty.designation }}{% elif group.full %}{{ group.full.faculty.designation }}{% else %}-{% endif %}
+                                </td>
+                                
+                                <td class="text-center no-print align-middle" style="white-space: nowrap;">
+                                    {% if exam_program.is_editable %}
+                                        {% if group.part_a %}
+                                        <button type="button" class="btn btn-link font-weight-bold text-danger p-0 mx-1 border-0 bg-transparent" title="Remove A"
+                                            onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet group.part_a.id %}', 'Remove Part A assignment?')">A</button>
+                                        {% endif %}
+                                        {% if group.part_b %}
+                                        <button type="button" class="btn btn-link font-weight-bold text-danger p-0 mx-1 border-0 bg-transparent" title="Remove B"
+                                            onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet group.part_b.id %}', 'Remove Part B assignment?')">B</button>
+                                        {% endif %}
+                                        {% if group.full %}
+                                        <button type="button" class="btn btn-link font-weight-bold text-danger p-0 mx-1 border-0 bg-transparent" title="Remove Full"
+                                            onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet group.full.id %}', 'Remove Full assignment?')">A+B</button>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted p-5">
+                                    <i class="fas fa-folder-open display-4 mb-3 d-block opacity-50"></i>
+                                    No courses assigned to this sheet yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            {% if exam_program.is_editable %}
+                            <tr class="bg-light">
+                                <td colspan="100%" class="p-2">
+                                    <div class="d-flex align-items-center flex-wrap" id="add-row">
+                                        <strong class="mr-3 text-success"><i class="fas fa-plus"></i> Quick Add:</strong>
+                                        {% for field in form %}
+                                        <div class="mr-3 mb-1 mt-1 d-flex align-items-center">
+                                            <span class="mr-2 small font-weight-bold text-muted">{{ field.label }}:</span>
+                                            {{ field }}
+                                        </div>
+                                        {% endfor %}
+                                        <button type="submit" form="add-form" class="btn btn-sm btn-success ml-auto mt-1 mb-1"><i class="fas fa-save mr-1"></i>Save</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% elif sheet == 'rpsc' %}
+        <!-- RPSC Specialized Layout -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered high-density-table mb-0">
+                        <!-- Header 1: Chairman Section -->
+                        <thead>
+                            <tr class="bg-light">
+                                <th style="width: 80px;">Level</th>
+                                <th style="width: 80px;">Term</th>
+                                <th>Chairman</th>
+                                <th>Designation</th>
+                                <th class="no-print text-center" style="width: 80px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-primary-light">
+                                <td class="text-center font-weight-bold">All</td>
+                                <td class="text-center font-weight-bold">All</td>
+                                <td class="font-weight-bold text-primary">
+                                    {% if rows.chairman %}{{ rows.chairman.faculty.name }}{% else %}<span class="text-muted small">No Chairman Assigned</span>{% endif %}
+                                </td>
+                                <td class="text-muted">{% if rows.chairman %}{{ rows.chairman.faculty.designation }}{% else %}-{% endif %}</td>
+                                <td class="text-center no-print">
+                                    {% if rows.chairman and exam_program.is_editable %}
+                                    <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
+                                        onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet rows.chairman.id %}', 'Remove Chairman?')"><i class="fas fa-times"></i></button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+
+                        <!-- Header 2: Tabulators Section -->
+                        <thead>
+                            <tr class="bg-light">
+                                <th>Level</th>
+                                <th>Term</th>
+                                <th>Tabulator</th>
+                                <th>Designation</th>
+                                <th class="no-print text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for group in rows.tabulators %}
+                            {% for item in group.tabulators %}
+                            <tr>
+                                {% if forloop.first %}
+                                <td rowspan="{{ group.tabulators|length }}" class="text-center align-middle font-weight-bold">{{ group.level }}</td>
+                                <td rowspan="{{ group.tabulators|length }}" class="text-center align-middle font-weight-bold">{{ group.term }}</td>
+                                {% endif %}
+                                <td>{{ item.faculty.name }}</td>
+                                <td class="text-muted small">{{ item.faculty.designation }}</td>
+                                <td class="text-center no-print align-middle">
+                                    {% if exam_program.is_editable %}
+                                    <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
+                                        onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet item.id %}', 'Remove Tabulator?')"><i class="fas fa-times"></i></button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% endfor %}
+
+                            {% if not rows.chairman and not rows.tabulators %}
+                            <tr><td colspan="5" class="text-center text-muted p-4">No RPSC assignments yet.</td></tr>
+                            {% endif %}
+                            
+                            {% if exam_program.is_editable %}
+                            <tr class="bg-light no-print">
+                                <td colspan="5" class="p-2">
+                                    <div class="d-flex align-items-center flex-wrap" id="add-row-rpsc">
+                                        <strong class="mr-3 text-success"><i class="fas fa-plus"></i> Quick Add:</strong>
+                                        {% for field in form %}
+                                        <div class="mr-3 mb-1 mt-1 d-flex align-items-center">
+                                            <span class="mr-2 small font-weight-bold text-muted">{{ field.label }}:</span>
+                                            {{ field }}
+                                        </div>
+                                        {% endfor %}
+                                        <button type="submit" form="add-form" class="btn btn-sm btn-success ml-auto mt-1 mb-1"><i class="fas fa-save mr-1"></i>Save</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% elif sheet == 'qmsc' %}
+        <!-- QMSC Specialized Layout -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered high-density-table mb-0">
+                        <thead>
+                            <tr class="bg-light">
+                                <th style="width: 60px;">All</th>
+                                <th style="width: 60px;">All</th>
+                                <th style="width: 120px;">All</th>
+                                <th colspan="2">Chairman</th>
+                                <th colspan="2">Designation</th>
+                                <th class="no-print text-center" style="width: 60px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Chairman Row -->
+                            <tr class="bg-primary-light">
+                                <td class="text-center font-weight-bold">All</td>
+                                <td class="text-center font-weight-bold">All</td>
+                                <td class="text-center font-weight-bold">All</td>
+                                <td colspan="2">
+                                    <span class="font-weight-bold text-primary">{% if rows.chairman %}{{ rows.chairman.faculty.name }}{% else %}<span class="text-muted small">No Chairman Assigned</span>{% endif %}</span>
+                                </td>
+                                <td colspan="2">
+                                    {% if rows.chairman %}<small class="text-muted">{{ rows.chairman.faculty.designation }}</small>{% else %}-{% endif %}
+                                </td>
+                                <td class="text-center no-print align-middle">
+                                    {% if rows.chairman and exam_program.is_editable %}
+                                    <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
+                                        onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet rows.chairman.id %}', 'Remove Chairman?')"><i class="fas fa-times"></i></button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+
+                        <thead>
+                            <tr class="bg-light">
+                                <th>Level</th>
+                                <th>Term</th>
+                                <th>Course Code</th>
+                                <th>Internal Member</th>
+                                <th>Designation</th>
+                                <th>External Member</th>
+                                <th>Designation</th>
+                                <th class="no-print text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Member Rows -->
+                            {% for row in rows.member_rows %}
+                            <tr>
+                                <td class="text-center">{{ row.course.level }}</td>
+                                <td class="text-center">{{ row.course.term }}</td>
+                                <td class="font-weight-bold text-center">{{ row.course.course_code }}</td>
+                                <td>{% if row.faculty %}{{ row.faculty.name }}{% else %}-{% endif %}</td>
+                                <td class="text-muted small">{% if row.faculty %}{{ row.faculty.designation }}{% else %}-{% endif %}</td>
+                                <td class="text-info font-weight-bold">{{ row.external_member_name|default:"-" }}</td>
+                                <td class="text-muted small">{{ row.external_member_designation|default:"-" }}</td>
+                                <td class="text-center no-print align-middle">
+                                    {% if exam_program.is_editable %}
+                                    <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
+                                        onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet row.id %}', 'Remove this course assignment?')"><i class="fas fa-times"></i></button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                            {% if not rows.chairman and not rows.member_rows %}
+                            <tr><td colspan="8" class="text-center text-muted p-4">No QMSC assignments yet.</td></tr>
+                            {% endif %}
+
+                            {% if exam_program.is_editable %}
+                            <!-- Chairman Add -->
+                            <tr class="bg-light border-top-2 no-print">
+                                <td colspan="8" class="p-2">
+                                    <div class="d-flex align-items-center flex-wrap" id="add-qmsc-chairman">
+                                        <strong class="mr-3 text-primary"><i class="fas fa-user-tie"></i> Add Chairman:</strong>
+                                        {% for field in chairman_form %}
+                                        <div class="mr-3 mb-1 mt-1 d-flex align-items-center">
+                                            <span class="mr-2 small font-weight-bold text-muted">{{ field.label }}:</span>
+                                            {{ field }}
+                                        </div>
+                                        {% endfor %}
+                                        <button type="submit" name="add_chairman" form="add-form" class="btn btn-sm btn-primary ml-auto"><i class="fas fa-save mr-1"></i>Save Chairman</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Member Add -->
+                            <tr class="bg-light no-print">
+                                <td colspan="8" class="p-2">
+                                    <div class="d-flex align-items-center flex-wrap" id="add-qmsc-member">
+                                        <strong class="mr-3 text-success"><i class="fas fa-users"></i> Add Course Member:</strong>
+                                        {% for field in member_form %}
+                                        <div class="mr-3 mb-1 mt-1 d-flex align-items-center">
+                                            <span class="mr-2 small font-weight-bold text-muted">{{ field.label }}:</span>
+                                            {{ field }}
+                                        </div>
+                                        {% endfor %}
+                                        <button type="submit" name="add_member" form="add-form" class="btn btn-sm btn-success ml-auto"><i class="fas fa-save mr-1"></i>Save Member</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Generic Layout -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-bordered table-sm high-density-table mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">SL</th>
+                            {% for key,label in columns %}<th>{{ label }}</th>{% endfor %}
+                            <th class="no-print" style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            {% for key,label in columns %}<td>{{ row|dotted_get:key }}</td>{% endfor %}
+                            <td class="text-right no-print align-middle" style="white-space: nowrap;">
+                                {% if exam_program.is_editable %}
+                                <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
+                                    onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet row.id %}', 'Remove this record?')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="{{ columns|length|add:1 }}" class="text-center text-muted p-4">No rows yet.</td></tr>
+                        {% endfor %}
+                        
+                        {% if exam_program.is_editable %}
+                        <tr class="bg-light">
+                            <td colspan="100%" class="p-2">
+                                <div class="d-flex align-items-center flex-wrap" id="add-row-generic">
+                                    <strong class="mr-3 text-success"><i class="fas fa-plus"></i> Quick Add:</strong>
+                                    {% for field in form %}
+                                    <div class="mr-3 mb-1 mt-1 d-flex align-items-center">
+                                        <span class="mr-2 small font-weight-bold text-muted">{{ field.label }}:</span>
+                                        {{ field }}
+                                    </div>
+                                    {% endfor %}
+                                    <button type="submit" form="add-form" class="btn btn-sm btn-success ml-auto mt-1 mb-1"><i class="fas fa-save mr-1"></i>Save</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if exam_program.is_editable %}
+        <!-- ============================================================
+             ALL FORMS MUST LIVE OUTSIDE THE TABLE (HTML5 requirement).
+             Delete forms are hidden here; buttons above reference them
+             via form="del-{id}". Add form fields use form="add-form".
+        ============================================================ -->
+
+        <!-- Hidden forms -->
+        <form id="add-form" method="post" action="">
+            {% csrf_token %}
+        </form>
+
+        <form id="global-delete-form" method="post" action="">
+            {% csrf_token %}
+        </form>
+
+        <script>
+            function submitDeleteForm(url, message) {
+                if (confirm(message)) {
+                    const form = document.getElementById('global-delete-form');
+                    form.action = url;
+                    form.submit();
+                }
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+                // Wire add-row inputs to the add-form
+                const selectors = '#add-row select, #add-row input, #add-row-generic select, #add-row-generic input, #add-row-rpsc select, #add-row-rpsc input, #add-qmsc-chairman select, #add-qmsc-chairman input, #add-qmsc-member select, #add-qmsc-member input';
+                document.querySelectorAll(selectors).forEach(el => {
+                    el.setAttribute('form', 'add-form');
+                    el.classList.add('form-control-sm');
+                    el.style.minWidth = '120px';
+                });
+            });
+        </script>
+        {% else %}
+        <div class="alert alert-info shadow-sm">
+            <i class="fas fa-lock mr-2"></i> This department bill is submitted or locked. Inputs are read-only.
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

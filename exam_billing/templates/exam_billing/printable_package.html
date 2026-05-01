@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load billing_tags %}
+{% block title %}Printable Bill Package{% endblock %}
+{% block extra_css %}
+<style>
+@media print {.main-sidebar,.main-header,.content-header,.no-print{display:none!important}.content-wrapper{margin:0!important}.card{box-shadow:none!important;border:0!important}.page-break{page-break-before:always}}
+.print-table th,.print-table td{border:1px solid #222!important;padding:5px!important;font-size:12px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="content-header no-print"><div class="container-fluid d-flex justify-content-between"><h1>Printable Bill Package</h1><button class="btn btn-primary" onclick="window.print()">Print</button></div></div>
+<section class="content"><div class="container-fluid">
+<div class="text-center mb-4"><h4>Bangladesh Army University of Science and Technology</h4><h5>{{ exam_program.exam }} - {{ exam_program.program.short_name|default:exam_program.program.name }}</h5></div>
+<h5>Faculty-Bills Summary</h5>
+<table class="table print-table"><thead><tr><th>Name</th><th>Total</th><th>CECC</th><th>EC</th><th>RPSC</th><th>QMSC</th><th>QPSC</th><th>Q Setter</th><th>Examiner</th><th>Scrutiny</th></tr></thead><tbody>{% for row in summary.rows %}<tr><td>{{ row.faculty.name }}</td><td>{{ row.total }}</td><td>{{ row.cecc }}</td><td>{{ row.ec }}</td><td>{{ row.rpsc }}</td><td>{{ row.qmsc }}</td><td>{{ row.qpsc }}</td><td>{{ row.question_setting }}</td><td>{{ row.script_examining }}</td><td>{{ row.scrutiny }}</td></tr>{% endfor %}</tbody></table>
+{% for sheet_name, rows in sheets.items %}
+<div class="page-break"></div><h5>{{ sheet_name|upper }}</h5>
+<table class="table print-table"><tbody>{% for row in rows %}<tr><td>{{ row }}</td></tr>{% empty %}<tr><td>No data</td></tr>{% endfor %}</tbody></table>
+{% endfor %}
+</div></section>
+{% endblock %}

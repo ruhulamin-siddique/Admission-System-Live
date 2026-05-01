@@ -135,7 +135,7 @@ class StudentForm(forms.ModelForm):
             (c.name, c.name) for c in Cluster.objects.all().order_by('name')
         ]
         self.fields['hall_attached'].widget.choices = [('', 'Select Hall')] + [
-            (h.name, h.name) for h in Hall.objects.all().order_by('name')
+            (h.short_name, h.full_name if h.full_name else h.short_name) for h in Hall.objects.all().order_by('full_name', 'short_name')
         ]
         self.fields['semester_name'].widget.choices = [('', 'Select Semester')] + [
             (s.name, s.name) for s in Semester.objects.all().order_by('name')

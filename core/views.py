@@ -374,6 +374,24 @@ def user_profile(request):
     personal_logs = ActivityLog.objects.filter(user=request.user).order_by('-timestamp')[:10]
     total_admissions = ActivityLog.objects.filter(user=request.user, action_type='CREATE', module='students').count()
 
+    # Faculty Billing Summary (Personal)
+    faculty_bills = []
+    if hasattr(request.user, 'faculty_profile'):
+        from exam_billing.models import ExamFaculty
+        from exam_billing.billing_calculator import calculate_faculty_bill
+        from django.urls import reverse
+        
+        assignments = ExamFaculty.objects.filter(faculty=request.user.faculty_profile).select_related('exam_program__exam', 'exam_program__program')
+        for assignment in assignments:
+            bill = calculate_faculty_bill(assignment.exam_program, request.user.faculty_profile.id)
+            if bill and bill.get('total', 0) > 0:
+                faculty_bills.append({
+                    'exam': assignment.exam_program.exam.name,
+                    'program': assignment.exam_program.program.short_name,
+                    'total': bill['total'],
+                    'bill_url': reverse('billing_individual_bill', kwargs={'pk': assignment.exam_program.pk, 'faculty_id': request.user.faculty_profile.id})
+                })
+
     return render(request, 'core/profile.html', {
         'profile_form': profile_form,
         'profile': profile,
@@ -381,6 +399,7 @@ def user_profile(request):
         'access_summary': _build_access_summary(request.user),
         'personal_logs': personal_logs,
         'total_admissions': total_admissions,
+        'faculty_bills': faculty_bills,
         'account_age': (timezone.now() - request.user.date_joined).days
     })
 

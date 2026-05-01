@@ -9,15 +9,115 @@
   <div class="col-md-4"><div class="info-box"><span class="info-box-icon bg-success"><i class="fas fa-book"></i></span><div class="info-box-content"><span class="info-box-text">Courses</span><span class="info-box-number">{{ course_count }}</span></div></div></div>
   <div class="col-md-4"><div class="info-box"><span class="info-box-icon bg-primary"><i class="fas fa-money-bill"></i></span><div class="info-box-content"><span class="info-box-text">Total</span><span class="info-box-number">{{ summary.grand_total }}</span></div></div></div>
 </div>
-<div class="card"><div class="card-header d-flex justify-content-between"><h3 class="card-title">Faculty-Bills Summary</h3><a class="btn btn-sm btn-outline-success ml-auto" href="{% url 'billing_summary_csv' exam_program.id %}">Export CSV</a></div><div class="card-body table-responsive p-0">
-<table class="table table-bordered table-sm"><thead><tr><th>Name</th><th>Designation</th><th>Total</th><th>CECC</th><th>EC</th><th>RPSC</th><th>QMSC</th><th>QPSC</th><th>Q Setr</th><th>Scrpt Exa</th><th>Scrutiny</th><th></th></tr></thead><tbody>
-{% for row in summary.rows %}<tr><td>{{ row.faculty.name }}</td><td>{{ row.designation }}</td><td><strong>{{ row.total }}</strong></td><td>{{ row.cecc }}</td><td>{{ row.ec }}</td><td>{{ row.rpsc }}</td><td>{{ row.qmsc }}</td><td>{{ row.qpsc }}</td><td>{{ row.question_setting }}</td><td>{{ row.script_examining }}</td><td>{{ row.scrutiny }}</td><td><a class="btn btn-xs btn-outline-primary" href="{% url 'billing_individual_bill' exam_program.id row.faculty.id %}">Ind Bill</a></td></tr>
-{% empty %}<tr><td colspan="12" class="text-center text-muted p-4">No calculated bills yet.</td></tr>{% endfor %}
-</tbody></table></div></div>
+<div class="mb-3">
+  {% if exam_program.is_editable %}<a class="btn btn-sm btn-outline-info" href="{% url 'billing_copy_previous' exam_program.id %}">Copy Previous Exam Data</a>{% endif %}
+  <a class="btn btn-sm btn-outline-success" href="{% url 'billing_summary_csv' exam_program.id %}">Export CSV</a>
+  <a class="btn btn-sm btn-outline-primary" href="{% url 'billing_printable_package' exam_program.id %}">Print Full Package</a>
+</div>
+<div class="row">
+  <div class="col-md-9">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold">
+          <i class="fas fa-file-invoice-dollar mr-2 text-primary"></i> Faculty-Bills Summary
+        </h3>
+        <div class="card-tools">
+           <a class="btn btn-xs btn-outline-success" href="{% url 'billing_summary_csv' exam_program.id %}"><i class="fas fa-file-csv mr-1"></i> Export CSV</a>
+        </div>
+      </div>
+      <div class="card-body table-responsive p-0">
+        <table class="table table-bordered table-sm table-hover mb-0">
+          <thead class="bg-light small text-center">
+            <tr>
+              <th>Name</th>
+              <th>Designation</th>
+              <th class="bg-primary text-white">Total</th>
+              <th>CECC</th>
+              <th>EC</th>
+              <th>RPSC</th>
+              <th>QMSC</th>
+              <th>QPSC</th>
+              <th>Q Setr</th>
+              <th>Scrpt Exa</th>
+              <th>Scrutiny</th>
+              <th style="width: 100px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in summary.rows %}
+            <tr class="small text-center">
+              <td class="text-left font-weight-bold">{{ row.faculty.name }}</td>
+              <td class="text-left">{{ row.designation }}</td>
+              <td class="bg-light font-weight-bold">৳ {{ row.total }}</td>
+              <td>{{ row.cecc }}</td>
+              <td>{{ row.ec }}</td>
+              <td>{{ row.rpsc }}</td>
+              <td>{{ row.qmsc }}</td>
+              <td>{{ row.qpsc }}</td>
+              <td>{{ row.question_setting }}</td>
+              <td>{{ row.script_examining }}</td>
+              <td>{{ row.scrutiny }}</td>
+              <td>
+                <div class="btn-group">
+                  <a class="btn btn-xs btn-outline-primary" href="{% url 'billing_individual_bill' exam_program.id row.faculty.id %}" title="View Bill"><i class="fas fa-eye"></i></a>
+                  {% if exam_program.is_editable %}
+                  <a class="btn btn-xs btn-outline-danger" href="{% url 'billing_program_faculty_remove' exam_program.id row.faculty.id %}" onclick="return confirm('Remove this faculty from bill?')" title="Remove"><i class="fas fa-user-minus"></i></a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="12" class="text-center text-muted p-4 italic">No calculated bills yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    {% if exam_program.is_editable %}
+    <div class="card shadow-sm border-0 bg-light">
+      <div class="card-header border-0 bg-transparent">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-user-plus mr-2 text-success"></i> Add Faculty</h3>
+      </div>
+      <div class="card-body pt-0">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="add_faculty" value="1">
+          <div class="form-group small mb-2">
+            <label class="mb-1">Select Faculty Profile</label>
+            {{ faculty_form.faculty }}
+          </div>
+          <button type="submit" class="btn btn-success btn-block btn-sm">
+            <i class="fas fa-plus mr-1"></i> Add to Department Bill
+          </button>
+        </form>
+        <hr>
+        <div class="small text-muted italic">
+          <i class="fas fa-info-circle mr-1"></i> Faculty must exist in the <a href="{% url 'billing_faculty_directory' %}">Directory</a> before they can be added here.
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    <div class="card shadow-sm border-0 mt-3">
+      <div class="card-body p-2">
+        <a class="btn btn-sm btn-outline-primary btn-block mb-2" href="{% url 'billing_printable_package' exam_program.id %}">
+          <i class="fas fa-print mr-2"></i> Print Full Package
+        </a>
+        <a class="btn btn-sm btn-outline-info btn-block" href="{% url 'billing_copy_previous' exam_program.id %}">
+          <i class="fas fa-copy mr-2"></i> Copy Previous Data
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="mb-4">
   {% if exam_program.is_editable %}<a class="btn btn-warning" href="{% url 'billing_program_submit' exam_program.id %}">Submit Department Bill</a>{% endif %}
+  {% if exam_program.status == 'submitted' or exam_program.status == 'approved' %}<a class="btn btn-success" href="{% url 'billing_program_status' exam_program.id 'approve' %}">Approve</a> <a class="btn btn-danger" href="{% url 'billing_program_status' exam_program.id 'lock' %}">Lock/Cache Final</a>{% endif %}
+  {% if exam_program.status != 'draft' %}<a class="btn btn-outline-secondary" href="{% url 'billing_program_status' exam_program.id 'reopen' %}">Reopen</a>{% endif %}
   <a class="btn btn-outline-secondary" href="{% url 'billing_exam_detail' exam_program.exam.id %}">Back to Exam</a>
 </div>
 </div></section>
 {% endblock %}
-

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Delete Exam{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <h1>Delete Exam</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-danger">
+            <div class="card-header">
+                <h3 class="card-title">Confirm Permanent Deletion</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">Are you sure you want to delete the exam: <strong>{{ exam }}</strong>?</p>
+                <div class="alert alert-warning">
+                    <h5><i class="icon fas fa-exclamation-triangle"></i> Warning!</h5>
+                    This action is <strong>permanent</strong> and cannot be undone. All associated department billing data, assignments, and faculty billing summaries will be permanently removed.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger mr-2">
+                        <i class="fas fa-trash-alt mr-1"></i> Yes, Permanently Delete
+                    </button>
+                    <a href="{% url 'billing_exam_detail' exam.id %}" class="btn btn-secondary">
+                        Cancel and Go Back
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,313 @@
+<div class="card shadow-lg border-0" style="border-radius: 15px; overflow: hidden;">
+    <div class="card-header bg-white py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="card-title font-weight-bold text-dark">
+                    <i class="fas fa-coins mr-2 text-warning"></i> Payment Rates
+                </h3>
+                <div class="text-danger small mt-4 font-weight-bold">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Please adjust rates if there is any change
+                </div>
+            </div>
+            <div class="card-tools">
+                <span class="badge badge-info p-2 px-3 shadow-sm">{% if exam %}Exam Specific{% else %}Global Defaults{% endif %}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <!-- Table 1: Committee & Moderation Rates -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0 billing-table">
+                <thead class="bg-light text-center">
+                    <tr>
+                        <th style="width: 300px;" class="align-middle text-left pl-4">Bill Head (Committee)</th>
+                        <th style="width: 150px;" class="align-middle">Chairman</th>
+                        <th style="width: 150px;" class="align-middle">Member</th>
+                        <th class="align-middle">Calculation Mode / Notes</th>
+                        <th style="width: 120px;" class="align-middle">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-row-id="cecc">
+                        <td class="bg-light pl-4">
+                            <span class="font-weight-bold">CECC</span>
+                            <div class="small text-muted font-weight-normal">Central Exam Conducting Committee</div>
+                        </td>
+                        <td class="p-1">{{ form.cecc_chairman_rate }}</td>
+                        <td class="p-1">{{ form.cecc_member_rate }}</td>
+                        <td class="text-muted small align-middle text-center italic">Fixed Committee Rate</td>
+                        <td class="p-1 text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="toggleRowEdit('cecc')"><i class="fas fa-edit"></i></button>
+                            <button type="submit" class="btn btn-xs btn-success d-none" id="save-cecc"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                    <tr data-row-id="ec">
+                        <td class="bg-light pl-4">
+                            <span class="font-weight-bold">EC</span>
+                            <div class="small text-muted font-weight-normal">Exam Committee</div>
+                        </td>
+                        <td class="p-1">{{ form.ec_chairman_rate }}</td>
+                        <td class="p-1">{{ form.ec_member_rate }}</td>
+                        <td class="text-muted small align-middle text-center italic">Fixed Committee Rate</td>
+                        <td class="p-1 text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="toggleRowEdit('ec')"><i class="fas fa-edit"></i></button>
+                            <button type="submit" class="btn btn-xs btn-success d-none" id="save-ec"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                    <tr data-row-id="qmsc">
+                        <td class="bg-light pl-4">
+                            <span class="font-weight-bold">QMSC</span>
+                            <div class="small text-muted font-weight-normal text-wrap">Question Moderation Sub Commitee</div>
+                        </td>
+                        <td class="p-1">{{ form.qmsc_chairman_rate }}</td>
+                        <td class="p-1">{{ form.qmsc_member_rate }}</td>
+                        <td class="text-muted small align-middle text-center italic">
+                            <i class="fas fa-lock mr-1"></i> Fixed Committee Rate
+                        </td>
+                        <td class="p-1 text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="toggleRowEdit('qmsc')"><i class="fas fa-edit"></i></button>
+                            <button type="submit" class="btn btn-xs btn-success d-none" id="save-qmsc"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                    <tr data-row-id="rpsc">
+                        <td class="bg-light pl-4">
+                            <span class="font-weight-bold">RPSC</span>
+                            <div class="small text-muted font-weight-normal">Result Preparation Sub committee</div>
+                        </td>
+                        <td class="p-1">{{ form.rpsc_chairman_rate }}</td>
+                        <td class="p-1">{{ form.rpsc_member_rate }}</td>
+                        <td class="p-1">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <div class="mr-2">{{ form.rpsc_question_mode }}</div>
+                                <span class="text-muted small italic">Per Student Mode</span>
+                            </div>
+                        </td>
+                        <td class="p-1 text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="toggleRowEdit('rpsc')"><i class="fas fa-edit"></i></button>
+                            <button type="submit" class="btn btn-xs btn-success d-none" id="save-rpsc"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                    <tr data-row-id="qpsc">
+                        <td class="bg-light pl-4">
+                            <span class="font-weight-bold">QPSC</span>
+                            <div class="small text-muted font-weight-normal">Question Preparation Sub committee</div>
+                        </td>
+                        <td class="p-1 text-center align-middle">-</td>
+                        <td class="p-1">{{ form.qpsc_member_rate }}</td>
+                        <td class="p-1">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <div class="mr-2">{{ form.qpsc_question_mode }}</div>
+                                <span class="text-muted small italic">Per Question Mode</span>
+                            </div>
+                        </td>
+                        <td class="p-1 text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="toggleRowEdit('qpsc')"><i class="fas fa-edit"></i></button>
+                            <button type="submit" class="btn btn-xs btn-success d-none" id="save-qpsc"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bg-gray-light py-2 px-4 border-top border-bottom font-weight-bold text-muted small text-uppercase letter-spacing-1">
+            Assignment & Script Processing Rates
+        </div>
+
+        <!-- Table 2: Activity Rates -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0 billing-table text-center">
+                <thead class="bg-light">
+                    <tr>
+                        <th rowspan="2" style="width: 300px;" class="align-middle text-left pl-4">Assignment Type</th>
+                        <th colspan="2" class="border-bottom-0">Full Question Paper</th>
+                        <th colspan="2" class="border-bottom-0">Half Question Paper</th>
+                        <th rowspan="2" style="width: 120px;" class="align-middle">Actions</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 150px; font-size: 0.7rem;">Engineering</th>
+                        <th style="width: 150px; font-size: 0.7rem;">Non-Engineering</th>
+                        <th style="width: 150px; font-size: 0.7rem;">Engineering</th>
+                        <th style="width: 150px; font-size: 0.7rem;">Non-Engineering</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-row-id="qsetter">
+                        <td class="font-weight-bold bg-light text-left pl-4">
+                            Question Setter
+                            <div class="small text-muted font-weight-normal">Preparation of question papers</div>
+                        </td>
+                        <td class="p-1">{{ form.qsetter_full_engineering_rate }}</td>
+                        <td class="p-1">{{ form.qsetter_full_non_engineering_rate }}</td>
+                        <td class="p-1">{{ form.qsetter_half_engineering_rate }}</td>
+                        <td class="p-1">{{ form.qsetter_half_non_engineering_rate }}</td>
+                        <td class="p-1 text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="toggleRowEdit('qsetter')"><i class="fas fa-edit"></i></button>
+                            <button type="submit" class="btn btn-xs btn-success d-none" id="save-qsetter"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                    <tr data-row-id="examiner">
+                        <td class="font-weight-bold bg-light text-left pl-4">
+                            Script Examiner
+                            <div class="small text-muted font-weight-normal">Evaluation of answer scripts</div>
+                        </td>
+                        <td class="p-1">{{ form.examiner_full_engineering_rate }}</td>
+                        <td class="p-1">{{ form.examiner_full_non_engineering_rate }}</td>
+                        <td class="p-1">{{ form.examiner_half_engineering_rate }}</td>
+                        <td class="p-1">{{ form.examiner_half_non_engineering_rate }}</td>
+                        <td class="p-1 text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="toggleRowEdit('examiner')"><i class="fas fa-edit"></i></button>
+                            <button type="submit" class="btn btn-xs btn-success d-none" id="save-examiner"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                    <tr data-row-id="scrutinizer">
+                        <td class="font-weight-bold bg-light text-left pl-4">
+                            Script Scrutinizer
+                            <div class="small text-muted font-weight-normal">Verification of marks & scripts</div>
+                        </td>
+                        <td class="p-1">{{ form.scrutinizer_full_engineering_rate }}</td>
+                        <td class="p-1">{{ form.scrutinizer_full_non_engineering_rate }}</td>
+                        <td class="p-1">{{ form.scrutinizer_half_engineering_rate }}</td>
+                        <td class="p-1">{{ form.scrutinizer_half_non_engineering_rate }}</td>
+                        <td class="p-1 text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="toggleRowEdit('scrutinizer')"><i class="fas fa-edit"></i></button>
+                            <button type="submit" class="btn btn-xs btn-success d-none" id="save-scrutinizer"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .billing-table thead th { font-size: 0.8rem; font-weight: 800; color: #475569; border-bottom: 2px solid #e2e8f0; }
+    .billing-table td { vertical-align: middle; }
+    .billing-table .form-control { 
+        border: none; 
+        text-align: center; 
+        font-weight: 700; 
+        color: #1e293b; 
+        background: transparent !important;
+        transition: all 0.2s;
+        height: auto !important;
+        padding: 0.2rem !important;
+    }
+    .billing-table select.form-control {
+        text-align-last: center;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        color: #3b82f6;
+        font-size: 0.8rem;
+    }
+    .billing-table .form-control:focus { 
+        background: #f8fafc !important; 
+        box-shadow: none !important; 
+        color: #3b82f6 !important;
+        outline: none !important;
+    }
+    .billing-table td:has(input):hover { background-color: #f1f5f9; }
+    .billing-table .form-control { 
+        border: none; 
+        text-align: center; 
+        font-weight: 700; 
+        color: #1e293b; 
+        background: transparent !important;
+        transition: all 0.2s;
+        height: auto !important;
+        padding: 0.2rem !important;
+        pointer-events: none; /* Default read-only feel */
+    }
+    .billing-table .form-control.editable {
+        background: #fff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 4px;
+        pointer-events: auto;
+    }
+    .billing-table select.form-control {
+        text-align-last: center;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        color: #3b82f6;
+        font-size: 0.8rem;
+    }
+    .billing-table .form-control:focus { 
+        background: #fff !important; 
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+        color: #1e293b !important;
+        outline: none !important;
+    }
+    .billing-table tr.editing {
+        background-color: #f0f7ff !important;
+    }
+    .bg-gray-light { background-color: #f8fafc; }
+    .letter-spacing-1 { letter-spacing: 1px; }
+    .italic { font-style: italic; }
+    
+    /* Dual Header Styles */
+    .billing-table thead th[colspan] { border-bottom: 0 !important; padding: 0.5rem; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; background-color: #f1f5f9; color: #475569; }
+</style>
+
+<script>
+    function toggleRowEdit(rowId) {
+        const row = document.querySelector(`tr[data-row-id="${rowId}"]`);
+        const inputs = row.querySelectorAll('.form-control');
+        const saveBtn = document.getElementById(`save-${rowId}`);
+        const editBtn = row.querySelector('.btn-outline-primary');
+        
+        const isEditing = row.classList.contains('editing');
+        
+        if (isEditing) {
+            // Cancel Editing
+            row.classList.remove('editing');
+            inputs.forEach(input => {
+                input.classList.remove('editable');
+                input.readOnly = true;
+                if(input.tagName === 'SELECT') input.disabled = true;
+            });
+            saveBtn.classList.add('d-none');
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.classList.replace('btn-secondary', 'btn-outline-primary');
+        } else {
+            // Start Editing
+            row.classList.add('editing');
+            inputs.forEach(input => {
+                input.classList.add('editable');
+                input.readOnly = false;
+                if(input.tagName === 'SELECT') input.disabled = false;
+            });
+            saveBtn.classList.remove('d-none');
+            editBtn.innerHTML = '<i class="fas fa-times"></i>';
+            editBtn.classList.replace('btn-outline-primary', 'btn-secondary');
+        }
+    }
+
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+        
+        // Initial state: Readonly and strip .00
+        const allInputs = document.querySelectorAll('.billing-table .form-control');
+        allInputs.forEach(input => {
+            // Set readonly/disabled
+            input.readOnly = true;
+            if(input.tagName === 'SELECT') input.disabled = true;
+            
+            // Strip .00
+            if (input.type === 'number' || input.type === 'text') {
+                if (input.value && input.value.endsWith('.00')) {
+                    input.value = input.value.replace('.00', '');
+                } else if (input.value && !isNaN(input.value) && Number.isInteger(parseFloat(input.value))) {
+                    input.value = parseInt(input.value);
+                }
+            }
+        });
+
+        // Ensure global save button works by enabling all fields before submit
+        $('form').on('submit', function() {
+            $('.billing-table .form-control').prop('disabled', false).prop('readOnly', false);
+        });
+    });
+</script>

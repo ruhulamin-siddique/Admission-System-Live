@@ -1,0 +1,74 @@
+<table class="table table-hover mb-0">
+    <thead class="bg-light text-muted small text-uppercase">
+        <tr>
+            <th class="pl-4">Employee ID</th>
+            <th>Faculty Name</th>
+            <th>Designation</th>
+            <th>Department</th>
+            <th>System User</th>
+            <th>Contact</th>
+            <th class="text-center">Status</th>
+            <th class="text-right pr-4">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for f in faculty_list %}
+        <tr class="align-middle">
+            <td class="pl-4"><code>{{ f.employee_id|default:"N/A" }}</code></td>
+            <td>
+                <div class="font-weight-black text-dark">{{ f.name }}</div>
+            </td>
+            <td class="small text-muted">{{ f.designation }}</td>
+            <td>
+                <span class="badge badge-soft-secondary">{{ f.program.short_name }}</span>
+            </td>
+            <td>
+                {% if f.user %}
+                    <span class="badge badge-soft-success"><i class="fas fa-link mr-1"></i> {{ f.user.username }}</span>
+                {% else %}
+                    <span class="text-muted small"><em>Not Linked</em></span>
+                {% endif %}
+            </td>
+            <td>
+                <div class="small">
+                    {% if f.email %}<span class="d-block text-truncate" style="max-width: 150px;" title="{{ f.email }}"><i class="fas fa-envelope mr-1 opacity-50"></i> {{ f.email }}</span>{% endif %}
+                    {% if f.mobile %}<span><i class="fas fa-phone mr-1 opacity-50"></i> {{ f.mobile }}</span>{% endif %}
+                </div>
+            </td>
+            <td class="text-center">
+                {% if f.is_active %}
+                    <span class="badge badge-pill badge-success-soft px-3">Active</span>
+                {% else %}
+                    <span class="badge badge-pill badge-danger-soft px-3">Inactive</span>
+                {% endif %}
+            </td>
+            <td class="text-right pr-4">
+                <div class="action-toolkit">
+                    {% if can_manage %}
+                    <a href="{% url 'billing_faculty_edit' f.id %}" class="action-btn edit" title="Edit Profile">
+                        <i class="fas fa-pencil-alt"></i>
+                    </a>
+                    <a href="{% url 'billing_faculty_delete' f.id %}" class="action-btn delete" title="Remove Faculty" onclick="return confirm('Are you sure you want to remove this faculty profile?')">
+                        <i class="fas fa-trash-alt"></i>
+                    </a>
+                    {% else %}
+                    <span class="text-muted small italic">No Access</span>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" class="text-center text-muted p-5">
+                <div class="mb-2"><i class="fas fa-users-slash fa-3x opacity-10"></i></div>
+                No faculty profiles found matching your criteria.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Update counters if needed via HTMX oob-swap -->
+<div id="total-count-display" hx-swap-oob="innerHTML" class="total-badge">
+    {{ stats.total }}
+</div>

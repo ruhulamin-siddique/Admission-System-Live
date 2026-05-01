@@ -113,7 +113,8 @@
                         <table class="table table-bordered table-striped">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
+                                    <th>Full Name</th>
+                                    <th>Short Name</th>
                                     <th>Hall Code</th>
                                     <th style="width: 100px;">Action</th>
                                 </tr>
@@ -121,7 +122,8 @@
                             <tbody>
                                 {% for item in halls %}
                                 <tr>
-                                    <td>{{ item.name }}</td>
+                                    <td><strong>{{ item.full_name|default:"-" }}</strong></td>
+                                    <td>{{ item.short_name }}</td>
                                     <td><code>{{ item.code }}</code></td>
                                     <td class="text-center">
                                         <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editHallModal{{ item.id }}"><i class="fas fa-edit"></i></button>
@@ -320,8 +322,12 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Hall Name</label>
-                    <input type="text" name="name" class="form-control" required placeholder="e.g. Abbas Uddin Ahmed Hall">
+                    <label>Hall Full Name</label>
+                    <input type="text" name="full_name" class="form-control" required placeholder="e.g. Abbas Uddin Ahmed Hall">
+                </div>
+                <div class="form-group">
+                    <label>Short Name</label>
+                    <input type="text" name="short_name" class="form-control" required placeholder="e.g. AUAH">
                 </div>
                 <div class="form-group">
                     <label>Hall Code</label>
@@ -502,13 +508,17 @@
         <form action="{% url 'edit_master_data' 'hall' item.id %}" method="POST" class="modal-content">
             {% csrf_token %}
             <div class="modal-header">
-                <h5 class="modal-title">Edit Hall: {{ item.name }}</h5>
+                <h5 class="modal-title">Edit Hall: {{ item.short_name }}</h5>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Hall Name</label>
-                    <input type="text" name="name" class="form-control" required value="{{ item.name }}">
+                    <label>Hall Full Name</label>
+                    <input type="text" name="full_name" class="form-control" required value="{{ item.full_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>Short Name</label>
+                    <input type="text" name="short_name" class="form-control" required value="{{ item.short_name }}">
                 </div>
                 <div class="form-group">
                     <label>Hall Code</label>

@@ -2,7 +2,7 @@
 
 {% block title %}Dashboard | Admission Suite{% endblock %}
 {% load core_tags %}
-{% block page_title %}Dashboard Analytics{% endblock %}
+{% block page_title %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -12,6 +12,17 @@
     .clickable-item:hover { background: rgba(0,0,0,0.05) !important; }
     .text-indigo { color: #6610f2; }
     .text-navy { color: #001f3f; }
+    
+    /* Compact Periodic Analysis */
+    .periodic-card-title { font-size: 0.9rem; margin-bottom: 0.25rem; }
+    .periodic-count { font-size: 1.5rem !important; line-height: 1; }
+    .periodic-label { font-size: 0.7rem; color: #6c757d; }
+    .periodic-list-item { font-size: 0.75rem !important; padding: 0.4rem 0.5rem !important; }
+    .periodic-badge { font-size: 0.7rem !important; padding: 0.2rem 0.4rem !important; }
+    @media (max-width: 768px) {
+        .periodic-count { font-size: 1.25rem !important; }
+        .periodic-card-title { font-size: 0.8rem; }
+    }
 </style>
 {% endblock %}
 
@@ -86,36 +97,42 @@
     <div class="col-12">
         <div class="card card-outline card-info shadow-sm" style="border-radius: 12px;">
             <div class="card-header border-0 bg-transparent py-3">
-                <h3 class="card-title font-weight-bold text-dark">
-                    <i class="fas fa-chart-line mr-2 text-info"></i> Periodic Admission Analysis
+                <h3 class="card-title font-weight-bold text-dark w-100 d-flex justify-content-between align-items-center mb-0">
+                    <span><i class="fas fa-chart-line mr-2 text-info"></i> Periodic Admission Analysis</span>
+                    <span class="text-info font-weight-bold" style="font-size: 0.95rem; letter-spacing: 0.5px;">
+                        <i class="fas fa-clock mr-1"></i> {{ stats.periodic.semester|upper }} | {{ stats.periodic.batch|upper }}
+                    </span>
                 </h3>
+                <div class="text-muted small mt-2">
+                    <i class="fas fa-info-circle mr-1"></i> Tracking real-time enrollment activity for the current intake cycle only.
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="row no-gutters border-top">
                     <!-- Today Breakdown -->
                     <div class="col-md-4 border-right">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-end mb-3">
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 <div>
-                                    <h6 class="text-indigo font-weight-bold mb-1"><i class="fas fa-calendar-day mr-2"></i>Today</h6>
-                                    <small class="text-muted">{{ stats.periodic.today.label }}</small>
+                                    <h6 class="text-indigo font-weight-bold periodic-card-title mb-0"><i class="fas fa-calendar-day mr-1"></i>Today</h6>
+                                    <div class="periodic-label">{{ stats.periodic.today.label }}</div>
                                 </div>
                                 <div class="text-right">
-                                    <span class="h4 font-weight-black text-indigo mb-0">{{ stats.periodic.today.count }}</span>
-                                    <div class="small text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Total</div>
+                                    <div class="periodic-count font-weight-black text-indigo">{{ stats.periodic.today.count }}</div>
+                                    <div class="text-muted text-uppercase font-weight-bold" style="font-size: 0.6rem;">Total</div>
                                 </div>
                             </div>
-                            <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            <div class="list-group list-group-flush" style="max-height: 160px; overflow-y: auto;">
                                 {% for item in stats.periodic.today.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 clickable-item" 
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item" 
                                      hx-get="{% url 'api_periodic_students' %}?period=today&program={{ item.program|urlencode }}"
                                      hx-target="#periodicModalBody"
                                      data-toggle="modal" data-target="#periodicStudentsModal">
-                                    <span class="text-dark small font-weight-bold">{{ item.short_name }}</span>
-                                    <span class="badge badge-light border px-2 py-1">{{ item.count }}</span>
+                                    <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
+                                    <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
                                 </div>
                                 {% empty %}
-                                <div class="text-center py-4">
+                                <div class="text-center py-3">
                                     <p class="text-muted small mb-0 font-italic">Zero admissions today.</p>
                                 </div>
                                 {% endfor %}
@@ -124,28 +141,28 @@
                     </div>
                     <!-- Week Breakdown -->
                     <div class="col-md-4 border-right">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-end mb-3">
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 <div>
-                                    <h6 class="text-purple font-weight-bold mb-1"><i class="fas fa-calendar-week mr-2"></i>This Week</h6>
-                                    <small class="text-muted">{{ stats.periodic.week.label }}</small>
+                                    <h6 class="text-purple font-weight-bold periodic-card-title mb-0"><i class="fas fa-calendar-week mr-1"></i>This Week</h6>
+                                    <div class="periodic-label">{{ stats.periodic.week.label }}</div>
                                 </div>
                                 <div class="text-right">
-                                    <span class="h4 font-weight-black text-purple mb-0">{{ stats.periodic.week.count }}</span>
-                                    <div class="small text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Total</div>
+                                    <div class="periodic-count font-weight-black text-purple">{{ stats.periodic.week.count }}</div>
+                                    <div class="text-muted text-uppercase font-weight-bold" style="font-size: 0.6rem;">Total</div>
                                 </div>
                             </div>
-                            <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            <div class="list-group list-group-flush" style="max-height: 160px; overflow-y: auto;">
                                 {% for item in stats.periodic.week.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 clickable-item"
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item"
                                      hx-get="{% url 'api_periodic_students' %}?period=week&program={{ item.program|urlencode }}"
                                      hx-target="#periodicModalBody"
                                      data-toggle="modal" data-target="#periodicStudentsModal">
-                                    <span class="text-dark small font-weight-bold">{{ item.short_name }}</span>
-                                    <span class="badge badge-light border px-2 py-1">{{ item.count }}</span>
+                                    <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
+                                    <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
                                 </div>
                                 {% empty %}
-                                <div class="text-center py-4">
+                                <div class="text-center py-3">
                                     <p class="text-muted small mb-0">No records this week.</p>
                                 </div>
                                 {% endfor %}
@@ -154,28 +171,28 @@
                     </div>
                     <!-- Month Breakdown -->
                     <div class="col-md-4">
-                        <div class="p-4">
-                            <div class="d-flex justify-content-between align-items-end mb-3">
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 <div>
-                                    <h6 class="text-navy font-weight-bold mb-1"><i class="fas fa-calendar-alt mr-2"></i>This Month</h6>
-                                    <small class="text-muted">{{ stats.periodic.month.label }}</small>
+                                    <h6 class="text-navy font-weight-bold periodic-card-title mb-0"><i class="fas fa-calendar-alt mr-1"></i>This Month</h6>
+                                    <div class="periodic-label">{{ stats.periodic.month.label }}</div>
                                 </div>
                                 <div class="text-right">
-                                    <span class="h4 font-weight-black text-navy mb-0">{{ stats.periodic.month.count }}</span>
-                                    <div class="small text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Total</div>
+                                    <div class="periodic-count font-weight-black text-navy">{{ stats.periodic.month.count }}</div>
+                                    <div class="text-muted text-uppercase font-weight-bold" style="font-size: 0.6rem;">Total</div>
                                 </div>
                             </div>
-                            <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            <div class="list-group list-group-flush" style="max-height: 160px; overflow-y: auto;">
                                 {% for item in stats.periodic.month.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 clickable-item"
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item"
                                      hx-get="{% url 'api_periodic_students' %}?period=month&program={{ item.program|urlencode }}"
                                      hx-target="#periodicModalBody"
                                      data-toggle="modal" data-target="#periodicStudentsModal">
-                                    <span class="text-dark small font-weight-bold">{{ item.short_name }}</span>
-                                    <span class="badge badge-light border px-2 py-1">{{ item.count }}</span>
+                                    <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
+                                    <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
                                 </div>
                                 {% empty %}
-                                <div class="text-center py-4">
+                                <div class="text-center py-3">
                                     <p class="text-muted small mb-0">No records this month.</p>
                                 </div>
                                 {% endfor %}
@@ -209,12 +226,12 @@
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0" id="intakeTable" style="cursor: pointer;">
-                        <thead class="bg-light text-muted small text-uppercase font-weight-bold">
+                        <thead class="bg-light text-muted text-uppercase font-weight-bold">
                             <tr>
                                 <th class="pl-3" style="width: 40%;">Dept</th>
                                 <th class="text-center">Total</th>
-                                <th class="text-center text-primary">M</th>
-                                <th class="text-center text-pink">F</th>
+                                <th class="text-center text-primary">Male</th>
+                                <th class="text-center text-pink">Female</th>
                                 <th class="text-right pr-3">%</th>
                             </tr>
                         </thead>
@@ -244,7 +261,7 @@
         <div class="card card-primary card-outline shadow-sm" style="border-radius: 12px;">
             <div class="card-header border-0 bg-transparent pt-3">
                 <div class="d-flex justify-content-between">
-                    <h3 class="card-title font-weight-bold">Admission Trends (Last 6 Months)</h3>
+                    <h3 class="card-title font-weight-bold text-dark">Admission Trends (Last 12 Months)</h3>
                     <a href="{% url 'analytics_dashboard' %}" class="small text-primary font-weight-bold">View Full Analytics</a>
                 </div>
             </div>
@@ -273,6 +290,7 @@
                                 <th>Student ID</th>
                                 <th>Name</th>
                                 <th>Program</th>
+                                <th>Batch</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -282,6 +300,7 @@
                                 <td><a href="{% url 'student_profile' student.student_id %}">{{ student.student_id }}</a></td>
                                 <td>{{ student.student_name }}</td>
                                 <td><span class="badge badge-info" title="{{ student.program }}" style="cursor: help;">{{ student.short_name }}</span></td>
+                                <td class="text-muted small">{{ student.batch }}</td>
                                 <td><span class="badge badge-success">{{ student.admission_status }}</span></td>
                             </tr>
                             {% endfor %}
@@ -298,13 +317,16 @@
 
     <div class="col-md-4">
         <!-- Program Distribution Donut Chart -->
-        <div class="card card-info">
-            <div class="card-header">
-                <h3 class="card-title">Program Distribution</h3>
+        <div class="card card-info shadow-sm" style="border-radius: 12px;">
+            <div class="card-header border-0 bg-transparent pt-3 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0 text-dark"><i class="fas fa-chart-pie mr-2 text-info"></i> Program Distribution</h3>
                 <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
+                    <select id="batchFilter" class="form-control form-control-sm" style="width: auto; display: inline-block; border-radius: 6px;">
+                        <option value="all">Overall System</option>
+                        {% for batch in stats.all_batches %}
+                        <option value="{{ batch }}">{{ batch }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
             <div class="card-body">
@@ -313,9 +335,17 @@
         </div>
 
         <!-- Gender Distribution -->
-        <div class="card card-warning card-outline shadow-sm" style="border-radius: 12px;">
-            <div class="card-header border-0 bg-transparent pt-3">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-venus-mars mr-2 text-warning"></i> Gender Distribution</h3>
+        <div class="card card-warning card-outline shadow-sm mt-3" style="border-radius: 12px; border-top: 3px solid #ffc107;">
+            <div class="card-header border-0 bg-transparent pt-3 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0 text-dark"><i class="fas fa-venus-mars mr-2 text-warning"></i> Gender Distribution</h3>
+                <div class="card-tools">
+                    <select id="genderBatchFilter" class="form-control form-control-sm" style="width: auto; display: inline-block; border-radius: 6px;">
+                        <option value="all">Overall System</option>
+                        {% for batch in stats.all_batches %}
+                        <option value="{{ batch }}">{{ batch }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="card-body">
                 <div class="position-relative mb-4">
@@ -324,7 +354,7 @@
                 
                 <!-- Numeric Summary Table -->
                 <div class="mt-3">
-                    <table class="table table-sm table-borderless">
+                    <table class="table table-sm table-borderless" id="genderTable">
                         <thead class="text-muted small text-uppercase">
                             <tr>
                                 <th>Gender</th>
@@ -332,11 +362,11 @@
                                 <th class="text-right">Ratio</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="genderTableBody">
                             {% for item in stats.gender_chart %}
                             <tr>
                                 <td class="font-weight-bold">
-                                    <i class="fas fa-circle mr-1" style="color: {% if item.gender == 'Male' %}#007bff{% elif item.gender == 'Female' %}#e83e8c{% else %}#6c757d{% endif %}; font-size: 0.7rem;"></i>
+                                    <i class="fas fa-circle mr-1 gender-color-dot" data-gender="{{ item.gender }}" style="color: {% if item.gender == 'Male' %}#007bff{% elif item.gender == 'Female' %}#e83e8c{% else %}#6c757d{% endif %}; font-size: 0.7rem;"></i>
                                     {{ item.gender }}
                                 </td>
                                 <td class="text-right font-weight-bold">{{ item.count }}</td>
@@ -353,8 +383,8 @@
 
         <!-- Special Designations Card -->
         <div class="card card-dark card-outline shadow-sm mt-3" style="border-radius: 12px; border-top: 3px solid #343a40;">
-            <div class="card-header border-0 bg-transparent pt-3 pb-0">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-id-badge mr-2 text-dark"></i> Special Designations</h3>
+            <div class="card-header border-0 bg-transparent pt-3">
+                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-id-badge mr-2 text-dark"></i> Special Designations</h3>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush mt-2">
@@ -406,6 +436,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- Exam Billing Control Card (NEW) -->
+        {% if billing_stats.has_access %}
+        <div class="card card-indigo card-outline shadow-sm mt-3" style="border-radius: 12px; border-top: 3px solid #6610f2;">
+            <div class="card-header border-0 bg-transparent pt-3 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-file-invoice-dollar mr-2" style="color: #6610f2;"></i> Exam Billing</h3>
+                <a href="{% url 'billing_dashboard' %}" class="btn btn-xs btn-outline-primary px-2 rounded-pill font-weight-bold" style="color: #6610f2; border-color: #6610f2;">View All</a>
+            </div>
+            <div class="card-body p-3">
+                {% if billing_stats.active_exams %}
+                    <div class="small text-muted mb-2 font-weight-bold uppercase" style="letter-spacing: 0.5px; font-size: 0.65rem;">ACTIVE EXAMS</div>
+                    {% for exam in billing_stats.active_exams %}
+                    <div class="p-2 mb-2 bg-light rounded d-flex justify-content-between align-items-center">
+                        <div class="small font-weight-bold text-truncate" style="max-width: 150px;">{{ exam.name }}</div>
+                        <span class="badge badge-pill {% if exam.status == 'open' %}badge-success{% else %}badge-warning{% endif %} px-2" style="font-size: 0.65rem;">{{ exam.status|title }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-2 text-muted small">No active exams.</div>
+                {% endif %}
+
+                {% if billing_stats.pending_approvals > 0 %}
+                <div class="alert alert-info p-2 mt-2 mb-0 border-0 d-flex align-items-center" style="border-radius: 8px; background: rgba(23, 162, 184, 0.1); color: #17a2b8;">
+                    <i class="fas fa-clock mr-2"></i>
+                    <span class="small font-weight-bold">{{ billing_stats.pending_approvals }} Bills Pending Approval</span>
+                </div>
+                {% endif %}
+
+                {% if billing_stats.my_pending_tasks > 0 %}
+                <div class="alert alert-warning p-2 mt-2 mb-0 border-0 d-flex align-items-center" style="border-radius: 8px; background: rgba(255, 193, 7, 0.1); color: #856404;">
+                    <i class="fas fa-edit mr-2"></i>
+                    <span class="small font-weight-bold">{{ billing_stats.my_pending_tasks }} Tasks to Complete</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -520,46 +587,156 @@
             options: {
                 maintainAspectRatio: false,
                 responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#333', // Darker legend text
+                            font: { weight: 'bold' }
+                        }
+                    }
+                },
                 scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { stepSize: 1, color: '#333' } 
+                    },
+                    x: {
+                        ticks: { color: '#333' }
+                    }
                 }
             }
         });
 
         // --- Program Distribution (Donut Chart) ---
-        const programData = {{ stats.program_chart|safe }};
-        const programCtx = document.getElementById('programDistributionChart').getContext('2d');
-        new Chart(programCtx, {
-            type: 'doughnut',
-            data: {
-                labels: programData.map(d => d.short_name),
-                datasets: [{
-                    data: programData.map(d => d.count),
-                    backgroundColor: ['#f56954', '#00a65a', '#f39c12', '#00c0ef', '#3c8dbc', '#d2d6de'],
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                responsive: true,
-            }
+        const programPalette = [
+            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', 
+            '#6f42c1', '#fd7e14', '#20c997', '#d63384', '#0dcaf0',
+            '#6610f2', '#198754', '#007bff', '#dc3545', '#ffc107'
+        ];
+        
+        let programChart;
+        function initProgramChart(data) {
+            const ctx = document.getElementById('programDistributionChart').getContext('2d');
+            if (programChart) programChart.destroy();
+            
+            programChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(d => d.short_name),
+                    datasets: [{
+                        data: data.map(d => d.count),
+                        backgroundColor: programPalette.slice(0, data.length),
+                        hoverOffset: 4,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { 
+                                usePointStyle: true, 
+                                padding: 20,
+                                color: '#333',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        // Initialize with global data
+        initProgramChart({{ stats.program_chart|safe }});
+
+        // Batch Filter Event
+        $('#batchFilter').on('change', function() {
+            const batch = $(this).val();
+            const card = $(this).closest('.card');
+            
+            // Add loading overlay if possible, or just fade
+            card.css('opacity', '0.6');
+            
+            $.get("{% url 'api_program_distribution' %}", { batch: batch }, function(res) {
+                initProgramChart(res.distribution);
+                card.css('opacity', '1');
+            });
         });
 
         // --- Gender Distribution (Pie Chart) ---
-        const genderData = {{ stats.gender_chart|safe }};
-        const genderCtx = document.getElementById('genderDistributionChart').getContext('2d');
-        new Chart(genderCtx, {
-            type: 'pie',
-            data: {
-                labels: genderData.map(d => d.gender),
-                datasets: [{
-                    data: genderData.map(d => d.count),
-                    backgroundColor: ['#007bff', '#e83e8c', '#6c757d'],
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                responsive: true,
-            }
+        const genderColors = { 'Male': '#007bff', 'Female': '#e83e8c', 'Unknown': '#6c757d', 'Other': '#6c757d' };
+        let genderChart;
+
+        function initGenderChart(data) {
+            const ctx = document.getElementById('genderDistributionChart').getContext('2d');
+            if (genderChart) genderChart.destroy();
+            
+            genderChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(d => d.gender),
+                    datasets: [{
+                        data: data.map(d => d.count),
+                        backgroundColor: data.map(d => genderColors[d.gender] || '#6c757d'),
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                usePointStyle: true,
+                                color: '#333',
+                                font: { weight: 'bold' }
+                            } 
+                        }
+                    }
+                }
+            });
+
+            // Update table
+            const tbody = $('#genderTableBody');
+            tbody.empty();
+            data.forEach(item => {
+                const color = genderColors[item.gender] || '#6c757d';
+                tbody.append(`
+                    <tr>
+                        <td class="font-weight-bold">
+                            <i class="fas fa-circle mr-1" style="color: ${color}; font-size: 0.7rem;"></i>
+                            ${item.gender}
+                        </td>
+                        <td class="text-right font-weight-bold">${item.count}</td>
+                        <td class="text-right text-muted small">${item.percentage}%</td>
+                    </tr>
+                `);
+            });
+        }
+
+        // Initialize with global data
+        const initialGenderData = {{ stats.gender_chart|safe }};
+        // Add percentages to initial data if missing (already calculated in template but need it for JS)
+        const totalStudents = {{ stats.total_students }};
+        initialGenderData.forEach(d => {
+            d.percentage = totalStudents > 0 ? (d.count / totalStudents * 100).toFixed(1) : 0;
+        });
+        initGenderChart(initialGenderData);
+
+        // Gender Batch Filter Event
+        $('#genderBatchFilter').on('change', function() {
+            const batch = $(this).val();
+            const card = $(this).closest('.card');
+            card.css('opacity', '0.6');
+            
+            $.get("{% url 'api_gender_distribution' %}", { batch: batch }, function(res) {
+                initGenderChart(res.distribution);
+                card.css('opacity', '1');
+            });
         });
     });
 

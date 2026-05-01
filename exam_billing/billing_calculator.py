@@ -48,7 +48,11 @@ def scrutinizer_rate(settings, assignment, all_assignments):
 
 
 def calculate_exam_program_summary(exam_program):
-    settings = exam_program.exam.settings
+    settings = getattr(exam_program.exam, 'settings', None)
+    if settings is None:
+        # No billing settings configured for this exam — return empty summary
+        return {'rows': [], 'grand_total': ZERO}
+
     totals = defaultdict(lambda: defaultdict(lambda: ZERO))
     details = defaultdict(list)
 
@@ -62,16 +66,23 @@ def calculate_exam_program_summary(exam_program):
         amount = settings.ec_chairman_rate if 'chair' in role else settings.ec_member_rate
         _add(details, totals, item.faculty, 'ec', amount, item.role or 'EC')
 
+    rpsc_counts = {f"{s.level}-{s.term}": s.total_students for s in exam_program.level_term_summaries.all()}
+    total_all_students = sum(rpsc_counts.values())
     for item in exam_program.rpsc_assignments.select_related('faculty').filter(is_deleted=False):
         role = (item.role or '').lower()
         rate = settings.rpsc_chairman_rate if 'chair' in role else settings.rpsc_member_rate
-        amount = money(item.total_students) * rate
-        _add(details, totals, item.faculty, 'rpsc', amount, f'{item.level}-{item.term} RPSC')
+        students = total_all_students if item.level == 'All' else rpsc_counts.get(f"{item.level}-{item.term}", 0)
+        amount = money(students) * rate
+        label = 'All Levels/Terms' if item.level == 'All' else f'{item.level}-{item.term}'
+        _add(details, totals, item.faculty, 'rpsc', amount, f'{label} RPSC')
 
     for item in exam_program.qmsc_assignments.select_related('faculty', 'course').filter(is_deleted=False):
+        if not item.faculty_id:
+            continue  # external-only display entry — not billed
         role = (item.role or '').lower()
         amount = settings.qmsc_chairman_rate if 'chair' in role else settings.qmsc_member_rate
-        _add(details, totals, item.faculty, 'qmsc', amount, f'{item.course.course_code} QMSC')
+        desc = 'QMSC Chairman' if 'chair' in role else f'{item.course.course_code if item.course else "?"} QMSC'
+        _add(details, totals, item.faculty, 'qmsc', amount, desc)
 
     qpsc_members = list(exam_program.qpsc_members.select_related('faculty').filter(is_deleted=False))
     member_count = len(qpsc_members) or 1
@@ -110,6 +121,7 @@ def calculate_exam_program_summary(exam_program):
             'scrutiny': money(buckets['scrutiny']),
             'details': details[faculty_id],
         }
+        row['committee_total'] = row['cecc'] + row['ec'] + row['rpsc'] + row['qmsc'] + row['qpsc']
         row['total'] = sum(
             row[key] for key in ['cecc', 'ec', 'rpsc', 'qmsc', 'qpsc', 'question_setting', 'script_examining', 'scrutiny']
         )

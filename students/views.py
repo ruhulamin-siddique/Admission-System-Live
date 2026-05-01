@@ -8,14 +8,15 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils.html import escape
 from django.utils import timezone
-from .models import Student, ProgramChangeHistory, AdmissionStatusHistory
-from .utils import generate_next_ugc_id, import_students_from_excel, execute_program_change_web
 from core.decorators import require_access
+from exam_billing.models import BillingExam, ExamProgram
+from exam_billing.scope import get_allowed_programs
 import xhtml2pdf.pisa as pisa
 from io import BytesIO
 from django.template.loader import get_template
 from urllib.parse import urlencode
 from master_data.models import Program
+from .models import Student, ProgramChangeHistory, SMSHistory, AdmissionStatusHistory
 from .geo_data import BANGLADESH_GEO
 import json
 import os
@@ -75,10 +76,16 @@ def print_blank_form(request):
 @require_access('dashboard', 'view')
 def dashboard(request):
     """Main dashboard view with summary statistics."""
-    # Monthly Admission Trends (Last 6 months)
-    six_months_ago = timezone.now() - timezone.timedelta(days=180)
-    monthly_data = Student.objects.filter(created_at__gte=six_months_ago) \
-        .annotate(month=TruncMonth('created_at')) \
+    # Initialize all date variables at the very beginning
+    _now = timezone.now()
+    _today = _now.date()
+    _start_of_week = _today - timezone.timedelta(days=_today.weekday())
+    _start_of_month = _today.replace(day=1)
+    _twelve_months_ago = _today - timezone.timedelta(days=365)
+
+    # Monthly Admission Trends (Last 12 months) based on Admission Date
+    monthly_data = Student.objects.filter(admission_date__gte=_twelve_months_ago) \
+        .annotate(month=TruncMonth('admission_date')) \
         .values('month') \
         .annotate(count=Count('student_id')) \
         .order_by('month')
@@ -190,15 +197,11 @@ def dashboard(request):
         latest_batch_intake = list(aggregated_intake.values())
         latest_batch_intake.sort(key=lambda x: x['count'], reverse=True)
 
-    # Periodic Admission Stats
-    now = timezone.now()
-    today_date = now.date()
-    start_of_week = today_date - timezone.timedelta(days=today_date.weekday())
-    start_of_month = today_date.replace(day=1)
-
-    today_qs = Student.objects.filter(admission_date=today_date)
-    week_qs = Student.objects.filter(admission_date__gte=start_of_week)
-    month_qs = Student.objects.filter(admission_date__gte=start_of_month)
+    # Periodic Admission Stats (Filtered by Latest Batch only)
+    periodic_qs = Student.objects.filter(batch=latest_batch) if latest_batch else Student.objects.all()
+    today_qs = periodic_qs.filter(admission_date=_today)
+    week_qs = periodic_qs.filter(admission_date__gte=_start_of_week)
+    month_qs = periodic_qs.filter(admission_date__gte=_start_of_month)
 
     def _get_periodic_breakdown(qs):
         agg_bd = {}
@@ -217,25 +220,30 @@ def dashboard(request):
         breakdown.sort(key=lambda x: x['count'], reverse=True)
         return breakdown
 
+    # Get semester name for the latest intake
+    latest_semester = Student.objects.filter(batch=latest_batch).values_list('semester_name', flat=True).first() if latest_batch else "Unknown"
+
     periodic_stats = {
+        'batch': latest_batch,
+        'semester': latest_semester,
         'today': {
-            'label': now.strftime('%B %d, %Y'),
+            'label': _now.strftime('%B %d, %Y'),
             'count': today_qs.count(),
             'breakdown': _get_periodic_breakdown(today_qs)
         },
         'week': {
-            'label': f"{start_of_week.strftime('%b %d')} - {today_date.strftime('%b %d')}",
+            'label': f"{_start_of_week.strftime('%b %d')} - {_today.strftime('%b %d')}",
             'count': week_qs.count(),
             'breakdown': _get_periodic_breakdown(week_qs)
         },
         'month': {
-            'label': now.strftime('%B %Y'),
+            'label': _now.strftime('%B %Y'),
             'count': month_qs.count(),
             'breakdown': _get_periodic_breakdown(month_qs)
         }
     }
 
-    # Recent Students with Short Names
+    # Recent Students with Short Names (Ordered by Creation Date)
     recent_students = []
     for s in Student.objects.order_by('-created_at')[:10]:
         recent_students.append({
@@ -243,6 +251,7 @@ def dashboard(request):
             'student_name': s.student_name,
             'program': s.program,
             'short_name': program_map.get(s.program, s.program),
+            'batch': s.batch,
             'admission_status': s.admission_status
         })
 
@@ -273,9 +282,43 @@ def dashboard(request):
         'latest_batch_intake': latest_batch_intake,
         'total_batch_students': total_batch_students,
         'periodic': periodic_stats,
+        'all_batches': sorted([b for b in all_batches if b], reverse=True),
         'pending_registrations': User.objects.filter(profile__registration_status='PENDING').count()
     }
-    return render(request, 'students/dashboard.html', {'stats': stats})
+    # --- Exam Billing Integration ---
+    billing_stats = {
+        'has_access': request.user.profile.has_access('exam_billing', 'view_dashboard'),
+        'active_exams': [],
+        'pending_approvals': 0,
+        'my_pending_tasks': 0
+    }
+    
+    if billing_stats['has_access']:
+        allowed_programs = get_allowed_programs(request.user)
+        active_exams = BillingExam.objects.exclude(status='finalized').prefetch_related('programs')
+        
+        # Filter exams where the user has at least one allowed program
+        if not request.user.is_superuser and not request.user.profile.has_access('exam_billing', 'view_all_departments'):
+            active_exams = active_exams.filter(programs__program__in=allowed_programs).distinct()
+            billing_stats['my_pending_tasks'] = ExamProgram.objects.filter(
+                program__in=allowed_programs, 
+                status__in=['draft']
+            ).count()
+        else:
+            billing_stats['pending_approvals'] = ExamProgram.objects.filter(status='submitted').count()
+
+        billing_stats['active_exams'] = active_exams[:5]
+
+    return render(request, 'students/dashboard.html', {
+        'stats': stats,
+        'monthly_admissions': json.dumps(monthly_admissions),
+        'program_dist': json.dumps(program_dist),
+        'gender_chart_data': json.dumps(gender_chart_data),
+        'financials': financials,
+        'latest_batch': latest_batch,
+        'latest_batch_intake': latest_batch_intake,
+        'billing_stats': billing_stats
+    })
 
 from django.core.paginator import Paginator
 
@@ -731,19 +774,33 @@ def api_periodic_students(request):
     period = request.GET.get('period')
     program = request.GET.get('program')
     
-    now = timezone.now()
-    today_date = now.date()
+    _now = timezone.now()
+    _today = _now.date()
     
-    qs = Student.objects.all()
+    # Identify Latest Batch
+    import re
+    all_batches = list(Student.objects.values_list('batch', flat=True).distinct())
+    latest_batch = None
+    max_num = -1
+    for b in all_batches:
+        if b:
+            nums = re.findall(r'\d+', b)
+            if nums:
+                n = int(nums[0])
+                if n > max_num:
+                    max_num = n
+                    latest_batch = b
+
+    qs = Student.objects.filter(batch=latest_batch) if latest_batch else Student.objects.all()
     
     if period == 'today':
-        qs = qs.filter(admission_date=today_date)
+        qs = qs.filter(admission_date=_today)
     elif period == 'week':
-        start_of_week = today_date - timezone.timedelta(days=today_date.weekday())
-        qs = qs.filter(admission_date__gte=start_of_week)
+        _start_of_week = _today - timezone.timedelta(days=_today.weekday())
+        qs = qs.filter(admission_date__gte=_start_of_week)
     elif period == 'month':
-        start_of_month = today_date.replace(day=1)
-        qs = qs.filter(admission_date__gte=start_of_month)
+        _start_of_month = _today.replace(day=1)
+        qs = qs.filter(admission_date__gte=_start_of_month)
         
     if program:
         qs = qs.filter(program=program)
@@ -756,6 +813,57 @@ def api_periodic_students(request):
         'program': program,
         'count': qs.count()
     })
+
+@require_access('dashboard', 'view')
+def api_program_distribution(request):
+    """Returns JSON data for program distribution, optionally filtered by batch."""
+    batch = request.GET.get('batch')
+    
+    qs = Student.objects.all()
+    if batch and batch != 'all':
+        qs = qs.filter(batch=batch)
+        
+    # Program Distribution logic (same as in dashboard)
+    program_map = {p.name: p.short_name or p.name for p in Program.objects.all()}
+    dist_qs = qs.values('program').annotate(count=Count('student_id'))
+    
+    agg_dist = {}
+    for item in dist_qs:
+        full_name = item['program'] or 'Unknown'
+        short = program_map.get(full_name, full_name).strip().upper()
+        if short not in agg_dist:
+            agg_dist[short] = {'short_name': short, 'count': 0}
+        agg_dist[short]['count'] += item['count']
+        
+    data = sorted(list(agg_dist.values()), key=lambda x: x['count'], reverse=True)
+    return JsonResponse({'distribution': data})
+
+@require_access('dashboard', 'view')
+def api_gender_distribution(request):
+    """Returns JSON data for gender distribution, optionally filtered by batch."""
+    batch = request.GET.get('batch')
+    
+    qs = Student.objects.all()
+    if batch and batch != 'all':
+        qs = qs.filter(batch=batch)
+        
+    # Gender Distribution (Enhanced with Coalesce)
+    from django.db.models.functions import Coalesce
+    from django.db.models import Value
+    gender_dist = qs.annotate(
+        gender_label=Coalesce('gender', Value('Unknown'))
+    ).values('gender_label').annotate(count=Count('student_id')).order_by('-count')
+    
+    total = sum(g['count'] for g in gender_dist)
+    data = [
+        {
+            'gender': g['gender_label'] or 'Unknown', 
+            'count': g['count'],
+            'percentage': round((g['count'] / total * 100), 1) if total > 0 else 0
+        } 
+        for g in gender_dist
+    ]
+    return JsonResponse({'distribution': data, 'total': total})
 
 def _handle_student_photo(request, student):
     """Saves student photo and returns the relative path."""

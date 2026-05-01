@@ -1,10 +1,366 @@
 {% extends "base.html" %}
-{% block title %}Faculty Directory{% endblock %}
-{% block content %}
-<div class="content-header"><div class="container-fluid"><h1>Faculty Directory</h1></div></div>
-<section class="content"><div class="container-fluid"><div class="row">
-<div class="col-md-4"><form method="post" class="card">{% csrf_token %}<div class="card-header"><h3 class="card-title">Add Faculty</h3></div><div class="card-body">{% for field in form %}<div class="mb-3"><label>{{ field.label }}</label>{{ field }}</div>{% endfor %}</div><div class="card-footer"><button class="btn btn-primary">Save</button></div></form></div>
-<div class="col-md-8"><div class="card"><div class="card-body table-responsive p-0"><table class="table table-striped"><thead><tr><th>Name</th><th>Designation</th><th>Department</th><th></th></tr></thead><tbody>{% for f in faculty_list %}<tr><td>{{ f.name }}</td><td>{{ f.designation }}</td><td>{{ f.program.short_name }}</td><td class="text-right"><a class="btn btn-sm btn-outline-danger" href="{% url 'billing_faculty_delete' f.id %}">Deactivate</a></td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted p-4">No faculty profiles.</td></tr>{% endfor %}</tbody></table></div></div></div>
-</div></div></section>
+{% load core_tags %}
+
+{% block title %}Faculty Directory | Admission Suite{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-blue: #2b3a8c;
+        --accent-yellow: #ffcb2d;
+        --border-color: #dee2e6;
+        --header-bg: #e9ecef;
+    }
+
+    .premium-card { 
+        border-radius: 8px; 
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        background: #fff;
+    }
+
+    .analytics-bar { 
+        background: var(--accent-yellow); 
+        color: #1f2937; 
+        padding: 10px 15px; 
+        font-weight: 800; 
+        display: flex;
+        align-items: center;
+        border-radius: 0;
+    }
+
+    .total-badge {
+        background: #fff;
+        border-radius: 20px;
+        padding: 2px 12px;
+        margin-left: 10px;
+        font-size: 0.9rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .filter-section { 
+        background: #fff; 
+        padding: 20px; 
+        border-bottom: 2px solid var(--primary-blue); 
+    }
+
+    .filter-group { 
+        position: relative; 
+        border: 1px solid #ced4da; 
+        border-radius: 4px; 
+        padding: 4px 12px; 
+        margin-bottom: 10px; 
+    }
+
+    .filter-group label { 
+        position: absolute; 
+        top: -10px; 
+        left: 10px; 
+        background: #fff; 
+        padding: 0 5px; 
+        font-size: 11px; 
+        font-weight: 700; 
+        color: #6c757d; 
+    }
+
+    .filter-group select, .filter-group input { 
+        border: none; 
+        width: 100%; 
+        font-size: 14px; 
+        background: transparent; 
+        outline: none; 
+        height: 30px; 
+    }
+
+    .table thead th { 
+        background: var(--header-bg); 
+        color: #495057; 
+        font-size: 13px; 
+        font-weight: 700; 
+        border: 1px solid var(--border-color) !important;
+    }
+
+    .kpi-card {
+        border-left: 4px solid var(--primary-blue);
+        transition: transform 0.2s;
+    }
+    .stats-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; }
+    
+    /* Premium Action Toolkit */
+    .action-toolkit { 
+        display: flex; 
+        gap: 10px; 
+        justify-content: flex-end;
+        position: relative;
+        z-index: 10;
+    }
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #475569;
+        text-decoration: none !important;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .action-btn i { font-size: 0.95rem; pointer-events: none; }
+    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); text-decoration: none !important; }
+    .action-btn.edit:hover { color: #3b82f6; border-color: #3b82f6; background: #eff6ff; }
+    .action-btn.delete:hover { color: #ef4444; border-color: #ef4444; background: #fef2f2; }
+
+    /* Soft Badges */
+    .badge-soft-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .badge-soft-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-success-soft { background: rgba(34, 197, 94, 0.1); color: #15803d; }
+    .badge-danger-soft { background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
+
+    .font-weight-black { font-weight: 900; }
+    .opacity-10 { opacity: 0.1; }
+</style>
 {% endblock %}
 
+{% block content %}
+<!-- Designations Datalist for Suggestions -->
+<datalist id="designation-list">
+    {% for d in designations %}
+        <option value="{{ d }}">
+    {% endfor %}
+</datalist>
+
+<!-- KPIs & Main Content -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="card kpi-card">
+                    <div class="card-body py-3">
+                        <div class="text-muted small font-weight-bold text-uppercase">Total Faculty</div>
+                        <div class="h4 mb-0 font-weight-bold text-primary">{{ stats.total }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card kpi-card border-success">
+                    <div class="card-body py-3">
+                        <div class="text-muted small font-weight-bold text-uppercase">Active Profiles</div>
+                        <div class="h4 mb-0 font-weight-bold text-success">{{ stats.active }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card kpi-card border-warning">
+                    <div class="card-body py-3">
+                        <div class="text-muted small font-weight-bold text-uppercase">Departments</div>
+                        <div class="h4 mb-0 font-weight-bold text-warning">{{ stats.departments }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 text-right">
+                <div class="btn-group">
+                    <button class="btn btn-primary btn-lg shadow-sm" data-toggle="modal" data-target="#addFacultyModal">
+                        <i class="fas fa-plus-circle mr-2"></i> Add New
+                    </button>
+                    {% has_access 'exam_billing' 'bulk_import_faculty' as can_import %}
+                    {% if can_import %}
+                    <button type="button" class="btn btn-primary btn-lg dropdown-toggle dropdown-icon shadow-sm" data-toggle="dropdown">
+                        <span class="sr-only">Toggle Dropdown</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" role="menu">
+                        <a class="dropdown-item" href="{% url 'billing_faculty_export_template' %}">
+                            <i class="fas fa-file-excel mr-2 text-success"></i> Download Excel Template
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#" data-toggle="modal" data-target="#importFacultyModal">
+                            <i class="fas fa-upload mr-2 text-primary"></i> Bulk Import from Excel
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="analytics-bar">
+    <span>Directory Intelligence:</span>
+    <span id="total-count-display" class="total-badge">{{ stats.total }}</span>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card premium-card">
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <form id="faculty-filter-form" 
+                      hx-get="{% url 'billing_faculty_directory' %}" 
+                      hx-target="#faculty-results" 
+                      hx-trigger="submit, change from:select, keyup changed delay:500ms from:input"
+                      hx-indicator="#loader">
+                    
+                    <div class="row align-items-end">
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label>Search Faculty</label>
+                                <input type="text" name="search" placeholder="Name, ID, or Email..." value="{{ query }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label>Department</label>
+                                <select name="program">
+                                    <option value="">All Departments</option>
+                                    {% for p in programs %}
+                                    <option value="{{ p.id }}" {% if p.id|stringformat:"s" == selected_program %}selected{% endif %}>{{ p.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label>Designation</label>
+                                <select name="designation">
+                                    <option value="">All Designations</option>
+                                    {% for d in designations %}
+                                    <option value="{{ d }}" {% if d == selected_designation %}selected{% endif %}>{{ d }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="filter-group">
+                                <label>Status</label>
+                                <select name="status">
+                                    <option value="">All Status</option>
+                                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active Only</option>
+                                    <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-1 mb-2 text-right">
+                            <a href="{% url 'billing_faculty_directory' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                                <i class="fas fa-undo"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Table Section -->
+            <div class="card-body p-0 position-relative">
+                <div id="loader" class="htmx-indicator position-absolute w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.7); z-index: 10;">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+                
+                <div id="faculty-results" class="table-responsive">
+                    {% include "exam_billing/partials/faculty_results.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Add Faculty Modal -->
+<div class="modal fade" id="addFacultyModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <form method="post" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-user-plus mr-2"></i> Onboard New Faculty Member</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                {% if form.user %}
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="font-weight-bold small text-uppercase text-primary"><i class="fas fa-link mr-1"></i> {{ form.user.label }}</label>
+                        {{ form.user }}
+                        <small class="form-text text-muted">{{ form.user.help_text }}</small>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold small text-uppercase">First Name</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold small text-uppercase">Last Name</label>
+                        {{ form.last_name }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold small text-uppercase">Employee ID</label>
+                        {{ form.employee_id }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold small text-uppercase">Designation</label>
+                        {{ form.designation }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold small text-uppercase">Department / Program</label>
+                        {{ form.program }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold small text-uppercase">Email Address</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold small text-uppercase">Mobile Number</label>
+                        {{ form.mobile }}
+                    </div>
+                </div>
+                <div class="custom-control custom-switch mt-2">
+                    {{ form.is_active }}
+                    <label class="custom-control-label font-weight-bold" for="{{ form.is_active.id_for_label }}">Active Status</label>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary font-weight-bold px-4">Save Profile</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bulk Import Modal -->
+<div class="modal fade" id="importFacultyModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form method="post" action="{% url 'billing_faculty_import' %}" enctype="multipart/form-data" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-upload mr-2"></i> Bulk Import Faculty</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <p>Upload a populated Excel or CSV file to onboard multiple faculty members at once.</p>
+                <div class="alert alert-info small">
+                    <i class="fas fa-info-circle mr-1"></i> Ensure you use the exact department names or short names provided in the reference sheet.
+                </div>
+                <div class="form-group mb-0">
+                    <label class="font-weight-bold small text-uppercase">Select Data File (.xlsx or .csv)</label>
+                    <input type="file" name="file" class="form-control-file border p-2 w-100 rounded" required accept=".xlsx, .xls, .csv">
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-dark font-weight-bold px-4">Start Import</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

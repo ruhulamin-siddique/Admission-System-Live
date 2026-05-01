@@ -17,10 +17,10 @@ class Command(BaseCommand):
         Program.objects.get_or_create(name="English", ugc_code="09", cluster=arts, level_code='1')
 
         # Halls
-        Hall.objects.get_or_create(name="AUAH", code="02")
-        Hall.objects.get_or_create(name="TBH", code="01")
-        Hall.objects.get_or_create(name="ZH", code="04")
-        Hall.objects.get_or_create(name="Non-Residential", code="00")
+        Hall.objects.get_or_create(full_name="Abbas Uddin Ahmed Hall", short_name="AUAH", code="02")
+        Hall.objects.get_or_create(full_name="Tajuddin Ahmed Hall", short_name="TAH", code="01")
+        Hall.objects.get_or_create(full_name="Ziaur Rahman Hall", short_name="ZH", code="04")
+        Hall.objects.get_or_create(full_name="Non-Residential", short_name="Non-Residential", code="00")
 
         # Years
         y24, _ = AdmissionYear.objects.get_or_create(year=2024)

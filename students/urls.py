@@ -32,6 +32,8 @@ urlpatterns = [
     path('api/global-search/', views.api_global_search, name='api_global_search'),
     path('students/print-blank-form/', views.print_blank_form, name='print_blank_form'),
     path('api/periodic-students/', views.api_periodic_students, name='api_periodic_students'),
+    path('api/program-distribution/', views.api_program_distribution, name='api_program_distribution'),
+    path('api/gender-distribution/', views.api_gender_distribution, name='api_gender_distribution'),
     
     # Reports & Dynamic Exports
     path('reports/center/', views.reports_center, name='reports_center'),

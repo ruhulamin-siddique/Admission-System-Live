@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Fundamentals Hub{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <h1>Fundamentals Hub</h1>
+        <p class="text-muted">Select an exam and department to manage course details and student counts.</p>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            {% for exam in exams %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title font-weight-bold">{{ exam.name }}</h3>
+                        <div class="card-tools">
+                            <span class="badge badge-light">{{ exam.programs.count }} Depts</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="nav nav-pills flex-column">
+                            {% for ep in exam.programs.all %}
+                            <li class="nav-item border-bottom">
+                                <a href="{% url 'billing_program_fundamentals' ep.id %}" class="nav-link d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-university mr-2 text-muted"></i> {{ ep.program.name }}</span>
+                                    <i class="fas fa-chevron-right small text-muted"></i>
+                                </a>
+                            </li>
+                            {% empty %}
+                            <li class="nav-item p-3 text-center text-muted small">No departments assigned.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center p-5">
+                <div class="display-4 text-muted"><i class="fas fa-folder-open mb-3"></i></div>
+                <p>No exams found. Create an exam to start managing fundamentals.</p>
+                <a href="{% url 'billing_exam_create' %}" class="btn btn-primary mt-3">Create New Exam</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

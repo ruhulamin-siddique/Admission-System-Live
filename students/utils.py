@@ -210,15 +210,19 @@ def import_students_from_excel(file_obj, update_existing=False):
             if student_data.get('admission_status'):
                 stat = str(student_data['admission_status']).strip().title()
                 if stat in ['Active', 'Admitted', 'Current', 'Running']:
-                    stat = 'Approved'
+                    stat = 'Active'
                 elif stat in ['Canceled', 'Cancel', 'Cancelled']:
                     stat = 'Cancelled'
                 elif stat in ['Graduated', 'Alumni']:
                     stat = 'Graduated'
-                elif stat not in ['Pending', 'Approved', 'Cancelled', 'Graduated']:
+                elif stat not in ['Pending', 'Active', 'Cancelled', 'Graduated']:
                     stat = 'Pending' # Fallback
                 student_data['admission_status'] = stat
             
+            # Default Admission Date if missing
+            if not student_data.get('admission_date'):
+                student_data['admission_date'] = timezone.now().date()
+
             records_to_process.append(Student(**student_data))
             processed_ids.add(s_id)
             

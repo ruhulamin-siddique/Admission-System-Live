@@ -154,34 +154,65 @@
         text-decoration: none;
     }
 
-    .btn-filter:hover,
-    .btn-filter:focus {
-        background: linear-gradient(135deg, var(--primary-blue-dark), var(--primary-blue));
+    .directory-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 38px;
+        padding: 0 15px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        border: 1px solid var(--primary-blue);
+        background: #fff;
+        color: var(--primary-blue);
+        text-decoration: none !important;
+        box-shadow: 0 4px 10px rgba(43, 58, 140, 0.05);
+    }
+
+    .directory-action-btn:hover {
+        background: var(--primary-blue);
         color: #fff;
-        box-shadow: 0 14px 28px rgba(43, 58, 140, 0.24);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 15px rgba(43, 58, 140, 0.15);
     }
 
-    .btn-clear-filters:hover,
-    .btn-clear-filters:focus {
-        background: rgba(209, 73, 91, 0.08);
-        border-color: rgba(209, 73, 91, 0.32);
-        color: var(--danger-red-dark);
-        box-shadow: 0 12px 24px rgba(209, 73, 91, 0.12);
+    .directory-action-btn i {
+        margin-right: 6px;
     }
 
-    .btn-excel:hover,
-    .btn-excel:focus {
-        background: rgba(22, 143, 92, 0.08);
-        border-color: rgba(22, 143, 92, 0.25);
-        color: var(--success-green-dark);
-        box-shadow: 0 12px 24px rgba(22, 143, 92, 0.12);
-    }
-
-    .btn-download-all:hover,
-    .btn-download-all:focus {
-        background: linear-gradient(135deg, #0f467e, #0b5c56);
+    .btn-filter {
+        background: var(--primary-blue);
         color: #fff;
-        box-shadow: 0 14px 28px rgba(15, 92, 128, 0.26);
+    }
+
+    .btn-filter:hover {
+        background: var(--primary-blue-dark);
+        color: #fff;
+    }
+
+    .btn-clear-filters {
+        border-color: var(--danger-red);
+        color: var(--danger-red);
+    }
+
+    .btn-clear-filters:hover {
+        background: var(--danger-red);
+        color: #fff;
+        box-shadow: 0 8px 15px rgba(209, 73, 91, 0.15);
+    }
+
+    .btn-download-main {
+        background: var(--success-green);
+        border-color: var(--success-green);
+        color: #fff;
+    }
+
+    .btn-download-main:hover {
+        background: var(--success-green-dark);
+        color: #fff;
+        box-shadow: 0 8px 15px rgba(22, 143, 92, 0.15);
     }
 
     .htmx-indicator { 
@@ -768,7 +799,7 @@
                                 hx-target="#directory-results"
                                 hx-indicator="#table-loader"
                                 hx-push-url="true">
-                            Clear Filters
+                            <i class="fas fa-undo mr-1"></i> Clear
                         </button>
                     </div>
                 </div>

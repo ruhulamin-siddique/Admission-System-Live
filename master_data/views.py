@@ -11,7 +11,7 @@ def academic_settings(request):
     context = {
         'clusters': Cluster.objects.all().order_by('name'),
         'programs': Program.objects.all().order_by('name'),
-        'halls': Hall.objects.all().order_by('name'),
+        'halls': Hall.objects.all().order_by('full_name', 'short_name'),
         'years': AdmissionYear.objects.all().order_by('-year'),
         'semesters': Semester.objects.all().order_by('name'),
         'batches': Batch.objects.all().order_by('-admission_year', 'name'),
@@ -35,7 +35,11 @@ def add_master_data(request, model_name):
                 sort_order=request.POST.get('sort_order', 0)
             )
         elif model_name == 'hall':
-            Hall.objects.create(name=request.POST.get('name'), code=request.POST.get('code'))
+            Hall.objects.create(
+                full_name=request.POST.get('full_name'),
+                short_name=request.POST.get('short_name'),
+                code=request.POST.get('code')
+            )
         elif model_name == 'year':
             AdmissionYear.objects.create(year=request.POST.get('year'))
         elif model_name == 'semester':
@@ -95,7 +99,8 @@ def edit_master_data(request, model_name, pk):
             obj.level_code = request.POST.get('level_code')
             obj.sort_order = request.POST.get('sort_order', 0)
         elif model_name == 'hall':
-            obj.name = request.POST.get('name')
+            obj.full_name = request.POST.get('full_name')
+            obj.short_name = request.POST.get('short_name')
             obj.code = request.POST.get('code')
         elif model_name == 'year':
             obj.year = request.POST.get('year')
