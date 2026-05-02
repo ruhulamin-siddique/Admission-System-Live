@@ -1,0 +1,77 @@
+<div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+        <div class="modal-header bg-primary text-white py-3 px-4 border-0">
+            <h5 class="modal-title font-weight-bold">
+                <i class="fas fa-edit mr-2"></i> {{ title }}
+            </h5>
+            <button type="button" class="close text-white opacity-100" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <form hx-post="{% url 'billing_row_edit' exam_program.id sheet obj.id %}" hx-target="#modals-here" class="mb-0">
+            {% csrf_token %}
+            <div class="modal-body p-4 bg-light">
+                <div class="card border-0 shadow-sm rounded-lg mb-0">
+                    <div class="card-body p-4">
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger shadow-sm">
+                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            {% for field in form %}
+                            <div class="{% if field.name == 'course' or field.name == 'faculty' %}col-md-12{% else %}col-md-6{% endif %} mb-3">
+                                <label class="form-label font-weight-bold small text-uppercase text-muted mb-1">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small mt-1 font-weight-bold">
+                                        {% for error in field.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted italic">{{ field.help_text }}</small>
+                                {% endif %}
+                                
+                                <!-- Dynamic Course Info Area -->
+                                {% if field.name == 'course' %}
+                                <div id="course-info-display">
+                                    {% if obj.course %}
+                                    <div class="alert alert-info py-2 px-3 small mb-0 mt-2 border-0 shadow-sm" style="border-left: 4px solid #17a2b8 !important;">
+                                        <i class="fas fa-info-circle mr-2"></i> <strong>Course Info:</strong> {{ obj.course.course_title }} ({{ obj.course.no_of_scripts }} scripts)
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-white py-3 px-4 border-0">
+                <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Discard Changes</button>
+                <button type="submit" class="btn btn-primary px-5 shadow-sm font-weight-bold rounded-pill">
+                    <i class="fas fa-save mr-2"></i> Update Row
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Wire up HTMX for dynamic course info loading
+    (function() {
+        const courseSelect = document.querySelector('select[name="course"]');
+        if (courseSelect) {
+            courseSelect.addEventListener('change', function() {
+                const courseId = this.value;
+                if (courseId) {
+                    htmx.ajax('GET', '{% url "billing_get_course_info" %}?course_id=' + courseId, '#course-info-display');
+                } else {
+                    document.getElementById('course-info-display').innerHTML = '';
+                }
+            });
+        }
+    })();
+</script>

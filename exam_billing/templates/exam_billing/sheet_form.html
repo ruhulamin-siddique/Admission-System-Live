@@ -30,6 +30,63 @@
         margin-bottom: 4px;
         display: block;
     }
+
+    /* Hoverable Deleting Actions */
+    .hover-actions-cell {
+        position: relative;
+        transition: all 0.2s ease;
+        min-height: 32px;
+        padding-right: 65px !important; /* Space for two buttons */
+    }
+    .hover-action-btns {
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        gap: 4px;
+        z-index: 999 !important;
+    }
+    .btn-hover-action {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .btn-hover-action.delete {
+        color: #dc3545;
+        background: rgba(220, 53, 69, 0.05);
+        border-color: rgba(220, 53, 69, 0.1);
+    }
+    .btn-hover-action.edit {
+        color: #0d6efd;
+        background: rgba(13, 110, 253, 0.05);
+        border-color: rgba(13, 110, 253, 0.1);
+    }
+    .hover-actions-cell:hover {
+        background-color: rgba(0, 0, 0, 0.02) !important;
+    }
+    .hover-actions-cell:hover .hover-action-btns {
+        opacity: 1;
+        visibility: visible;
+    }
+    .btn-hover-action:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        z-index: 6;
+    }
+    .btn-hover-action.delete:hover { background: #dc3545; color: #fff; }
+    .btn-hover-action.edit:hover { background: #0d6efd; color: #fff; }
 </style>
 {% endblock %}
 
@@ -79,7 +136,6 @@
                                 <th colspan="2" class="merged-header">
                                     {% if sheet == 'qsetter' %}Question Setter{% elif sheet == 'examiner' %}Script Examiner{% else %}Script Scrutinizer{% endif %} - Part B
                                 </th>
-                                <th rowspan="2" class="text-center no-print" style="width: 100px;">Actions</th>
                             </tr>
                             <tr>
                                 <th>Name</th>
@@ -93,39 +149,92 @@
                             <tr>
                                 <td class="text-center">{{ group.course.level }}</td>
                                 <td class="text-center">{{ group.course.term }}</td>
-                                <td class="font-weight-bold">{{ group.course.course_code }}</td>
+                                <td class="font-weight-bold hover-actions-cell" style="min-width: 140px;">
+                                    {{ group.course.course_code }}
+                                    {% if exam_program.is_editable %}
+                                    <div class="hover-action-btns">
+                                        <button type="button" class="btn-hover-action edit border-0" title="Edit Course"
+                                            hx-get="{% url 'billing_row_edit' exam_program.id 'courses' group.course.id %}" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <button type="button" class="btn-hover-action delete border-0" title="Remove Row (Course & Assignments)"
+                                            hx-get="{% url 'billing_row_delete_confirm' exam_program.id 'courses' group.course.id %}" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </td>
                                 
                                 <!-- Part A -->
-                                <td>
-                                    {% if group.part_a %}{{ group.part_a.faculty.name }}{% elif group.full %}{{ group.full.faculty.name }}{% else %}-{% endif %}
+                                <td class="hover-actions-cell">
+                                    {% if group.part_a %}
+                                        {{ group.part_a.faculty.name }}
+                                        {% if exam_program.is_editable %}
+                                        <div class="hover-action-btns">
+                                            <button type="button" class="btn-hover-action edit border-0" title="Edit Part A"
+                                                hx-get="{% url 'billing_row_edit' exam_program.id sheet group.part_a.id %}" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                            <button type="button" class="btn-hover-action delete border-0" title="Remove Part A"
+                                                hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet group.part_a.id %}?column=A" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    {% elif group.full %}
+                                        {{ group.full.faculty.name }}
+                                        {% if exam_program.is_editable %}
+                                        <div class="hover-action-btns">
+                                            <button type="button" class="btn-hover-action edit border-0" title="Edit Assignment"
+                                                hx-get="{% url 'billing_row_edit' exam_program.id sheet group.full.id %}" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                            <button type="button" class="btn-hover-action delete border-0" title="Remove Part A"
+                                                hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet group.full.id %}?column=A" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    {% else %}-{% endif %}
                                 </td>
                                 <td class="small text-muted">
                                     {% if group.part_a %}{{ group.part_a.faculty.designation }}{% elif group.full %}{{ group.full.faculty.designation }}{% else %}-{% endif %}
                                 </td>
                                 
                                 <!-- Part B -->
-                                <td>
-                                    {% if group.part_b %}{{ group.part_b.faculty.name }}{% elif group.full %}{{ group.full.faculty.name }}{% else %}-{% endif %}
+                                <td class="hover-actions-cell">
+                                    {% if group.part_b %}
+                                        {{ group.part_b.faculty.name }}
+                                        {% if exam_program.is_editable %}
+                                        <div class="hover-action-btns">
+                                            <button type="button" class="btn-hover-action edit border-0" title="Edit Part B"
+                                                hx-get="{% url 'billing_row_edit' exam_program.id sheet group.part_b.id %}" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                            <button type="button" class="btn-hover-action delete border-0" title="Remove Part B"
+                                                hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet group.part_b.id %}?column=B" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    {% elif group.full %}
+                                        {{ group.full.faculty.name }}
+                                        {% if exam_program.is_editable %}
+                                        <div class="hover-action-btns">
+                                            <button type="button" class="btn-hover-action edit border-0" title="Edit Assignment"
+                                                hx-get="{% url 'billing_row_edit' exam_program.id sheet group.full.id %}" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                            <button type="button" class="btn-hover-action delete border-0" title="Remove Part B"
+                                                hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet group.full.id %}?column=B" hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    {% else %}-{% endif %}
                                 </td>
                                 <td class="small text-muted">
                                     {% if group.part_b %}{{ group.part_b.faculty.designation }}{% elif group.full %}{{ group.full.faculty.designation }}{% else %}-{% endif %}
-                                </td>
-                                
-                                <td class="text-center no-print align-middle" style="white-space: nowrap;">
-                                    {% if exam_program.is_editable %}
-                                        {% if group.part_a %}
-                                        <button type="button" class="btn btn-link font-weight-bold text-danger p-0 mx-1 border-0 bg-transparent" title="Remove A"
-                                            onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet group.part_a.id %}', 'Remove Part A assignment?')">A</button>
-                                        {% endif %}
-                                        {% if group.part_b %}
-                                        <button type="button" class="btn btn-link font-weight-bold text-danger p-0 mx-1 border-0 bg-transparent" title="Remove B"
-                                            onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet group.part_b.id %}', 'Remove Part B assignment?')">B</button>
-                                        {% endif %}
-                                        {% if group.full %}
-                                        <button type="button" class="btn btn-link font-weight-bold text-danger p-0 mx-1 border-0 bg-transparent" title="Remove Full"
-                                            onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet group.full.id %}', 'Remove Full assignment?')">A+B</button>
-                                        {% endif %}
-                                    {% endif %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -171,23 +280,30 @@
                                 <th style="width: 80px;">Term</th>
                                 <th>Chairman</th>
                                 <th>Designation</th>
-                                <th class="no-print text-center" style="width: 80px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr class="bg-primary-light">
                                 <td class="text-center font-weight-bold">All</td>
                                 <td class="text-center font-weight-bold">All</td>
-                                <td class="font-weight-bold text-primary">
-                                    {% if rows.chairman %}{{ rows.chairman.faculty.name }}{% else %}<span class="text-muted small">No Chairman Assigned</span>{% endif %}
+                                <td class="font-weight-bold text-primary hover-actions-cell">
+                                    {% if rows.chairman %}
+                                        {{ rows.chairman.faculty.name }}
+                                        {% if exam_program.is_editable %}
+                                        <div class="hover-action-btns">
+                                            <button type="button" class="btn-hover-action edit border-0" title="Edit Chairman"
+                                                hx-get="{% url 'billing_row_edit' exam_program.id sheet rows.chairman.id %}" hx-target="#modals-here">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                            <button type="button" class="btn-hover-action delete border-0" title="Remove Chairman"
+                                                hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet rows.chairman.id %}" hx-target="#modals-here">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    {% else %}<span class="text-muted small">No Chairman Assigned</span>{% endif %}
                                 </td>
                                 <td class="text-muted">{% if rows.chairman %}{{ rows.chairman.faculty.designation }}{% else %}-{% endif %}</td>
-                                <td class="text-center no-print">
-                                    {% if rows.chairman and exam_program.is_editable %}
-                                    <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
-                                        onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet rows.chairman.id %}', 'Remove Chairman?')"><i class="fas fa-times"></i></button>
-                                    {% endif %}
-                                </td>
                             </tr>
                         </tbody>
 
@@ -198,7 +314,6 @@
                                 <th>Term</th>
                                 <th>Tabulator</th>
                                 <th>Designation</th>
-                                <th class="no-print text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -209,14 +324,22 @@
                                 <td rowspan="{{ group.tabulators|length }}" class="text-center align-middle font-weight-bold">{{ group.level }}</td>
                                 <td rowspan="{{ group.tabulators|length }}" class="text-center align-middle font-weight-bold">{{ group.term }}</td>
                                 {% endif %}
-                                <td>{{ item.faculty.name }}</td>
-                                <td class="text-muted small">{{ item.faculty.designation }}</td>
-                                <td class="text-center no-print align-middle">
+                                <td class="hover-actions-cell">
+                                    {{ item.faculty.name }}
                                     {% if exam_program.is_editable %}
-                                    <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
-                                        onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet item.id %}', 'Remove Tabulator?')"><i class="fas fa-times"></i></button>
+                                    <div class="hover-action-btns">
+                                        <button type="button" class="btn-hover-action edit border-0" title="Edit Tabulator"
+                                            hx-get="{% url 'billing_row_edit' exam_program.id sheet item.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <button type="button" class="btn-hover-action delete border-0" title="Remove Tabulator"
+                                            hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet item.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
                                     {% endif %}
                                 </td>
+                                <td class="text-muted small">{{ item.faculty.designation }}</td>
                             </tr>
                             {% endfor %}
                             {% endfor %}
@@ -260,7 +383,6 @@
                                 <th style="width: 120px;">All</th>
                                 <th colspan="2">Chairman</th>
                                 <th colspan="2">Designation</th>
-                                <th class="no-print text-center" style="width: 60px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -269,17 +391,23 @@
                                 <td class="text-center font-weight-bold">All</td>
                                 <td class="text-center font-weight-bold">All</td>
                                 <td class="text-center font-weight-bold">All</td>
-                                <td colspan="2">
+                                <td colspan="2" class="hover-actions-cell">
                                     <span class="font-weight-bold text-primary">{% if rows.chairman %}{{ rows.chairman.faculty.name }}{% else %}<span class="text-muted small">No Chairman Assigned</span>{% endif %}</span>
+                                    {% if rows.chairman and exam_program.is_editable %}
+                                    <div class="hover-action-btns">
+                                        <button type="button" class="btn-hover-action edit border-0" title="Edit Chairman"
+                                            hx-get="{% url 'billing_row_edit' exam_program.id sheet rows.chairman.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <button type="button" class="btn-hover-action delete border-0" title="Remove Chairman"
+                                            hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet rows.chairman.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
                                 </td>
                                 <td colspan="2">
                                     {% if rows.chairman %}<small class="text-muted">{{ rows.chairman.faculty.designation }}</small>{% else %}-{% endif %}
-                                </td>
-                                <td class="text-center no-print align-middle">
-                                    {% if rows.chairman and exam_program.is_editable %}
-                                    <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
-                                        onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet rows.chairman.id %}', 'Remove Chairman?')"><i class="fas fa-times"></i></button>
-                                    {% endif %}
                                 </td>
                             </tr>
                         </tbody>
@@ -293,7 +421,6 @@
                                 <th>Designation</th>
                                 <th>External Member</th>
                                 <th>Designation</th>
-                                <th class="no-print text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -302,17 +429,53 @@
                             <tr>
                                 <td class="text-center">{{ row.course.level }}</td>
                                 <td class="text-center">{{ row.course.term }}</td>
-                                <td class="font-weight-bold text-center">{{ row.course.course_code }}</td>
-                                <td>{% if row.faculty %}{{ row.faculty.name }}{% else %}-{% endif %}</td>
-                                <td class="text-muted small">{% if row.faculty %}{{ row.faculty.designation }}{% else %}-{% endif %}</td>
-                                <td class="text-info font-weight-bold">{{ row.external_member_name|default:"-" }}</td>
-                                <td class="text-muted small">{{ row.external_member_designation|default:"-" }}</td>
-                                <td class="text-center no-print align-middle">
+                                <td class="font-weight-bold hover-actions-cell" style="min-width: 140px;">
+                                    {{ row.course.course_code }}
                                     {% if exam_program.is_editable %}
-                                    <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
-                                        onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet row.id %}', 'Remove this course assignment?')"><i class="fas fa-times"></i></button>
+                                    <div class="hover-action-btns">
+                                        <button type="button" class="btn-hover-action edit border-0" title="Edit Course"
+                                            hx-get="{% url 'billing_row_edit' exam_program.id 'courses' row.course.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <button type="button" class="btn-hover-action delete border-0" title="Remove Row (Course & Members)"
+                                            hx-get="{% url 'billing_row_delete_confirm' exam_program.id 'courses' row.course.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
                                     {% endif %}
                                 </td>
+                                <td class="hover-actions-cell">
+                                    {% if row.faculty %}{{ row.faculty.name }}{% else %}<span class="text-muted small italic">No internal member</span>{% endif %}
+                                    {% if exam_program.is_editable %}
+                                    <div class="hover-action-btns">
+                                        <button type="button" class="btn-hover-action edit border-0" title="Edit Assignment"
+                                            hx-get="{% url 'billing_row_edit' exam_program.id sheet row.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <button type="button" class="btn-hover-action delete border-0" title="Remove Row"
+                                            hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet row.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">{% if row.faculty %}{{ row.faculty.designation }}{% else %}-{% endif %}</td>
+                                <td class="text-info font-weight-bold hover-actions-cell">
+                                    {{ row.external_member_name|default:"-" }}
+                                    {% if exam_program.is_editable %}
+                                    <div class="hover-action-btns">
+                                        <button type="button" class="btn-hover-action edit border-0" title="Edit Assignment"
+                                            hx-get="{% url 'billing_row_edit' exam_program.id sheet row.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <button type="button" class="btn-hover-action delete border-0" title="Remove Row"
+                                            hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet row.id %}" hx-target="#modals-here">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">{{ row.external_member_designation|default:"-" }}</td>
                             </tr>
                             {% endfor %}
 
@@ -367,25 +530,51 @@
                         <tr>
                             <th style="width: 50px;">SL</th>
                             {% for key,label in columns %}<th>{{ label }}</th>{% endfor %}
+                            {% if sheet not in 'qpsc,qsetter,examiner,scrutinizer,cecc,ec,faculty,courses' %}
                             <th class="no-print" style="width: 50px;"></th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for row in rows %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
-                            {% for key,label in columns %}<td>{{ row|dotted_get:key }}</td>{% endfor %}
+                            <td class="text-center">{{ forloop.counter }}</td>
+                            {% for key,label in columns %}
+                                <td class="{% if forloop.first or sheet == 'courses' and key == 'course_code' %}hover-actions-cell{% endif %}">
+                                    {{ row|dotted_get:key }}
+                                    
+                                    {% if exam_program.is_editable %}
+                                        {% if forloop.first or sheet == 'courses' and key == 'course_code' %}
+                                        <div class="hover-action-btns">
+                                            <button type="button" class="btn-hover-action edit border-0" title="Edit"
+                                                hx-get="{% url 'billing_row_edit' exam_program.id sheet row.id %}" 
+                                                hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                            <button type="button" class="btn-hover-action delete border-0" title="Remove"
+                                                hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet row.id %}" 
+                                                hx-target="#modals-here" hx-trigger="click" hx-swap="innerHTML">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            
+                            {% if sheet not in 'qpsc,qsetter,examiner,scrutinizer,cecc,ec,faculty,courses' %}
                             <td class="text-right no-print align-middle" style="white-space: nowrap;">
                                 {% if exam_program.is_editable %}
                                 <button type="button" class="btn btn-link text-danger p-0 m-0 border-0 bg-transparent" title="Remove"
-                                    onclick="submitDeleteForm('{% url 'billing_program_sheet_delete' exam_program.id sheet row.id %}', 'Remove this record?')">
+                                    hx-get="{% url 'billing_row_delete_confirm' exam_program.id sheet row.id %}" hx-target="#modals-here">
                                     <i class="fas fa-times"></i>
                                 </button>
                                 {% endif %}
                             </td>
+                            {% endif %}
                         </tr>
                         {% empty %}
-                        <tr><td colspan="{{ columns|length|add:1 }}" class="text-center text-muted p-4">No rows yet.</td></tr>
+                        <tr><td colspan="{{ columns|length|add:2 }}" class="text-center text-muted p-4">No rows yet.</td></tr>
                         {% endfor %}
                         
                         {% if exam_program.is_editable %}

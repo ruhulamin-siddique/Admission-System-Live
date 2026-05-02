@@ -171,7 +171,8 @@
     }
   </style>
 </head>
-<body class="hold-transition sidebar-mini layout-fixed {% if user.profile.theme_mode == 'dark' %}dark-mode{% endif %} {% if user.profile.navbar_fixed %}layout-navbar-fixed{% endif %}">
+<body class="hold-transition sidebar-mini layout-fixed {% if user.profile.theme_mode == 'dark' %}dark-mode{% endif %} {% if user.profile.navbar_fixed %}layout-navbar-fixed{% endif %}" 
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 <div class="wrapper">
 
   <!-- Navbar -->
@@ -674,6 +675,22 @@
             target.classList.remove('show');
         }
     });
+
+    // Modal Trigger Logic
+    document.addEventListener('htmx:afterSwap', function(e) {
+        if (e.detail.target.id === 'modals-here') {
+            console.log("HTMX swapped content into #modals-here. Triggering modal...");
+            if (typeof jQuery !== 'undefined') {
+                jQuery('#modals-here').modal('show');
+            } else if (typeof $ !== 'undefined') {
+                $('#modals-here').modal('show');
+            }
+        }
+    });
   </script>
+
+  <!-- Global Modal Container for HTMX -->
+  <div id="modals-here" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 1060;"></div>
+
 </body>
 </html>

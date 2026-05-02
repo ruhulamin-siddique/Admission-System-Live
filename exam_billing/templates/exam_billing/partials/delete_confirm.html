@@ -1,0 +1,28 @@
+<div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-danger text-white border-0">
+            <h5 class="modal-title font-weight-bold">
+                <i class="fas fa-exclamation-triangle mr-2"></i> Confirm Deletion
+            </h5>
+            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body p-4 text-center">
+            <div class="mb-3 text-danger">
+                <i class="fas fa-trash-alt fa-4x opacity-20"></i>
+            </div>
+            <h4 class="font-weight-bold text-dark">Are you sure?</h4>
+            <p class="text-muted mb-0">This action will permanently remove this <strong>{{ title }}</strong> entry from the department bill. This cannot be undone.</p>
+        </div>
+        <div class="modal-footer bg-light border-0">
+            <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Cancel, Keep it</button>
+            <form action="{{ delete_url }}{% if column %}?column={{ column }}{% endif %}" method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger px-4 shadow-sm font-weight-bold">
+                    <i class="fas fa-trash-alt mr-1"></i> Yes, Delete {% if column %}Part {{ column }}{% else %}Row{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

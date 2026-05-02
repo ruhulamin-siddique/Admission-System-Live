@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 import csv
 import io
@@ -703,15 +704,62 @@ def program_sheet_delete(request, pk, sheet, row_id):
         return redirect('billing_program_sheet', pk=pk, sheet=sheet)
     config = _sheet_config(sheet)
     obj = get_object_or_404(config['model'].all_objects.filter(exam_program=exam_program), pk=row_id)
-    if hasattr(obj, 'is_deleted'):
-        obj.is_deleted = True
-        obj.save(update_fields=['is_deleted'])
+    
+    column = request.GET.get('column')
+    action_performed = 'DELETE'
+    
+    # Handle independent Part A/B deletion for merged sheets
+    if hasattr(obj, 'part') and obj.part == 'A+B' and column in ['A', 'B']:
+        obj.part = 'B' if column == 'A' else 'A'
+        obj.save(update_fields=['part'])
+        action_performed = 'UPDATE'
+        msg = f'Removed Part {column} from assignment. Record persisted for Part {obj.part}.'
     else:
-        obj.delete()
-    messages.success(request, 'Row removed.')
+        if hasattr(obj, 'is_deleted'):
+            obj.is_deleted = True
+            obj.save(update_fields=['is_deleted'])
+        else:
+            obj.delete()
+        msg = 'Row removed.'
+
+    messages.success(request, msg)
+    log_activity(request, action_performed, 'exam_billing', f'{msg} for {exam_program}', object_id=str(row_id), scope=exam_program.program.short_name)
+    
     if sheet == 'courses':
         return redirect('billing_program_fundamentals', pk=pk)
     return redirect('billing_program_sheet', pk=pk, sheet=sheet)
+
+
+@login_required
+@require_access('exam_billing', 'manage_department_data')
+def billing_row_delete_confirm(request, pk, sheet, row_id):
+    """Returns a confirmation modal for row deletion."""
+    exam_program = get_object_or_404(ExamProgram.objects.select_related('exam', 'program'), pk=pk)
+    require_exam_program_access(request.user, exam_program)
+    
+    config = _sheet_config(sheet)
+    obj = get_object_or_404(config['model'].all_objects.filter(exam_program=exam_program), pk=row_id)
+    column = request.GET.get('column', '') # A or B for merged sheets
+    
+    delete_url = reverse('billing_program_sheet_delete', kwargs={'pk': pk, 'sheet': sheet, 'row_id': row_id})
+    
+    return render(request, 'exam_billing/partials/delete_confirm.html', {
+        'title': config['title'],
+        'delete_url': delete_url,
+        'obj': obj,
+        'column': column,
+    })
+
+
+@login_required
+def get_course_info(request):
+    """Returns course details (title, scripts) for dynamic form updates."""
+    course_id = request.GET.get('course_id')
+    if not course_id:
+        return HttpResponse("")
+        
+    course = get_object_or_404(ExamCourse, pk=course_id)
+    return HttpResponse(f'<div class="alert alert-info py-2 px-3 small mb-0 mt-2 border-0 shadow-sm" style="border-left: 4px solid #17a2b8 !important;"><i class="fas fa-info-circle mr-2"></i> <strong>Course Info:</strong> {course.course_title} ({course.no_of_scripts} scripts)</div>')
 
 
 @login_required
@@ -739,13 +787,22 @@ def program_row_edit(request, pk, sheet, row_id):
             form.save()
             messages.success(request, f'{config["title"]} row updated.')
             log_activity(request, 'UPDATE', 'exam_billing', f'Updated {sheet} row for {exam_program}', object_id=str(obj.id), scope=exam_program.program.short_name)
+            
+            if request.headers.get('HX-Request') == 'true':
+                response = HttpResponse("")
+                response['HX-Refresh'] = 'true'
+                return response
+                
             if sheet == 'courses':
                 return redirect('billing_program_fundamentals', pk=pk)
             return redirect('billing_program_sheet', pk=pk, sheet=sheet)
     else:
         form = form_class(instance=obj, exam_program=exam_program) if config['needs_ep'] else form_class(instance=obj)
         
-    return render(request, 'exam_billing/row_edit.html', {
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    template = 'exam_billing/partials/row_edit_modal.html' if is_htmx else 'exam_billing/row_edit.html'
+    
+    return render(request, template, {
         'exam_program': exam_program,
         'form': form,
         'title': f"Edit {config['title']} Entry",

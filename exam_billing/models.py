@@ -347,7 +347,7 @@ class QMSCAssignment(AssignmentBase):
     exam_program = models.ForeignKey(ExamProgram, on_delete=models.CASCADE, related_name='qmsc_assignments')
     # Override faculty to be nullable (external-only entries may have no faculty)
     faculty = models.ForeignKey(FacultyProfile, on_delete=models.PROTECT, null=True, blank=True)
-    course  = models.ForeignKey(ExamCourse, on_delete=models.PROTECT, related_name='qmsc_assignments', null=True, blank=True)
+    course  = models.ForeignKey(ExamCourse, on_delete=models.CASCADE, related_name='qmsc_assignments', null=True, blank=True)
     external_member_name        = models.CharField(max_length=120, blank=True)
     external_member_designation = models.CharField(max_length=120, blank=True)
     # is_external removed — use external_member_name to detect external entries
@@ -374,7 +374,7 @@ class QPSCMember(AssignmentBase):
 
 class CourseDutyBase(AssignmentBase):
     PART_CHOICES = [('A', 'A'), ('B', 'B'), ('A+B', 'A+B')]
-    course = models.ForeignKey(ExamCourse, on_delete=models.PROTECT)
+    course = models.ForeignKey(ExamCourse, on_delete=models.CASCADE)
     part = models.CharField(max_length=10, choices=PART_CHOICES, default='A')
 
     class Meta:
