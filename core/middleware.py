@@ -28,8 +28,16 @@ class AdmissionSecurityMiddleware:
             is_exempt = any(path.startswith(url) for url in self.exempt_urls)
             
             if not is_exempt:
+                login_url = f"{reverse('login')}?next={path}"
+                # If it's an HTMX request, force a full page reload to the login page
+                if request.headers.get('HX-Request') == 'true':
+                    from django.http import HttpResponse
+                    response = HttpResponse()
+                    response['HX-Redirect'] = login_url
+                    return response
+                
                 # Redirect to login with the 'next' parameter so they return where they wanted
-                return redirect(f"{reverse('login')}?next={path}")
+                return redirect(login_url)
 
         response = self.get_response(request)
         return response
