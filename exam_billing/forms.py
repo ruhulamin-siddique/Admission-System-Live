@@ -251,6 +251,15 @@ class QMSCChairmanForm(AssignmentFormMixin, StyledModelForm):
         model = QMSCAssignment
         fields = ['faculty']
 
+    def clean(self):
+        cleaned_data = super().clean()
+        qs = QMSCAssignment.objects.filter(exam_program=self.exam_program, role='Chairman', is_deleted=False)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("A QMSC Chairman is already assigned to this department bill.")
+        return cleaned_data
+
 
 class QMSCMemberForm(AssignmentFormMixin, StyledModelForm):
     """Adds a per-course QMSC row with internal (faculty) and external member."""
@@ -279,16 +288,34 @@ class QMSCMemberForm(AssignmentFormMixin, StyledModelForm):
 # ---- QPSC -------------------------------------------------------------------
 
 class QPSCMemberForm(AssignmentFormMixin, StyledModelForm):
-    """QPSC: simple Name|Designation|Role table. question_count kept for billing only."""
+    """QPSC: simple Name|Designation|Role table."""
     class Meta:
         model = QPSCMember
-        fields = ['faculty', 'role']
+        fields = ['faculty', 'role', 'question_count']
 
 
 class ExamLevelTermSummaryForm(StyledModelForm):
     class Meta:
         model = ExamLevelTermSummary
         fields = ['level', 'term', 'total_students']
+
+    def __init__(self, *args, **kwargs):
+        self.exam_program = kwargs.pop('exam_program', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        level = cleaned_data.get('level')
+        term = cleaned_data.get('term')
+        if self.exam_program and level and term:
+            qs = ExamLevelTermSummary.objects.filter(
+                exam_program=self.exam_program, level=level, term=term
+            )
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(f"Level {level} / Term {term} already has a student count entry.")
+        return cleaned_data
 
 
 class QuestionSetterAssignmentForm(AssignmentFormMixin, StyledModelForm):

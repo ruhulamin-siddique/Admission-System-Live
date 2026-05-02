@@ -61,7 +61,8 @@ def dashboard(request):
     exam_programs = ExamProgram.objects.select_related('exam', 'program').filter(program__in=programs)
     exams = BillingExam.objects.filter(programs__program__in=programs).distinct()
     active_exam_programs = exam_programs.exclude(exam__status='finalized')
-    total_payable = sum((ep.cached_total for ep in active_exam_programs), 0)
+    from decimal import Decimal
+    total_payable = sum((ep.cached_total or Decimal('0.00') for ep in active_exam_programs), Decimal('0.00'))
     context = {
         'exam_count': exams.count(),
         'open_count': exams.filter(status='open').count(),
@@ -164,8 +165,11 @@ def exam_detail(request, pk):
             raise PermissionDenied
     rows = []
     for ep in exam_programs:
-        summary = calculate_exam_program_summary(ep)
-        rows.append({'exam_program': ep, 'summary': summary})
+        if ep.cached_total:
+            rows.append({'exam_program': ep, 'summary': {'grand_total': ep.cached_total}})
+        else:
+            summary = calculate_exam_program_summary(ep)
+            rows.append({'exam_program': ep, 'summary': summary})
     return render(request, 'exam_billing/exam_detail.html', {'exam': exam, 'rows': rows})
 
 
@@ -195,6 +199,8 @@ def exam_settings(request, pk):
 @login_required
 @require_access('exam_billing', 'approve_finalize')
 def exam_status(request, pk, action):
+    if request.method != 'POST':
+        raise PermissionDenied
     exam = get_object_or_404(BillingExam, pk=pk)
     if action == 'open':
         exam.status = 'open'
@@ -424,9 +430,9 @@ def faculty_import(request):
             }
             
             if emp_id:
-                FacultyProfile.objects.update_or_create(employee_id=emp_id, defaults=defaults)
+                FacultyProfile.all_objects.update_or_create(employee_id=emp_id, defaults=defaults)
             else:
-                FacultyProfile.objects.update_or_create(first_name=first_name, last_name=last_name, program=program, defaults=defaults)
+                FacultyProfile.all_objects.update_or_create(first_name=first_name, last_name=last_name, program=program, defaults=defaults)
             
             success_count += 1
             
@@ -446,7 +452,7 @@ def program_fundamentals(request, pk):
     require_exam_program_access(request.user, exam_program)
     
     course_form = ExamCourseForm(request.POST or None, exam_program=exam_program)
-    summary_form = ExamLevelTermSummaryForm(request.POST or None)
+    summary_form = ExamLevelTermSummaryForm(request.POST or None, exam_program=exam_program)
     
     if request.method == 'POST' and exam_program.is_editable:
         action = request.POST.get('action')
@@ -476,7 +482,6 @@ def program_fundamentals(request, pk):
         'summary_form': summary_form,
         'courses': ExamCourse.objects.filter(exam_program=exam_program),
         'summaries': ExamLevelTermSummary.objects.filter(exam_program=exam_program),
-        'summary': calculate_exam_program_summary(exam_program),
     }
     return render(request, 'exam_billing/fundamentals.html', context)
 
@@ -508,7 +513,7 @@ def program_summary_edit(request, pk, summary_id):
     require_exam_program_access(request.user, exam_program)
     summary = get_object_or_404(ExamLevelTermSummary, pk=summary_id, exam_program=exam_program)
     
-    form = ExamLevelTermSummaryForm(request.POST or None, instance=summary)
+    form = ExamLevelTermSummaryForm(request.POST or None, instance=summary, exam_program=exam_program)
     if request.method == 'POST' and form.is_valid() and exam_program.is_editable:
         form.save()
         messages.success(request, 'Student count updated.')
@@ -524,6 +529,8 @@ def program_summary_edit(request, pk, summary_id):
 @login_required
 @require_access('exam_billing', 'manage_department_data')
 def program_summary_delete(request, pk, summary_id):
+    if request.method != 'POST':
+        raise PermissionDenied
     exam_program = get_object_or_404(ExamProgram, pk=pk)
     require_exam_program_access(request.user, exam_program)
     if exam_program.is_editable:
@@ -561,24 +568,29 @@ def program_workspace(request, pk):
 @login_required
 @require_access('exam_billing', 'manage_department_data')
 def program_faculty_remove(request, pk, faculty_id):
+    if request.method != 'POST':
+        raise PermissionDenied
     exam_program = get_object_or_404(ExamProgram, pk=pk)
     require_exam_program_access(request.user, exam_program)
     if exam_program.is_editable:
-        ExamFaculty.objects.filter(exam_program=exam_program, faculty_id=faculty_id).delete()
+        ExamFaculty.objects.filter(exam_program=exam_program, faculty_id=faculty_id).update(is_deleted=True)
         messages.success(request, 'Faculty removed from bill.')
     return redirect('billing_program_workspace', pk=pk)
 
 
 @login_required
+@require_access('exam_billing', 'manage_department_data')
 def fundamentals_hub(request):
-    exams = BillingExam.objects.all().prefetch_related('programs__program')
+    programs = get_allowed_programs(request.user)
+    exams = BillingExam.objects.filter(programs__program__in=programs).distinct().prefetch_related('programs__program')
     return render(request, 'exam_billing/fundamentals_hub.html', {'exams': exams})
 
 
 @login_required
+@require_access('exam_billing', 'manage_department_data')
 def individual_bills_directory(request):
     query = request.GET.get('q', '')
-    faculties = filter_by_user_scope(FacultyProfile.objects.filter(is_active=True).select_related('program'), request.user)
+    faculties = filter_by_user_scope(FacultyProfile.objects.filter(is_active=True).select_related('program').prefetch_related('exam_entries__exam_program__exam', 'exam_entries__exam_program__program'), request.user)
     if query:
         faculties = faculties.filter(Q(first_name__icontains=query) | Q(last_name__icontains=query) | Q(employee_id__icontains=query))
     
@@ -619,12 +631,17 @@ def program_sheet(request, pk, sheet):
                 member_form = QMSCMemberForm(request.POST, exam_program=exam_program)
                 if confirm_replace:
                     course_id = request.POST.get('course')
+                    faculty_id_raw = request.POST.get('faculty')
                     if course_id:
                         existing = QMSCAssignment.objects.filter(
                             exam_program=exam_program, course_id=course_id, role='Member', is_deleted=False
                         ).first()
                         if existing:
-                            existing.faculty_id = request.POST.get('faculty') or None
+                            if faculty_id_raw:
+                                if not FacultyProfile.objects.filter(pk=faculty_id_raw, program=exam_program.program, is_active=True).exists():
+                                    messages.error(request, 'Invalid faculty selection.')
+                                    return redirect('billing_program_sheet', pk=pk, sheet=sheet)
+                            existing.faculty_id = faculty_id_raw or None
                             existing.external_member_name = request.POST.get('external_member_name', '')
                             existing.external_member_designation = request.POST.get('external_member_designation', '')
                             existing.save()
@@ -657,6 +674,9 @@ def program_sheet(request, pk, sheet):
             part = request.POST.get('part')
             faculty_id = request.POST.get('faculty')
             if course_id and part and faculty_id:
+                if not FacultyProfile.objects.filter(pk=faculty_id, program=exam_program.program, is_active=True).exists():
+                    messages.error(request, 'Invalid faculty selection.')
+                    return redirect('billing_program_sheet', pk=pk, sheet=sheet)
                 existing = config['model'].objects.filter(
                     exam_program=exam_program, course_id=course_id, part=part, is_deleted=False
                 ).first()
@@ -786,8 +806,9 @@ def get_course_info(request):
     if not course_id:
         return HttpResponse("")
 
+    from django.utils.html import escape
     course = get_object_or_404(ExamCourse, pk=course_id)
-    return HttpResponse(f'<div class="alert alert-info py-2 px-3 small mb-0 mt-2 border-0 shadow-sm" style="border-left: 4px solid #17a2b8 !important;"><i class="fas fa-info-circle mr-2"></i> <strong>Course Info:</strong> {course.course_title} ({course.no_of_scripts} scripts)</div>')
+    return HttpResponse(f'<div class="alert alert-info py-2 px-3 small mb-0 mt-2 border-0 shadow-sm" style="border-left: 4px solid #17a2b8 !important;"><i class="fas fa-info-circle mr-2"></i> <strong>Course Info:</strong> {escape(course.course_title)} ({course.no_of_scripts} scripts)</div>')
 
 
 @login_required
@@ -985,7 +1006,7 @@ def individual_bill(request, pk, faculty_id):
     faculty = get_object_or_404(FacultyProfile, pk=faculty_id)
     
     # Check if user has administrative permission OR is viewing their own bill
-    has_admin_perm = request.user.profile.has_access('exam_billing', 'export_print')
+    has_admin_perm = hasattr(request.user, 'profile') and request.user.profile.has_access('exam_billing', 'export_print')
     is_self = hasattr(request.user, 'faculty_profile') and request.user.faculty_profile.id == int(faculty_id)
     
     if not (has_admin_perm or is_self):
@@ -1001,12 +1022,14 @@ def individual_bill(request, pk, faculty_id):
     all_examiners = list(ScriptExaminerAssignment.objects.filter(exam_program=exam_program, is_deleted=False).select_related('course'))
     all_scrutinizers = list(ScriptScrutinizerAssignment.objects.filter(exam_program=exam_program, is_deleted=False).select_related('course'))
 
+    from .billing_calculator import part_multiplier
     section_a_data = []
     for item in [a for a in all_qsetters if a.faculty_id == faculty.id]:
         mode = 'engineering' if item.course.is_engineering else 'non_engineering'
         size = full_or_half(all_qsetters, item)
         rate = getattr(settings, f'qsetter_{size}_{mode}_rate')
-        section_a_data.append({'obj': item, 'rate': rate, 'amount': rate})
+        amount = rate * part_multiplier(item.part)
+        section_a_data.append({'obj': item, 'rate': rate, 'amount': amount})
 
     section_b_data = []
     for item in [a for a in all_examiners if a.faculty_id == faculty.id]:
@@ -1014,7 +1037,8 @@ def individual_bill(request, pk, faculty_id):
         size = full_or_half(all_examiners, item)
         rate = getattr(settings, f'examiner_{size}_{mode}_rate')
         qty = item.course.no_of_scripts
-        section_b_data.append({'obj': item, 'rate': rate, 'qty': qty, 'amount': rate * qty})
+        amount = rate * qty * part_multiplier(item.part)
+        section_b_data.append({'obj': item, 'rate': rate, 'qty': qty, 'amount': amount})
 
     section_c_data = []
     for item in [a for a in all_scrutinizers if a.faculty_id == faculty.id]:
@@ -1022,7 +1046,8 @@ def individual_bill(request, pk, faculty_id):
         size = full_or_half(all_scrutinizers, item)
         rate = getattr(settings, f'scrutinizer_{size}_{mode}_rate')
         qty = item.course.no_of_scripts
-        section_c_data.append({'obj': item, 'rate': rate, 'qty': qty, 'amount': rate * qty})
+        amount = rate * qty * part_multiplier(item.part)
+        section_c_data.append({'obj': item, 'rate': rate, 'qty': qty, 'amount': amount})
 
     # Committee details (Section D)
     rpsc_counts = {f"{s.level}-{s.term}": s.total_students for s in exam_program.level_term_summaries.all()}
@@ -1266,19 +1291,20 @@ def _copy_program_seed_data(source, target):
     faculty_count = 0
     course_count = 0
     for exam_faculty in source.faculty.select_related('faculty').filter(is_deleted=False):
-        _, created = ExamFaculty.objects.get_or_create(exam_program=target, faculty=exam_faculty.faculty)
+        _, created = ExamFaculty.all_objects.get_or_create(exam_program=target, faculty=exam_faculty.faculty, defaults={'is_deleted': False})
         faculty_count += int(created)
     for course in source.courses.filter(is_deleted=False):
-        _, created = ExamCourse.objects.get_or_create(
+        _, created = ExamCourse.all_objects.get_or_create(
             exam_program=target,
             course_code=course.course_code,
+            syllabus=course.syllabus,
             defaults={
                 'level': course.level,
                 'term': course.term,
                 'offering_department': course.offering_department,
                 'no_of_scripts': course.no_of_scripts,
-                'syllabus': course.syllabus,
                 'course_title': course.course_title,
+                'is_deleted': False,
             },
         )
         course_count += int(created)

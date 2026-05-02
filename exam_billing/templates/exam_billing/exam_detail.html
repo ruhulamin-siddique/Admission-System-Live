@@ -22,12 +22,10 @@
 </table>
 </div></div>
 <div class="card"><div class="card-body">
-  <a class="btn btn-success" href="{% url 'billing_exam_status' exam.id 'open' %}">Open Exam</a>
-  <a class="btn btn-warning" href="{% url 'billing_exam_status' exam.id 'lock' %}">Lock All Departments</a>
-  <a class="btn btn-danger" href="{% url 'billing_exam_status' exam.id 'finalize' %}">Finalize Exam</a>
-  <a class="btn btn-outline-dark ml-2" href="{% url 'billing_exam_status' exam.id 'reopen' %}">
-    <i class="fas fa-undo mr-1"></i> Reopen All Departments
-  </a>
+  <form method="post" action="{% url 'billing_exam_status' exam.id 'open' %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-success">Open Exam</button></form>
+  <form method="post" action="{% url 'billing_exam_status' exam.id 'lock' %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-warning">Lock All Departments</button></form>
+  <form method="post" action="{% url 'billing_exam_status' exam.id 'finalize' %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-danger">Finalize Exam</button></form>
+  <form method="post" action="{% url 'billing_exam_status' exam.id 'reopen' %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-outline-dark ml-2"><i class="fas fa-undo mr-1"></i> Reopen All Departments</button></form>
 </div></div>
 </div></section>
 {% endblock %}

@@ -83,7 +83,7 @@
                 <div class="btn-group">
                   <a class="btn btn-xs btn-outline-primary" href="{% url 'billing_individual_bill' exam_program.id row.faculty.id %}" title="View Bill"><i class="fas fa-eye"></i></a>
                   {% if exam_program.is_editable %}
-                  <a class="btn btn-xs btn-outline-danger" href="{% url 'billing_program_faculty_remove' exam_program.id row.faculty.id %}" onclick="return confirm('Remove this faculty from bill?')" title="Remove"><i class="fas fa-user-minus"></i></a>
+                  <form method="post" action="{% url 'billing_program_faculty_remove' exam_program.id row.faculty.id %}" class="d-inline" onsubmit="return confirm('Remove this faculty from bill?')">{% csrf_token %}<button type="submit" class="btn btn-xs btn-outline-danger" title="Remove"><i class="fas fa-user-minus"></i></button></form>
                   {% endif %}
                 </div>
               </td>

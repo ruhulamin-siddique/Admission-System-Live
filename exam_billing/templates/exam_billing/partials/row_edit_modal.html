@@ -4,7 +4,7 @@
             <h5 class="modal-title font-weight-bold">
                 <i class="fas fa-edit mr-2"></i> {{ title }}
             </h5>
-            <button type="button" class="close text-white opacity-100" data-dismiss="modal" aria-label="Close">
+            <button type="button" class="close text-white opacity-100" aria-label="Close" onclick="document.getElementById('modals-here').innerHTML=''">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
@@ -55,7 +55,7 @@
                 </div>
             </div>
             <div class="modal-footer bg-white py-3 px-4 border-0">
-                <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Discard Changes</button>
+                <button type="button" class="btn btn-link text-muted font-weight-bold" onclick="document.getElementById('modals-here').innerHTML=''">Discard Changes</button>
                 <button type="submit" class="btn btn-primary px-5 shadow-sm font-weight-bold rounded-pill">
                     <i class="fas fa-save mr-2"></i> Update Row
                 </button>

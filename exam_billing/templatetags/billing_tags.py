@@ -13,12 +13,12 @@ def dotted_get(obj, path):
     return value
 @register.filter
 def split(value, arg):
-    return value.split(arg)
+    return str(value).split(arg) if value is not None else []
 
 
 @register.filter
 def replace(value, arg):
     if "," not in arg:
         return value
-    old, new = arg.split(",")
+    old, new = arg.split(",", 1)
     return str(value).replace(old, new)

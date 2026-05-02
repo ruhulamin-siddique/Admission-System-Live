@@ -4,7 +4,7 @@
             <h5 class="modal-title font-weight-bold">
                 <i class="fas fa-exclamation-triangle mr-2"></i> Confirm Deletion
             </h5>
-            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <button type="button" class="close text-white" aria-label="Close" onclick="document.getElementById('modals-here').innerHTML=''">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
@@ -16,7 +16,7 @@
             <p class="text-muted mb-0">This action will permanently remove this <strong>{{ title }}</strong> entry from the department bill. This cannot be undone.</p>
         </div>
         <div class="modal-footer bg-light border-0">
-            <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Cancel, Keep it</button>
+            <button type="button" class="btn btn-link text-muted font-weight-bold" onclick="document.getElementById('modals-here').innerHTML=''">Cancel, Keep it</button>
             <form action="{{ delete_url }}{% if column %}?column={{ column }}{% endif %}" method="post" class="m-0">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-danger px-4 shadow-sm font-weight-bold">

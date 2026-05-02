@@ -166,8 +166,10 @@ def taka_in_words(amount):
     taka = int(amount)
     paisa = int((amount - taka) * 100)
     words = _number_to_words(taka) or 'Zero'
-    paisa_words = _number_to_words(paisa) if paisa else 'Zero'
-    return f'Taka {words} {paisa_words} Paisa'
+    if paisa:
+        paisa_words = _number_to_words(paisa)
+        return f'Taka {words} and {paisa_words} Paisa'
+    return f'Taka {words}'
 
 
 def _number_to_words(number):
@@ -196,5 +198,11 @@ def _under_hundred(number):
     number = int(number)
     if number < 20:
         return ONES[number]
+    if number >= 100:
+        hundred, remainder = divmod(number, 100)
+        parts = [f'{ONES[hundred]} Hundred']
+        if remainder:
+            parts.append(_under_hundred(remainder))
+        return ' '.join(parts)
     ten, one = divmod(number, 10)
     return f'{TENS[ten]} {ONES[one]}'.strip()
