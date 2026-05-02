@@ -184,8 +184,8 @@
     </ul>
 
     <!-- Global Command Search (Direct Placement) -->
-    {% has_access 'students' 'view_directory' as can_search %}
-    {% if can_search %}
+    {% has_any_access 'students' as has_admission_access %}
+    {% if has_admission_access %}
     <form action="{% url 'student_list' %}" method="get" class="form-inline ml-3 d-inline-block mb-0" style="position: relative;">
         <i class="fas fa-search search-icon-inside" style="color: #4b5563; z-index: 10;"></i>
         <input type="text" 

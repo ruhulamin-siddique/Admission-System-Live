@@ -170,9 +170,18 @@
                         </div>
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label>Target Programs / Departments</label>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="mb-0">Target Programs / Departments</label>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-xs btn-link text-primary font-weight-bold" onclick="selectAllPrograms()">Select All</button>
+                                        <button type="button" class="btn btn-xs btn-link text-muted font-weight-bold" onclick="clearAllPrograms()">Clear All</button>
+                                    </div>
+                                </div>
                                 {{ form.programs }}
-                                <small class="text-muted">Select all departments that will participate in this billing cycle.</small>
+                                <small class="text-muted mt-1 d-block">
+                                    <i class="fas fa-info-circle mr-1"></i> 
+                                    A billing workspace will be initialized for each selected department.
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -200,10 +209,24 @@
     $(document).ready(function() {
         $('.select2').select2({
             theme: 'bootstrap4',
-            placeholder: 'Select Departments',
-            width: '100%'
+            placeholder: 'Search and select departments...',
+            width: '100%',
+            allowClear: true
         });
     });
+
+    function selectAllPrograms() {
+        var $select = $('.select2');
+        var allOptions = [];
+        $select.find('option').each(function() {
+            allOptions.push($(this).val());
+        });
+        $select.val(allOptions).trigger('change');
+    }
+
+    function clearAllPrograms() {
+        $('.select2').val(null).trigger('change');
+    }
 </script>
 {% endblock %}
 

@@ -74,7 +74,28 @@
         color: #64748b;
         border: none;
     }
-    .workspace-table td { vertical-align: middle; border-top: 1px solid #f1f5f9; }
+    .workspace-table td { vertical-align: middle; border-top: 1px solid #f1f5f9; transition: all 0.2s; }
+    
+    /* Table Row Hover */
+    .workspace-table tbody tr { transition: all 0.2s; }
+    .workspace-table tbody tr:hover { 
+        background-color: #f8fafc !important; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transform: scale(1.002);
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Custom Scrollbar for Recent List */
+    .scrollable-list {
+        max-height: 450px;
+        overflow-y: auto;
+        overflow-x: hidden; /* Prevent flickering */
+    }
+    .scrollable-list::-webkit-scrollbar { width: 6px; }
+    .scrollable-list::-webkit-scrollbar-track { background: #f1f5f9; }
+    .scrollable-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .scrollable-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
 {% endblock %}
 
@@ -143,42 +164,49 @@
             <!-- Recent Activity -->
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-                    <div class="card-header bg-white py-3">
-                        <h3 class="card-title font-weight-bold"><i class="fas fa-briefcase text-primary mr-2"></i> Active Departmental Billing</h3>
+                    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title font-weight-bold mb-0" style="font-size: 1rem;"><i class="fas fa-briefcase text-primary mr-2"></i> Active Departmental Billing</h3>
+                        <button class="btn btn-tool text-primary" 
+                                hx-get="{% url 'billing_dashboard' %}" 
+                                hx-select="#billing-table-container" 
+                                hx-target="#billing-table-container"
+                                title="Refresh Status">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
+                    <div class="card-body p-0" id="billing-table-container">
+                        <div class="table-responsive scrollable-list">
                             <table class="table workspace-table mb-0">
                                 <thead>
                                     <tr>
-                                        <th class="pl-4">Examination Context</th>
-                                        <th>Department</th>
-                                        <th>Lifecycle Status</th>
-                                        <th class="text-right pr-4">Action</th>
+                                        <th class="pl-4 py-2">Examination Context</th>
+                                        <th class="py-2">Department</th>
+                                        <th class="py-2">Status</th>
+                                        <th class="text-right pr-4 py-2">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for ep in recent_exam_programs %}
                                     <tr>
-                                        <td class="pl-4">
-                                            <div class="font-weight-bold text-dark">{{ ep.exam.name }}</div>
-                                            <small class="text-muted">{{ ep.exam.exam_type|upper }}</small>
+                                        <td class="pl-4 py-1">
+                                            <span class="font-weight-bold text-dark">{{ ep.exam.name }}</span>
+                                            <span class="text-muted small ml-1">({{ ep.exam.exam_type|upper }})</span>
                                         </td>
-                                        <td>
-                                            <span class="badge badge-light border px-2 py-1">{{ ep.program.short_name|default:ep.program.name }}</span>
+                                        <td class="py-1">
+                                            <span class="badge badge-light border text-xs px-2">{{ ep.program.short_name|default:ep.program.name }}</span>
                                         </td>
-                                        <td>
+                                        <td class="py-1">
                                             {% if ep.status == 'open' %}
-                                                <span class="badge badge-success px-3 py-2" style="border-radius: 20px;">DRAFTING</span>
+                                                <span class="badge badge-success px-2 py-1" style="font-size: 10px;">DRAFTING</span>
                                             {% elif ep.status == 'submitted' %}
-                                                <span class="badge badge-warning px-3 py-2" style="border-radius: 20px;">IN REVIEW</span>
+                                                <span class="badge badge-warning px-2 py-1" style="font-size: 10px;">REVIEW</span>
                                             {% else %}
-                                                <span class="badge badge-secondary px-3 py-2" style="border-radius: 20px;">{{ ep.get_status_display|upper }}</span>
+                                                <span class="badge badge-secondary px-2 py-1" style="font-size: 10px;">{{ ep.get_status_display|upper }}</span>
                                             {% endif %}
                                         </td>
-                                        <td class="text-right pr-4">
-                                            <a class="btn btn-sm btn-primary rounded-pill px-4" href="{% url 'billing_program_workspace' ep.id %}">
-                                                Go to Workspace
+                                        <td class="text-right pr-4 py-1">
+                                            <a class="btn btn-xs btn-outline-primary px-3 font-weight-bold" href="{% url 'billing_program_workspace' ep.id %}">
+                                                OPEN
                                             </a>
                                         </td>
                                     </tr>

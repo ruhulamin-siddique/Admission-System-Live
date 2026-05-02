@@ -197,8 +197,25 @@
                     <div class="status-badge status-approved">
                         <i class="fas fa-check-circle"></i> Approved
                     </div>
-                    <p class="small text-muted mb-4">Success! Your account is active. You can now access all suite features.</p>
-                    <a href="{% url 'login' %}" class="btn btn-success btn-block py-2 font-weight-bold" style="border-radius: 12px;">Sign In Now</a>
+                    
+                    <div class="access-details mb-4 text-left p-3" style="background: #f8fafc; border-radius: 16px; border: 1px dashed #cbd5e1;">
+                        <div class="small font-weight-bold text-muted mb-2 text-uppercase letter-spacing-1">Assigned Facilities</div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-user-tag text-primary mr-2"></i>
+                            <span class="font-weight-bold">{{ status_info.role }}</span>
+                        </div>
+                        <div class="pl-4">
+                            {% for mod in status_info.modules %}
+                                <div class="small text-secondary mb-1">
+                                    <i class="fas fa-check text-success mr-1"></i> {{ mod }}
+                                </div>
+                            {% empty %}
+                                <div class="small text-muted italic">Awaiting Module Assignment</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-block py-2 font-weight-bold" style="border-radius: 12px; height: auto;">Access Portal Now</a>
                 {% elif status_info.status == 'DISAPPROVED' %}
                     <div class="status-badge status-disapproved">
                         <i class="fas fa-times-circle"></i> Not Approved

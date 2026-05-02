@@ -25,7 +25,9 @@
   <a class="btn btn-success" href="{% url 'billing_exam_status' exam.id 'open' %}">Open Exam</a>
   <a class="btn btn-warning" href="{% url 'billing_exam_status' exam.id 'lock' %}">Lock All Departments</a>
   <a class="btn btn-danger" href="{% url 'billing_exam_status' exam.id 'finalize' %}">Finalize Exam</a>
-  <a class="btn btn-outline-secondary" href="{% url 'billing_exam_status' exam.id 'reopen' %}">Reopen</a>
+  <a class="btn btn-outline-dark ml-2" href="{% url 'billing_exam_status' exam.id 'reopen' %}">
+    <i class="fas fa-undo mr-1"></i> Reopen All Departments
+  </a>
 </div></div>
 </div></section>
 {% endblock %}

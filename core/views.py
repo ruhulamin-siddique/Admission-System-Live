@@ -505,10 +505,23 @@ def check_status(request):
         
         if user:
             profile = user.profile
+            role_name = profile.role.name if profile.role else "Pending Assignment"
+            
+            # Build list of accessible modules
+            modules = []
+            if profile.role:
+                # Use a set to get unique display names of modules
+                module_keys = profile.role.permissions.values_list('module', flat=True).distinct()
+                for key in module_keys:
+                    if key in ACCESS_REGISTRY:
+                        modules.append(ACCESS_REGISTRY[key]['display'])
+            
             status_info = {
                 'username': user.username,
                 'status': profile.registration_status,
                 'date_joined': user.date_joined,
+                'role': role_name,
+                'modules': modules
             }
         else:
             messages.error(request, "No account found with that username or email.")

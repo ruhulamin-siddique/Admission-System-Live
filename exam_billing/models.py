@@ -181,6 +181,10 @@ class ExamProgram(models.Model):
         self.locked_at = timezone.now()
         self.save(update_fields=['status', 'locked_at'])
 
+    def mark_open(self):
+        self.status = 'draft'
+        self.save(update_fields=['status'])
+
     def mark_finalized(self, total, summary):
         self.status = 'finalized'
         self.finalized_at = timezone.now()

@@ -22,6 +22,28 @@ def has_access(context, module, task):
     return request.user.profile.has_access(module, task)
 
 @register.simple_tag(takes_context=True)
+def has_any_access(context, module):
+    """
+    Template tag to check if the current user has ANY access to a specific module.
+    Usage: {% has_any_access 'students' as can_see_admission %}
+    """
+    request = context.get('request')
+    if not request or not request.user.is_authenticated:
+        return False
+    
+    if request.user.is_superuser:
+        return True
+        
+    if not hasattr(request.user, 'profile'):
+        return False
+        
+    profile = request.user.profile
+    if not profile.role:
+        return False
+        
+    return profile.role.permissions.filter(module=module).exists()
+
+@register.simple_tag(takes_context=True)
 def can_see_student(context, student):
     """
     Checks if the user can see a specific student record based on departmental scoping.

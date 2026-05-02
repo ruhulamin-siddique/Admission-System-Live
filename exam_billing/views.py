@@ -208,6 +208,8 @@ def exam_status(request, pk, action):
             ep.mark_finalized(summary['grand_total'], _summary_payload(summary))
     elif action == 'reopen':
         exam.status = 'open'
+        for ep in exam.programs.all():
+            ep.mark_open()
     else:
         raise PermissionDenied
     exam.save(update_fields=['status', 'updated_at'])
