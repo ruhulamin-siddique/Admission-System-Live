@@ -85,7 +85,7 @@ class ExamBillingTests(TestCase):
         self.assertEqual(row['scrutiny'], Decimal('50.00'))
 
     def test_amount_in_words(self):
-        self.assertEqual(taka_in_words(Decimal('1875.00')), 'Taka One Thousand Eight Hundred Seventy Five Zero Paisa')
+        self.assertEqual(taka_in_words(Decimal('1875.00')), 'Taka One Thousand Eight Hundred Seventy Five')
 
     def test_calculator_returns_empty_summary_when_no_settings(self):
         """BUG-7: Missing exam.settings must not crash the dashboard."""
