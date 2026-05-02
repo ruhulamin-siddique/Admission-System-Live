@@ -14,7 +14,7 @@ from core.decorators import require_access
 from core.utils import log_activity
 from master_data.models import Program
 
-from .billing_calculator import calculate_exam_program_summary, calculate_faculty_bill
+from .billing_calculator import calculate_exam_program_summary, calculate_faculty_bill, full_or_half
 from .forms import (
     BillingExamForm,
     BillingRateTemplateForm,
@@ -580,7 +580,7 @@ def individual_bills_directory(request):
     query = request.GET.get('q', '')
     faculties = filter_by_user_scope(FacultyProfile.objects.filter(is_active=True).select_related('program'), request.user)
     if query:
-        faculties = faculties.filter(first_name__icontains=query) | faculties.filter(last_name__icontains=query) | faculties.filter(employee_id__icontains=query)
+        faculties = faculties.filter(Q(first_name__icontains=query) | Q(last_name__icontains=query) | Q(employee_id__icontains=query))
     
     # Optionally filter by active exam
     active_exam = BillingExam.objects.filter(status__in=['draft', 'open']).order_by('-created_at').first()
@@ -615,7 +615,22 @@ def program_sheet(request, pk, sheet):
                     log_activity(request, 'CREATE', 'exam_billing', f'Added QMSC Chairman for {exam_program}', object_id=str(obj.id), scope=exam_program.program.short_name)
                     return redirect('billing_program_sheet', pk=pk, sheet=sheet)
             elif 'add_member' in request.POST:
+                confirm_replace = 'confirm_replace' in request.POST
                 member_form = QMSCMemberForm(request.POST, exam_program=exam_program)
+                if confirm_replace:
+                    course_id = request.POST.get('course')
+                    if course_id:
+                        existing = QMSCAssignment.objects.filter(
+                            exam_program=exam_program, course_id=course_id, role='Member', is_deleted=False
+                        ).first()
+                        if existing:
+                            existing.faculty_id = request.POST.get('faculty') or None
+                            existing.external_member_name = request.POST.get('external_member_name', '')
+                            existing.external_member_designation = request.POST.get('external_member_designation', '')
+                            existing.save()
+                            messages.success(request, 'QMSC member assignment replaced.')
+                            log_activity(request, 'UPDATE', 'exam_billing', f'Replaced QMSC member for {exam_program}', object_id=str(existing.id), scope=exam_program.program.short_name)
+                            return redirect('billing_program_sheet', pk=pk, sheet=sheet)
                 if member_form.is_valid():
                     obj = member_form.save(commit=False)
                     obj.exam_program = exam_program
@@ -635,6 +650,23 @@ def program_sheet(request, pk, sheet):
 
     # ---- Standard POST handling for all other sheets -------------------------
     if request.method == 'POST':
+        confirm_replace = 'confirm_replace' in request.POST
+        # Handle replace for course-based sheets (qsetter, examiner, scrutinizer)
+        if confirm_replace and sheet in ('qsetter', 'examiner', 'scrutinizer') and exam_program.is_editable:
+            course_id = request.POST.get('course')
+            part = request.POST.get('part')
+            faculty_id = request.POST.get('faculty')
+            if course_id and part and faculty_id:
+                existing = config['model'].objects.filter(
+                    exam_program=exam_program, course_id=course_id, part=part, is_deleted=False
+                ).first()
+                if existing:
+                    existing.faculty_id = faculty_id
+                    existing.save(update_fields=['faculty_id'])
+                    messages.success(request, f'{config["title"]} assignment replaced.')
+                    log_activity(request, 'UPDATE', 'exam_billing', f'Replaced {config["title"]} row for {exam_program}', object_id=str(existing.id), scope=exam_program.program.short_name)
+                    return redirect('billing_program_sheet', pk=pk, sheet=sheet)
+
         form = config['form'](request.POST, exam_program=exam_program) if config['needs_ep'] else config['form'](request.POST)
         if form.is_valid() and exam_program.is_editable:
             obj = form.save(commit=False)
@@ -658,16 +690,12 @@ def program_sheet(request, pk, sheet):
         for item in queryset.exclude(level='All').select_related('faculty'):
             key = (item.level, item.term)
             if key not in tab_groups:
-                tab_groups[key] = {'level': item.level, 'term': item.term, 'tab1': None, 'tab2': None}
-            if item.role == 'Tabulator 1':
-                tab_groups[key]['tab1'] = item
-            elif item.role == 'Tabulator 2':
-                tab_groups[key]['tab2'] = item
-        
-        # Only include groups that have at least one tabulator assigned
-        filtered_tabulators = [g for g in tab_groups.values() if g['tab1'] or g['tab2']]
+                tab_groups[key] = {'level': item.level, 'term': item.term, 'tabulators': []}
+            tab_groups[key]['tabulators'].append(item)
+
+        filtered_tabulators = [g for g in tab_groups.values() if g['tabulators']]
         rows = {
-            'chairman': chairman, 
+            'chairman': chairman,
             'tabulators': sorted(filtered_tabulators, key=lambda x: (x['level'], x['term']))
         }
     # ---- qsetter / examiner / scrutinizer grouped by course -----------------
@@ -757,9 +785,71 @@ def get_course_info(request):
     course_id = request.GET.get('course_id')
     if not course_id:
         return HttpResponse("")
-        
+
     course = get_object_or_404(ExamCourse, pk=course_id)
     return HttpResponse(f'<div class="alert alert-info py-2 px-3 small mb-0 mt-2 border-0 shadow-sm" style="border-left: 4px solid #17a2b8 !important;"><i class="fas fa-info-circle mr-2"></i> <strong>Course Info:</strong> {course.course_title} ({course.no_of_scripts} scripts)</div>')
+
+
+@login_required
+def check_course_assignments(request):
+    """Returns existing assignments for a course_code across the entire exam."""
+    course_id = request.GET.get('course_id')
+    exam_program_id = request.GET.get('exam_program_id')
+    current_sheet = request.GET.get('sheet', '')
+
+    if not course_id:
+        return HttpResponse("")
+
+    try:
+        course = ExamCourse.objects.select_related('exam_program__exam', 'exam_program__program').get(pk=course_id)
+    except ExamCourse.DoesNotExist:
+        return HttpResponse("")
+
+    exam = course.exam_program.exam
+    course_code = course.course_code
+
+    related_courses = ExamCourse.objects.filter(
+        exam_program__exam=exam,
+        course_code=course_code,
+        is_deleted=False,
+    ).select_related('exam_program__program')
+
+    assignments = []
+    for c in related_courses:
+        program_name = c.exam_program.program.short_name or c.exam_program.program.name
+        is_self = str(c.exam_program_id) == str(exam_program_id)
+
+        for qs in c.question_setters.filter(is_deleted=False).select_related('faculty'):
+            assignments.append({
+                'program': program_name, 'sheet': 'Q Setter', 'sheet_key': 'qsetter',
+                'faculty_name': qs.faculty.name, 'faculty_id': qs.faculty_id,
+                'part': qs.part, 'is_self': is_self, 'id': qs.id,
+            })
+        for se in c.script_examiners.filter(is_deleted=False).select_related('faculty'):
+            assignments.append({
+                'program': program_name, 'sheet': 'Examiner', 'sheet_key': 'examiner',
+                'faculty_name': se.faculty.name, 'faculty_id': se.faculty_id,
+                'part': se.part, 'is_self': is_self, 'id': se.id,
+            })
+        for ss in c.script_scrutinizers.filter(is_deleted=False).select_related('faculty'):
+            assignments.append({
+                'program': program_name, 'sheet': 'Scrutinizer', 'sheet_key': 'scrutinizer',
+                'faculty_name': ss.faculty.name, 'faculty_id': ss.faculty_id,
+                'part': ss.part, 'is_self': is_self, 'id': ss.id,
+            })
+        for qm in c.qmsc_assignments.filter(is_deleted=False, role='Member').select_related('faculty'):
+            faculty_name = qm.faculty.name if qm.faculty else qm.external_member_name or 'External'
+            assignments.append({
+                'program': program_name, 'sheet': 'QMSC', 'sheet_key': 'qmsc',
+                'faculty_name': faculty_name, 'faculty_id': qm.faculty_id or 0,
+                'part': '', 'is_self': is_self, 'id': qm.id,
+            })
+
+    return render(request, 'exam_billing/partials/course_assignment_info.html', {
+        'assignments': assignments,
+        'course_code': course_code,
+        'current_sheet': current_sheet,
+    })
 
 
 @login_required
@@ -814,6 +904,8 @@ def program_row_edit(request, pk, sheet, row_id):
 @login_required
 @require_access('exam_billing', 'manage_department_data')
 def copy_faculty_to_exam(request, pk):
+    if request.method != 'POST':
+        raise PermissionDenied
     exam_program = get_object_or_404(ExamProgram.objects.select_related('exam', 'program'), pk=pk)
     require_exam_program_access(request.user, exam_program)
     copied = 0
@@ -827,6 +919,8 @@ def copy_faculty_to_exam(request, pk):
 @login_required
 @require_access('exam_billing', 'manage_department_data')
 def copy_previous_program_data(request, pk):
+    if request.method != 'POST':
+        raise PermissionDenied
     exam_program = get_object_or_404(ExamProgram.objects.select_related('exam', 'program'), pk=pk)
     require_exam_program_access(request.user, exam_program)
     if not exam_program.is_editable:
@@ -851,8 +945,13 @@ def copy_previous_program_data(request, pk):
 @login_required
 @require_access('exam_billing', 'manage_department_data')
 def program_submit(request, pk):
+    if request.method != 'POST':
+        raise PermissionDenied
     exam_program = get_object_or_404(ExamProgram.objects.select_related('exam', 'program'), pk=pk)
     require_exam_program_access(request.user, exam_program)
+    if not exam_program.is_editable:
+        messages.error(request, 'This department bill is locked or submitted.')
+        return redirect('billing_program_workspace', pk=pk)
     exam_program.mark_submitted(request.user)
     log_activity(request, 'UPDATE', 'exam_billing', f'Submitted department bill: {exam_program}', object_id=str(exam_program.id), scope=exam_program.program.short_name)
     messages.success(request, 'Department bill submitted for review.')
@@ -862,6 +961,8 @@ def program_submit(request, pk):
 @login_required
 @require_access('exam_billing', 'approve_finalize')
 def program_status(request, pk, action):
+    if request.method != 'POST':
+        raise PermissionDenied
     exam_program = get_object_or_404(ExamProgram.objects.select_related('exam', 'program'), pk=pk)
     if action == 'approve':
         exam_program.mark_approved(request.user)
@@ -890,69 +991,69 @@ def individual_bill(request, pk, faculty_id):
     if not (has_admin_perm or is_self):
         raise PermissionDenied
     
-    settings = exam_program.exam.settings
-    
-    # Granular details for the document sections
+    settings = getattr(exam_program.exam, 'settings', None)
+    if settings is None:
+        messages.error(request, 'No billing settings configured for this exam.')
+        return redirect('billing_program_workspace', pk=pk)
+
+    # Pre-fetch all assignments for full_or_half calculation
+    all_qsetters = list(QuestionSetterAssignment.objects.filter(exam_program=exam_program, is_deleted=False).select_related('course'))
+    all_examiners = list(ScriptExaminerAssignment.objects.filter(exam_program=exam_program, is_deleted=False).select_related('course'))
+    all_scrutinizers = list(ScriptScrutinizerAssignment.objects.filter(exam_program=exam_program, is_deleted=False).select_related('course'))
+
     section_a_data = []
-    for item in QuestionSetterAssignment.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False).select_related('course'):
+    for item in [a for a in all_qsetters if a.faculty_id == faculty.id]:
         mode = 'engineering' if item.course.is_engineering else 'non_engineering'
-        part = 'full' if item.part == 'A+B' else 'half'
-        rate = getattr(settings, f'qsetter_{part}_{mode}_rate')
-        section_a_data.append({'obj': item, 'rate': rate, 'amount': rate}) # Qty 1 for setting
-        
+        size = full_or_half(all_qsetters, item)
+        rate = getattr(settings, f'qsetter_{size}_{mode}_rate')
+        section_a_data.append({'obj': item, 'rate': rate, 'amount': rate})
+
     section_b_data = []
-    for item in ScriptExaminerAssignment.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False).select_related('course'):
+    for item in [a for a in all_examiners if a.faculty_id == faculty.id]:
         mode = 'engineering' if item.course.is_engineering else 'non_engineering'
-        part = 'full' if item.part == 'A+B' else 'half'
-        rate = getattr(settings, f'examiner_{part}_{mode}_rate')
+        size = full_or_half(all_examiners, item)
+        rate = getattr(settings, f'examiner_{size}_{mode}_rate')
         qty = item.course.no_of_scripts
         section_b_data.append({'obj': item, 'rate': rate, 'qty': qty, 'amount': rate * qty})
-        
+
     section_c_data = []
-    for item in ScriptScrutinizerAssignment.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False).select_related('course'):
+    for item in [a for a in all_scrutinizers if a.faculty_id == faculty.id]:
         mode = 'engineering' if item.course.is_engineering else 'non_engineering'
-        part = 'full' if item.part == 'A+B' else 'half'
-        rate = getattr(settings, f'scrutinizer_{part}_{mode}_rate')
+        size = full_or_half(all_scrutinizers, item)
+        rate = getattr(settings, f'scrutinizer_{size}_{mode}_rate')
         qty = item.course.no_of_scripts
         section_c_data.append({'obj': item, 'rate': rate, 'qty': qty, 'amount': rate * qty})
-    
+
     # Committee details (Section D)
+    rpsc_counts = {f"{s.level}-{s.term}": s.total_students for s in exam_program.level_term_summaries.all()}
+    total_all_students = sum(rpsc_counts.values())
     committees = []
-    # CECC
+
     cecc = CECCAssignment.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False).first()
     if cecc:
         role = (cecc.role or '').lower()
         rate = settings.cecc_chairman_rate if 'chair' in role or 'advisor' in role or 'invigilator' in role else settings.cecc_member_rate
         committees.append({'name': 'CECC', 'role': cecc.role, 'amount': rate})
-    
-    # EC
+
     ec = ECMember.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False).first()
     if ec:
         role = (ec.role or '').lower()
         rate = settings.ec_chairman_rate if 'chair' in role else settings.ec_member_rate
         committees.append({'name': 'EC', 'role': ec.role, 'amount': rate})
-    
-    # RPSC
-    rpsc = RPSCAssignment.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False).first()
-    if rpsc:
+
+    for rpsc in RPSCAssignment.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False):
         role = (rpsc.role or '').lower()
         rate = settings.rpsc_chairman_rate if 'chair' in role else settings.rpsc_member_rate
-        summary_m = calculate_exam_program_summary(exam_program)
-        students = 0
-        for s in exam_program.level_term_summaries.all():
-            if s.level == rpsc.level and s.term == rpsc.term:
-                students = s.total_students
-                break
-        committees.append({'name': 'RPSC', 'role': f"{rpsc.level}-{rpsc.term} {rpsc.role}", 'qty': students, 'rate': rate, 'amount': rate * students})
-    
-    # QMSC
+        students = total_all_students if rpsc.level == 'All' else rpsc_counts.get(f"{rpsc.level}-{rpsc.term}", 0)
+        label = 'All Levels/Terms' if rpsc.level == 'All' else f'{rpsc.level}-{rpsc.term}'
+        committees.append({'name': 'RPSC', 'role': f"{label} {rpsc.role}", 'qty': students, 'rate': rate, 'amount': rate * students})
+
     qmsc = QMSCAssignment.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False).first()
     if qmsc:
         role = (qmsc.role or '').lower()
         rate = settings.qmsc_chairman_rate if 'chair' in role else settings.qmsc_member_rate
         committees.append({'name': 'QMSC', 'role': qmsc.role, 'rate': rate, 'amount': rate})
-        
-    # QPSC
+
     qpsc = QPSCMember.objects.filter(exam_program=exam_program, faculty=faculty, is_deleted=False).first()
     if qpsc:
         rate = settings.qpsc_member_rate

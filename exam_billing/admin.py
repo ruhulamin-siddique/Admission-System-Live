@@ -37,7 +37,7 @@ class ExamProgramAdmin(admin.ModelAdmin):
 class FacultyProfileAdmin(admin.ModelAdmin):
     list_display = ('name', 'designation', 'employee_id', 'program', 'is_active', 'is_deleted')
     list_filter = ('program', 'is_active', 'is_deleted')
-    search_fields = ('name', 'employee_id', 'designation')
+    search_fields = ('first_name', 'last_name', 'employee_id', 'designation')
 
 
 @admin.register(ExamCourse)

@@ -37,6 +37,7 @@ urlpatterns = [
     path('programs/<int:pk>/sheets/<str:sheet>/<int:row_id>/delete/', views.program_sheet_delete, name='billing_program_sheet_delete'),
     path('programs/<int:pk>/sheets/<str:sheet>/<int:row_id>/delete-confirm/', views.billing_row_delete_confirm, name='billing_row_delete_confirm'),
     path('ajax/course-info/', views.get_course_info, name='billing_get_course_info'),
+    path('ajax/check-course-assignments/', views.check_course_assignments, name='billing_check_course_assignments'),
     path('programs/<int:pk>/individual/<int:faculty_id>/', views.individual_bill, name='billing_individual_bill'),
     path('programs/<int:pk>/individual/<int:faculty_id>/excel/', views.faculty_bill_excel, name='billing_faculty_bill_excel'),
     path('fundamentals/', views.fundamentals_hub, name='billing_fundamentals_hub'),

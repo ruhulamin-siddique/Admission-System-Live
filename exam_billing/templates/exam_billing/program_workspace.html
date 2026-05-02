@@ -32,7 +32,7 @@
   <div class="col-md-4"><div class="info-box"><span class="info-box-icon bg-primary"><i class="fas fa-money-bill"></i></span><div class="info-box-content"><span class="info-box-text">Total</span><span class="info-box-number">{{ summary.grand_total }}</span></div></div></div>
 </div>
 <div class="mb-3">
-  {% if exam_program.is_editable %}<a class="btn btn-sm btn-outline-info" href="{% url 'billing_copy_previous' exam_program.id %}">Copy Previous Exam Data</a>{% endif %}
+  {% if exam_program.is_editable %}<form method="post" action="{% url 'billing_copy_previous' exam_program.id %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-info">Copy Previous Exam Data</button></form>{% endif %}
   <a class="btn btn-sm btn-outline-success" href="{% url 'billing_summary_csv' exam_program.id %}">Export CSV</a>
   <a class="btn btn-sm btn-outline-primary" href="{% url 'billing_printable_package' exam_program.id %}">Print Full Package</a>
 </div>
@@ -128,17 +128,17 @@
         <a class="btn btn-sm btn-outline-primary btn-block mb-2" href="{% url 'billing_printable_package' exam_program.id %}">
           <i class="fas fa-print mr-2"></i> Print Full Package
         </a>
-        <a class="btn btn-sm btn-outline-info btn-block" href="{% url 'billing_copy_previous' exam_program.id %}">
-          <i class="fas fa-copy mr-2"></i> Copy Previous Data
-        </a>
+        <form method="post" action="{% url 'billing_copy_previous' exam_program.id %}" class="mb-0">{% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-info btn-block"><i class="fas fa-copy mr-2"></i> Copy Previous Data</button>
+        </form>
       </div>
     </div>
   </div>
 </div>
 <div class="mb-4">
-  {% if exam_program.is_editable %}<a class="btn btn-warning" href="{% url 'billing_program_submit' exam_program.id %}">Submit Department Bill</a>{% endif %}
-  {% if exam_program.status == 'submitted' or exam_program.status == 'approved' %}<a class="btn btn-success" href="{% url 'billing_program_status' exam_program.id 'approve' %}">Approve</a> <a class="btn btn-danger" href="{% url 'billing_program_status' exam_program.id 'lock' %}">Lock/Cache Final</a>{% endif %}
-  {% if exam_program.status != 'draft' %}<a class="btn btn-outline-secondary" href="{% url 'billing_program_status' exam_program.id 'reopen' %}">Reopen</a>{% endif %}
+  {% if exam_program.is_editable %}<form method="post" action="{% url 'billing_program_submit' exam_program.id %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-warning">Submit Department Bill</button></form>{% endif %}
+  {% if exam_program.status == 'submitted' or exam_program.status == 'approved' %}<form method="post" action="{% url 'billing_program_status' exam_program.id 'approve' %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-success">Approve</button></form> <form method="post" action="{% url 'billing_program_status' exam_program.id 'lock' %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-danger">Lock/Cache Final</button></form>{% endif %}
+  {% if exam_program.status != 'draft' %}<form method="post" action="{% url 'billing_program_status' exam_program.id 'reopen' %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-outline-secondary">Reopen</button></form>{% endif %}
   <a class="btn btn-outline-secondary" href="{% url 'billing_exam_detail' exam_program.exam.id %}">Back to Exam</a>
 </div>
 </div></section>

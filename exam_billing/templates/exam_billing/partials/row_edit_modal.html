@@ -42,6 +42,11 @@
                                     </div>
                                     {% endif %}
                                 </div>
+                                <div id="modal-course-assignment-info">
+                                    {% if obj.course %}
+                                    <!-- Pre-loaded on modal open; refreshed on course change -->
+                                    {% endif %}
+                                </div>
                                 {% endif %}
                             </div>
                             {% endfor %}
@@ -60,18 +65,23 @@
 </div>
 
 <script>
-    // Wire up HTMX for dynamic course info loading
     (function() {
-        const courseSelect = document.querySelector('select[name="course"]');
+        var courseSelect = document.querySelector('#modals-here select[name="course"]');
         if (courseSelect) {
             courseSelect.addEventListener('change', function() {
-                const courseId = this.value;
+                var courseId = this.value;
                 if (courseId) {
-                    htmx.ajax('GET', '{% url "billing_get_course_info" %}?course_id=' + courseId, '#course-info-display');
+                    htmx.ajax('GET', '{% url "billing_get_course_info" %}?course_id=' + courseId, {target: '#course-info-display', swap: 'innerHTML'});
+                    htmx.ajax('GET', '{% url "billing_check_course_assignments" %}?course_id=' + courseId + '&exam_program_id={{ exam_program.id }}&sheet={{ sheet }}', {target: '#modal-course-assignment-info', swap: 'innerHTML'});
                 } else {
                     document.getElementById('course-info-display').innerHTML = '';
+                    document.getElementById('modal-course-assignment-info').innerHTML = '';
                 }
             });
+            // Auto-load assignment info for current course on modal open
+            if (courseSelect.value) {
+                htmx.ajax('GET', '{% url "billing_check_course_assignments" %}?course_id=' + courseSelect.value + '&exam_program_id={{ exam_program.id }}&sheet={{ sheet }}', {target: '#modal-course-assignment-info', swap: 'innerHTML'});
+            }
         }
     })();
 </script>

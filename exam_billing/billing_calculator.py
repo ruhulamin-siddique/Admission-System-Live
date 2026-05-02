@@ -85,9 +85,8 @@ def calculate_exam_program_summary(exam_program):
         _add(details, totals, item.faculty, 'qmsc', amount, desc)
 
     qpsc_members = list(exam_program.qpsc_members.select_related('faculty').filter(is_deleted=False))
-    member_count = len(qpsc_members) or 1
     for item in qpsc_members:
-        amount = (money(item.question_count) * settings.qpsc_member_rate) / member_count
+        amount = money(item.question_count) * settings.qpsc_member_rate
         _add(details, totals, item.faculty, 'qpsc', amount, item.role or 'QPSC')
 
     qsetters = list(exam_program.question_setters.select_related('faculty', 'course').filter(is_deleted=False))
@@ -125,11 +124,10 @@ def calculate_exam_program_summary(exam_program):
             'scrutiny': money(buckets['scrutiny']),
             'details': details[faculty_id],
         }
-        row['committee_total'] = row['cecc'] + row['ec'] + row['rpsc'] + row['qmsc'] + row['qpsc']
+        row['committee_total'] = sum(row[key] for key in ['cecc', 'ec', 'rpsc', 'qmsc', 'qpsc'])
         row['total'] = sum(
             row[key] for key in ['cecc', 'ec', 'rpsc', 'qmsc', 'qpsc', 'question_setting', 'script_examining', 'scrutiny']
         )
-        row['committee_total'] = sum(row[key] for key in ['cecc', 'ec', 'rpsc', 'qmsc', 'qpsc'])
         rows.append(row)
 
     rows.sort(key=lambda item: item['faculty'].name)

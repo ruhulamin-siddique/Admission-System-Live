@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                <div class="card-header bg-primary text-white py-3 border-0">
+                    <h5 class="mb-0 font-weight-bold"><i class="fas fa-edit mr-2"></i> {{ title }}</h5>
+                </div>
+                <form method="post" class="mb-0">
+                    {% csrf_token %}
+                    <div class="card-body p-4">
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="row">
+                            {% for field in form %}
+                            <div class="{% if field.name == 'course' or field.name == 'faculty' %}col-md-12{% else %}col-md-6{% endif %} mb-3">
+                                <label class="form-label font-weight-bold small text-uppercase text-muted mb-1">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small mt-1 font-weight-bold">
+                                        {% for error in field.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white py-3 border-0 text-right">
+                        <a href="{% url 'billing_program_sheet' exam_program.id sheet %}" class="btn btn-link text-muted font-weight-bold">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-5 shadow-sm font-weight-bold rounded-pill">
+                            <i class="fas fa-save mr-2"></i> Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -68,11 +68,11 @@
     <div class="info-grid">
         <div class="info-cell"><span class="font-bold">SV:</span> V-3.1</div>
         <div class="info-cell"><span class="font-bold">Exam Name:</span> {{ exam_program.exam.name }}</div>
-        <div class="info-cell" colspan="2"><span class="font-bold">TYPE:</span> ENGINEERING</div>
+        <div class="info-cell" style="grid-column: span 2;"><span class="font-bold">TYPE:</span> {{ exam_program.exam.exam_type|upper }}</div>
         
         <div class="info-cell"><span class="font-bold">ID:</span> {{ faculty.employee_id|default:"-" }}</div>
         <div class="info-cell"><span class="font-bold">Department:</span> {{ exam_program.program.short_name }}</div>
-        <div class="info-cell" colspan="2"><span class="font-bold">Form No:</span> __________</div>
+        <div class="info-cell" style="grid-column: span 2;"><span class="font-bold">Form No:</span> __________</div>
         
         <div class="info-cell" style="grid-column: span 4;"><span class="font-bold">Name:</span> {{ faculty.name }}</div>
         <div class="info-cell" style="grid-column: span 4;"><span class="font-bold">Designation:</span> {{ faculty.designation }}</div>
@@ -228,7 +228,7 @@
             <span class="font-bold text-primary" style="font-size: 1.2rem;">BDT {{ bill.total }}</span>
         </div>
         <div class="small mt-1">
-            <span class="font-bold">Amount in words:</span> Taka {{ bill.amount_in_words }} Only.
+            <span class="font-bold">Amount in words:</span> {{ bill.amount_in_words }} Only.
         </div>
     </div>
 

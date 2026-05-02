@@ -259,6 +259,7 @@
                                         {% endfor %}
                                         <button type="submit" form="add-form" class="btn btn-sm btn-success ml-auto mt-1 mb-1"><i class="fas fa-save mr-1"></i>Save</button>
                                     </div>
+                                    <div id="course-assignment-info"></div>
                                 </td>
                             </tr>
                             {% endif %}
@@ -512,6 +513,7 @@
                                         {% endfor %}
                                         <button type="submit" name="add_member" form="add-form" class="btn btn-sm btn-success ml-auto"><i class="fas fa-save mr-1"></i>Save Member</button>
                                     </div>
+                                    <div id="course-assignment-info"></div>
                                 </td>
                             </tr>
                             {% endif %}
@@ -590,6 +592,7 @@
                                     {% endfor %}
                                     <button type="submit" form="add-form" class="btn btn-sm btn-success ml-auto mt-1 mb-1"><i class="fas fa-save mr-1"></i>Save</button>
                                 </div>
+                                <div id="course-assignment-info"></div>
                             </td>
                         </tr>
                         {% endif %}
@@ -632,6 +635,102 @@
                     el.classList.add('form-control-sm');
                     el.style.minWidth = '120px';
                 });
+
+                // ---- Course Assignment Check (duplicate detection) ----
+                var currentSheet = '{{ sheet }}';
+                var courseBasedSheets = ['qsetter', 'examiner', 'scrutinizer', 'qmsc'];
+                if (courseBasedSheets.indexOf(currentSheet) !== -1) {
+                    var courseSelects = document.querySelectorAll('#add-row select[name="course"], #add-row-generic select[name="course"], #add-qmsc-member select[name="course"]');
+                    courseSelects.forEach(function(sel) {
+                        sel.addEventListener('change', function() {
+                            var infoDiv = document.getElementById('course-assignment-info');
+                            if (!this.value) { infoDiv.innerHTML = ''; return; }
+                            htmx.ajax('GET',
+                                '{% url "billing_check_course_assignments" %}?course_id=' + this.value + '&exam_program_id={{ exam_program.id }}&sheet=' + currentSheet,
+                                {target: '#course-assignment-info', swap: 'innerHTML'}
+                            );
+                        });
+                    });
+
+                    // ---- SweetAlert2 confirmation on form submit ----
+                    var addForm = document.getElementById('add-form');
+                    addForm.addEventListener('submit', function(e) {
+                        var conflictEl = document.getElementById('course-conflict-data');
+                        if (!conflictEl) return; // no conflicts, submit normally
+
+                        var assignments;
+                        try { assignments = JSON.parse(conflictEl.getAttribute('data-assignments')); }
+                        catch(err) { return; }
+
+                        // Get the selected faculty and part from the form
+                        var facultySelect = addForm.querySelector('select[name="faculty"]')
+                                         || document.querySelector('#add-row select[name="faculty"]')
+                                         || document.querySelector('#add-row-generic select[name="faculty"]')
+                                         || document.querySelector('#add-qmsc-member select[name="faculty"]');
+                        var partSelect = addForm.querySelector('select[name="part"]')
+                                      || document.querySelector('#add-row select[name="part"]')
+                                      || document.querySelector('#add-row-generic select[name="part"]');
+                        var selectedFacultyId = facultySelect ? facultySelect.value : '';
+                        var selectedPart = partSelect ? partSelect.value : '';
+
+                        // Check for same-sheet, same-part, different-faculty conflicts (within this dept)
+                        var conflicts = assignments.filter(function(a) {
+                            var sheetMatch = (a.sheet_key === currentSheet);
+                            var partMatch = (!selectedPart || !a.part || a.part === selectedPart || a.part === 'A+B' || selectedPart === 'A+B');
+                            var diffFaculty = (selectedFacultyId && String(a.faculty_id) !== String(selectedFacultyId));
+                            return sheetMatch && partMatch && diffFaculty && a.is_self;
+                        });
+
+                        // Also check cross-program conflicts (same sheet, same part, different faculty)
+                        var crossConflicts = assignments.filter(function(a) {
+                            var sheetMatch = (a.sheet_key === currentSheet);
+                            var partMatch = (!selectedPart || !a.part || a.part === selectedPart || a.part === 'A+B' || selectedPart === 'A+B');
+                            var diffFaculty = (selectedFacultyId && String(a.faculty_id) !== String(selectedFacultyId));
+                            return sheetMatch && partMatch && diffFaculty && !a.is_self;
+                        });
+
+                        if (conflicts.length === 0 && crossConflicts.length === 0) return;
+
+                        e.preventDefault();
+
+                        var msg = '';
+                        if (conflicts.length > 0) {
+                            msg += '<div class="text-left"><strong>Same department conflict:</strong><ul class="mb-2">';
+                            conflicts.forEach(function(c) {
+                                msg += '<li>' + c.sheet + (c.part ? ' Part ' + c.part : '') + ' is assigned to <strong>' + c.faculty_name + '</strong></li>';
+                            });
+                            msg += '</ul></div>';
+                        }
+                        if (crossConflicts.length > 0) {
+                            msg += '<div class="text-left"><strong>Other departments:</strong><ul class="mb-0">';
+                            crossConflicts.forEach(function(c) {
+                                msg += '<li>' + c.program + ': ' + c.sheet + (c.part ? ' Part ' + c.part : '') + ' = <strong>' + c.faculty_name + '</strong></li>';
+                            });
+                            msg += '</ul></div>';
+                        }
+
+                        Swal.fire({
+                            title: conflicts.length > 0 ? 'Replace Existing Assignment?' : 'Cross-Department Conflict',
+                            html: msg,
+                            icon: conflicts.length > 0 ? 'warning' : 'info',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: conflicts.length > 0 ? '<i class="fas fa-exchange-alt mr-1"></i> Yes, Replace' : '<i class="fas fa-check mr-1"></i> Proceed Anyway',
+                            cancelButtonText: 'Cancel',
+                            customClass: { popup: 'shadow-lg' },
+                        }).then(function(result) {
+                            if (result.isConfirmed) {
+                                var hidden = document.createElement('input');
+                                hidden.type = 'hidden';
+                                hidden.name = 'confirm_replace';
+                                hidden.value = '1';
+                                addForm.appendChild(hidden);
+                                addForm.submit();
+                            }
+                        });
+                    });
+                }
             });
         </script>
         {% else %}

@@ -1,0 +1,35 @@
+{% if assignments %}
+<div class="alert alert-warning py-2 px-3 small mb-0 mt-2 border-0 shadow-sm"
+     style="border-left: 4px solid #ffc107 !important;"
+     id="course-conflict-data"
+     data-assignments='[{% for a in assignments %}{"sheet_key":"{{ a.sheet_key }}","part":"{{ a.part }}","faculty_id":{{ a.faculty_id }},"faculty_name":"{{ a.faculty_name|escapejs }}","program":"{{ a.program|escapejs }}","is_self":{{ a.is_self|yesno:"true,false" }},"id":{{ a.id }}}{% if not forloop.last %},{% endif %}{% endfor %}]'>
+    <div class="d-flex align-items-start">
+        <i class="fas fa-exclamation-triangle text-warning mr-2 mt-1"></i>
+        <div>
+            <strong class="text-dark">{{ course_code }}</strong> already has assignments:
+            <table class="table table-sm table-borderless mb-0 mt-1" style="font-size: 0.82rem;">
+                <tbody>
+                {% for a in assignments %}
+                <tr class="{% if a.is_self %}bg-light{% endif %}">
+                    <td class="py-0 px-1" style="width: 90px;">
+                        <span class="badge badge-{% if a.sheet_key == current_sheet %}danger{% else %}dark{% endif %} badge-pill" style="font-size: 0.7rem;">{{ a.sheet }}</span>
+                    </td>
+                    {% if a.part %}
+                    <td class="py-0 px-1" style="width: 55px;">Part {{ a.part }}</td>
+                    {% else %}
+                    <td class="py-0 px-1" style="width: 55px;"></td>
+                    {% endif %}
+                    <td class="py-0 px-1 font-weight-bold">{{ a.faculty_name }}</td>
+                    <td class="py-0 px-1 text-right">
+                        <span class="badge badge-{% if a.is_self %}info{% else %}secondary{% endif %}" style="font-size: 0.65rem;">
+                            {% if a.is_self %}This Dept{% else %}{{ a.program }}{% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
