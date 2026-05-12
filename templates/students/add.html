@@ -120,6 +120,72 @@
     .id-seg-premium.seg-hall { background: rgba(111, 66, 193, 0.2); color: #fff; border-bottom: 3px solid #6f42c1; }
     .id-seg-premium.seg-prog { background: rgba(214, 51, 132, 0.2); color: #fff; border-bottom: 3px solid #d63384; }
     .id-seg-premium.seg-serial { background: rgba(108, 117, 125, 0.2); color: #fff; border-bottom: 3px solid #6c757d; }
+
+    /* Serial Input UI */
+    .serial-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+    }
+    .id-prefix-display {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: rgba(255,255,255,0.9);
+        background: rgba(255,255,255,0.12);
+        border: 1.5px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        padding: 7px 14px;
+        letter-spacing: 2px;
+        flex: 1;
+        min-width: 160px;
+    }
+    .serial-sep {
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: rgba(255,255,255,0.4);
+        line-height: 1;
+    }
+    #id_serial_input {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.4rem;
+        font-weight: 900;
+        width: 90px;
+        text-align: center;
+        letter-spacing: 4px;
+        border: 2px solid rgba(255,255,255,0.35);
+        border-radius: 8px;
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        padding: 6px 8px;
+        outline: none;
+        transition: border-color 0.2s, background 0.2s;
+    }
+    #id_serial_input:focus {
+        border-color: #4ade80;
+        background: rgba(74,222,128,0.12);
+    }
+    #id_serial_input.is-duplicate {
+        border-color: #f87171;
+        background: rgba(248,113,113,0.15);
+        animation: shake 0.3s ease;
+    }
+    #id_serial_input.is-ok {
+        border-color: #4ade80;
+        background: rgba(74,222,128,0.15);
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-4px); }
+        75% { transform: translateX(4px); }
+    }
+    .serial-hint {
+        font-size: 0.72rem;
+        color: rgba(255,255,255,0.55);
+        margin-top: 4px;
+    }
     
     .id-seg-premium.placeholder { border-bottom: 3px solid rgba(255,255,255,0.1) !important; color: rgba(255,255,255,0.2) !important; background: transparent !important; }
 
@@ -300,6 +366,27 @@
     .category-row .custom-switch { padding-left: 2.5rem; margin-bottom: 0; }
     .category-row .custom-control-label::before { left: -2.5rem; }
     .category-row .custom-control-label::after { left: calc(-2.5rem + 2px); }
+
+    /* Dark Mode Overrides */
+    body.dark-mode .admission-card { background: #1e293b; border: 1px solid #334155; }
+    body.dark-mode .card-body { background: #1e293b; color: #f8fafc; }
+    body.dark-mode .nav-tabs-custom { border-bottom-color: #334155; }
+    body.dark-mode .nav-tabs-custom .nav-link { color: #94a3b8; }
+    body.dark-mode .nav-tabs-custom .nav-link.active { background: #334155; color: #38bdf8; box-shadow: inset 0 -3px 0 #38bdf8; }
+    body.dark-mode .field-outline-group label { background: #1e293b; color: #94a3b8; }
+    body.dark-mode .field-outline-group .form-control,
+    body.dark-mode .field-outline-group select { background: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+    body.dark-mode .form-section-title { color: #f8fafc; border-bottom-color: #334155; }
+    body.dark-mode .category-row { background: #334155; border-color: #475569; }
+    body.dark-mode .category-name { color: #f8fafc; }
+    body.dark-mode .bg-light { background: #0f172a !important; }
+    body.dark-mode .card-footer { background: #0f172a; border-top: 1px solid #334155; }
+    body.dark-mode .status-badge-container { background: #0f172a; border-color: #334155; }
+    body.dark-mode .photo-upload-card { background: #0f172a; border-color: #334155; }
+    body.dark-mode .text-dark { color: #f8fafc !important; }
+    body.dark-mode .id-preview-box { background: #0f172a; border-color: #334155; }
+    body.dark-mode #id_serial_input { background: rgba(255,255,255,0.05); }
+    body.dark-mode .nav-tabs-custom .nav-link:hover { background: #334155; color: #f8fafc; }
 </style>
 {% endblock %}
 
@@ -380,7 +467,42 @@
                                     <div class="guide-pulse"></div>
                                     <span id="id-guide-text">Select Admission Year to begin...</span>
                                 </div>
-                                <div class="hidden-field" style="display: none;">{{ form.student_id }}</div>
+                                 <!-- ID INPUT AREA: mode-driven -->
+                                 {% if sys_settings.id_mode == 'semi_auto' or not sys_settings %}
+                                 <!-- SEMI-AUTO: prefix auto, user types last 3 serial digits -->
+                                 <div class="serial-input-wrapper" id="serial-input-area" style="display:none;">
+                                     <div>
+                                         <div class="serial-hint mb-1"><i class="fas fa-lock-open mr-1"></i>AUTO-GENERATED PREFIX (13 digits)</div>
+                                         <div class="id-prefix-display" id="id-prefix-display">─────────────</div>
+                                     </div>
+                                     <div class="serial-sep">-</div>
+                                     <div>
+                                         <div class="serial-hint mb-1"><i class="fas fa-pencil mr-1"></i>YOUR SERIAL (3 digits) <span class="text-warning">*</span></div>
+                                         <input type="text" id="id_serial_input" name="student_id_serial"
+                                                maxlength="3" inputmode="numeric" pattern="[0-9]{3}"
+                                                placeholder="- - -" autocomplete="off">
+                                     </div>
+                                 </div>
+                                 <!-- Hidden assembled ID -->
+                                 <div class="hidden-field" style="display: none;">{{ form.student_id }}</div>
+                                 {% elif sys_settings.id_mode == 'manual' %}
+                                 <!-- MANUAL: staff types full 16-digit ID -->
+                                 <div class="mt-3">
+                                     <div class="field-outline-group">
+                                         <label>Manual Student ID <span class="text-danger">*</span></label>
+                                         {{ form.student_id }}
+                                     </div>
+                                     <div class="small text-muted mt-1">
+                                         <i class="fas fa-info-circle mr-1"></i> Type the full 16-digit UGC ID. The card above validates it live.
+                                     </div>
+                                 </div>
+                                 {% else %}
+                                 <!-- AUTO: system generates everything, ID hidden -->
+                                 <div class="mt-2">
+                                     <div class="serial-hint"><i class="fas fa-robot mr-1"></i> Full auto-mode: ID will be assigned automatically on save.</div>
+                                 </div>
+                                 <div class="hidden-field" style="display: none;">{{ form.student_id }}</div>
+                                 {% endif %}
                             </div>
 
                             <div class="row">
@@ -406,7 +528,7 @@
                                             <div class="form-section-title mt-4 mb-3"><i class="fas fa-money-bill-transfer mr-2"></i> Financial & Remarks</div>
                                             <div class="row">
                                                 <div class="col-md-6"><div class="field-outline-group"><label>Admission Payment</label>{{ form.admission_payment }}</div></div>
-                                                <div class="col-md-6"><div class="field-outline-group"><label>Waiver (%)</label>{{ form.waiver }}</div></div>
+                                                <div class="col-md-6"><div class="field-outline-group"><label>Waiver Amount (BDT)</label>{{ form.waiver }}</div></div>
                                                 <div class="col-md-12"><div class="field-outline-group"><label>Remarks</label>{{ form.remarks }}</div></div>
                                             </div>
                                         </div>
@@ -629,121 +751,233 @@
 {% block extra_js %}
 <script>
     $(document).ready(function() {
-        // Mapping Logic for Program -> Cluster & Level
         const programMapping = JSON.parse('{{ program_mapping_json|safe }}');
+        const idMode = '{{ sys_settings.id_mode|default:"semi_auto" }}';
+        let currentPrefix = '';
+        let duplicateCheckTimer = null;
 
-        // ID Prediction Engine
-        function updateIDPreview() {
+        // ─────────────────────────────────────────────────────────
+        // SHARED: fetch 13-char prefix from backend
+        // ─────────────────────────────────────────────────────────
+        function updateIDPrefix() {
             const formData = {
                 admission_year: $('[name="admission_year"]').val(),
-                semester_name: $('[name="semester_name"]').val(),
-                hall_name: $('[name="hall_attached"]').val(),
-                program: $('[name="program"]').val(),
-                cluster: $('[name="cluster"]').val(),
-                program_type: $('[name="program_type"]').val()
+                semester_name:  $('[name="semester_name"]').val(),
+                hall_name:      $('[name="hall_attached"]').val(),
+                program:        $('[name="program"]').val(),
+                cluster:        $('[name="cluster"]').val(),
+                program_type:   $('[name="program_type"]').val()
             };
+            const $display   = $('#premium-id-display');
+            const $guide     = $('#id-guide-text');
+            const $status    = $('#id-status-badge');
 
-            const $display = $('#premium-id-display');
-            const $guide = $('#id-guide-text');
-            const $status = $('#id-status-badge');
+            if (!formData.admission_year) { $guide.text('👉 Step 1: Select Admission Year'); renderPlaceholderDisplay(); return; }
+            if (!formData.program)         { $guide.text('👉 Step 2: Select Program/Department'); renderPlaceholderDisplay(); return; }
+            if (!formData.semester_name)   { $guide.text('👉 Step 3: Select Admitted Semester'); return; }
+            if (!formData.hall_name)       { $guide.text('👉 Step 4: Select Hall Attachment'); return; }
 
-            // Guidance Logic
-            if (!formData.admission_year) {
-                $guide.text('👉 Step 1: Select Admission Year');
-                updatePlaceholderID('080----------------');
-                return;
-            }
-            if (!formData.program) {
-                $guide.text('👉 Step 2: Select Program/Department');
-                updatePlaceholderID('080' + formData.admission_year.slice(-2) + '-----------');
-                return;
-            }
-            if (!formData.semester_name) {
-                $guide.text('👉 Step 3: Select Admitted Semester');
-                return;
-            }
-            if (!formData.hall_name) {
-                $guide.text('👉 Step 4: Select Hall Attachment');
-                return;
-            }
-
-            $guide.html('<i class="fas fa-sync fa-spin mr-2"></i> Calculating Serial for ' + formData.program + ' (' + formData.semester_name + ' ' + formData.admission_year + ')...');
-            $status.html('<span class="badge badge-info px-3 py-1" style="border-radius: 20px;"><i class="fas fa-search mr-1"></i> CHECKING SERIAL</span>');
+            $guide.html('<i class="fas fa-sync fa-spin mr-2"></i> Computing prefix...');
+            $status.html('<span class="badge badge-info px-3 py-1" style="border-radius:20px"><i class="fas fa-search mr-1"></i> COMPUTING</span>');
 
             $.ajax({
                 url: "{% url 'api_preview_id' %}",
                 data: formData,
                 success: function(response) {
-                    if (response.suggested_id && response.components) {
-                        const id = response.suggested_id;
-                        const comps = response.components;
-                        $display.empty();
-                        
-                        // Render Color-Coded Segments
-                        const segments = [
-                            { val: id.slice(0, 3), cls: 'seg-uni' },
-                            { val: id.slice(3, 5), cls: 'seg-year' },
-                            { val: id.slice(5, 6), cls: 'seg-sem' },
-                            { val: id.slice(6, 8), cls: 'seg-hall' },
-                            { val: id.slice(8, 13), cls: 'seg-prog' },
-                            { val: id.slice(13, 16), cls: 'seg-serial' }
-                        ];
-                        
-                        segments.forEach(seg => {
-                            for (let char of seg.val) {
-                                $display.append(`<span class="id-seg-premium ${seg.cls}">${char}</span>`);
-                            }
-                        });
-                        
-                        $('[name="student_id"]').val(id);
-                        
-                        $guide.html('<i class="fas fa-check-circle text-success mr-2"></i> ID Generated Successfully for <b>' + formData.program + '</b> Batch.');
-                        $status.html('<span class="badge badge-success px-3 py-1" style="border-radius: 20px;"><i class="fas fa-bolt mr-1"></i> LIVE PREVIEW</span>');
+                    if (response.prefix) {
+                        currentPrefix = response.prefix;
+                        renderPrefixDisplay(currentPrefix);
+
+                        if (idMode === 'semi_auto') {
+                            $('#id-prefix-display').text(currentPrefix);
+                            $('#serial-input-area').show();
+                            $guide.html('<i class="fas fa-check-circle text-success mr-2"></i> Prefix ready — enter your <b>3-digit serial</b> from the register.');
+                            $status.html('<span class="badge badge-warning px-3 py-1" style="border-radius:20px"><i class="fas fa-pencil mr-1"></i> ENTER SERIAL</span>');
+                            const serial = $('#id_serial_input').val().trim();
+                            if (serial.length === 3) onSerialInput();
+
+                        } else if (idMode === 'auto') {
+                            // Full-auto: fetch the next full ID suggestion (serial computed server-side)
+                            $.ajax({
+                                url: "{% url 'api_preview_id' %}",
+                                data: Object.assign({}, formData, { full_id: '1' }),
+                                success: function(r2) {
+                                    // Fallback: just show prefix + ??? for now since full serial is generated on save
+                                    $guide.html('<i class="fas fa-robot text-success mr-2"></i> Auto mode: ID will be fully generated on save.');
+                                    $status.html('<span class="badge badge-success px-3 py-1" style="border-radius:20px"><i class="fas fa-bolt mr-1"></i> AUTO</span>');
+                                }
+                            });
+
+                        } else if (idMode === 'manual') {
+                            $guide.html('<i class="fas fa-keyboard text-warning mr-2"></i> Manual mode: type your full 16-digit UGC ID below.');
+                            $status.html('<span class="badge badge-secondary px-3 py-1" style="border-radius:20px"><i class="fas fa-id-badge mr-1"></i> MANUAL</span>');
+                            validateManualID();
+                        }
                     }
                 },
                 error: function() {
-                    $guide.html('<i class="fas fa-exclamation-triangle text-warning mr-2"></i> Error fetching serial. Please check selections.');
-                    $status.html('<span class="badge badge-danger px-3 py-1" style="border-radius: 20px;"><i class="fas fa-circle-exclamation mr-1"></i> ERROR</span>');
+                    $guide.html('<i class="fas fa-exclamation-triangle text-warning mr-2"></i> Error generating prefix.');
+                    $status.html('<span class="badge badge-danger px-3 py-1" style="border-radius:20px">ERROR</span>');
                 }
             });
         }
 
-        function updatePlaceholderID(placeholder) {
+        // ─────────────────────────────────────────────────────────
+        // SEMI-AUTO: serial input handler + duplicate check
+        // ─────────────────────────────────────────────────────────
+        function onSerialInput() {
+            const serial    = $('#id_serial_input').val().trim();
+            const $guide    = $('#id-guide-text');
+            const $status   = $('#id-status-badge');
+            const $hiddenId = $('[name="student_id"]');
+
+            // digits only
+            const cleaned = serial.replace(/[^0-9]/g, '');
+            if (cleaned !== serial) { $('#id_serial_input').val(cleaned); return; }
+
+            $hiddenId.val('');
+
+            if (!currentPrefix || serial.length < 3) {
+                updateSerialDisplay(serial.padEnd(3, '-'));
+                $status.html('<span class="badge badge-warning px-3 py-1" style="border-radius:20px"><i class="fas fa-pencil mr-1"></i> ENTER SERIAL</span>');
+                return;
+            }
+
+            const fullId = currentPrefix + serial.padStart(3, '0');
+            updateSerialDisplay(serial.padStart(3, '0'));
+
+            clearTimeout(duplicateCheckTimer);
+            $guide.html('<i class="fas fa-search fa-spin mr-2"></i> Checking <b>' + fullId + '</b>...');
+            $status.html('<span class="badge badge-info px-3 py-1" style="border-radius:20px"><i class="fas fa-spinner fa-spin mr-1"></i> CHECKING</span>');
+
+            duplicateCheckTimer = setTimeout(function() {
+                $.ajax({
+                    url: "{% url 'api_check_id_duplicate' %}",
+                    data: { student_id: fullId },
+                    success: function(res) {
+                        if (res.exists) {
+                            $('#id_serial_input').removeClass('is-ok').addClass('is-duplicate');
+                            $guide.html('<i class="fas fa-circle-xmark text-danger mr-2"></i> <b>' + fullId + '</b> already taken by <b>' + res.name + '</b>. Use a different serial.');
+                            $status.html('<span class="badge badge-danger px-3 py-1" style="border-radius:20px"><i class="fas fa-ban mr-1"></i> DUPLICATE</span>');
+                        } else {
+                            $('#id_serial_input').removeClass('is-duplicate').addClass('is-ok');
+                            $guide.html('<i class="fas fa-circle-check text-success mr-2"></i> <b>' + fullId + '</b> is available.');
+                            $status.html('<span class="badge badge-success px-3 py-1" style="border-radius:20px"><i class="fas fa-bolt mr-1"></i> AVAILABLE</span>');
+                            $hiddenId.val(fullId);
+                        }
+                    },
+                    error: function() { $guide.html('<i class="fas fa-exclamation-triangle text-warning mr-2"></i> Check failed. Retry.'); }
+                });
+            }, 450);
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // MANUAL: live visual validation
+        // ─────────────────────────────────────────────────────────
+        function validateManualID() {
+            if (idMode !== 'manual') return;
+            const typedId = $('[name="student_id"]').val();
+            const $guide  = $('#id-guide-text');
+            const $status = $('#id-status-badge');
+            const expectedYear = $('[name="admission_year"]').val() ? $('[name="admission_year"]').val().slice(-2) : '--';
+
+            renderPrefixDisplay(typedId.slice(0, 13));
+            updateSerialDisplay(typedId.slice(13).padEnd(3, '-'));
+
+            if (typedId.length === 16 && typedId.startsWith('080')) {
+                $guide.html('<i class="fas fa-check-circle text-success mr-2"></i> Looks valid — will be verified on save.');
+                $status.html('<span class="badge badge-success px-3 py-1" style="border-radius:20px"><i class="fas fa-id-badge mr-1"></i> MANUAL OK</span>');
+            } else if (typedId.length > 0) {
+                $guide.text('Keep typing... (' + typedId.length + '/16 digits)');
+                $status.html('<span class="badge badge-warning px-3 py-1" style="border-radius:20px"><i class="fas fa-keyboard mr-1"></i> TYPING</span>');
+            } else {
+                $guide.text('Type the full 16-digit UGC ID.');
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // Display helpers
+        // ─────────────────────────────────────────────────────────
+        function renderPrefixDisplay(prefix) {
+            const p = (prefix || '').padEnd(13, '-');
             const $display = $('#premium-id-display');
             $display.empty();
-            
-            // Render Placeholder Color-Coded Segments
-            const layout = [
-                { val: '080', cls: 'seg-uni' },
-                { val: '--', cls: 'seg-year' },
-                { val: '-', cls: 'seg-sem' },
-                { val: '--', cls: 'seg-hall' },
-                { val: '-----', cls: 'seg-prog' },
-                { val: '---', cls: 'seg-serial' }
+            const segs = [
+                { val: p.slice(0,3),  cls: 'seg-uni'  },
+                { val: p.slice(3,5),  cls: 'seg-year' },
+                { val: p.slice(5,6),  cls: 'seg-sem'  },
+                { val: p.slice(6,8),  cls: 'seg-hall' },
+                { val: p.slice(8,13), cls: 'seg-prog' },
+                { val: '---',         cls: 'seg-serial' }
             ];
-
-            layout.forEach(seg => {
-                for (let char of seg.val) {
-                    const isPlaceholder = char === '-';
-                    $display.append(`<span class="id-seg-premium ${seg.cls} ${isPlaceholder ? 'placeholder' : ''}">${char}</span>`);
+            segs.forEach(s => {
+                for (let ch of s.val) {
+                    const isPlh = ch === '-';
+                    $display.append(`<span class="id-seg-premium ${s.cls} ${isPlh ? 'placeholder' : ''}">${ch}</span>`);
                 }
             });
+        }
 
-            $('#id-status-badge').html('<span class="badge badge-warning px-3 py-1" style="border-radius: 20px;"><i class="fas fa-spinner fa-spin mr-1"></i> WAITING</span>');
-            $('#header-id-preview').text('---');
+        function updateSerialDisplay(s3) {
+            const $spans = $('#premium-id-display .id-seg-premium');
+            const last3  = $spans.slice(-3);
+            s3.split('').forEach((ch, i) => {
+                const isPlh = ch === '-';
+                $(last3[i]).text(ch).toggleClass('placeholder', isPlh).toggleClass('seg-serial', true);
+            });
+        }
+
+        function renderPlaceholderDisplay() {
+            renderPrefixDisplay('');
+            currentPrefix = '';
+            $('#serial-input-area').hide();
+            $('#id_serial_input').val('').removeClass('is-ok is-duplicate');
             $('[name="student_id"]').val('');
+            $('#id-status-badge').html('<span class="badge badge-warning px-3 py-1" style="border-radius:20px"><i class="fas fa-spinner fa-spin mr-1"></i> WAITING</span>');
         }
 
-        // Event Listeners
-        $('[name="admission_year"], [name="semester_name"], [name="hall_attached"], [name="program"], [name="cluster"], [name="program_type"]').on('change', updateIDPreview);
-
-        // Toggle ID Blueprint
-        window.toggleExplanation = function() {
-            $('#id-explanation-card').toggleClass('active');
+        // Submit guard (semi_auto only)
+        if (idMode === 'semi_auto') {
+            $('#admissionForm').on('submit', function(e) {
+                const serial   = $('#id_serial_input').val().trim();
+                const hiddenId = $('[name="student_id"]').val().trim();
+                if (currentPrefix && (serial.length !== 3 || !hiddenId || hiddenId.length !== 16)) {
+                    e.preventDefault();
+                    Swal.fire({ icon: 'warning', title: 'Serial Required',
+                        text: 'Enter a valid 3-digit serial that has passed the duplicate check.',
+                        confirmButtonColor: '#004085' });
+                    return false;
+                }
+            });
         }
 
+        // Manual: pre-fill 080 on focus
+        if (idMode === 'manual') {
+            $('[name="student_id"]').on('input', validateManualID);
+            $('[name="student_id"]').on('focus', function() {
+                if (!$(this).val()) { $(this).val('080'); validateManualID(); }
+            });
+        }
+
+        // Field change listeners (auto + semi_auto use prefix fetch; manual uses visual feedback)
+        $('[name="admission_year"], [name="semester_name"], [name="hall_attached"], [name="program"], [name="cluster"], [name="program_type"]').on('change', function() {
+            if (idMode !== 'manual') updateIDPrefix();
+            else validateManualID();
+        });
+        $('#id_serial_input').on('input', onSerialInput);
+        $('#id_serial_input').on('focus', function() {
+            if (!currentPrefix) Swal.fire({ icon: 'info', title: 'Select fields first',
+                text: 'Fill Year, Program, Semester and Hall to generate the prefix.', confirmButtonColor: '#004085' });
+        });
+
+        // On load: if fields already have values (e.g. form re-render after validation error)
+        if ($('[name="admission_year"]').val() && $('[name="program"]').val()) {
+            if (idMode !== 'manual') updateIDPrefix();
+        } else {
+            renderPlaceholderDisplay();
+        }
         // Initialization
-        updateIDPreview();
+        updateIDPrefix();
         
         $('[name="program"]').on('change', function() {
             const selectedProg = $(this).val();
@@ -927,8 +1161,29 @@
             }
         });
 
-        // Initialize if Edit mode (handled in form, but we can double check here)
-        // For Add mode, this just ensures selects are ready.
+        // Initialize Divisions
+        const $presentDiv = $('[name="present_division"]');
+        const $permanentDiv = $('[name="permanent_division"]');
+        const selectedPresentDiv = $presentDiv.val();
+        const selectedPermanentDiv = $permanentDiv.val();
+        
+        $presentDiv.empty().append('<option value="">Select Division</option>');
+        $permanentDiv.empty().append('<option value="">Select Division</option>');
+        
+        Object.keys(geoData).sort().forEach(div => {
+            $presentDiv.append(`<option value="${div}" ${div === selectedPresentDiv ? 'selected' : ''}>${div}</option>`);
+            $permanentDiv.append(`<option value="${div}" ${div === selectedPermanentDiv ? 'selected' : ''}>${div}</option>`);
+        });
+
+        // Initialize Districts/Upazilas if pre-filled (for Edit Mode)
+        if (selectedPresentDiv) {
+            updateDistricts($presentDiv, $('[name="present_district"]'), '{{ form.instance.present_district }}');
+            updateUpazilas($presentDiv, $('[name="present_district"]'), $('[name="present_upazila"]'), '{{ form.instance.present_upazila }}');
+        }
+        if (selectedPermanentDiv) {
+            updateDistricts($permanentDiv, $('[name="permanent_district"]'), '{{ form.instance.permanent_district }}');
+            updateUpazilas($permanentDiv, $('[name="permanent_district"]'), $('[name="permanent_upazila"]'), '{{ form.instance.permanent_upazila }}');
+        }
         
         // Real-time Validation for National ID
         const $nid = $('[name="national_id"]');

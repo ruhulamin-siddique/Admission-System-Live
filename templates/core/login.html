@@ -17,7 +17,8 @@
     }
 
     .login-box {
-        width: 450px;
+        width: 100%;
+        max-width: 450px;
         margin: 20px;
     }
 
@@ -149,6 +150,37 @@
         color: #3b82f6;
     }
 
+    /* Mobile Responsiveness Improvements */
+    @media (max-width: 480px) {
+        .login-box {
+            margin: 10px;
+        }
+        .login-card {
+            border-radius: 16px;
+        }
+        .login-header {
+            padding: 30px 20px 10px;
+        }
+        .login-body {
+            padding: 10px 20px 30px;
+        }
+        .login-header h2 {
+            font-size: 1.25rem;
+        }
+        .login-logo img {
+            height: 70px;
+            margin-bottom: 15px;
+        }
+        .login-footer {
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .btn-login {
+            padding: 12px;
+        }
+    }
+
     /* Error Messages */
     .alert-danger {
         background: rgba(239, 68, 68, 0.1) !important;
@@ -161,7 +193,7 @@
     }
 
     /* Hide base UI elements */
-    .main-header, .main-sidebar, .main-footer { display: none !important; }
+    .main-header, .main-sidebar, .main-footer, .content-header { display: none !important; }
     .content-wrapper { margin-left: 0 !important; background: transparent !important; }
 </style>
 {% endblock %}

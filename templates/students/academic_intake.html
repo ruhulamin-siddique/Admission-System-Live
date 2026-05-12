@@ -27,6 +27,8 @@
         width: 45px;
         font-weight: 700;
     }
+    .dark-mode .card-header { color: #f1f5f9 !important; }
+    .dark-mode .table-premium thead th { background-color: #0f172a !important; color: #94a3b8 !important; }
 </style>
 {% endblock %}
 
@@ -96,7 +98,7 @@
                         <tbody>
                             {% for row in report_data %}
                             <tr>
-                                <td class="pl-4 font-weight-bold text-dark">{{ row.program }}</td>
+                                <td class="pl-4 font-weight-bold">{{ row.program }}</td>
                                 <!-- SSC -->
                                 <td class="text-center">
                                     <span class="badge {% if row.gpa_5_ssc > 0 %}badge-success{% else %}badge-light text-muted{% endif %} gpa-badge">{{ row.gpa_5_ssc }}</span>

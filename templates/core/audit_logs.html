@@ -85,10 +85,18 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+                <label class="small font-weight-bold text-uppercase text-muted">From Date</label>
+                <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label class="small font-weight-bold text-uppercase text-muted">To Date</label>
+                <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
+            </div>
+            <div class="col-md-2">
                 <div class="btn-group w-100">
-                    <button type="submit" class="btn btn-primary px-4 font-weight-bold">Apply Filters</button>
-                    <a href="{% url 'audit_logs' %}" class="btn btn-light border">Reset</a>
+                    <button type="submit" class="btn btn-primary px-3 font-weight-bold">Filter</button>
+                    <a href="{% url 'audit_logs' %}" class="btn btn-light border px-3">Reset</a>
                 </div>
             </div>
         </form>

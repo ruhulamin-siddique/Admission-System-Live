@@ -49,10 +49,14 @@
         new Chart(document.getElementById('waiverChart'), {
             type: 'doughnut',
             data: {
-                labels: ['Full Waiver (100% )', 'Partial Waiver', 'No Waiver'],
+                labels: ['Significant (৳5000+)', 'Other Waivers', 'No Waiver'],
                 datasets: [{
-                    data: [data.waiver_stats.full_waiver, data.waiver_stats.partial_waiver, data.waiver_stats.no_waiver],
-                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    data: [
+                        data.waiver_stats.significant_waiver, 
+                        data.waiver_stats.any_waiver - data.waiver_stats.significant_waiver, 
+                        data.waiver_stats.no_waiver
+                    ],
+                    backgroundColor: ['#10b981', '#3b82f6', '#ef4444']
                 }]
             },
             options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
@@ -65,14 +69,14 @@
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="card research-card text-center p-3">
-            <div class="stat-label">Full Waiver</div>
-            <div class="stat-value text-success">{{ data.waiver_stats.full_waiver }}</div>
+            <div class="stat-label">Waiver Recipients</div>
+            <div class="stat-value text-success">{{ data.waiver_stats.any_waiver }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card research-card text-center p-3">
             <div class="stat-label">Avg Waiver Amt</div>
-            <div class="stat-value text-primary">{{ data.waiver_stats.avg_waiver|floatformat:0|default:0 }}%</div>
+            <div class="stat-value text-primary">৳{{ data.waiver_stats.avg_waiver|floatformat:0|default:0 }}</div>
         </div>
     </div>
     <div class="col-md-6">
@@ -138,12 +142,12 @@
                 <canvas id="waiverChart" style="min-height: 300px;"></canvas>
                 <div class="mt-5">
                     <div class="callout callout-success border-left-lg">
-                        <h5>Full Support</h5>
-                        <p>{{ data.waiver_stats.full_waiver }} students are studying with 100% scholarship.</p>
+                        <h5>Financial Aid Scope</h5>
+                        <p>{{ data.waiver_stats.any_waiver }} students are currently benefiting from institutional waivers.</p>
                     </div>
                     <div class="callout callout-info border-left-lg">
-                        <h5>Institutional Investment</h5>
-                        <p>Total waiver amount granted for this cohort: <strong>{{ data.waiver_stats.total_waiver|default:0 }}</strong></p>
+                        <h5>Total Institutional Support</h5>
+                        <p>Total amount granted for this cohort: <strong>৳{{ data.waiver_stats.total_waiver|default:0 }}</strong></p>
                     </div>
                 </div>
             </div>

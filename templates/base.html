@@ -169,6 +169,32 @@
         border-color: #6c757d !important;
         color: #fff !important;
     }
+    /* Global Dark Mode Fixes for Reports */
+    .dark-mode .card, .dark-mode .info-box {
+      background-color: #1e293b !important;
+      color: #f1f5f9 !important;
+      border: 1px solid rgba(255,255,255,0.05) !important;
+    }
+    .dark-mode .text-muted { color: #94a3b8 !important; }
+    .dark-mode .table { color: #f1f5f9; }
+    .dark-mode .table-striped tbody tr:nth-of-type(odd) { background-color: rgba(255,255,255,0.02); }
+    .dark-mode .bg-light, .dark-mode .bg-white { background-color: #0f172a !important; color: #f1f5f9 !important; }
+    .dark-mode .border-light { border-color: rgba(255,255,255,0.1) !important; }
+    
+    /* Specific classes used in reports */
+    .dark-mode .quality-card, .dark-mode .report-card {
+      background-color: #1e293b !important;
+      border-color: rgba(255,255,255,0.1) !important;
+    }
+    .dark-mode .table-premium thead th {
+      background-color: #0f172a !important;
+      color: #94a3b8 !important;
+    }
+    .dark-mode .form-control {
+      background-color: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f1f5f9 !important;
+    }
   </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed {% if user.profile.theme_mode == 'dark' %}dark-mode{% endif %} {% if user.profile.navbar_fixed %}layout-navbar-fixed{% endif %}" 
@@ -426,9 +452,27 @@
           {% if can_view_reports %}
           <li class="nav-header">ACADEMIC & REPORTS</li>
           <li class="nav-item">
-            <a href="{% url 'reports_center' %}" class="nav-link {% if 'reports' in request.path %}active{% endif %}">
+            <a href="{% url 'reports_center' %}" class="nav-link {% if request.resolver_match.url_name == 'reports_center' %}active{% endif %}">
               <i class="nav-icon fas fa-chart-pie"></i>
-              <p>Reports Center</p>
+              <p>Reports Hub</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'institutional_report' %}" class="nav-link {% if request.resolver_match.url_name == 'institutional_report' %}active{% endif %}">
+              <i class="nav-icon fas fa-university"></i>
+              <p>Feeder Analysis</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'geographic_insights_v2' %}" class="nav-link {% if request.resolver_match.url_name == 'geographic_insights_v2' %}active{% endif %}">
+              <i class="nav-icon fas fa-map-marked-alt"></i>
+              <p>Geographic Outreach</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'export_center' %}" class="nav-link {% if 'export' in request.path %}active{% endif %}">
+              <i class="nav-icon fas fa-file-excel"></i>
+              <p>Dynamic Export</p>
             </a>
           </li>
           {% endif %}
@@ -480,11 +524,16 @@
           {% endif %}
 
           {% has_access 'security' 'manage_users' as can_manage_users %}
-          {% if can_manage_users %}
+          {% has_access 'security' 'manage_roles' as can_manage_roles %}
+          {% has_access 'security' 'manage_academic_settings' as can_manage_academic %}
+          {% has_access 'security' 'manage_settings' as can_manage_global %}
+
+          {% if can_manage_users or can_manage_roles or can_manage_academic or can_manage_global %}
           <li class="nav-header">SYSTEM</li>
           
-          <li class="nav-item {% if 'security' in request.path %}menu-open{% endif %}">
-            <a href="#" class="nav-link {% if 'security' in request.path %}active{% endif %}">
+          {% if can_manage_users or can_manage_roles %}
+          <li class="nav-item {% if 'security' in request.path and not 'settings' in request.path %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if 'security' in request.path and not 'settings' in request.path %}active{% endif %}">
               <i class="nav-icon fas fa-user-shield"></i>
               <p>
                 Staff & Security
@@ -492,18 +541,22 @@
               </p>
             </a>
             <ul class="nav nav-treeview">
+              {% if can_manage_users %}
               <li class="nav-item">
                 <a href="{% url 'user_management' %}" class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Staff Access</p>
                 </a>
               </li>
+              {% endif %}
+              {% if can_manage_roles %}
               <li class="nav-item">
                 <a href="{% url 'role_management' %}" class="nav-link {% if request.resolver_match.url_name == 'role_management' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Role Matrix</p>
                 </a>
               </li>
+              {% endif %}
               {% has_access 'security' 'manage_api' as can_manage_api %}
               {% if can_manage_api %}
               <li class="nav-item">
@@ -515,18 +568,25 @@
               {% endif %}
             </ul>
           </li>
+          {% endif %}
+
+          {% if can_manage_academic %}
           <li class="nav-item">
             <a href="{% url 'academic_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_settings' %}active{% endif %}">
               <i class="nav-icon fas fa-graduation-cap"></i>
               <p>Academic Settings</p>
             </a>
           </li>
+          {% endif %}
+
+          {% if can_manage_global %}
           <li class="nav-item">
             <a href="{% url 'system_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'system_settings' %}active{% endif %}">
               <i class="nav-icon fas fa-sliders-h"></i>
               <p>Global Settings</p>
             </a>
           </li>
+          {% endif %}
           {% endif %}
 
           {% if user.is_superuser %}

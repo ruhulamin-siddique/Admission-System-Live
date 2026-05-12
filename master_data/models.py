@@ -18,7 +18,7 @@ class Program(models.Model):
     ]
     name = models.CharField(max_length=150, unique=True, help_text="Full Name (e.g., Computer Science and Engineering)")
     short_name = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Short Name (e.g., CSE)")
-    ugc_code = models.CharField(max_length=10, unique=True, help_text="UGC Subject Code (e.g., 01 for CSE)")
+    ugc_code = models.CharField(max_length=10, help_text="UGC Subject Code (e.g., 01 for CSE)")
     cluster = models.ForeignKey(Cluster, on_delete=models.PROTECT, related_name='programs')
     level_code = models.CharField(max_length=1, choices=LEVEL_CHOICES, default='1', verbose_name="Program Type")
     sort_order = models.IntegerField(default=0, help_text="Higher numbers appear first")
@@ -34,6 +34,7 @@ class Program(models.Model):
 
     class Meta:
         ordering = ['-sort_order', 'name']
+        unique_together = ('cluster', 'ugc_code', 'level_code')
 
 class Hall(models.Model):
     full_name = models.CharField(max_length=150, unique=True, null=True, blank=True)

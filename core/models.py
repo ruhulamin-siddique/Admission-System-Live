@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.contrib.auth.signals import user_logged_in, user_logged_out
 
 class Role(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -80,7 +81,35 @@ class SystemSettings(models.Model):
     sms_sender_id = models.CharField(max_length=100, blank=True, null=True)
     sms_api_url = models.URLField(max_length=500, blank=True, null=True, help_text="The endpoint for the SMS gateway (e.g. BulkSMSBD, GreenWeb)")
     sms_is_active = models.BooleanField(default=False)
-    
+
+    ID_MODE_CHOICES = [
+        ('auto',      'Auto — System generates full 16-digit ID automatically'),
+        ('semi_auto', 'Semi-Auto — System generates prefix; staff enters last 3 serial digits'),
+        ('manual',    'Manual — Staff types the complete 16-digit UGC ID'),
+    ]
+    id_mode = models.CharField(
+        max_length=10,
+        choices=ID_MODE_CHOICES,
+        default='semi_auto',
+        help_text="Controls how the Student ID is generated on the admission form.",
+    )
+
+    @property
+    def auto_id_generation(self):
+        """Backward-compatible property — True only in full-auto mode."""
+        return self.id_mode == 'auto'
+
+    @auto_id_generation.setter
+    def auto_id_generation(self, value):
+        """Backward-compatible setter — maps boolean to id_mode."""
+        if value:
+            self.id_mode = 'auto'
+        else:
+            # If someone explicitly disables auto, we go to manual
+            if self.id_mode == 'auto':
+                self.id_mode = 'manual'
+
+
     @property
     def logo_url(self):
         if self.institution_logo:
@@ -141,3 +170,14 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
         instance.profile.save()
     except Exception:
         pass
+
+@receiver(user_logged_in)
+def log_user_login(sender, request, user, **kwargs):
+    from .utils import log_activity
+    log_activity(request, 'LOGIN', 'security', f'User {user.username} logged in successfully')
+
+@receiver(user_logged_out)
+def log_user_logout(sender, request, user, **kwargs):
+    if user:
+        from .utils import log_activity
+        log_activity(request, 'LOGOUT', 'security', f'User {user.username} logged out')

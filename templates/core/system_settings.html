@@ -6,61 +6,7 @@
 {% block content %}
 <div class="row">
     <div class="col-md-6">
-        <div class="card card-outline card-primary shadow-lg border-0" style="border-radius: 12px;">
-            <div class="card-header bg-white">
-                <h3 class="card-title font-weight-bold">
-                    <i class="fas fa-palette mr-2 text-primary"></i> Organization Branding
-                </h3>
-            </div>
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label>Institution Name</label>
-                        <input type="text" name="institution_name" class="form-control" value="{{ settings.institution_name }}" required>
-                        <small class="text-muted">This name appears on the login screen and sidebar.</small>
-                    </div>
-                    <div class="form-group">
-                        <label>Institutional Logo (Upload File)</label>
-                        <div class="custom-file">
-                            <input type="file" name="institution_logo" class="custom-file-input" id="logoUpload" accept="image/*">
-                            <label class="custom-file-label" for="logoUpload">Choose file</label>
-                        </div>
-                        <small class="text-muted">Recommended: Square or horizontal PNG with transparent background.</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Institutional Favicon/Icon (Upload File)</label>
-                        <div class="custom-file">
-                            <input type="file" name="institution_favicon" class="custom-file-input" id="faviconUpload" accept="image/*">
-                            <label class="custom-file-label" for="faviconUpload">Choose file</label>
-                        </div>
-                        <small class="text-muted">This icon appears in the browser tab. Recommended: 32x32 or 64x64 PNG.</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Logo URL (Fallback Link)</label>
-                        <input type="url" name="institution_logo_url" class="form-control" value="{{ settings.institution_logo_url|default:'' }}" placeholder="https://example.com/logo.png">
-                        <small class="text-muted">Optional: Use if no file is uploaded above.</small>
-                    </div>
-                    <div class="form-group">
-                        <label>Primary Theme Color</label>
-                        <div class="input-group my-colorpicker2">
-                            <input type="color" name="theme_color" class="form-control" value="{{ settings.theme_color }}" style="height: 38px; padding: 2px;">
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary px-5 shadow-sm">
-                            <i class="fas fa-save mr-2"></i> Save Branding Settings
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
+        <!-- 1. Live Preview (Top Left) -->
         <div class="card card-outline card-info shadow-sm mb-4" style="border-radius: 12px;">
             <div class="card-header bg-white">
                 <h3 class="card-title font-weight-bold"><i class="fas fa-eye mr-2 text-info"></i> Live Preview</h3>
@@ -80,10 +26,101 @@
                         </div>
                     </div>
                 </div>
-                <h5 style="color: {{ settings.theme_color }}; font-weight: 700;">{{ settings.institution_name }}</h5>
+                <h5 id="preview-name" style="color: {{ settings.theme_color }}; font-weight: 700;">{{ settings.institution_name }}</h5>
+                <p class="small text-muted mb-0">Branding preview based on current settings.</p>
             </div>
         </div>
 
+        <!-- 2. Organization Branding -->
+        <div class="card card-outline card-primary shadow-lg border-0 mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-palette mr-2 text-primary"></i> Organization Branding
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Institution Name <i class="fas fa-info-circle ml-1 text-info" data-toggle="tooltip" title="This name appears on the login screen and sidebar."></i></label>
+                        <input type="text" name="institution_name" id="institution_name_input" class="form-control" value="{{ settings.institution_name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Institutional Logo <i class="fas fa-info-circle ml-1 text-info" data-toggle="tooltip" title="Recommended: Square or horizontal PNG with transparent background."></i></label>
+                        <div class="custom-file">
+                            <input type="file" name="institution_logo" class="custom-file-input" id="logoUpload" accept="image/*">
+                            <label class="custom-file-label" for="logoUpload">Choose file</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Favicon / Tab Icon <i class="fas fa-info-circle ml-1 text-info" data-toggle="tooltip" title="This icon appears in the browser tab. Recommended: 32x32 or 64x64 PNG."></i></label>
+                        <div class="custom-file">
+                            <input type="file" name="institution_favicon" class="custom-file-input" id="faviconUpload" accept="image/*">
+                            <label class="custom-file-label" for="faviconUpload">Choose file</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Logo URL <i class="fas fa-info-circle ml-1 text-info" data-toggle="tooltip" title="Optional fallback: Use if no file is uploaded above."></i></label>
+                        <input type="url" name="institution_logo_url" class="form-control" value="{{ settings.institution_logo_url|default:'' }}" placeholder="https://example.com/logo.png">
+                    </div>
+                    <div class="form-group">
+                        <label>Primary Theme Color</label>
+                        <div class="input-group">
+                            <input type="color" name="theme_color" id="theme_color_input" class="form-control" value="{{ settings.theme_color }}" style="height: 38px; padding: 2px;">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary btn-block shadow-sm font-weight-bold">
+                            <i class="fas fa-save mr-2"></i> Save Branding Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <!-- 3. System Automation -->
+        <div class="card card-outline card-primary shadow-lg border-0 mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-robot mr-2 text-primary"></i> System Automation
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="institution_name" value="{{ settings.institution_name }}">
+                    <input type="hidden" name="theme_color" value="{{ settings.theme_color }}">
+                    
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold"><i class="fas fa-id-card mr-1"></i> ID Generation Mode <i class="fas fa-info-circle ml-1 text-info" data-toggle="tooltip" title="Semi-Auto is recommended for matching physical registers."></i></label>
+                        <select name="id_mode" class="form-control custom-select">
+                            <option value="auto" {% if settings.id_mode == 'auto' %}selected{% endif %}>
+                                Full-Auto (System generated)
+                            </option>
+                            <option value="semi_auto" {% if settings.id_mode == 'semi_auto' %}selected{% endif %}>
+                                Semi-Auto (Prefix + Manual Serial)
+                            </option>
+                            <option value="manual" {% if settings.id_mode == 'manual' %}selected{% endif %}>
+                                Full-Manual (Staff typed)
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" name="action_automation" value="1" class="btn btn-primary btn-block shadow-sm font-weight-bold">
+                            <i class="fas fa-sync-alt mr-2"></i> Update Automation Mode
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 4. Global SMS API Gateway -->
         <div class="card card-outline card-success shadow-lg border-0" style="border-radius: 12px;">
             <div class="card-header bg-white">
                 <h3 class="card-title font-weight-bold">
@@ -98,8 +135,7 @@
                     
                     <div class="custom-control custom-switch mb-4">
                         <input type="checkbox" class="custom-control-input" id="smsActiveSwitch" name="sms_is_active" {% if settings.sms_is_active %}checked{% endif %}>
-                        <label class="custom-control-label font-weight-bold" for="smsActiveSwitch">Enable Automated Notifications</label>
-                        <p class="small text-muted mb-0">When enabled, the system will send live SMS for admissions and department changes.</p>
+                        <label class="custom-control-label font-weight-bold" for="smsActiveSwitch">Enable Automated Notifications <i class="fas fa-info-circle ml-1 text-info" data-toggle="tooltip" title="When enabled, the system will send live SMS for admissions and department changes."></i></label>
                     </div>
 
                     <div class="form-group">
@@ -127,7 +163,7 @@
                     </div>
 
                     <div class="mt-4">
-                        <button type="submit" class="btn btn-success btn-block shadow-sm font-weight-bold">
+                        <button type="submit" name="action_sms" value="1" class="btn btn-success btn-block shadow-sm font-weight-bold">
                             <i class="fas fa-check-circle mr-2"></i> Update SMS Configuration
                         </button>
                     </div>
@@ -160,6 +196,20 @@
             }
             reader.readAsDataURL(input.files[0]);
         }
+    });
+    
+    // Live text/color preview
+    $('#institution_name_input').on('input', function() {
+        $('#preview-name').text($(this).val() || 'Institution Name');
+    });
+    
+    $('#theme_color_input').on('input', function() {
+        $('#preview-name').css('color', $(this).val());
+    });
+
+    // Initialize tooltips
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
     });
 </script>
 {% endblock %}

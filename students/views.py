@@ -18,6 +18,13 @@ from urllib.parse import urlencode
 from master_data.models import Program
 from .models import Student, ProgramChangeHistory, SMSHistory, AdmissionStatusHistory
 from .geo_data import BANGLADESH_GEO
+from .utils import (
+    generate_next_ugc_id,
+    generate_ugc_prefix, 
+    decompose_ugc_id, 
+    import_students_from_excel, 
+    execute_program_change_web
+)
 import json
 import os
 from django.conf import settings
@@ -83,18 +90,26 @@ def dashboard(request):
     _start_of_month = _today.replace(day=1)
     _twelve_months_ago = _today - timezone.timedelta(days=365)
 
-    # Monthly Admission Trends (Last 12 months) based on Admission Date
-    monthly_data = Student.objects.filter(admission_date__gte=_twelve_months_ago) \
-        .annotate(month=TruncMonth('admission_date')) \
-        .values('month') \
-        .annotate(count=Count('student_id')) \
-        .order_by('month')
-
-    # Format monthly data for Chart.js (YYYY-MM)
-    monthly_admissions = [
-        {'month': entry['month'].strftime('%Y-%m') if entry['month'] else 'Unknown', 'count': entry['count']}
-        for entry in monthly_data
-    ]
+    # Intake-wise Analysis (Last 7 Intakes)
+    import re
+    all_batches_raw = list(Student.objects.values_list('batch', flat=True).distinct().exclude(batch=''))
+    
+    # Parse batches and sort them numerically
+    batch_objects = []
+    for b in all_batches_raw:
+        nums = re.findall(r'\d+', b)
+        if nums:
+            batch_objects.append({'name': b, 'num': int(nums[0])})
+    
+    # Sort by number descending and take last 7
+    batch_objects.sort(key=lambda x: x['num'], reverse=True)
+    top_7_batches = batch_objects[:7]
+    top_7_batches.reverse() # Show in chronological order on chart
+    
+    intake_trends = []
+    for b_obj in top_7_batches:
+        count = Student.objects.filter(batch=b_obj['name']).count()
+        intake_trends.append({'batch': b_obj['name'], 'count': count})
 
     # Fetch Program Name to Short Name mapping for tooltips and display
     program_map = {p.name: p.short_name or p.name for p in Program.objects.all()}
@@ -272,7 +287,6 @@ def dashboard(request):
         'female_students': Student.objects.filter(gender='Female').count(),
         'by_program': program_dist[:5],
         'recent_students': recent_students,
-        'monthly_admissions': monthly_admissions,
         'program_chart': program_dist,
         'gender_chart': gender_chart_data,
         'cancelled_admissions': cancelled_admissions,
@@ -311,7 +325,7 @@ def dashboard(request):
 
     return render(request, 'students/dashboard.html', {
         'stats': stats,
-        'monthly_admissions': json.dumps(monthly_admissions),
+        'intake_trends': json.dumps(intake_trends),
         'program_dist': json.dumps(program_dist),
         'gender_chart_data': json.dumps(gender_chart_data),
         'financials': financials,
@@ -337,8 +351,8 @@ DIRECTORY_FILTER_FIELDS = (
     'sort',
 )
 DIRECTORY_SORT_OPTIONS = (
-    ('dept_batch_serial', 'Department -> Latest Batch -> ID Serial'),
-    ('batch_dept_serial', 'Latest Batch -> Department -> ID Serial'),
+    ('dept_batch_serial', 'Dept > Batch > Serial'),
+    ('batch_dept_serial', 'Batch > Dept > Serial'),
 )
 
 
@@ -911,18 +925,45 @@ def add_student(request):
         form = StudentForm(request.POST)
         if form.is_valid():
             student = form.save(commit=False)
+
+            # --- ID Assignment: branch on id_mode ---
+            from core.models import SystemSettings
+            sys = SystemSettings.objects.get_or_create(id=1)[0]
+
             if not student.student_id:
-                data = request.POST
-                new_id = generate_next_ugc_id(
-                    admission_year=data.get('admission_year'),
-                    semester_name=data.get('semester_name'),
-                    hall_name=data.get('hall_attached'),
-                    program_name=data.get('program'),
-                    cluster_name=data.get('cluster'),
-                    program_level=data.get('program_type', 'Bachelor'),
-                    subject_code=data.get('subject_code', '01')
-                )
-                student.student_id = new_id
+                if sys.id_mode == 'semi_auto':
+                    # JS writes assembled ID into hidden student_id field before submit
+                    # If still blank (JS disabled / edge case), fall through to auto
+                    serial_input = str(request.POST.get('student_id_serial', '')).strip()
+                    prefix = generate_ugc_prefix(
+                        admission_year=request.POST.get('admission_year'),
+                        semester_name=request.POST.get('semester_name'),
+                        hall_name=request.POST.get('hall_attached'),
+                        program_name=request.POST.get('program'),
+                        cluster_name=request.POST.get('cluster'),
+                        program_level=request.POST.get('program_type', 'Bachelor'),
+                    )
+                    if serial_input and serial_input.isdigit() and len(serial_input) == 3:
+                        student.student_id = prefix + serial_input
+                    else:
+                        student.student_id = generate_next_ugc_id(
+                            admission_year=request.POST.get('admission_year'),
+                            semester_name=request.POST.get('semester_name'),
+                            hall_name=request.POST.get('hall_attached'),
+                            program_name=request.POST.get('program'),
+                            cluster_name=request.POST.get('cluster'),
+                            program_level=request.POST.get('program_type', 'Bachelor'),
+                        )
+                elif sys.id_mode == 'auto':
+                    student.student_id = generate_next_ugc_id(
+                        admission_year=request.POST.get('admission_year'),
+                        semester_name=request.POST.get('semester_name'),
+                        hall_name=request.POST.get('hall_attached'),
+                        program_name=request.POST.get('program'),
+                        cluster_name=request.POST.get('cluster'),
+                        program_level=request.POST.get('program_type', 'Bachelor'),
+                    )
+                # manual mode: ID must have been submitted via form field (validated by clean_student_id)
             
             # Handle Photo Upload
             photo_path = _handle_student_photo(request, student)
@@ -963,7 +1004,7 @@ def add_student(request):
     from master_data.models import Program
     programs = Program.objects.all()
     program_mapping = {
-        p.name: {
+        (p.short_name if p.short_name else p.name): {
             'cluster': p.cluster.name,
             'type': p.get_level_code_display()
         } for p in programs
@@ -1039,7 +1080,7 @@ def edit_student(request, student_id):
     from master_data.models import Program
     programs = Program.objects.all()
     program_mapping = {
-        p.name: {
+        (p.short_name if p.short_name else p.name): {
             'cluster': p.cluster.name,
             'type': p.get_level_code_display()
         } for p in programs
@@ -1055,27 +1096,39 @@ def edit_student(request, student_id):
 
 @require_access('students', 'add_student')
 def api_preview_id(request):
-    """Helper view for HTMX to suggest the next available ID with breakdown."""
+    """
+    Returns the 13-char UGC prefix for the semi-auto ID form.
+    The user will supply the remaining 3 serial digits manually.
+    """
     try:
-        from .utils import decompose_ugc_id
-        
-        new_id = generate_next_ugc_id(
+        prefix = generate_ugc_prefix(
             admission_year=request.GET.get('admission_year', 2026),
             semester_name=request.GET.get('semester_name', 'Spring'),
             hall_name=request.GET.get('hall_name', 'Non-Residential'),
             program_name=request.GET.get('program', 'CSE'),
             cluster_name=request.GET.get('cluster', 'Engineering & Technology'),
             program_level=request.GET.get('program_type', 'Bachelor'),
-            mba_credits=int(request.GET.get('mba_credits', 0)) if request.GET.get('mba_credits') else None
         )
-        
-        components = decompose_ugc_id(new_id)
-        return JsonResponse({
-            'suggested_id': new_id,
-            'components': components
-        })
+        return JsonResponse({'prefix': prefix})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_access('students', 'add_student')
+def api_check_id_duplicate(request):
+    """
+    Checks whether a fully assembled 16-digit student ID already exists.
+    Called by JS on the admission form after the user enters their serial digits.
+    Returns: {"exists": bool, "name": <student name if found>}
+    """
+    student_id = request.GET.get('student_id', '').strip()
+    if not student_id or len(student_id) != 16:
+        return JsonResponse({'exists': False, 'error': 'Invalid ID length'}, status=400)
+    from .models import Student
+    student = Student.objects.filter(student_id=student_id).only('student_name').first()
+    if student:
+        return JsonResponse({'exists': True, 'name': student.student_name})
+    return JsonResponse({'exists': False})
 
 @require_access('students', 'bulk_import')
 def import_students(request):
@@ -1234,10 +1287,10 @@ def change_program(request, student_id):
     programs = Program.objects.all().order_by('name')
     clusters = Cluster.objects.all().order_by('name')
     semesters = Semester.objects.all().order_by('name')
-    halls = Hall.objects.all().order_by('name')
+    halls = Hall.objects.all().order_by('full_name', 'short_name')
     
     program_mapping = {
-        p.name: {
+        (p.short_name if p.short_name else p.name): {
             'cluster': p.cluster.name,
             'type': p.get_level_code_display()
         } for p in programs
@@ -1270,15 +1323,25 @@ def academic_intake_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year_filter = request.GET.get('year', latest_year)
+    year_filter = request.GET.get('year')
     batch_filter = request.GET.get('batch')
     program_filter = request.GET.get('program')
     
+    # Default to latest year only if no other filters are applied
+    if year_filter == '': year_filter = None
+    if batch_filter == '': batch_filter = None
+    if program_filter == '': program_filter = None
+
+    if year_filter is None and batch_filter is None and program_filter is None:
+        year_filter = latest_year
+    
     students = Student.objects.exclude(program__isnull=True).exclude(program='')
-    if year_filter:
-        students = students.filter(admission_year=year_filter)
+    
     if batch_filter:
         students = students.filter(batch=batch_filter)
+    elif year_filter:
+        students = students.filter(admission_year=year_filter)
+        
     if program_filter:
         students = students.filter(program=program_filter)
         
@@ -1518,9 +1581,17 @@ def institutional_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     batch = request.GET.get('batch')
     program = request.GET.get('program')
+
+    # Normalize empty strings and apply default logic
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_institutional_intelligence(year=year, batch=batch, program=program)
     batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
@@ -1543,9 +1614,16 @@ def geographic_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     batch = request.GET.get('batch')
     program = request.GET.get('program')
+
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_geographic_insights(year=year, batch=batch, program=program)
     batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
@@ -1568,9 +1646,16 @@ def socio_economic_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     batch = request.GET.get('batch')
     program = request.GET.get('program')
+
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_research_demographics(year=year, batch=batch, program=program)
     batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
@@ -1593,9 +1678,16 @@ def subject_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     program = request.GET.get('program')
     batch = request.GET.get('batch')
+
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_subject_performance(year=year, program=program, batch=batch)
     batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
@@ -1618,9 +1710,16 @@ def reference_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     program = request.GET.get('program')
     batch = request.GET.get('batch')
+
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_reference_intelligence(year=year, program=program, batch=batch)
     programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
@@ -1643,9 +1742,16 @@ def financial_intelligence_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     program = request.GET.get('program')
     batch = request.GET.get('batch')
+
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_financial_intelligence(year=year, program=program, batch=batch)
     programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
@@ -1668,9 +1774,16 @@ def diversity_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     program = request.GET.get('program')
     batch = request.GET.get('batch')
+
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_diversity_intelligence(year=year, program=program, batch=batch)
     programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
@@ -1693,9 +1806,16 @@ def age_gap_report(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     program = request.GET.get('program')
     batch = request.GET.get('batch')
+
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_age_gap_analysis(year=year, program=program, batch=batch)
     programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
@@ -1721,29 +1841,7 @@ def migration_report(request):
         'data_json': json.dumps(data)
     })
 
-@require_access('reports', 'view_analytics')
-def subject_report(request):
-    """Science subject performance analysis (Physics, Chemistry, Math)."""
-    year = request.GET.get('year')
-    program = request.GET.get('program')
-    batch = request.GET.get('batch')
-    
-    data = get_subject_performance(year=year, program=program, batch=batch)
-    
-    years = Student.objects.values_list('admission_year', flat=True).distinct().order_by('-admission_year')
-    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
-    batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
-    
-    return render(request, 'students/reports/subject_performance.html', {
-        'data': data,
-        'data_json': json.dumps(data),
-        'years': [y for y in years if y],
-        'programs': list(programs),
-        'batches': list(batches),
-        'selected_year': year,
-        'selected_program': program,
-        'selected_batch': batch
-    })
+
 
 @require_access('reports', 'view_analytics')
 def reports_center(request):
@@ -1769,9 +1867,16 @@ def analytics_dashboard(request):
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
     latest_year = years[0] if years.exists() else None
     
-    year = request.GET.get('year', latest_year)
+    year = request.GET.get('year')
     program = request.GET.get('program')
     batch = request.GET.get('batch')
+
+    if year == '': year = None
+    if batch == '': batch = None
+    if program == '': program = None
+
+    if year is None and batch is None and program is None:
+        year = latest_year
     
     data = get_academic_analytics(year=year, program=program, batch=batch)
     programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
@@ -1786,6 +1891,17 @@ def analytics_dashboard(request):
         'years': list(years),
         'programs': list(programs),
         'batches': list(batches)
+    })
+
+@require_access('reports', 'view_analytics')
+def intake_performance_report(request):
+    """Deep-dive performance report across historical intakes."""
+    from .reports import get_intake_performance_analysis
+    analysis_data = get_intake_performance_analysis()
+    
+    return render(request, 'students/reports/intake_performance.html', {
+        'analysis_data': analysis_data,
+        'analysis_json': json.dumps(analysis_data)
     })
 
 @login_required

@@ -154,68 +154,55 @@ class StudentForm(forms.ModelForm):
                  choices=[(y.year, y.year) for y in active_years]
              )
 
+        # Handle Manual ID vs Auto ID Mode
+        from core.models import SystemSettings
+        sys_settings, _ = SystemSettings.objects.get_or_create(id=1)
+        if not sys_settings.auto_id_generation:
+            # Unlock ID field for manual entry
+            self.fields['student_id'].widget.attrs.pop('readonly', None)
+            self.fields['student_id'].widget.attrs['placeholder'] = 'Enter 16-digit UGC ID...'
+            self.fields['student_id'].help_text = "Manual Entry Mode Active. Ensure ID follows UGC protocol."
+
         # Mandatory Contact Fields
         self.fields['student_mobile'].required = True
         self.fields['father_mobile'].required = True
         self.fields['mother_mobile'].required = True
-        
-        # Optional/Removed Mandatory Fields
-        self.fields['student_email'].required = False
-        self.fields['blood_group'].required = False
-        
-        # Mandatory Biographical Fields
-        self.fields['gender'].required = True
-        self.fields['dob'].required = True
-        self.fields['religion'].required = True
-        
-        # Mandatory Family Fields
-        self.fields['father_name'].required = True
-        self.fields['mother_name'].required = True
-        
-        # Mandatory Academic Fields (UGC Requirements)
-        self.fields['program'].required = True
-        self.fields['cluster'].required = True
-        self.fields['admission_year'].required = True
-        self.fields['semester_name'].required = True
-        self.fields['hall_attached'].required = True
-        self.fields['program_type'].required = True
-        self.fields['batch'].required = True
-        
-        # Mandatory SSC/Equivalent Fields
-        self.fields['ssc_school'].required = True
-        self.fields['ssc_board'].required = True
-        self.fields['ssc_roll'].required = True
-        self.fields['ssc_gpa'].required = True
-        
-        # Initialize Address Choices
-        from .geo_data import BANGLADESH_GEO
-        divisions = [('', 'Select Division')] + [(d, d) for d in BANGLADESH_GEO.keys()]
-        self.fields['present_division'].widget.choices = divisions
-        self.fields['permanent_division'].widget.choices = divisions
-        
-        # Districts and Upazilas will be populated via AJAX/JS, 
-        # but we need to ensure the posted values are valid during form validation.
-        # We'll allow any choice for now and handle specific validation if needed.
-        self.fields['present_district'].widget.choices = [('', 'Select District')]
-        self.fields['present_upazila'].widget.choices = [('', 'Select Upazila')]
-        self.fields['permanent_district'].widget.choices = [('', 'Select District')]
-        self.fields['permanent_upazila'].widget.choices = [('', 'Select Upazila')]
 
-        # If instance exists (Edit mode), populate the current choices to avoid validation errors
-        if self.instance.pk:
-            if self.instance.present_division:
-                districts = BANGLADESH_GEO.get(self.instance.present_division, {})
-                self.fields['present_district'].widget.choices = [('', 'Select District')] + [(d, d) for d in districts.keys()]
-                if self.instance.present_district:
-                    upazilas = districts.get(self.instance.present_district, [])
-                    self.fields['present_upazila'].widget.choices = [('', 'Select Upazila')] + [(u, u) for u in upazilas]
-            
-            if self.instance.permanent_division:
-                districts = BANGLADESH_GEO.get(self.instance.permanent_division, {})
-                self.fields['permanent_district'].widget.choices = [('', 'Select District')] + [(d, d) for d in districts.keys()]
-                if self.instance.permanent_district:
-                    upazilas = districts.get(self.instance.permanent_district, [])
-                    self.fields['permanent_upazila'].widget.choices = [('', 'Select Upazila')] + [(u, u) for u in upazilas]
+    def clean_student_id(self):
+        student_id = self.cleaned_data.get('student_id')
+        from core.models import SystemSettings
+        sys_settings = SystemSettings.objects.get_or_create(id=1)[0]
+        id_mode = sys_settings.id_mode  # 'auto' | 'semi_auto' | 'manual'
+
+        if id_mode == 'manual':
+            # Full manual: must have a valid 16-digit ID supplied
+            if not student_id:
+                raise forms.ValidationError("Student ID is required in manual mode.")
+            student_id = student_id.strip()
+            if len(student_id) != 16:
+                raise forms.ValidationError(f"Invalid length ({len(student_id)}). Must be exactly 16 digits.")
+            if not student_id.startswith("080"):
+                raise forms.ValidationError("ID must start with university code '080'.")
+            if not student_id.isdigit():
+                raise forms.ValidationError("ID must contain only digits.")
+            from .models import Student
+            if Student.objects.filter(student_id=student_id).exclude(pk=self.instance.pk).exists():
+                raise forms.ValidationError(f"ID {student_id} is already enrolled. Choose another.")
+
+        elif id_mode == 'semi_auto':
+            # Semi-auto: JS assembles full ID into hidden field — validate if present
+            if student_id:
+                student_id = student_id.strip()
+                if len(student_id) != 16:
+                    raise forms.ValidationError(f"Invalid assembled ID length ({len(student_id)}). Expected 16 digits.")
+                if not student_id.startswith("080") or not student_id.isdigit():
+                    raise forms.ValidationError("Assembled ID is malformed. Please re-select fields and re-enter the serial.")
+                from .models import Student
+                if Student.objects.filter(student_id=student_id).exclude(pk=self.instance.pk).exists():
+                    raise forms.ValidationError(f"ID {student_id} is a duplicate. Use a different serial number.")
+
+        # auto mode: ID is blank here; view will generate it after form.save(commit=False)
+        return student_id
 
     def clean_national_id(self):
         nid = self.cleaned_data.get('national_id')

@@ -3,6 +3,28 @@
 {% block title %}Profile: {{ student.student_name }} | Bangladesh Army University of Science and Technology{% endblock %}
 {% block page_title %}Student Profile View{% endblock %}
 
+{% block extra_css %}
+<style>
+    body.dark-mode .card { background: #1e293b; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .nav-pills .nav-link { color: #94a3b8; }
+    body.dark-mode .nav-pills .nav-link.active { background: #38bdf8; color: #0f172a; }
+    body.dark-mode .list-group-item { background: transparent; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .text-muted { color: #94a3b8 !important; }
+    body.dark-mode .table td { color: #cbd5e1; border-color: #334155; }
+    body.dark-mode .text-primary { color: #38bdf8 !important; }
+    body.dark-mode .border-bottom { border-bottom-color: #334155 !important; }
+    body.dark-mode .bg-light { background: #0f172a !important; }
+    body.dark-mode .timeline::before { background: #334155; }
+    body.dark-mode .timeline-item { background: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+    body.dark-mode .timeline-header { color: #f8fafc !important; border-bottom-color: #334155 !important; }
+    body.dark-mode .timeline-body { color: #cbd5e1 !important; }
+    body.dark-mode .small-box { box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    body.dark-mode .card-outline.card-primary { border-top-color: #38bdf8; }
+    body.dark-mode .card-outline.card-info { border-top-color: #0ea5e9; }
+    body.dark-mode .text-dark { color: #f8fafc !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Profile Header Actions -->
 <div class="row mb-4">
@@ -210,8 +232,8 @@
                             </div>
                             <div class="col-lg-3 col-6">
                                 <div class="small-box bg-success">
-                                    <div class="inner"><h3>{{ student.waiver }}%</h3><p>Waiver</p></div>
-                                    <div class="icon"><i class="fas fa-percent"></i></div>
+                                    <div class="inner"><h3>৳{{ student.waiver|default:"0" }}</h3><p>Waiver Amount</p></div>
+                                    <div class="icon"><i class="fas fa-hand-holding-dollar"></i></div>
                                 </div>
                             </div>
                         </div>

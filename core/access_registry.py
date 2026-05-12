@@ -57,6 +57,7 @@ ACCESS_REGISTRY = {
             "manage_roles": ("Manage Roles & Permissions", "Define user roles and assign registry tasks to them."),
             "manage_users": ("Manage System Users", "Create and manage system login accounts and their roles."),
             "manage_settings": ("Manage System Branding", "Update institutional name, logo, and theme colors."),
+            "manage_academic_settings": ("Manage Academic Master Data", "Configure Programs, Halls, Batches, and Session settings."),
             "manage_api": ("Manage External API", "Issue API credentials and inspect external request audit logs."),
         }
     }

@@ -32,6 +32,17 @@
 
     .migration-divider { display: flex; align-items: center; justify-content: center; padding: 2rem 0; }
     .arrow-icon { width: 50px; height: 50px; border-radius: 50%; background: #6610f2; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 10px rgba(102, 16, 242, 0.3); }
+
+    /* Dark Mode Overrides */
+    body.dark-mode .migration-card { background: #1e293b; border-color: #334155; }
+    body.dark-mode .context-box { background: #0f172a; border-left-color: #334155; color: #f8fafc; }
+    body.dark-mode .target-box { background: #1e293b; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .stat-value { color: #f8fafc; }
+    body.dark-mode .form-control { background: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+    body.dark-mode .card-footer { background: #0f172a !important; border-top-color: #334155 !important; }
+    body.dark-mode .text-muted { color: #94a3b8 !important; }
+    body.dark-mode .alert-info { background: #0f172a !important; color: #38bdf8 !important; }
+    body.dark-mode .id-preview-container { background: #0f172a; border: 1px solid #334155; }
 </style>
 {% endblock %}
 

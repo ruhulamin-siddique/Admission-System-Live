@@ -248,8 +248,9 @@
                     {% for task_key, task_info in module.tasks.items %}
                     <tr>
                         <td class="px-4 py-3">
-                            <div class="permission-name">{{ task_info.0 }}</div>
-                            <div class="permission-description">{{ task_info.1 }}</div>
+                            <div class="permission-name" data-toggle="tooltip" data-placement="right" title="{{ task_info.1 }}" style="cursor: help; border-bottom: 1px dotted #cbd5e1; display: inline-block;">
+                                {{ task_info.0 }}
+                            </div>
                         </td>
                         {% for role in roles %}
                         <td class="text-center align-middle">

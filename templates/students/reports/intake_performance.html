@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block title %}Intake Performance Analysis | BAUST{% endblock %}
+{% block page_title %}Comprehensive Intake Intelligence{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        const data = {{ analysis_json|safe }};
+        const labels = data.map(i => i.batch);
+        const isDarkMode = $('body').hasClass('dark-mode');
+        const textColor = isDarkMode ? '#cbd5e1' : '#333';
+        const gridColor = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: textColor, font: { weight: 'bold' } } }
+            },
+            scales: {
+                y: { ticks: { color: textColor }, grid: { color: gridColor } },
+                x: { ticks: { color: textColor }, grid: { color: gridColor } }
+            }
+        };
+
+        // 1. Enrollment Growth Trend
+        new Chart(document.getElementById('growthChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Students Enrolled',
+                    data: data.map(i => i.count),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: chartOptions
+        });
+
+        // 2. GPA Quality Trend
+        new Chart(document.getElementById('qualityChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Avg SSC GPA',
+                        data: data.map(i => i.avg_ssc),
+                        backgroundColor: '#10b981'
+                    },
+                    {
+                        label: 'Avg HSC GPA',
+                        data: data.map(i => i.avg_hsc),
+                        backgroundColor: '#f59e0b'
+                    }
+                ]
+            },
+            options: chartOptions
+        });
+
+        // 3. Gender & Merit Split (Golden A+)
+        new Chart(document.getElementById('diversityChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Female %',
+                        data: data.map(i => i.female_perc),
+                        borderColor: '#ec4899',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Golden A+ Count',
+                        data: data.map(i => i.golden_count),
+                        borderColor: '#8b5cf6',
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: chartOptions
+        });
+
+        // 4. Revenue Growth
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Gross Revenue (Est)',
+                    data: data.map(i => i.revenue),
+                    backgroundColor: '#6366f1'
+                }]
+            },
+            options: chartOptions
+        });
+    });
+</script>
+<style>
+    .metric-card { border-radius: 16px; border: none; transition: transform 0.2s; }
+    .metric-card:hover { transform: translateY(-5px); }
+    .table-rounded { border-radius: 12px; overflow: hidden; }
+    
+    body.dark-mode .card { background: #1e293b; color: #f8fafc; }
+    body.dark-mode .bg-light { background: #334155 !important; color: #cbd5e1 !important; }
+    body.dark-mode .text-dark { color: #f8fafc !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card metric-card bg-primary text-white shadow-sm">
+            <div class="card-body">
+                <h6 class="text-uppercase small font-weight-bold opacity-75">Analysis Scope</h6>
+                <h3 class="font-weight-black mb-0">Last 10 Batches</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card bg-success text-white shadow-sm">
+            <div class="card-body">
+                <h6 class="text-uppercase small font-weight-bold opacity-75">Quality Benchmark</h6>
+                <h3 class="font-weight-black mb-0">SSC & HSC Avg</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card bg-info text-white shadow-sm">
+            <div class="card-body">
+                <h6 class="text-uppercase small font-weight-bold opacity-75">Diversity Focus</h6>
+                <h3 class="font-weight-black mb-0">Gender Ratio</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card bg-indigo text-white shadow-sm" style="background-color: #6610f2;">
+            <div class="card-body">
+                <h6 class="text-uppercase small font-weight-bold opacity-75">Financial Impact</h6>
+                <h3 class="font-weight-black mb-0">Revenue Trend</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4">
+                <h5 class="font-weight-bold text-dark mb-0">Enrollment Velocity</h5>
+                <p class="text-muted small">Total admissions comparison across batches.</p>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;"><canvas id="growthChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4">
+                <h5 class="font-weight-bold text-dark mb-0">Intake Quality Trend</h5>
+                <p class="text-muted small">Average GPA (SSC/HSC) across batches.</p>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;"><canvas id="qualityChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4">
+                <h5 class="font-weight-bold text-dark mb-0">Diversity & Merit Metrics</h5>
+                <p class="text-muted small">Female student % and Golden A+ (Double 5.0) count.</p>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;"><canvas id="diversityChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4">
+                <h5 class="font-weight-bold text-dark mb-0">Financial Performance</h5>
+                <p class="text-muted small">Estimated gross revenue collection per intake.</p>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;"><canvas id="revenueChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4">
+                <h5 class="font-weight-bold text-dark mb-0">Batch Comparison Matrix</h5>
+                <p class="text-muted small">Tabular breakdown of all key performance indicators.</p>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="pl-4">Batch Name</th>
+                                <th class="text-center">Students</th>
+                                <th class="text-center">Avg SSC</th>
+                                <th class="text-center">Avg HSC</th>
+                                <th class="text-center">Female %</th>
+                                <th class="text-center">Golden A+</th>
+                                <th class="text-right pr-4">Est. Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in analysis_data %}
+                            <tr>
+                                <td class="pl-4 font-weight-bold text-dark">{{ row.batch }}</td>
+                                <td class="text-center"><span class="badge badge-pill badge-primary px-3">{{ row.count }}</span></td>
+                                <td class="text-center">{{ row.avg_ssc|floatformat:2 }}</td>
+                                <td class="text-center">{{ row.avg_hsc|floatformat:2 }}</td>
+                                <td class="text-center text-pink font-weight-bold">{{ row.female_perc }}%</td>
+                                <td class="text-center"><span class="badge badge-pill badge-warning px-2">{{ row.golden_count }}</span></td>
+                                <td class="text-right pr-4 font-weight-bold">৳ {{ row.revenue|floatformat:0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

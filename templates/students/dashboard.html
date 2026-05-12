@@ -23,6 +23,23 @@
         .periodic-count { font-size: 1.25rem !important; }
         .periodic-card-title { font-size: 0.8rem; }
     }
+
+    /* Dark Mode Overrides */
+    body.dark-mode .text-dark { color: #f8fafc !important; }
+    body.dark-mode .text-muted { color: #94a3b8 !important; }
+    body.dark-mode .bg-light { background-color: #334155 !important; }
+    body.dark-mode .card-header { border-bottom: 1px solid rgba(255,255,255,0.05) !important; }
+    body.dark-mode .list-group-item { background-color: transparent !important; color: #f8fafc !important; }
+    body.dark-mode .list-group-item:hover { background-color: rgba(255,255,255,0.05) !important; }
+    body.dark-mode .periodic-label { color: #94a3b8 !important; }
+    body.dark-mode .info-box { background: #1e293b; color: #f8fafc; }
+    body.dark-mode .modal-content { background: #1e293b; color: #f8fafc; }
+    body.dark-mode .modal-header.bg-success { background: #065f46 !important; }
+    body.dark-mode .modal-header.bg-info { background: #0e7490 !important; }
+    body.dark-mode .list-group-item .text-dark { color: #f8fafc !important; }
+    body.dark-mode .border-top { border-top: 1px solid rgba(255,255,255,0.1) !important; }
+    body.dark-mode .border-right { border-right: 1px solid rgba(255,255,255,0.1) !important; }
+    body.dark-mode .form-control-sm { background: #0f172a; color: #f8fafc; border-color: #334155; }
 </style>
 {% endblock %}
 
@@ -261,8 +278,8 @@
         <div class="card card-primary card-outline shadow-sm" style="border-radius: 12px;">
             <div class="card-header border-0 bg-transparent pt-3">
                 <div class="d-flex justify-content-between">
-                    <h3 class="card-title font-weight-bold text-dark">Admission Trends (Last 12 Months)</h3>
-                    <a href="{% url 'analytics_dashboard' %}" class="small text-primary font-weight-bold">View Full Analytics</a>
+                    <h3 class="card-title font-weight-bold text-dark">Intake Analysis (Last 7 Intakes)</h3>
+                    <a href="{% url 'intake_performance_report' %}" class="small text-primary font-weight-bold">View Full Analytics</a>
                 </div>
             </div>
             <div class="card-body">
@@ -566,15 +583,18 @@
 
 <script>
     $(function () {
-        // --- Admission Trends (Line Chart) ---
-        const trendData = {{ stats.monthly_admissions|safe }};
+        const isDarkMode = $('body').hasClass('dark-mode');
+        const chartTextColor = isDarkMode ? '#cbd5e1' : '#333';
+        const chartGridColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+        // --- Intake Analysis (Line Chart) ---
+        const trendData = {{ intake_trends|safe }};
         const trendCtx = document.getElementById('admissionTrendsChart').getContext('2d');
         new Chart(trendCtx, {
             type: 'line',
             data: {
-                labels: trendData.map(d => d.month),
+                labels: trendData.map(d => d.batch),
                 datasets: [{
-                    label: 'New Students',
+                    label: 'Students Enrolled',
                     data: trendData.map(d => d.count),
                     backgroundColor: 'rgba(60,141,188,0.2)',
                     borderColor: 'rgba(60,141,188,0.8)',
@@ -590,7 +610,7 @@
                 plugins: {
                     legend: {
                         labels: {
-                            color: '#333', // Darker legend text
+                            color: chartTextColor, // Dynamic text color
                             font: { weight: 'bold' }
                         }
                     }
@@ -598,10 +618,12 @@
                 scales: {
                     y: { 
                         beginAtZero: true, 
-                        ticks: { stepSize: 1, color: '#333' } 
+                        ticks: { stepSize: 1, color: chartTextColor },
+                        grid: { color: chartGridColor }
                     },
                     x: {
-                        ticks: { color: '#333' }
+                        ticks: { color: chartTextColor },
+                        grid: { color: chartGridColor }
                     }
                 }
             }
@@ -640,7 +662,7 @@
                             labels: { 
                                 usePointStyle: true, 
                                 padding: 20,
-                                color: '#333',
+                                color: chartTextColor,
                                 font: { weight: 'bold' }
                             }
                         }
@@ -692,7 +714,7 @@
                             position: 'bottom', 
                             labels: { 
                                 usePointStyle: true,
-                                color: '#333',
+                                color: chartTextColor,
                                 font: { weight: 'bold' }
                             } 
                         }

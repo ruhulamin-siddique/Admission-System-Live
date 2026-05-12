@@ -1,6 +1,6 @@
 import pandas as pd
 from django.db import models, transaction
-from django.db.models import Max
+from django.db.models import Max, Q
 from django.utils import timezone
 from .models import Student, ProgramChangeHistory, SMSHistory
 
@@ -23,7 +23,7 @@ def decompose_ugc_id(s_id):
     
     # Get Hall name
     hall = Hall.objects.filter(code=s_id[6:8]).first()
-    hall_name = hall.name if hall else "Unknown"
+    hall_name = (hall.full_name or hall.short_name) if hall else "Unknown"
     
     return {
         "university": s_id[0:3],      # 080
@@ -38,6 +38,57 @@ def decompose_ugc_id(s_id):
         "serial": s_id[13:16],        # 001
     }
 
+def get_canonical_program_name(raw_name):
+    """
+    Shared resolver: given any full or short program name, returns the canonical
+    stored value (short_name if available, else full name).  Used by both the
+    bulk importer and the normalize_program_names management command so they
+    always produce the same output and can never diverge.
+    """
+    from master_data.models import Program
+    if not raw_name:
+        return raw_name
+    key = str(raw_name).strip().upper()
+    for p in Program.objects.all():
+        canonical = p.short_name if p.short_name else p.name
+        if key in (p.name.upper(), (p.short_name or '').upper()):
+            return canonical
+    return raw_name  # Unrecognised — pass through unchanged
+
+
+def generate_ugc_prefix(admission_year, semester_name, hall_name, program_name, cluster_name, program_level="Bachelor"):
+    """
+    Returns only the first 13-digit UGC prefix (no serial).
+    Structure: UUU YY S HH CcssP  (13 chars)
+    Used by the semi-auto admission form so the user can supply the last 3 serial digits.
+    """
+    from django.db.models import Q
+    year_code = str(admission_year)[-2:]
+
+    sem = Semester.objects.filter(Q(name__icontains=semester_name)).first()
+    semester_code = sem.code if sem else "1"
+
+    hall = Hall.objects.filter(
+        Q(short_name__icontains=hall_name) | Q(full_name__icontains=hall_name)
+    ).first()
+    hall_code = str(hall.code if hall else "00").zfill(2)
+
+    prog = Program.objects.filter(
+        Q(name__icontains=program_name) | Q(short_name__icontains=program_name)
+    ).first()
+    if prog:
+        cluster_code = str(prog.cluster.code).zfill(2)
+        s_code       = str(prog.ugc_code).zfill(2)
+        level_code   = prog.level_code
+    else:
+        cluster_code = "05"
+        s_code       = "01"
+        level_code   = "1"
+
+    prefix = f"{UNIVERSITY_CODE}{year_code}{semester_code}{hall_code}{cluster_code}{s_code}{level_code}"
+    return prefix  # 13 characters
+
+
 def generate_next_ugc_id(admission_year, semester_name, hall_name, program_name, cluster_name, program_level="Bachelor", subject_code=None, mba_credits=None):
     """
     Dynamic Automated UGC ID Generator using Master Data.
@@ -46,16 +97,22 @@ def generate_next_ugc_id(admission_year, semester_name, hall_name, program_name,
     year_code = str(admission_year)[-2:]
     
     # 1. Get Semester Code from DB
-    sem = Semester.objects.filter(name__icontains=semester_name).first()
+    sem = Semester.objects.filter(Q(name__icontains=semester_name)).first()
     semester_code = sem.code if sem else "1"
             
     # 2. Get Hall Code from DB
-    hall = Hall.objects.filter(name__icontains=hall_name).first()
+    hall = Hall.objects.filter(
+        Q(short_name__icontains=hall_name) | 
+        Q(full_name__icontains=hall_name)
+    ).first()
     hall_code = hall.code if hall else "00"
     
     # 3. Get Cluster & Subject Codes from DB
     # We look for the Program specifically to get its UGC code and Cluster code
-    prog = Program.objects.filter(name__icontains=program_name).first()
+    prog = Program.objects.filter(
+        Q(name__icontains=program_name) | 
+        Q(short_name__icontains=program_name)
+    ).first()
     if prog:
         cluster_code = prog.cluster.code
         s_code = prog.ugc_code
@@ -68,6 +125,12 @@ def generate_next_ugc_id(admission_year, semester_name, hall_name, program_name,
     
     # Construct prefixes
     prefix_part1 = f"{UNIVERSITY_CODE}{year_code}{semester_code}" # UUU YY S (6 chars)
+    
+    # Ensure all codes are correctly padded
+    hall_code = str(hall_code).zfill(2)
+    cluster_code = str(cluster_code).zfill(2)
+    s_code = str(s_code).zfill(2)
+    
     prefix_part2 = f"{cluster_code}{s_code}{level_code}"           # CcssP (5 chars)
     
     # Full ID prefix (including hall)
@@ -136,15 +199,8 @@ def import_students_from_excel(file_obj, update_existing=False):
         updated_list = []
         processed_ids = set()
         
-        # Build program lookup table to normalize program names
+        # Build program lookup table to normalize program names (uses shared canonical resolver)
         from master_data.models import Program
-        program_lookup = {}
-        for p in Program.objects.all():
-            short_upper = (p.short_name or p.name).strip().upper()
-            long_upper = p.name.strip().upper()
-            target_name = p.short_name or p.name
-            program_lookup[short_upper] = target_name
-            program_lookup[long_upper] = target_name
         
         for index, row in df.iterrows():
             student_data = {}
@@ -201,10 +257,22 @@ def import_students_from_excel(file_obj, update_existing=False):
                 if student_data.get(name_field):
                     student_data[name_field] = str(student_data[name_field]).upper()
                     
-            # Program standardization
+            # 4. Program & Cluster normalization — use shared canonical resolver
             if student_data.get('program'):
-                raw_prog = str(student_data['program']).strip().upper()
-                student_data['program'] = program_lookup.get(raw_prog, raw_prog)
+                raw_prog = student_data['program']
+                # Get canonical name (e.g., Computer Science and Engineering -> CSE)
+                student_data['program'] = get_canonical_program_name(raw_prog)
+                
+                # Auto-fill Cluster and Type if missing, or ensure they match master data
+                from master_data.models import Program
+                key = str(raw_prog).strip().upper()
+                prog_obj = Program.objects.filter(
+                    models.Q(name__iexact=key) | models.Q(short_name__iexact=key)
+                ).first()
+                
+                if prog_obj:
+                    student_data['cluster'] = prog_obj.cluster.name
+                    student_data['program_type'] = prog_obj.get_level_code_display()
                 
             # Status standardization
             if student_data.get('admission_status'):
@@ -238,7 +306,6 @@ def import_students_from_excel(file_obj, update_existing=False):
                 Student.objects.bulk_create(
                     records_to_process,
                     update_conflicts=True,
-                    unique_fields=['student_id'],
                     update_fields=update_fields
                 )
             else:

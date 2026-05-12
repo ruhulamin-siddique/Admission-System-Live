@@ -58,8 +58,18 @@
         width: 100%; 
         font-size: 13px; 
         background: transparent; 
-        outline: none; 
-        height: 28px; 
+        outline: none;
+        height: 30px;
+    }
+
+    /* Compact UI overrides */
+    .compact-filters .filter-group {
+        margin-bottom: 6px;
+        padding: 2px 6px;
+    }
+    .compact-filters .col-md-1, .compact-filters .col-md-2, .compact-filters .col-md-3 {
+        padding-left: 5px;
+        padding-right: 5px;
     }
 
     .analytics-bar { 
@@ -653,6 +663,57 @@
         }
 
     }
+        #bulk-action-bar .btn-warning {
+            padding: 6px 12px !important;
+            font-size: 0.9rem;
+        }
+
+    }
+
+    /* Dark Mode Overrides */
+    body.dark-mode .premium-card { background: #1e293b; border-color: #334155; }
+    body.dark-mode .filter-section { background: #1e293b; border-bottom-color: #38bdf8; }
+    body.dark-mode .filter-group { border-color: #334155; }
+    body.dark-mode .filter-group label { background: #1e293b; color: #94a3b8; }
+    body.dark-mode .filter-group select, 
+    body.dark-mode .filter-group input { color: #f8fafc; }
+    body.dark-mode .filter-group select option { background: #1e293b; color: #f8fafc; }
+    body.dark-mode .analytics-bar { background: #0f172a; color: #38bdf8; }
+    body.dark-mode .total-badge { background: #334155; color: #f8fafc; box-shadow: none; }
+    body.dark-mode .table { background: transparent; }
+    body.dark-mode .table thead th { background: #0f172a; color: #94a3b8; border-color: #334155 !important; }
+    body.dark-mode .table td { background: transparent; color: #cbd5e1; border-color: #334155 !important; }
+    body.dark-mode .table-hover tbody tr:hover td { background: rgba(255,255,255,0.02) !important; }
+    body.dark-mode .directory-action-btn { background: #1e293b; border-color: #334155; color: #38bdf8; }
+    body.dark-mode .directory-action-btn:hover { background: #38bdf8; color: #0f172a; }
+    body.dark-mode .btn-excel, 
+    body.dark-mode .btn-clear-filters { background: #334155; border-color: #475569; color: #f8fafc; }
+    body.dark-mode .btn-excel { color: #10b981; }
+    body.dark-mode .btn-clear-filters { color: #f43f5e; }
+    body.dark-mode .student-info-trigger { background: #334155; border-color: #475569; color: #38bdf8; }
+    body.dark-mode .row-action-link--primary { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+    body.dark-mode .row-action-link--warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    body.dark-mode .row-action-link--success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    body.dark-mode #info-overlay-backdrop { background: rgba(0, 0, 0, 0.7); }
+    body.dark-mode .quick-info-card { background: #1e293b; border-color: #334155; }
+    body.dark-mode .quick-info-grid { background: #1e293b; }
+    body.dark-mode .quick-stat { background: #0f172a; border-color: #334155; }
+    body.dark-mode .quick-stat-value { color: #f8fafc; }
+    body.dark-mode .quick-info-section, 
+    body.dark-mode .quick-info-address { background: #1e293b; }
+    body.dark-mode .quick-detail-row { border-top-color: #334155; color: #94a3b8; }
+    body.dark-mode .quick-detail-row strong { color: #f8fafc; }
+    body.dark-mode .quick-address-block { border-top-color: #334155; }
+    body.dark-mode .quick-address-block p { color: #94a3b8; }
+    
+    @media (max-width: 767.98px) {
+        body.dark-mode .table tbody tr { background: #1e293b; border-color: #334155 !important; }
+        body.dark-mode .table tbody td.td-action { background: #0f172a; border-top-color: #334155 !important; }
+        body.dark-mode .table tbody td.td-program, 
+        body.dark-mode .table tbody td.td-intake, 
+        body.dark-mode .table tbody td.td-parents, 
+        body.dark-mode .table tbody td.td-mobile { border-top-color: rgba(255,255,255,0.05) !important; }
+    }
 </style>
 {% endblock %}
 
@@ -680,17 +741,17 @@
               hx-indicator="#table-loader"
               hx-push-url="true">
             
-            <div class="row">
-                <!-- Row 1 -->
-                <div class="col-md-2">
+            <div class="row compact-filters">
+                <!-- Row 1: Primary Selection -->
+                <div class="col-md-3">
                     <div class="filter-group">
-                        <label>Search by Name/Roll</label>
+                        <label>Search Name/Roll</label>
                         <input type="text" name="search" placeholder="Enter search..." value="{{ query }}">
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div class="filter-group">
-                        <label>Enrollment Year</label>
+                        <label>Year</label>
                         <select name="year">
                             <option value="">All</option>
                             {% for y in filter_metadata.years %}
@@ -721,9 +782,19 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-1">
+                <div class="col-md-2">
                     <div class="filter-group">
-                        <label>Batch Name</label>
+                        <label>Type</label>
+                        <select name="type">
+                            <option value="">All</option>
+                            <option value="Bachelor" {% if selected_type == 'Bachelor' %}selected{% endif %}>Bachelor</option>
+                            <option value="Masters" {% if selected_type == 'Masters' %}selected{% endif %}>Masters</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Batch</label>
                         <select name="batch">
                             <option value="">All</option>
                             {% for b in filter_metadata.batches %}
@@ -733,17 +804,8 @@
                     </div>
                 </div>
 
-                <div class="col-md-2">
-                    <div class="filter-group">
-                        <label>Program Type</label>
-                        <select name="type">
-                            <option value="">All</option>
-                            <option value="Bachelor" {% if selected_type == 'Bachelor' %}selected{% endif %}>Bachelor</option>
-                            <option value="Masters" {% if selected_type == 'Masters' %}selected{% endif %}>Masters</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
+                <!-- Row 2: Status, Category, Sort & Actions -->
+                <div class="col-md-1">
                     <div class="filter-group">
                         <label>Gender</label>
                         <select name="gender">
@@ -765,23 +827,22 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="filter-group">
                         <label>Special Category</label>
                         <select name="special_category">
                             <option value="">All Categories</option>
                             <option value="non_residential" {% if selected_special_category == 'non_residential' %}selected{% endif %}>Non-Residential</option>
-                            <option value="freedom_fighter" {% if selected_special_category == 'freedom_fighter' %}selected{% endif %}>Freedom Fighter Child</option>
-                            <option value="armed_forces" {% if selected_special_category == 'armed_forces' %}selected{% endif %}>Armed Forces Child</option>
-                            <option value="july_joddha" {% if selected_special_category == 'july_joddha' %}selected{% endif %}>July Joddha 2024</option>
+                            <option value="freedom_fighter" {% if selected_special_category == 'freedom_fighter' %}selected{% endif %}>Freedom Fighter</option>
+                            <option value="armed_forces" {% if selected_special_category == 'armed_forces' %}selected{% endif %}>Armed Forces</option>
+                            <option value="july_joddha" {% if selected_special_category == 'july_joddha' %}selected{% endif %}>July Joddha</option>
                             <option value="credit_transfer" {% if selected_special_category == 'credit_transfer' %}selected{% endif %}>Credit Transfer</option>
-                            <option value="temp_cancel" {% if selected_special_category == 'temp_cancel' %}selected{% endif %}>Temp Cancel</option>
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="filter-group">
-                        <label>Sort By</label>
+                        <label>Sort Results</label>
                         <select name="sort">
                             {% for sort_value, sort_label in sort_options %}
                             <option value="{{ sort_value }}" {% if selected_sort == sort_value %}selected{% endif %}>{{ sort_label }}</option>
@@ -789,16 +850,18 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <div class="filter-action-group">
-                        <button type="submit" class="btn btn-filter directory-action-btn flex-fill">Filter</button>
+                <div class="col-md-3">
+                    <div class="filter-action-group mt-auto mb-2" style="gap: 5px;">
+                        <button type="submit" class="btn btn-filter directory-action-btn flex-fill py-1" style="font-size: 13px;">
+                            <i class="fas fa-filter mr-1"></i> Filter
+                        </button>
                         <button type="button" 
-                                class="btn btn-clear-filters directory-action-btn flex-fill"
+                                class="btn btn-clear-filters directory-action-btn flex-fill py-1"
+                                style="font-size: 13px; background: #6c757d; color: #fff;"
                                 onclick="clearDirectoryFilters()"
                                 hx-get="{% url 'student_list' %}?per_page={{ per_page }}&sort={{ selected_sort }}"
                                 hx-target="#directory-results"
-                                hx-indicator="#table-loader"
-                                hx-push-url="true">
+                                hx-indicator="#table-loader">
                             <i class="fas fa-undo mr-1"></i> Clear
                         </button>
                     </div>

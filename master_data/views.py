@@ -6,7 +6,7 @@ from .models import Cluster, Program, Hall, AdmissionYear, Semester, Batch
 from core.decorators import require_access
 
 @login_required
-@require_access('security', 'manage_users') # Reusing security permission for settings
+@require_access('security', 'manage_academic_settings')
 def academic_settings(request):
     context = {
         'clusters': Cluster.objects.all().order_by('name'),
@@ -19,7 +19,7 @@ def academic_settings(request):
     return render(request, 'master_data/academic_settings.html', context)
 
 @login_required
-@require_access('security', 'manage_users')
+@require_access('security', 'manage_academic_settings')
 def add_master_data(request, model_name):
     if request.method == 'POST':
         if model_name == 'cluster':
@@ -54,7 +54,7 @@ def add_master_data(request, model_name):
     return redirect(f"{reverse('academic_settings')}#{tab}")
 
 @login_required
-@require_access('security', 'manage_users')
+@require_access('security', 'manage_academic_settings')
 def delete_master_data(request, model_name, pk):
     model_map = {
         'cluster': Cluster,
@@ -73,7 +73,7 @@ def delete_master_data(request, model_name, pk):
     return redirect(f"{reverse('academic_settings')}#{tab}")
 
 @login_required
-@require_access('security', 'manage_users')
+@require_access('security', 'manage_academic_settings')
 def edit_master_data(request, model_name, pk):
     """View to handle editing existing master data records."""
     model_map = {
@@ -89,15 +89,25 @@ def edit_master_data(request, model_name, pk):
     
     if request.method == 'POST':
         if model_name == 'cluster':
-            obj.name = request.POST.get('name')
+            old_name = obj.name
+            new_name = request.POST.get('name')
+            obj.name = new_name
             obj.code = request.POST.get('code')
+            if old_name != new_name:
+                from students.models import Student
+                Student.objects.filter(cluster=old_name).update(cluster=new_name)
         elif model_name == 'program':
+            old_canonical = obj.short_name if obj.short_name else obj.name
             obj.name = request.POST.get('name')
             obj.short_name = request.POST.get('short_name')
             obj.ugc_code = request.POST.get('ugc_code')
             obj.cluster = get_object_or_404(Cluster, id=request.POST.get('cluster'))
             obj.level_code = request.POST.get('level_code')
             obj.sort_order = request.POST.get('sort_order', 0)
+            new_canonical = obj.short_name if obj.short_name else obj.name
+            if old_canonical != new_canonical:
+                from students.models import Student
+                Student.objects.filter(program=old_canonical).update(program=new_canonical)
         elif model_name == 'hall':
             obj.full_name = request.POST.get('full_name')
             obj.short_name = request.POST.get('short_name')
@@ -109,9 +119,19 @@ def edit_master_data(request, model_name, pk):
             obj.name = request.POST.get('name')
             obj.code = request.POST.get('code')
         elif model_name == 'batch':
-            obj.name = request.POST.get('name')
+            old_name = obj.name
+            new_name = request.POST.get('name')
+            obj.name = new_name
             obj.admission_year = get_object_or_404(AdmissionYear, id=request.POST.get('year'))
             obj.sort_order = request.POST.get('sort_order', 0)
+            
+            # If name changed, propagate to students (Since it's a CharField, not a FK)
+            if old_name != new_name:
+                from students.models import Student
+                import re
+                nums = re.findall(r'\d+', new_name)
+                new_batch_num = int(nums[0]) if nums else 0
+                Student.objects.filter(batch=old_name).update(batch=new_name, batch_number=new_batch_num)
         
         obj.save()
         tab_map = {

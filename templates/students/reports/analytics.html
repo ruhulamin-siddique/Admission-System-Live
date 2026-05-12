@@ -3,6 +3,16 @@
 {% block title %}Academic Analytics | Bangladesh Army University of Science and Technology{% endblock %}
 {% block page_title %}High Impact Intake Analytics{% endblock %}
 
+{% block extra_css %}
+<style>
+    body.dark-mode .card { background: #1e293b; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .bg-light { background: #0f172a !important; color: #cbd5e1 !important; }
+    body.dark-mode .text-dark { color: #f8fafc !important; }
+    body.dark-mode .table td { border-color: #334155; color: #cbd5e1; }
+    body.dark-mode .form-control { background: #0f172a; border-color: #334155; color: #f8fafc; }
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -62,6 +72,10 @@
         });
     });
 </script>
+<style>
+    .dark-mode .card-header { color: #f1f5f9 !important; }
+    .dark-mode .description-text { color: #94a3b8 !important; }
+</style>
 {% endblock %}
 
 {% block content %}

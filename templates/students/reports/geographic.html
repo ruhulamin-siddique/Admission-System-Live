@@ -28,6 +28,17 @@
         height: 6px;
         border-radius: 3px;
     }
+    .dark-mode .division-item {
+        background: #1e293b;
+        color: #f1f5f9;
+        border-color: rgba(255,255,255,0.05);
+    }
+    .dark-mode .division-item:hover {
+        background: #334155;
+    }
+    .dark-mode .card-header, .dark-mode h2 {
+        color: #f1f5f9 !important;
+    }
 </style>
 {% endblock %}
 
@@ -76,7 +87,7 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-8">
-        <h2 class="font-weight-bold text-dark">Regional Outreach Hub</h2>
+        <h2 class="font-weight-bold">Regional Outreach Hub</h2>
         <p class="text-muted">Analyzing the geographic footprint of the current student body.</p>
     </div>
     <div class="col-md-4 text-right">

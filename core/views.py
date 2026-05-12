@@ -413,6 +413,8 @@ def audit_logs(request):
     action_filter = request.GET.get('action', '')
     module_filter = request.GET.get('module', '')
     user_filter = request.GET.get('user', '')
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
     
     logs = ActivityLog.objects.select_related('user').all()
     
@@ -424,6 +426,11 @@ def audit_logs(request):
         logs = logs.filter(module=module_filter)
     if user_filter:
         logs = logs.filter(user_id=user_filter)
+    
+    if start_date:
+        logs = logs.filter(timestamp__date__gte=start_date)
+    if end_date:
+        logs = logs.filter(timestamp__date__lte=end_date)
         
     # Pagination
     from django.core.paginator import Paginator
@@ -445,6 +452,8 @@ def audit_logs(request):
         'action_filter': action_filter,
         'module_filter': module_filter,
         'user_filter': user_filter,
+        'start_date': start_date,
+        'end_date': end_date,
     })
 
 @require_access('security', 'manage_settings')
@@ -452,15 +461,33 @@ def system_settings(request):
     """View to manage institutional branding and system-wide settings."""
     settings, _ = SystemSettings.objects.get_or_create(id=1)
     if request.method == "POST":
-        settings.institution_name = request.POST.get('institution_name')
-        settings.institution_logo_url = request.POST.get('institution_logo_url')
-        settings.theme_color = request.POST.get('theme_color')
+        # Branding
+        if 'institution_name' in request.POST:
+            settings.institution_name = request.POST.get('institution_name')
+        if 'institution_logo_url' in request.POST:
+            settings.institution_logo_url = request.POST.get('institution_logo_url')
+        if 'theme_color' in request.POST:
+            settings.theme_color = request.POST.get('theme_color')
         
         # SMS Settings
-        settings.sms_api_key = request.POST.get('sms_api_key')
-        settings.sms_sender_id = request.POST.get('sms_sender_id')
-        settings.sms_api_url = request.POST.get('sms_api_url')
-        settings.sms_is_active = request.POST.get('sms_is_active') == 'on'
+        if 'sms_api_key' in request.POST:
+            settings.sms_api_key = request.POST.get('sms_api_key')
+        if 'sms_sender_id' in request.POST:
+            settings.sms_sender_id = request.POST.get('sms_sender_id')
+        if 'sms_api_url' in request.POST:
+            settings.sms_api_url = request.POST.get('sms_api_url')
+        
+        # Toggles (Checkboxes only send 'on' if checked, otherwise missing)
+        # To handle checkboxes with separate forms, we check if the toggle field exists or if its related form section was submitted
+        if 'sms_is_active' in request.POST or 'action_sms' in request.POST:
+             settings.sms_is_active = request.POST.get('sms_is_active') == 'on'
+        
+        if 'id_mode' in request.POST or 'action_automation' in request.POST:
+            if 'id_mode' in request.POST:
+                settings.id_mode = request.POST.get('id_mode')
+            elif 'auto_id_generation' in request.POST:
+                # Fallback for old checkbox if template wasn't updated yet
+                settings.auto_id_generation = request.POST.get('auto_id_generation') == 'on'
 
         if request.FILES.get('institution_logo'):
             settings.institution_logo = request.FILES.get('institution_logo')

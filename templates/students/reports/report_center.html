@@ -63,11 +63,75 @@
         margin-left: 20px;
     }
     .dark-mode .report-card { background: #1e293b; border-color: rgba(255,255,255,0.05); }
+    .dark-mode .report-card:hover { border-color: #3b82f6; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .dark-mode .category-header { color: #94a3b8; }
     .dark-mode .category-header::after { background: #334155; }
+    .dark-mode .text-muted { color: #94a3b8 !important; }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Section: Institutional Intelligence -->
+<div class="category-header">Priority Tools & Intelligence</div>
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'institutional_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-slate text-white shadow-sm" style="background-color: #475569 !important;">
+                    <i class="fas fa-university"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Feeder Institution Analysis</h5>
+                <p class="text-muted text-sm">Top schools and colleges providing students for every batch.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-slate font-weight-bold text-sm">
+                Identify Sourcing <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'intake_performance_report' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-indigo text-white shadow-sm" style="background-color: #6366f1 !important;">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Intake Performance Hub</h5>
+                <p class="text-muted text-sm">Comprehensive multi-batch analysis, growth velocity, and quality trends.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-indigo font-weight-bold text-sm">
+                Analyze Performance <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'export_center' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-teal text-white shadow-sm" style="background-color: #14b8a6 !important;">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Dynamic Export Hub</h5>
+                <p class="text-muted text-sm">Generate high-fidelity reports with multi-dimensional filters.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-teal font-weight-bold text-sm">
+                Configure Export <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'geographic_insights_v2' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-orange text-white shadow-sm" style="background-color: #f97316 !important;">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Geographic Outreach</h5>
+                <p class="text-muted text-sm">Heatmap of student distribution by Division and District.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-orange font-weight-bold text-sm">
+                View Heatmap <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Section: Academic & Intake -->
 <div class="category-header">Academic & Intake Quality</div>
 <div class="row">
@@ -193,20 +257,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-4">
-        <div class="card report-card" onclick="location.href='{% url 'geographic_insights_v2' %}'">
-            <div class="card-body">
-                <div class="report-icon bg-orange text-white shadow-sm" style="background-color: #f97316 !important;">
-                    <i class="fas fa-map-marked-alt"></i>
-                </div>
-                <h5 class="font-weight-bold mb-2">Geographic Outreach</h5>
-                <p class="text-muted text-sm">Heatmap of student distribution by Division and District.</p>
-            </div>
-            <div class="card-footer bg-transparent border-0 text-orange font-weight-bold text-sm">
-                View Heatmap <i class="fas fa-chevron-right ml-1"></i>
-            </div>
-        </div>
-    </div>
+
     <div class="col-md-4 mb-4">
         <div class="card report-card" onclick="location.href='{% url 'socio_economic_report' %}'">
             <div class="card-body">
@@ -223,36 +274,5 @@
     </div>
 </div>
 
-<!-- Section: Institutional Intelligence -->
-<div class="category-header">Institutional Intelligence & Exports</div>
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card report-card" onclick="location.href='{% url 'institutional_report' %}'">
-            <div class="card-body">
-                <div class="report-icon bg-slate text-white shadow-sm" style="background-color: #475569 !important;">
-                    <i class="fas fa-university"></i>
-                </div>
-                <h5 class="font-weight-bold mb-2">Feeder Institution Analysis</h5>
-                <p class="text-muted text-sm">Top schools and colleges providing students for every batch.</p>
-            </div>
-            <div class="card-footer bg-transparent border-0 text-slate font-weight-bold text-sm">
-                Identify Sourcing <i class="fas fa-chevron-right ml-1"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-4">
-        <div class="card report-card" onclick="location.href='{% url 'export_center' %}'">
-            <div class="card-body">
-                <div class="report-icon bg-teal text-white shadow-sm" style="background-color: #14b8a6 !important;">
-                    <i class="fas fa-file-excel"></i>
-                </div>
-                <h5 class="font-weight-bold mb-2">Dynamic Export Hub</h5>
-                <p class="text-muted text-sm">Generate high-fidelity reports with multi-dimensional filters.</p>
-            </div>
-            <div class="card-footer bg-transparent border-0 text-teal font-weight-bold text-sm">
-                Configure Export <i class="fas fa-chevron-right ml-1"></i>
-            </div>
-        </div>
-    </div>
-</div>
+
 {% endblock %}
