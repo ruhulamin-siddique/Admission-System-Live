@@ -12,6 +12,7 @@ from core.decorators import require_access
 from exam_billing.models import BillingExam, ExamProgram
 from exam_billing.scope import get_allowed_programs
 import xhtml2pdf.pisa as pisa
+import json
 from io import BytesIO
 from django.template.loader import get_template
 from urllib.parse import urlencode
@@ -267,7 +268,8 @@ def dashboard(request):
             'program': s.program,
             'short_name': program_map.get(s.program, s.program),
             'batch': s.batch,
-            'admission_status': s.admission_status
+            'admission_status': s.admission_status,
+            'created_at': s.created_at
         })
 
     # Enrollment Insights
@@ -1901,12 +1903,15 @@ def analytics_dashboard(request):
 @require_access('reports', 'view_analytics')
 def intake_performance_report(request):
     """Deep-dive performance report across historical intakes."""
-    from .reports import get_intake_performance_analysis
+    from .reports import get_intake_performance_analysis, get_admission_trends
     analysis_data = get_intake_performance_analysis()
+    trend_data = get_admission_trends()
     
     return render(request, 'students/reports/intake_performance.html', {
         'analysis_data': analysis_data,
-        'analysis_json': json.dumps(analysis_data)
+        'analysis_json': json.dumps(analysis_data),
+        'trend_data': trend_data,
+        'trend_json': json.dumps(trend_data)
     })
 
 @login_required

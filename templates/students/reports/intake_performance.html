@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
+{% load core_tags %}
 
 {% block title %}Intake Performance Analysis | BAUST{% endblock %}
-{% block page_title %}Comprehensive Intake Intelligence{% endblock %}
+{% block page_title %}Comprehensive Intake Intelligence v2.0{% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -101,6 +102,40 @@
             },
             options: chartOptions
         });
+
+        // 5. 30-Day Velocity Trend
+        const trendData = {{ trend_json|safe }};
+        new Chart(document.getElementById('thirtyDayChart'), {
+            type: 'line',
+            data: {
+                labels: trendData.daily.map(i => i.label),
+                datasets: [{
+                    label: 'Daily Admissions',
+                    data: trendData.daily.map(i => i.count),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2
+                }]
+            },
+            options: chartOptions
+        });
+
+        // 6. 6-Month Seasonality
+        new Chart(document.getElementById('sixMonthChart'), {
+            type: 'bar',
+            data: {
+                labels: trendData.monthly.map(i => i.label),
+                datasets: [{
+                    label: 'Monthly Intake',
+                    data: trendData.monthly.map(i => i.count),
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 5
+                }]
+            },
+            options: chartOptions
+        });
     });
 </script>
 <style>
@@ -117,34 +152,83 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="card metric-card bg-primary text-white shadow-sm">
+        <div class="card metric-card bg-primary text-white shadow-sm h-100">
             <div class="card-body">
-                <h6 class="text-uppercase small font-weight-bold opacity-75">Analysis Scope</h6>
-                <h3 class="font-weight-black mb-0">Last 10 Batches</h3>
+                <h6 class="text-uppercase small font-weight-bold opacity-75">30-Day Intake</h6>
+                <h3 class="font-weight-black mb-0">{{ trend_data.metrics.last_30_days }}</h3>
+                <p class="small mb-0 opacity-75">
+                    {% if trend_data.metrics.growth_perc >= 0 %}
+                    <i class="fas fa-arrow-up mr-1"></i> +{{ trend_data.metrics.growth_perc }}% vs prev. 30d
+                    {% else %}
+                    <i class="fas fa-arrow-down mr-1"></i> {{ trend_data.metrics.growth_perc }}% vs prev. 30d
+                    {% endif %}
+                </p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card metric-card bg-success text-white shadow-sm">
+        <div class="card metric-card bg-success text-white shadow-sm h-100">
             <div class="card-body">
-                <h6 class="text-uppercase small font-weight-bold opacity-75">Quality Benchmark</h6>
-                <h3 class="font-weight-black mb-0">SSC & HSC Avg</h3>
+                <h6 class="text-uppercase small font-weight-bold opacity-75">Peak Performance</h6>
+                <h3 class="font-weight-black mb-0">{{ trend_data.metrics.peak_day.count }} <span class="small font-weight-normal">Admissions</span></h3>
+                <p class="small mb-0 opacity-75">Achieved on {{ trend_data.metrics.peak_day.label }}</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card metric-card bg-info text-white shadow-sm">
+        <div class="card metric-card bg-info text-white shadow-sm h-100">
             <div class="card-body">
-                <h6 class="text-uppercase small font-weight-bold opacity-75">Diversity Focus</h6>
-                <h3 class="font-weight-black mb-0">Gender Ratio</h3>
+                <h6 class="text-uppercase small font-weight-bold opacity-75">Seasonal Peak</h6>
+                <h3 class="font-weight-black mb-0">{{ trend_data.metrics.peak_month.count }} <span class="small font-weight-normal">Intake</span></h3>
+                <p class="small mb-0 opacity-75">Month: {{ trend_data.metrics.peak_month.label }}</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card metric-card bg-indigo text-white shadow-sm" style="background-color: #6610f2;">
+        <div class="card metric-card bg-indigo text-white shadow-sm h-100" style="background-color: #6610f2;">
             <div class="card-body">
-                <h6 class="text-uppercase small font-weight-bold opacity-75">Financial Impact</h6>
-                <h3 class="font-weight-black mb-0">Revenue Trend</h3>
+                <h6 class="text-uppercase small font-weight-bold opacity-75">Avg. Daily Velocity</h6>
+                <h3 class="font-weight-black mb-0">{{ trend_data.metrics.last_30_days|divide:30|floatformat:1 }}</h3>
+                <p class="small mb-0 opacity-75">Students per day (30d)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pt-4">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-light-success text-success mr-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h5 class="font-weight-bold text-dark mb-0">Admission Velocity (30 Days)</h5>
+                        <p class="text-muted small mb-0">Daily enrollment momentum and growth tracking.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px;"><canvas id="thirtyDayChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pt-4">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-light-warning text-warning mr-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div>
+                        <h5 class="font-weight-bold text-dark mb-0">Intake Seasonality (6 Months)</h5>
+                        <p class="text-muted small mb-0">Monthly distribution and cycle analysis.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px;"><canvas id="sixMonthChart"></canvas></div>
             </div>
         </div>
     </div>

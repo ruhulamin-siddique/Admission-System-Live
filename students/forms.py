@@ -149,10 +149,18 @@ class StudentForm(forms.ModelForm):
         
         active_years = AdmissionYear.objects.filter(is_active=True).order_by('-year')
         if active_years.exists():
-             self.fields['admission_year'].widget = forms.Select(
-                 attrs={'class': 'form-control'},
-                 choices=[(y.year, y.year) for y in active_years]
-             )
+            self.fields['admission_year'].widget = forms.Select(
+                attrs={'class': 'form-control'},
+                choices=[(y.year, y.year) for y in active_years]
+            )
+
+        # Populate Address Divisions
+        from .geo_data import BANGLADESH_GEO
+        division_choices = [('', 'Select Division')] + [
+            (div, div) for div in sorted(BANGLADESH_GEO.keys())
+        ]
+        self.fields['present_division'].widget.choices = division_choices
+        self.fields['permanent_division'].widget.choices = division_choices
 
         # Handle Manual ID vs Auto ID Mode
         from core.models import SystemSettings

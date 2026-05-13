@@ -16,7 +16,7 @@ class Student(models.Model):
     batch_number = models.IntegerField(null=True, blank=True, help_text="Auto-extracted for numeric sorting")
     semester_name = models.CharField(max_length=50, null=True, blank=True)
     program_type = models.CharField(max_length=50, null=True, blank=True)
-    admission_date = models.DateField(null=True, blank=True)
+    admission_date = models.DateField(null=True, blank=True, db_index=True)
     admission_status = models.CharField(max_length=50, default="Active", db_index=True)
     
     # Personal Info

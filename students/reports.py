@@ -1,4 +1,7 @@
 from django.db.models import Count, Sum, Avg, Case, When, IntegerField, Q, Value
+from django.db.models.functions import TruncDay, TruncMonth
+from django.utils import timezone
+from datetime import timedelta
 from .models import Student
 
 def get_academic_analytics(year=None, program=None, batch=None):
@@ -334,3 +337,82 @@ def get_intake_performance_analysis():
         })
         
     return analysis_data
+
+def get_admission_trends():
+    """
+    Calculates admission velocity for the last 30 days and 6 months.
+    Includes zero-fill logic for visual consistency.
+    """
+    now = timezone.now()
+    
+    # 1. Last 30 Days (Daily Momentum)
+    thirty_days_ago = now.date() - timedelta(days=29)
+    daily_stats = Student.objects.filter(admission_date__gte=thirty_days_ago) \
+        .annotate(day=TruncDay('admission_date')) \
+        .values('day') \
+        .annotate(count=Count('student_id')) \
+        .order_by('day')
+    
+    # Fill gaps for 30 days
+    daily_map = {
+        (item['day'].date() if hasattr(item['day'], 'date') else item['day']): item['count'] 
+        for item in daily_stats if item['day']
+    }
+    daily_trend = []
+    for i in range(30):
+        d = thirty_days_ago + timedelta(days=i)
+        daily_trend.append({
+            'label': d.strftime('%b %d'),
+            'count': daily_map.get(d, 0)
+        })
+
+    # 2. Last 6 Months (Monthly Seasonality)
+    start_month = now.replace(day=1)
+    for _ in range(5):
+        start_month = (start_month - timedelta(days=1)).replace(day=1)
+
+    monthly_stats = Student.objects.filter(admission_date__gte=start_month.date()) \
+        .annotate(month=TruncMonth('admission_date')) \
+        .values('month') \
+        .annotate(count=Count('student_id')) \
+        .order_by('month')
+
+    # Fill gaps for 6 months
+    monthly_map = {
+        (item['month'].date() if hasattr(item['month'], 'date') else item['month']): item['count'] 
+        for item in monthly_stats if item['month']
+    }
+    monthly_trend = []
+    curr_m = start_month
+    for _ in range(6):
+        monthly_trend.append({
+            'label': curr_m.strftime('%b %Y'),
+            'count': monthly_map.get(curr_m.date(), 0)
+        })
+        # Advance to next month
+        if curr_m.month == 12:
+            curr_m = curr_m.replace(year=curr_m.year + 1, month=1)
+        else:
+            curr_m = curr_m.replace(month=curr_m.month + 1)
+
+    # 3. Growth Metrics
+    prev_thirty_start = thirty_days_ago - timedelta(days=30)
+    curr_period_count = sum(item['count'] for item in daily_trend)
+    prev_period_count = Student.objects.filter(admission_date__range=(prev_thirty_start, thirty_days_ago - timedelta(days=1))).count()
+    
+    growth = 0
+    if prev_period_count > 0:
+        growth = round(((curr_period_count - prev_period_count) / prev_period_count) * 100, 1)
+    elif curr_period_count > 0:
+        growth = 100
+
+    return {
+        'daily': daily_trend,
+        'monthly': monthly_trend,
+        'metrics': {
+            'last_30_days': curr_period_count,
+            'growth_perc': growth,
+            'peak_day': max(daily_trend, key=lambda x: x['count']) if daily_trend else None,
+            'peak_month': max(monthly_trend, key=lambda x: x['count']) if monthly_trend else None,
+        }
+    }

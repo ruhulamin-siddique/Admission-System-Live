@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}Edit Student: {{ student.student_name }} | Bangladesh Army University of Science and Technology{% endblock %}
-{% block page_title %}Student Profile Maintenance{% endblock %}
+{% block page_title %}Student Profile Maintenance v2.2{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -700,9 +700,6 @@
                     districtSelect.append(`<option value="${dist}" ${selected}>${dist}</option>`);
                 });
             }
-            if (!selectedDistrict) {
-                districtSelect.trigger('change');
-            }
         }
 
         function updateUpazilas(divisionSelect, districtSelect, upazilaSelect, selectedUpazila = '') {
@@ -780,9 +777,6 @@
             }
         });
 
-        // For Edit Mode, we need to initialize correctly if data exists
-        // but not trigger 'change' loops that overwrite existing correct data.
-        
         // Real-time Validation for National ID
         const $nid = $('[name="national_id"]');
         const $nidHelp = $('#nid-help');
@@ -794,18 +788,46 @@
             
             if (val.length === 0) {
                 $(this).css('border-color', '#ced4da');
-                $nidHelp.text('');
             } else if (!validLengths.includes(val.length)) {
                 $(this).css('border-color', '#dc3545');
-                $nidHelp.text('Must be 10, 13, or 17 digits').css('color', '#dc3545');
             } else {
                 $(this).css('border-color', '#28a745');
-                $nidHelp.text('Valid NID Length').css('color', '#28a745');
             }
         });
 
         // Initialize Bootstrap tooltips
         $('[title]').tooltip();
+
+        // For Edit Mode, we need to initialize correctly if data exists
+        function initAddressDropdowns() {
+            // Present Address
+            const presDiv = $('[name="present_division"]').val();
+            const presDist = '{{ student.present_district|escapejs }}';
+            const presUpz = '{{ student.present_upazila|escapejs }}';
+            
+            if (presDiv) {
+                updateDistricts($('[name="present_division"]'), $('[name="present_district"]'), presDist);
+                updateUpazilas($('[name="present_division"]'), $('[name="present_district"]'), $('[name="present_upazila"]'), presUpz);
+            }
+
+            // Permanent Address
+            const permDiv = $('[name="permanent_division"]').val();
+            const permDist = '{{ student.permanent_district|escapejs }}';
+            const permUpz = '{{ student.permanent_upazila|escapejs }}';
+
+            if (permDiv) {
+                updateDistricts($('[name="permanent_division"]'), $('[name="permanent_district"]'), permDist);
+                updateUpazilas($('[name="permanent_division"]'), $('[name="permanent_district"]'), $('[name="permanent_upazila"]'), permUpz);
+            }
+            
+            // Check if they are identical to set the "Same as Present" switch
+            if (presDiv && presDiv === permDiv && presDist === permDist && presUpz === permUpz && $('[name="present_village"]').val() === $('[name="permanent_village"]').val()) {
+                $('#same_as_present').prop('checked', true).trigger('change');
+            }
+        }
+        
+        // Wait a small bit for geoData parsing just in case
+        setTimeout(initAddressDropdowns, 100);
     });
 
     // Photo Validation & Preview Logic

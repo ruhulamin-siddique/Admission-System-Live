@@ -308,6 +308,7 @@
                                 <th>Name</th>
                                 <th>Program</th>
                                 <th>Batch</th>
+                                <th>Timestamp</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -318,6 +319,7 @@
                                 <td>{{ student.student_name }}</td>
                                 <td><span class="badge badge-info" title="{{ student.program }}" style="cursor: help;">{{ student.short_name }}</span></td>
                                 <td class="text-muted small">{{ student.batch }}</td>
+                                <td class="small font-weight-bold">{{ student.created_at|date:"d M, H:i" }}</td>
                                 <td><span class="badge badge-success">{{ student.admission_status }}</span></td>
                             </tr>
                             {% endfor %}
