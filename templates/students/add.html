@@ -916,6 +916,22 @@
                     $display.append(`<span class="id-seg-premium ${s.cls} ${isPlh ? 'placeholder' : ''}">${ch}</span>`);
                 }
             });
+
+            // Sync with Modal
+            if (prefix && prefix.length >= 13) {
+                $('#modal-uni').text(prefix.substring(0,3));
+                $('#modal-year').text(prefix.substring(3,5));
+                $('#modal-sem').text(prefix.substring(5,6));
+                $('#modal-hall').text(prefix.substring(6,8));
+                $('#modal-prog').text(prefix.substring(8,13));
+                
+                // Update badge values too
+                $('.modal-badge-uni').text(prefix.substring(0,3));
+                $('.modal-badge-year').text(prefix.substring(3,5));
+                $('.modal-badge-sem').text(prefix.substring(5,6));
+                $('.modal-badge-hall').text(prefix.substring(6,8));
+                $('.modal-badge-prog').text(prefix.substring(8,13));
+            }
         }
 
         function updateSerialDisplay(s3) {
@@ -925,6 +941,12 @@
                 const isPlh = ch === '-';
                 $(last3[i]).text(ch).toggleClass('placeholder', isPlh).toggleClass('seg-serial', true);
             });
+            
+            // Sync with Modal
+            if (s3 && s3 !== '---') {
+                $('#modal-serial').text(s3);
+                $('.modal-badge-serial').text(s3);
+            }
         }
 
         function renderPlaceholderDisplay() {
@@ -1261,39 +1283,39 @@
                 <div class="p-4 bg-white">
                     <div class="text-center mb-4">
                         <div class="d-flex justify-content-center gap-1 font-weight-black mb-1" style="font-size: 1.8rem; font-family: 'JetBrains Mono', monospace;">
-                            <span class="text-primary border-bottom border-primary pb-1">080</span>
-                            <span class="text-success border-bottom border-success pb-1">26</span>
-                            <span class="text-warning border-bottom border-warning pb-1">1</span>
-                            <span class="text-secondary border-bottom border-secondary pb-1">02</span>
-                            <span class="text-danger border-bottom border-danger pb-1">05101</span>
-                            <span class="text-muted border-bottom border-muted pb-1">001</span>
+                            <span id="modal-uni" class="text-primary border-bottom border-primary pb-1">080</span>
+                            <span id="modal-year" class="text-success border-bottom border-success pb-1">26</span>
+                            <span id="modal-sem" class="text-warning border-bottom border-warning pb-1">1</span>
+                            <span id="modal-hall" class="text-secondary border-bottom border-secondary pb-1">02</span>
+                            <span id="modal-prog" class="text-danger border-bottom border-danger pb-1">05101</span>
+                            <span id="modal-serial" class="text-muted border-bottom border-muted pb-1">001</span>
                         </div>
                         <p class="small text-muted font-weight-bold mb-0">PROTOTYPE: 16-DIGIT CRYPTOGRAPHIC ID</p>
                     </div>
                     
                     <div class="logic-list">
                         <div class="d-flex align-items-center mb-3">
-                            <div class="badge badge-primary mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">080</div>
+                            <div class="badge badge-primary modal-badge-uni mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">080</div>
                             <div><h6 class="mb-0 font-weight-bold text-dark">University Code</h6><p class="small text-muted mb-0">Unique identifier for the institution (UGC Registry)</p></div>
                         </div>
                         <div class="d-flex align-items-center mb-3">
-                            <div class="badge badge-success mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">26</div>
+                            <div class="badge badge-success modal-badge-year mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">26</div>
                             <div><h6 class="mb-0 font-weight-bold text-dark">Year Code</h6><p class="small text-muted mb-0">Last two digits of the admission year (e.g., 2026 -> 26)</p></div>
                         </div>
                         <div class="d-flex align-items-center mb-3">
-                            <div class="badge badge-warning mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">1</div>
+                            <div class="badge badge-warning modal-badge-sem mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">1</div>
                             <div><h6 class="mb-0 font-weight-bold text-dark">Semester Code</h6><p class="small text-muted mb-0">Assigned code for Spring, Summer, or Fall intakes</p></div>
                         </div>
                         <div class="d-flex align-items-center mb-3">
-                            <div class="badge badge-secondary mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">02</div>
+                            <div class="badge badge-secondary modal-badge-hall mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">02</div>
                             <div><h6 class="mb-0 font-weight-bold text-dark">Hall Code</h6><p class="small text-muted mb-0">Dormitory/Hall attachment identifier</p></div>
                         </div>
                         <div class="d-flex align-items-center mb-3">
-                            <div class="badge badge-danger mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">05101</div>
+                            <div class="badge badge-danger modal-badge-prog mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">05101</div>
                             <div><h6 class="mb-0 font-weight-bold text-dark">Subject/Program Code</h6><p class="small text-muted mb-0">Combines Cluster, Dept, and Program Level bits</p></div>
                         </div>
                         <div class="d-flex align-items-center">
-                            <div class="badge badge-dark mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">001</div>
+                            <div class="badge badge-dark modal-badge-serial mr-3" style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.8rem;">001</div>
                             <div><h6 class="mb-0 font-weight-bold text-dark">ID Serial</h6><p class="small text-muted mb-0">Sequential unique identifier per batch isolated cohort</p></div>
                         </div>
                     </div>

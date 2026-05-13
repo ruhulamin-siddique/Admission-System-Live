@@ -146,3 +146,50 @@ def edit_master_data(request, model_name, pk):
         return redirect(f"{reverse('academic_settings')}#{tab}")
     
     return redirect('academic_settings')
+    
+@login_required
+@require_access('security', 'manage_academic_settings')
+def harmonize_batch_assignment(request):
+    """
+    Bulk assigns a batch to students based on Program, Year, and Semester filters.
+    This is the 'Master Data Harmonizer' requested by the user.
+    """
+    from django.db import transaction
+    if request.method == 'POST':
+        batch_id = request.POST.get('batch_id')
+        program_name = request.POST.get('program')
+        year = request.POST.get('year')
+        semester = request.POST.get('semester')
+        
+        from .models import Batch
+        from students.models import Student
+        import re
+        
+        batch = get_object_or_404(Batch, id=batch_id)
+        nums = re.findall(r'\d+', batch.name)
+        batch_num = int(nums[0]) if nums else 0
+        
+        # Build filter
+        filters = {}
+        if program_name: filters['program'] = program_name
+        if year: filters['admission_year'] = year
+        if semester: filters['semester_name'] = semester
+        
+        if not filters:
+            from django.contrib import messages
+            messages.warning(request, "Please select at least one filter to avoid accidental global updates.")
+            return redirect(f"{reverse('academic_settings')}#batches")
+            
+        try:
+            with transaction.atomic():
+                students = Student.objects.filter(**filters)
+                count = students.count()
+                students.update(batch=batch.name, batch_number=batch_num)
+                
+            from django.contrib import messages
+            messages.success(request, f"Harmonization Complete: Assigned '{batch.name}' to {count} students matching your criteria.")
+        except Exception as e:
+            from django.contrib import messages
+            messages.error(request, f"Harmonization failed: {str(e)}")
+    
+    return redirect(f"{reverse('academic_settings')}#batches")

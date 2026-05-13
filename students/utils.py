@@ -41,19 +41,25 @@ def decompose_ugc_id(s_id):
 def get_canonical_program_name(raw_name):
     """
     Shared resolver: given any full or short program name, returns the canonical
-    stored value (short_name if available, else full name).  Used by both the
-    bulk importer and the normalize_program_names management command so they
-    always produce the same output and can never diverge.
+    stored value. Optimized with a static cache to prevent redundant DB loops.
     """
-    from master_data.models import Program
     if not raw_name:
         return raw_name
+    
+    # Static cache to avoid fetching Programs multiple times
+    if not hasattr(get_canonical_program_name, '_cache'):
+        from master_data.models import Program
+        progs = list(Program.objects.all())
+        get_canonical_program_name._cache = {
+            p.name.upper(): (p.short_name if p.short_name else p.name)
+            for p in progs
+        }
+        for p in progs:
+            if p.short_name:
+                get_canonical_program_name._cache[p.short_name.upper()] = (p.short_name if p.short_name else p.name)
+
     key = str(raw_name).strip().upper()
-    for p in Program.objects.all():
-        canonical = p.short_name if p.short_name else p.name
-        if key in (p.name.upper(), (p.short_name or '').upper()):
-            return canonical
-    return raw_name  # Unrecognised — pass through unchanged
+    return get_canonical_program_name._cache.get(key, raw_name)
 
 
 def generate_ugc_prefix(admission_year, semester_name, hall_name, program_name, cluster_name, program_level="Bachelor"):
@@ -199,9 +205,23 @@ def import_students_from_excel(file_obj, update_existing=False):
         updated_list = []
         processed_ids = set()
         
-        # Build program lookup table to normalize program names (uses shared canonical resolver)
+        # PRE-FETCH: Build lookup tables for high-performance normalization
         from master_data.models import Program
+        all_programs = list(Program.objects.select_related('cluster').all())
         
+        # Build mapping: (full_name/short_name) -> {canonical, cluster, type}
+        prog_lookup = {}
+        for p in all_programs:
+            canonical = p.short_name if p.short_name else p.name
+            p_data = {
+                'canonical': canonical,
+                'cluster': p.cluster.name,
+                'type': p.get_level_code_display()
+            }
+            prog_lookup[p.name.upper()] = p_data
+            if p.short_name:
+                prog_lookup[p.short_name.upper()] = p_data
+
         for index, row in df.iterrows():
             student_data = {}
             # Map Excel columns to model fields
@@ -257,22 +277,17 @@ def import_students_from_excel(file_obj, update_existing=False):
                 if student_data.get(name_field):
                     student_data[name_field] = str(student_data[name_field]).upper()
                     
-            # 4. Program & Cluster normalization — use shared canonical resolver
+            # 4. Program & Cluster normalization — use pre-fetched lookup
             if student_data.get('program'):
-                raw_prog = student_data['program']
-                # Get canonical name (e.g., Computer Science and Engineering -> CSE)
-                student_data['program'] = get_canonical_program_name(raw_prog)
-                
-                # Auto-fill Cluster and Type if missing, or ensure they match master data
-                from master_data.models import Program
-                key = str(raw_prog).strip().upper()
-                prog_obj = Program.objects.filter(
-                    models.Q(name__iexact=key) | models.Q(short_name__iexact=key)
-                ).first()
-                
-                if prog_obj:
-                    student_data['cluster'] = prog_obj.cluster.name
-                    student_data['program_type'] = prog_obj.get_level_code_display()
+                raw_prog = str(student_data['program']).strip().upper()
+                if raw_prog in prog_lookup:
+                    match = prog_lookup[raw_prog]
+                    student_data['program'] = match['canonical']
+                    student_data['cluster'] = match['cluster']
+                    student_data['program_type'] = match['type']
+                else:
+                    # Fallback if not found in master data
+                    student_data['program'] = get_canonical_program_name(student_data['program'])
                 
             # Status standardization
             if student_data.get('admission_status'):

@@ -1023,7 +1023,7 @@ def edit_student(request, student_id):
     student = get_object_or_404(Student, student_id=student_id)
     
     # Identify fields that must remain constant to maintain ID and academic integrity
-    locked_fields = ['program', 'admission_year', 'cluster', 'hall_attached', 'semester_name', 'program_type', 'batch', 'student_id']
+    locked_fields = ['program', 'admission_year', 'cluster', 'hall_attached', 'semester_name', 'program_type', 'student_id']
     
     if request.method == "POST":
         # Capture original values from the already-fetched instance before form processing
@@ -1078,6 +1078,7 @@ def edit_student(request, student_id):
         
     # Pass program mapping for auto-selection logic (even if disabled, for UI consistency)
     from master_data.models import Program
+    from .utils import decompose_ugc_id
     programs = Program.objects.all()
     program_mapping = {
         (p.short_name if p.short_name else p.name): {
@@ -1089,6 +1090,7 @@ def edit_student(request, student_id):
     return render(request, 'students/edit.html', {
         'form': form, 
         'student': student,
+        'id_parts': decompose_ugc_id(student.student_id),
         'program_mapping_json': json.dumps(program_mapping),
         'geo_data_json': json.dumps(BANGLADESH_GEO),
         **_get_history_suggestions()
@@ -1172,8 +1174,11 @@ def import_preview(request):
             # Record counting
             total_records = len(df)
             
-            # Preview first 10 rows OR all rows
-            preview_df = df if show_all else df.head(10).copy()
+            # Performance Guard: Even if 'show_all' is checked, limit visual table to 100 rows
+            # Rendering 1000+ rows in a modal table causes extreme browser lag.
+            # Total counts will still reflect the entire file.
+            preview_limit = 100 if show_all else 10
+            preview_df = df.head(preview_limit).copy()
             
             # Core fields for compact view
             core_fields = ['student_id', 'student_name', 'program', 'batch', 'student_mobile', 'admission_status']
@@ -1931,13 +1936,15 @@ def api_global_search(request):
 def data_integrity(request):
     """Main page for Data Integrity and Deduplication Scanner."""
     fields = [
+        {'name': 'student_id', 'label': 'Student ID'},
+        {'name': 'old_student_id', 'label': 'Old Student ID'},
         {'name': 'student_name', 'label': 'Student Name'},
         {'name': 'father_name', 'label': "Father's Name"},
         {'name': 'mother_name', 'label': "Mother's Name"},
         {'name': 'student_mobile', 'label': 'Mobile Number'},
         {'name': 'student_email', 'label': 'Email Address'},
         {'name': 'dob', 'label': 'Date of Birth'},
-        {'name': 'national_id_birth_certificate', 'label': 'NID / Birth Cert.'},
+        {'name': 'national_id', 'label': 'NID / Birth Cert.'},
     ]
     
     from master_data.models import Program, Batch
@@ -2150,7 +2157,7 @@ def api_bulk_update_modal(request):
             {'name': 'gender', 'label': 'Gender'},
             {'name': 'religion', 'label': 'Religion'},
             {'name': 'blood_group', 'label': 'Blood Group'},
-            {'name': 'batch', 'label': 'Batch (Foreign Key)'},
+            {'name': 'batch', 'label': 'Batch'},
             {'name': 'is_non_residential', 'label': 'Non-Residential'},
             {'name': 'is_freedom_fighter_child', 'label': 'Freedom Fighter Child'},
             {'name': 'is_july_joddha_2024', 'label': 'July Joddha 2024'},
@@ -2204,8 +2211,23 @@ def api_bulk_update_execute(request):
             
         if field_name == 'batch' and new_value:
             from master_data.models import Batch
+            import re
             try:
-                new_value = Batch.objects.get(id=new_value)
+                batch_obj = Batch.objects.get(id=new_value)
+                new_value = batch_obj.name
+                # Calculate batch_number for sorting
+                nums = re.findall(r'\d+', new_value)
+                batch_number = int(nums[0]) if nums else 0
+                
+                try:
+                    with transaction.atomic():
+                        updated_count = Student.objects.filter(student_id__in=student_ids).update(
+                            batch=new_value, 
+                            batch_number=batch_number
+                        )
+                    return HttpResponse(f"<script>Swal.fire('Success', '{updated_count} students updated successfully!', 'success').then(() => location.reload());</script>")
+                except Exception as e:
+                    return HttpResponse(f"<div class='alert alert-danger'>Update failed: {escape(str(e))}</div>")
             except Exception:
                 return HttpResponse("<div class='alert alert-danger'>Invalid Batch Selected.</div>")
                 

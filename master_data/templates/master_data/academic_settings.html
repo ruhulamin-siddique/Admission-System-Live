@@ -203,7 +203,10 @@
                     <div class="tab-pane fade" id="batches" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h4 class="m-0 font-weight-bold">Batches</h4>
-                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addBatchModal"><i class="fas fa-plus mr-1"></i> Add Batch</button>
+                            <div class="btn-group">
+                                <button class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#harmonizerModal"><i class="fas fa-sync-alt mr-1"></i> Harmonizer</button>
+                                <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addBatchModal"><i class="fas fa-plus mr-1"></i> Add Batch</button>
+                            </div>
                         </div>
                         <table class="table table-bordered table-striped">
                             <thead>
@@ -623,6 +626,78 @@
     </div>
 </div>
 {% endfor %}
+
+<!-- Master Data Harmonizer Modal -->
+<div class="modal fade" id="harmonizerModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <form action="{% url 'harmonize_batch_assignment' %}" method="POST" class="modal-content shadow-lg border-0" style="border-radius: 15px;">
+            {% csrf_token %}
+            <div class="modal-header bg-info text-white" style="border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title"><i class="fas fa-sync-alt mr-2"></i> Master Data Harmonizer</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-info border-0 mb-4 shadow-sm" style="background: rgba(23, 162, 184, 0.1); color: #0c5460;">
+                    <small><i class="fas fa-info-circle mr-1"></i> Use this tool to bulk-assign a batch to existing students based on their Program, Year, or Semester.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="font-weight-bold text-muted small text-uppercase">Target Batch <span class="text-danger">*</span></label>
+                    <select name="batch_id" class="form-control" required>
+                        <option value="">-- Select Master Batch --</option>
+                        {% for b in batches %}
+                        <option value="{{ b.id }}">{{ b.name }} ({{ b.admission_year.year }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <hr class="my-4">
+                <h6 class="font-weight-bold mb-3"><i class="fas fa-filter mr-1"></i> Selection Criteria</h6>
+
+                <div class="form-group">
+                    <label class="font-weight-bold text-muted small text-uppercase">Filter by Program</label>
+                    <select name="program" class="form-control">
+                        <option value="">All Programs</option>
+                        {% for p in programs %}
+                        <option value="{{ p.short_name|default:p.name }}">{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label class="font-weight-bold text-muted small text-uppercase">Filter by Year</label>
+                            <select name="year" class="form-control">
+                                <option value="">All Years</option>
+                                {% for y in years %}
+                                <option value="{{ y.year }}">{{ y.year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label class="font-weight-bold text-muted small text-uppercase">Filter by Semester</label>
+                            <select name="semester" class="form-control">
+                                <option value="">All Semesters</option>
+                                {% for s in semesters %}
+                                <option value="{{ s.name }}">{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light" style="border-radius: 0 0 15px 15px;">
+                <button type="button" class="btn btn-link text-muted" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-info px-4 shadow-sm" onclick="return confirm('Are you sure you want to mass-update student records?')">
+                    <i class="fas fa-check mr-1"></i> Apply Harmonization
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 {% endblock %}
 

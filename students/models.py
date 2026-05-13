@@ -9,15 +9,15 @@ class Student(models.Model):
     old_student_id = models.CharField(max_length=50, null=True, blank=True)
     
     # Academic Info
-    program = models.CharField(max_length=100, null=True, blank=True)
+    program = models.CharField(max_length=100, null=True, blank=True, db_index=True)
     admission_year = models.IntegerField(null=True, blank=True)
     cluster = models.CharField(max_length=50, null=True, blank=True)
-    batch = models.CharField(max_length=50, null=True, blank=True)
+    batch = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     batch_number = models.IntegerField(null=True, blank=True, help_text="Auto-extracted for numeric sorting")
     semester_name = models.CharField(max_length=50, null=True, blank=True)
     program_type = models.CharField(max_length=50, null=True, blank=True)
     admission_date = models.DateField(null=True, blank=True)
-    admission_status = models.CharField(max_length=50, default="Active")
+    admission_status = models.CharField(max_length=50, default="Active", db_index=True)
     
     # Personal Info
     gender = models.CharField(max_length=20, null=True, blank=True)
@@ -32,7 +32,7 @@ class Student(models.Model):
     father_occupation = models.CharField(max_length=100, null=True, blank=True)
     
     # Contact Info
-    student_mobile = models.CharField(max_length=20, null=True, blank=True)
+    student_mobile = models.CharField(max_length=20, null=True, blank=True, db_index=True)
     father_mobile = models.CharField(max_length=20, null=True, blank=True)
     mother_mobile = models.CharField(max_length=20, null=True, blank=True)
     student_email = models.EmailField(null=True, blank=True)
