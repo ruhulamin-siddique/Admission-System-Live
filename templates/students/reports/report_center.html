@@ -274,5 +274,52 @@
     </div>
 </div>
 
+<!-- Section: Data Integrity & Utilities -->
+<div class="category-header">Data Integrity & Management Utilities</div>
+<div class="row mb-5">
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'data_integrity' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-indigo text-white shadow-sm" style="background-color: #4f46e5 !important;">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Data Integrity Hub</h5>
+                <p class="text-muted text-sm">Scan for duplicate records, ID collisions, and missing student attributes.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-indigo font-weight-bold text-sm">
+                Sanitize Database <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'bulk_photo_upload' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-primary text-white shadow-sm">
+                    <i class="fas fa-images"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Bulk Photo Sync</h5>
+                <p class="text-muted text-sm">Synchronize mass student photos via ZIP archive (ID-based matching).</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-primary font-weight-bold text-sm">
+                Update Identities <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card report-card" onclick="location.href='{% url 'import_students' %}'">
+            <div class="card-body">
+                <div class="report-icon bg-success text-white shadow-sm">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <h5 class="font-weight-bold mb-2">Excel Import Engine</h5>
+                <p class="text-muted text-sm">Batch import student records or update existing data from spreadsheets.</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-success font-weight-bold text-sm">
+                Bulk Import <i class="fas fa-chevron-right ml-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 {% endblock %}

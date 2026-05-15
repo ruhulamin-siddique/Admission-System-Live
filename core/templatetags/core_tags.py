@@ -94,3 +94,27 @@ def getattribute(value, arg):
     if hasattr(value, str(arg)):
         return getattr(value, arg)
     return ""
+
+@register.filter
+def gpa_to_gl(value):
+    """Converts GPA (float) to Letter Grade (GL)."""
+    try:
+        gpa = float(value)
+        if gpa >= 5.0: return 'A+'
+        if gpa >= 4.0: return 'A'
+        if gpa >= 3.5: return 'A-'
+        if gpa >= 3.0: return 'B'
+        if gpa >= 2.0: return 'C'
+        if gpa >= 1.0: return 'D'
+        return 'F'
+    except (ValueError, TypeError):
+        return '-'
+
+@register.filter
+def clean_numeric(value):
+    """Removes .0 from numeric strings."""
+    if value is None: return ""
+    s = str(value).strip()
+    if s.endswith('.0'):
+        return s[:-2]
+    return s

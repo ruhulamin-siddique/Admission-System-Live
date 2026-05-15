@@ -278,25 +278,25 @@
     }
 
     .student-info-trigger {
-        width: 28px;
-        height: 28px;
-        border: 1px solid rgba(43, 58, 140, 0.12);
-        border-radius: 999px;
-        background: linear-gradient(180deg, #ffffff, #eef2ff);
+        width: 22px;
+        height: 22px;
+        border: none;
+        background: none;
         color: var(--primary-blue);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 8px 18px rgba(43, 58, 140, 0.08);
-        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+        box-shadow: none;
+        transition: transform 0.18s ease, color 0.18s ease, opacity 0.2s ease, visibility 0.2s ease;
+        padding: 0;
     }
 
     .student-info-trigger:hover,
     .student-info-trigger:focus {
-        background: linear-gradient(135deg, var(--primary-blue), #3e55d0);
-        color: #fff;
-        transform: translateY(-1px);
-        box-shadow: 0 12px 24px rgba(43, 58, 140, 0.16);
+        background: none;
+        color: var(--primary-blue-dark);
+        transform: scale(1.2);
+        box-shadow: none;
         outline: none;
     }
 
@@ -349,6 +349,47 @@
     .row-action-link--success:focus {
         background: rgba(22, 143, 92, 0.2);
         color: var(--success-green-dark);
+    }
+
+    /* ID Copy Button Hover Styles */
+    .td-id-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-copy-id, .student-info-trigger {
+        opacity: 0;
+        visibility: hidden;
+    }
+    .btn-copy-id {
+        border: none;
+        background: none;
+        color: var(--primary-blue);
+        border-radius: 4px;
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 0;
+    }
+    .td-name:hover .btn-copy-id, .td-name:hover .student-info-trigger {
+        opacity: 1;
+        visibility: visible;
+    }
+    .btn-copy-id:hover, .student-info-trigger:hover {
+        transform: scale(1.1);
+    }
+    .student-name-link {
+        transition: color 0.2s ease;
+        text-decoration: none !important;
+    }
+    .student-name-link:hover {
+        color: var(--primary-blue) !important;
+        text-decoration: underline !important;
     }
 
     .filter-action-group {
@@ -827,7 +868,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="filter-group">
                         <label>Special Category</label>
                         <select name="special_category">
@@ -840,7 +881,19 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Board Verification</label>
+                        <select name="verification">
+                            <option value="">All Statuses</option>
+                            <option value="unverified" {% if selected_verification == 'unverified' %}selected{% endif %}>Pending Audit</option>
+                            <option value="ssc_pending" {% if selected_verification == 'ssc_pending' %}selected{% endif %}>SSC Pending</option>
+                            <option value="hsc_pending" {% if selected_verification == 'hsc_pending' %}selected{% endif %}>HSC Pending</option>
+                            <option value="fully_verified" {% if selected_verification == 'fully_verified' %}selected{% endif %}>Fully Verified</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
                     <div class="filter-group">
                         <label>Sort Results</label>
                         <select name="sort">
@@ -1146,5 +1199,35 @@ function openBulkUpdateModal() {
         $('#bulkUpdateModal').modal('show');
     });
 }
+    // Global Copy Function
+    window.copyToClipboard = function(text, btn) {
+        if (!navigator.clipboard) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                toastr.success(`ID ${text} copied!`);
+            } catch (err) {
+                toastr.error('Failed to copy');
+            }
+            document.body.removeChild(textArea);
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            toastr.success(`ID ${text} copied!`);
+            const icon = btn.querySelector('i');
+            icon.classList.replace('far', 'fas');
+            icon.classList.replace('fa-copy', 'fa-check');
+            setTimeout(() => {
+                icon.classList.replace('fas', 'far');
+                icon.classList.replace('fa-check', 'fa-copy');
+            }, 1000);
+        }).catch(err => {
+            toastr.error('Failed to copy');
+        });
+    };
 </script>
 {% endblock %}

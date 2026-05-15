@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mobile Number Repair Tool | Data Integrity{% endblock %}
+{% block page_title %}Mobile Number Repair Tool{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0" style="border-radius: 16px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Potential Errors</h6>
+                            <h2 class="font-weight-black mb-0">{{ broken_count }}</h2>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-circle p-3" style="background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-phone-slash fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div>
+                        <h5 class="font-weight-bold mb-2">Automated Repair Engine</h5>
+                        <p class="text-muted mb-0">This tool identifies mobile numbers that likely lost their leading zero during Excel imports. You can bulk-fix them below.</p>
+                    </div>
+                    <div class="ml-auto">
+                        <button class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm" id="btnFixAll" {% if broken_count == 0 %}disabled{% endif %}>
+                            <i class="fas fa-magic mr-2"></i> Fix All Fixable
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Table -->
+    <div class="card shadow-sm border-0" style="border-radius: 16px;">
+        <div class="card-header bg-white py-3 border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 font-weight-bold">Audit Results</h5>
+                <div class="btn-group">
+                    <button class="btn btn-light btn-sm rounded-pill px-3 mr-2" id="btnRefresh">
+                        <i class="fas fa-sync-alt mr-1"></i> Rescan
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm rounded-pill px-3" id="btnFixSelected">
+                        Fix Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="repairTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="width: 40px;" class="pl-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="checkAll">
+                                    <label class="custom-control-label" for="checkAll"></label>
+                                </div>
+                            </th>
+                            <th>Student ID & Name</th>
+                            <th>Current Mobile</th>
+                            <th>Suggested Fix</th>
+                            <th>Status</th>
+                            <th class="text-right pr-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in audit_list %}
+                        <tr>
+                            <td class="pl-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input check-student" id="check_{{ item.id }}" value="{{ item.id }}" {% if not item.fixable %}disabled{% endif %}>
+                                    <label class="custom-control-label" for="check_{{ item.id }}"></label>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="font-weight-bold">{{ item.name }}</div>
+                                <div class="small text-muted">{{ item.id }} | {{ item.program }}</div>
+                            </td>
+                            <td>
+                                <code class="bg-light px-2 py-1 rounded text-danger">{{ item.mobile }}</code>
+                            </td>
+                            <td>
+                                {% if item.fixable %}
+                                    <code class="bg-success-light px-2 py-1 rounded text-success" style="background: #eefdf5;">{{ item.suggested_fix }}</code>
+                                {% else %}
+                                    <span class="text-muted small">Requires Manual Edit</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.fixable %}
+                                    <span class="badge badge-success-light text-success px-2 py-1" style="background: #eefdf5;">
+                                        <i class="fas fa-check-circle mr-1"></i> Auto-fixable
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-warning-light text-warning px-2 py-1" style="background: #fffbeb;">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i> Manual Review
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right pr-4">
+                                {% if item.fixable %}
+                                    <button class="btn btn-sm btn-outline-success rounded-pill px-3 btn-fix-single" data-id="{{ item.id }}">
+                                        Apply Fix
+                                    </button>
+                                {% else %}
+                                    <a href="{% url 'edit_student' item.id %}" class="btn btn-sm btn-light rounded-pill px-3">
+                                        <i class="fas fa-edit mr-1"></i> Edit
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="fas fa-check-circle fa-3x text-success" style="opacity: 0.3;"></i>
+                                </div>
+                                <h5 class="text-muted">No mobile number issues found!</h5>
+                                <p class="text-muted small">Your database is clean of missing leading zeros.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle fa-4x text-success"></i>
+                </div>
+                <h4 class="font-weight-black mb-2" id="successTitle">Repair Complete</h4>
+                <p class="text-muted mb-4" id="successMessage"></p>
+                <button type="button" class="btn btn-primary rounded-pill px-5" onclick="location.reload()">Great!</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    const csrftoken = '{{ csrf_token }}';
+
+    function applyFixes(studentIds, fixAll = false) {
+        if (!studentIds.length && !fixAll) {
+            alert('Please select at least one record to fix.');
+            return;
+        }
+
+        const btn = fixAll ? $('#btnFixAll') : $('#btnFixSelected');
+        const originalHtml = btn.html();
+        btn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Processing...').prop('disabled', true);
+
+        $.ajax({
+            url: "{% url 'api_bulk_fix_mobile' %}",
+            method: 'POST',
+            data: {
+                'student_ids[]': studentIds,
+                'fix_all': fixAll,
+                'csrfmiddlewaretoken': csrftoken
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#successMessage').text(response.message);
+                    $('#successModal').modal('show');
+                } else {
+                    alert('Error: ' + response.error);
+                    btn.html(originalHtml).prop('disabled', false);
+                }
+            },
+            error: function() {
+                alert('A system error occurred.');
+                btn.html(originalHtml).prop('disabled', false);
+            }
+        });
+    }
+
+    // Fix All
+    $('#btnFixAll').on('click', function() {
+        if (confirm('Are you sure you want to fix all 10-digit mobile numbers? This will add a leading 0 to them.')) {
+            applyFixes([], true);
+        }
+    });
+
+    // Fix Selected
+    $('#btnFixSelected').on('click', function() {
+        const selected = $('.check-student:checked').map(function() { return $(this).val(); }).get();
+        applyFixes(selected);
+    });
+
+    // Single Fix
+    $('.btn-fix-single').on('click', function() {
+        const id = $(this).data('id');
+        applyFixes([id]);
+    });
+
+    // Check All logic
+    $('#checkAll').on('change', function() {
+        $('.check-student:not(:disabled)').prop('checked', $(this).prop('checked'));
+    });
+
+    $('#btnRefresh').on('click', function() {
+        location.reload();
+    });
+});
+</script>
+{% endblock %}

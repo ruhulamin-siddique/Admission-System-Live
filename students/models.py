@@ -95,6 +95,11 @@ class Student(models.Model):
     # Metadata
     photo_path = models.CharField(max_length=255, null=True, blank=True)
     mba_credits = models.IntegerField(null=True, blank=True)
+    # Academic Board Verification
+    ssc_verified = models.BooleanField(default=False)
+    hsc_verified = models.BooleanField(default=False)
+    academic_verification_logs = models.JSONField(default=dict, blank=True) # Stores Board Name, Official GPA, Match Status, etc.
+    
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
@@ -124,6 +129,21 @@ class Student(models.Model):
         # Auto-populate admission_date if null
         if not self.admission_date:
             self.admission_date = timezone.now().date()
+
+        # Auto-clean Roll, Reg, Year (remove .0 from floats)
+        def _clean_val(v):
+            if v is None: return None
+            s = str(v).strip()
+            if s.endswith('.0'):
+                return s[:-2]
+            return s
+
+        self.ssc_roll = _clean_val(self.ssc_roll)
+        self.ssc_reg = _clean_val(self.ssc_reg)
+        self.ssc_year = _clean_val(self.ssc_year)
+        self.hsc_roll = _clean_val(self.hsc_roll)
+        self.hsc_reg = _clean_val(self.hsc_reg)
+        self.hsc_year = _clean_val(self.hsc_year)
 
         super().save(*args, **kwargs)
 

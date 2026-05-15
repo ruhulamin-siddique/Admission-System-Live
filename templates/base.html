@@ -213,10 +213,11 @@
     <!-- Global Command Search (Direct Placement) -->
     {% has_any_access 'students' as has_admission_access %}
     {% if has_admission_access %}
-    <form action="{% url 'student_list' %}" method="get" class="form-inline ml-3 d-inline-block mb-0" style="position: relative;">
+    <form action="{% url 'student_list' %}" method="get" id="globalSearchForm" class="form-inline ml-3 d-inline-block mb-0" style="position: relative;">
         <i class="fas fa-search search-icon-inside" style="color: #4b5563; z-index: 10;"></i>
         <input type="text" 
-               name="q" 
+               name="search" 
+               id="globalSearchInput"
                class="form-control navbar-search-input" 
                placeholder="Search students..." 
                autocomplete="off"
@@ -444,6 +445,18 @@
             <a href="{% url 'data_integrity' %}" class="nav-link {% if request.resolver_match.url_name == 'data_integrity' %}active{% endif %}">
               <i class="nav-icon fas fa-clone"></i>
               <p>Duplicate Scanner</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'mobile_repair_tool' %}" class="nav-link {% if request.resolver_match.url_name == 'mobile_repair_tool' %}active{% endif %}">
+              <i class="nav-icon fas fa-phone-square-alt"></i>
+              <p>Mobile Repair Tool</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'academic_audit_center' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_audit_center' %}active{% endif %}">
+              <i class="nav-icon fas fa-shield-halved"></i>
+              <p>Academic Audit</p>
             </a>
           </li>
           {% endif %}
@@ -727,13 +740,49 @@
         });
     }
 
-    // Global Search Focus Management
+    // Global Search Focus & Smart Redirect Management
     document.addEventListener('click', function(e) {
         const target = document.getElementById('search-results-target');
-        const input = document.querySelector('.navbar-search-input');
-        if (!target.contains(e.target) && e.target !== input) {
+        const input = document.getElementById('globalSearchInput');
+        if (target && input && !target.contains(e.target) && e.target !== input) {
             target.classList.remove('show');
         }
+    });
+
+    $(document).ready(function() {
+        const $globalForm = $('#globalSearchForm');
+        const $globalInput = $('#globalSearchInput');
+        const $globalResults = $('#search-results-target');
+
+        $globalForm.on('submit', function(e) {
+            const query = $globalInput.val().trim();
+            if(!query) return false;
+
+            // Capture current tab if on profile page
+            let tabParam = '';
+            const $activeTab = $('.nav-pills a.active');
+            if ($activeTab.length > 0 && window.location.pathname.includes('/profile/')) {
+                tabParam = '?tab=' + $activeTab.attr('href').replace('#', '');
+            }
+
+            // 1. If it looks like a Student ID (numeric, 10+ digits), jump directly
+            if(/^\d{10,20}$/.test(query)) {
+                e.preventDefault();
+                window.location.href = `/students/profile/${query}/${tabParam}`;
+                return;
+            }
+
+            // 2. Check live results overlay for a single unique match
+            const $links = $globalResults.find('a[href*="/profile/"]');
+            if ($links.length === 1) {
+                e.preventDefault();
+                const profileUrl = $links.attr('href');
+                window.location.href = profileUrl + tabParam;
+                return;
+            }
+            
+            // 3. Fallback: let it go to directory normally if multiple results exist
+        });
     });
 
     // Modal Trigger Logic

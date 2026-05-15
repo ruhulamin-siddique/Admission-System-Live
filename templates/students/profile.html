@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load core_tags %}
 
 {% block title %}Profile: {{ student.student_name }} | Bangladesh Army University of Science and Technology{% endblock %}
 {% block page_title %}Student Profile View{% endblock %}
@@ -29,13 +30,33 @@
 <!-- Profile Header Actions -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="{% url 'student_list' %}" class="btn btn-outline-secondary font-weight-bold px-4" style="border-radius: 10px; border-width: 2px;">
-                <i class="fas fa-arrow-left mr-2"></i> Back to Directory
-            </a>
-            <a href="{% url 'edit_student' student.student_id %}" class="btn btn-primary font-weight-bold px-4 shadow-sm" style="border-radius: 10px;">
-                <i class="fas fa-edit mr-2"></i> Edit Student Profile
-            </a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-3 shadow-sm" style="border-radius: 12px;">
+            <div class="d-flex align-items-center mb-2 mb-md-0">
+                <a href="{% url 'student_list' %}" class="btn btn-outline-secondary font-weight-bold mr-3" style="border-radius: 10px;">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Directory
+                </a>
+                <div class="position-relative" style="min-width: 300px;">
+                    <form action="{% url 'student_list' %}" method="GET" id="profileSearchForm" class="mb-0">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
+                            </div>
+                            <input type="text" name="search" id="profileQuickSearch" class="form-control border-0 bg-light" 
+                                   placeholder="Jump to another student..." autocomplete="off" style="border-radius: 0 10px 10px 0;">
+                        </div>
+                    </form>
+                    <!-- Search Results Dropdown -->
+                    <div id="quickSearchResults" class="dropdown-menu shadow-lg border-0 w-100 mt-1 p-0 overflow-hidden" 
+                         style="display: none; position: absolute; top: 100%; left: 0; z-index: 1050; border-radius: 12px; max-height: 400px; overflow-y: auto;">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center">
+                <a href="{% url 'edit_student' student.student_id %}" class="btn btn-primary font-weight-bold px-4 shadow-sm" style="border-radius: 10px;">
+                    <i class="fas fa-edit mr-2"></i> Edit Profile
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -53,7 +74,14 @@
                 </div>
 
                 <h3 class="profile-username text-center">{{ student.student_name }}</h3>
-                <p class="text-muted text-center">{{ student.student_id }}</p>
+                <p class="text-muted text-center mb-0">{{ student.student_id }}</p>
+                {% if student.old_student_id %}
+                    <div class="text-center mt-1">
+                        <span class="badge badge-warning py-1 px-2 rounded-sm" style="font-size: 0.65rem; opacity: 0.8;">
+                            <i class="fas fa-history mr-1"></i> FORMERLY: {{ student.old_student_id }}
+                        </span>
+                    </div>
+                {% endif %}
 
                 <ul class="list-group list-group-unbordered mb-3">
                     <li class="list-group-item">
@@ -91,6 +119,11 @@
                 <a href="{% url 'cancellation_hub' %}?search={{ student.student_id }}" class="btn btn-block btn-outline-dark font-weight-bold mb-2 py-2">
                     <i class="fas fa-user-slash mr-2"></i> Initiate Cancel
                 </a>
+                {% if user.is_superuser %}
+                <button type="button" class="btn btn-block btn-outline-primary font-weight-bold mb-2 py-2" data-toggle="modal" data-target="#rectifyIdModal">
+                    <i class="fas fa-fingerprint mr-2"></i> Change ID
+                </button>
+                {% endif %}
                 <button type="button" class="btn btn-block btn-danger font-weight-bold mt-4 mb-2 py-2" data-toggle="modal" data-target="#deleteStudentModal">
                     <i class="fas fa-trash-alt mr-2"></i> Delete Admission
                 </button>
@@ -159,8 +192,8 @@
                             <div class="col-md-6">
                                 <h5 class="text-primary border-bottom pb-2">Personal Information</h5>
                                 <table class="table table-sm">
-                                    <tr><td><strong>Gender:</strong></td><td>{{ student.gender }}</td></tr>
-                                    <tr><td><strong>Date of Birth:</strong></td><td>{{ student.dob }}</td></tr>
+                                    <tr><td><strong>Gender:</strong></td><td>{{ student.gender }} {% if student.ssc_verified or student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td></tr>
+                                    <tr><td><strong>Date of Birth:</strong></td><td>{{ student.dob }} {% if student.ssc_verified or student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td></tr>
                                     <tr><td><strong>Religion:</strong></td><td>{{ student.religion }}</td></tr>
                                     <tr><td><strong>Blood Group:</strong></td><td>{{ student.blood_group }}</td></tr>
                                     <tr><td><strong>NID/Birth Reg:</strong></td><td>{{ student.national_id }}</td></tr>
@@ -169,8 +202,8 @@
                             <div class="col-md-6">
                                 <h5 class="text-primary border-bottom pb-2">Family Information</h5>
                                 <table class="table table-sm">
-                                    <tr><td><strong>Father's Name:</strong></td><td>{{ student.father_name }}</td></tr>
-                                    <tr><td><strong>Mother's Name:</strong></td><td>{{ student.mother_name }}</td></tr>
+                                    <tr><td><strong>Father's Name:</strong></td><td>{{ student.father_name }} {% if student.ssc_verified or student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td></tr>
+                                    <tr><td><strong>Mother's Name:</strong></td><td>{{ student.mother_name }} {% if student.ssc_verified or student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td></tr>
                                     <tr><td><strong>Father's Occ:</strong></td><td>{{ student.father_occupation }}</td></tr>
                                     <tr><td><strong>Guardian Contact:</strong></td><td>{{ student.emergency_contact }}</td></tr>
                                 </table>
@@ -195,26 +228,138 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="card card-outline card-info">
-                                    <div class="card-header">SSC / Equivalent</div>
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span class="font-weight-bold">SSC / Equivalent</span>
+                                        {% if student.ssc_verified %}
+                                            <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Verified</span>
+                                        {% else %}
+                                            <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i> Unverified</span>
+                                        {% endif %}
+                                    </div>
                                     <div class="card-body p-0">
-                                        <table class="table table-striped table-sm">
-                                            <tr><td><strong>School:</strong></td><td>{{ student.ssc_school }}</td></tr>
-                                            <tr><td><strong>Board:</strong></td><td>{{ student.ssc_board }}</td></tr>
-                                            <tr><td><strong>Roll:</strong></td><td>{{ student.ssc_roll }}</td></tr>
-                                            <tr><td><strong>GPA:</strong></td><td><span class="badge badge-primary">{{ student.ssc_gpa }}</span></td></tr>
+                                        <table class="table table-striped table-sm mb-0">
+                                            <tr>
+                                                <td><strong>School:</strong></td>
+                                                <td>{{ student.ssc_school }} {% if student.ssc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Board:</strong></td>
+                                                <td>{{ student.ssc_board }} {% if student.ssc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Year:</strong></td>
+                                                <td>{{ student.ssc_year|clean_numeric }} {% if student.ssc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Roll:</strong></td>
+                                                <td>{{ student.ssc_roll|clean_numeric }} {% if student.ssc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Reg:</strong></td>
+                                                <td>{{ student.ssc_reg|clean_numeric|default:"N/A" }} {% if student.ssc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>GPA:</strong></td>
+                                                <td>
+                                                    <span class="badge badge-primary">{{ student.ssc_gpa }}</span>
+                                                    {% if student.ssc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td colspan="2" class="p-0">
+                                                    <table class="table table-bordered table-sm mb-0 text-center" style="font-size: 0.75rem;">
+                                                        <tr class="bg-gray-light">
+                                                            <th>Subject</th>
+                                                            <th>Physics</th>
+                                                            <th>Chemistry</th>
+                                                            <th>Math</th>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>GP / GL</strong></td>
+                                                            <td>{{ student.ssc_physics|default:"-" }} / <strong>{{ student.ssc_physics|gpa_to_gl }}</strong></td>
+                                                            <td>{{ student.ssc_chemistry|default:"-" }} / <strong>{{ student.ssc_chemistry|gpa_to_gl }}</strong></td>
+                                                            <td>{{ student.ssc_math|default:"-" }} / <strong>{{ student.ssc_math|gpa_to_gl }}</strong></td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2" class="text-center bg-light py-2">
+                                                    <button type="button" class="btn btn-xs btn-outline-info font-weight-bold" 
+                                                            onclick="openVerificationModal('SSC', '{{ student.student_id }}')">
+                                                        <i class="fas fa-shield-halved mr-1"></i> Verify with Board
+                                                    </button>
+                                                </td>
+                                            </tr>
                                         </table>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="card card-outline card-info">
-                                    <div class="card-header">HSC / Equivalent</div>
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span class="font-weight-bold">HSC / Equivalent</span>
+                                        {% if student.hsc_verified %}
+                                            <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Verified</span>
+                                        {% else %}
+                                            <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i> Unverified</span>
+                                        {% endif %}
+                                    </div>
                                     <div class="card-body p-0">
-                                        <table class="table table-striped table-sm">
-                                            <tr><td><strong>College:</strong></td><td>{{ student.hsc_college }}</td></tr>
-                                            <tr><td><strong>Board:</strong></td><td>{{ student.hsc_board }}</td></tr>
-                                            <tr><td><strong>Roll:</strong></td><td>{{ student.hsc_roll }}</td></tr>
-                                            <tr><td><strong>GPA:</strong></td><td><span class="badge badge-primary">{{ student.hsc_gpa }}</span></td></tr>
+                                        <table class="table table-striped table-sm mb-0">
+                                            <tr>
+                                                <td><strong>College:</strong></td>
+                                                <td>{{ student.hsc_college }} {% if student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Board:</strong></td>
+                                                <td>{{ student.hsc_board }} {% if student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Year:</strong></td>
+                                                <td>{{ student.hsc_year|clean_numeric }} {% if student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Roll:</strong></td>
+                                                <td>{{ student.hsc_roll|clean_numeric }} {% if student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Reg:</strong></td>
+                                                <td>{{ student.hsc_reg|clean_numeric|default:"N/A" }} {% if student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>GPA:</strong></td>
+                                                <td>
+                                                    <span class="badge badge-primary">{{ student.hsc_gpa }}</span>
+                                                    {% if student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td colspan="2" class="p-0">
+                                                    <table class="table table-bordered table-sm mb-0 text-center" style="font-size: 0.75rem;">
+                                                        <tr class="bg-gray-light">
+                                                            <th>Subject</th>
+                                                            <th>Physics</th>
+                                                            <th>Chemistry</th>
+                                                            <th>Math</th>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>GP / GL</strong></td>
+                                                            <td>{{ student.hsc_physics|default:"-" }} / <strong>{{ student.hsc_physics|gpa_to_gl }}</strong></td>
+                                                            <td>{{ student.hsc_chemistry|default:"-" }} / <strong>{{ student.hsc_chemistry|gpa_to_gl }}</strong></td>
+                                                            <td>{{ student.hsc_math|default:"-" }} / <strong>{{ student.hsc_math|gpa_to_gl }}</strong></td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2" class="text-center bg-light py-2">
+                                                    <button type="button" class="btn btn-xs btn-outline-info font-weight-bold"
+                                                            onclick="openVerificationModal('HSC', '{{ student.student_id }}')">
+                                                        <i class="fas fa-shield-halved mr-1"></i> Verify with Board
+                                                    </button>
+                                                </td>
+                                            </tr>
                                         </table>
                                     </div>
                                 </div>
@@ -271,4 +416,367 @@
         </div>
     </div>
 </div>
+{% if user.is_superuser %}
+<!-- ID Rectification Modal -->
+<div class="modal fade" id="rectifyIdModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header bg-primary text-white py-4 border-0">
+                <h5 class="modal-title font-weight-black">
+                    <i class="fas fa-fingerprint mr-2"></i> Change Student ID
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{% url 'rectify_student_id' student.student_id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning border-0 small mb-4">
+                        <i class="fas fa-exclamation-triangle mr-2"></i> <strong>CRITICAL ACTION:</strong> This will migrate all financial, academic, and media records to a new Primary ID.
+                    </div>
+                    
+                    <div class="form-group mb-4">
+                        <label class="small font-weight-bold text-uppercase text-muted">Current Identity</label>
+                        <input type="text" class="form-control bg-light border-0" value="{{ student.student_id }}" readonly>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="small font-weight-bold text-uppercase text-primary">New Corrected ID</label>
+                        <input type="text" name="new_id" class="form-control form-control-lg border-primary" placeholder="Enter corrected student ID..." required>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="small font-weight-bold text-uppercase text-muted">Reason for Rectification</label>
+                        <textarea name="reason" class="form-control" rows="2" placeholder="e.g., Typo in admission form..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-3 border-0">
+                    <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Discard</button>
+                    <button type="submit" class="btn btn-primary px-4 rounded-pill font-weight-black shadow-sm">
+                        Confirm Migration <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% if user.is_superuser %}
+<!-- ID Rectification Modal ... existing ... -->
+{% endif %}
+
+<!-- Board Verification Modal -->
+<div class="modal fade" id="boardVerifyModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow-2xl border-0 overflow-hidden" style="border-radius: 1.25rem;">
+            <div class="modal-header bg-info text-white py-3 border-0">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-shield-halved mr-2"></i> <span id="verifyTitle">SSC</span> Board Verification
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-4" id="verifyModalBody">
+                <div id="captchaLoader" class="text-center py-4">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="mt-2 text-muted small">Establishing Board Portal Session...</p>
+                </div>
+
+                <div id="verifyError" class="alert alert-danger small font-weight-bold mb-3 d-none">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> <span id="verifyErrorMsg"></span>
+                </div>
+                
+                <div id="captchaContainer" style="display: none;">
+                    <div class="alert alert-light border small mb-3">
+                        <i class="fas fa-info-circle mr-2 text-info"></i> Solve the captcha from the official portal to begin.
+                    </div>
+                    <div class="text-center mb-4 bg-light p-3 rounded">
+                        <img id="captchaImage" src="" alt="Captcha" class="img-fluid border shadow-sm rounded">
+                        <button type="button" class="btn btn-xs btn-link d-block mx-auto mt-1" onclick="loadCaptcha()">
+                            <i class="fas fa-sync-alt"></i> Reload Captcha
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold">Enter Captcha Digits</label>
+                        <input type="text" id="captchaValue" class="form-control form-control-lg text-center font-weight-bold" placeholder="????">
+                    </div>
+                    <button type="button" class="btn btn-info btn-block btn-lg rounded-pill font-weight-bold mt-4 shadow-sm" onclick="startVerification()">
+                        <i class="fas fa-search mr-2"></i> View & Verify Result
+                    </button>
+                </div>
+
+                <div id="verifyResultContainer" style="display: none;">
+                    <!-- Result comparison will be injected here -->
+                </div>
+
+                <!-- Technical Audit Section (Toggleable) -->
+                <div class="mt-4 pt-3 border-top">
+                    <button type="button" class="btn btn-xs btn-link text-muted p-0" onclick="$('#debugInfo').toggle()">
+                        <i class="fas fa-bug mr-1"></i> Technical Audit Info
+                    </button>
+                    <div id="debugInfo" class="mt-2 small text-muted bg-dark p-2 rounded" style="display: none; font-family: monospace; font-size: 10px;">
+                        <div>[PORTAL] eboardresults.com / educationboardresults.gov.bd</div>
+                        <div>[SESSION] Dynamic Handshake Active</div>
+                        <div>[HEADERS] Referer, X-Requested-With, XMLHttpRequest</div>
+                        <div id="debugParams"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentVerifyType = '';
+    let currentStudentId = '';
+
+    function openVerificationModal(type, sid) {
+        currentVerifyType = type;
+        currentStudentId = sid;
+        document.getElementById('verifyTitle').innerText = type;
+        document.getElementById('verifyError').classList.add('d-none');
+        $('#boardVerifyModal').modal('show');
+        
+        loadCaptcha();
+    }
+
+    function loadCaptcha() {
+        const loader = document.getElementById('captchaLoader');
+        const container = document.getElementById('captchaContainer');
+        const resultContainer = document.getElementById('verifyResultContainer');
+        
+        loader.style.display = 'block';
+        container.style.display = 'none';
+        resultContainer.style.display = 'none';
+        
+        fetch("{% url 'api_get_board_captcha' %}")
+            .then(r => {
+                if(!r.ok) throw new Error("Server error: " + r.status);
+                return r.json();
+            })
+            .then(data => {
+                loader.style.display = 'none';
+                if(data.success) {
+                    document.getElementById('captchaImage').src = data.captcha_image;
+                    container.style.display = 'block';
+                    document.getElementById('captchaValue').value = '';
+                    document.getElementById('captchaValue').focus();
+                } else {
+                    document.getElementById('verifyErrorMsg').innerText = data.error || "Failed to load captcha.";
+                    document.getElementById('verifyError').classList.remove('d-none');
+                    loader.style.display = 'none';
+                    container.style.display = 'block'; // Show container anyway so they can try to reload
+                }
+            })
+            .catch(err => {
+                loader.innerHTML = `<div class="text-danger"><i class="fas fa-wifi-slash fa-2x mb-2"></i><p>Network Error: ${err.message}</p><button class="btn btn-sm btn-outline-primary" onclick="loadCaptcha()">Retry Connection</button></div>`;
+                loader.style.display = 'block';
+                console.error("Verification Error:", err);
+            });
+    }
+
+    function startVerification() {
+        const captcha = document.getElementById('captchaValue').value;
+        if(!captcha) return toastr.warning("Please enter the captcha.");
+        
+        const btn = document.querySelector('#captchaContainer button.btn-info');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Searching...';
+
+        const formData = new FormData();
+        formData.append('student_id', currentStudentId);
+        formData.append('exam_type', currentVerifyType);
+        formData.append('captcha', captcha);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        // Update Technical Audit Info
+        document.getElementById('debugParams').innerHTML = `
+            <div>[PAYLOAD] student_id: ${currentStudentId}</div>
+            <div>[PAYLOAD] exam_type: ${currentVerifyType}</div>
+            <div>[PAYLOAD] captcha: ${captcha}</div>
+        `;
+
+        fetch("{% url 'api_verify_board_result' %}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            
+            if(data.success) {
+                renderVerificationResult(data);
+            } else {
+                document.getElementById('verifyErrorMsg').innerText = data.error;
+                document.getElementById('verifyError').classList.remove('d-none');
+                loadCaptcha(); 
+            }
+        });
+    }
+
+    function renderVerificationResult(data) {
+        document.getElementById('captchaContainer').style.display = 'none';
+        const container = document.getElementById('verifyResultContainer');
+        container.style.display = 'block';
+        
+        const statusColor = data.is_match ? 'success' : 'danger';
+        const statusIcon = data.is_match ? 'check-circle' : 'exclamation-triangle';
+        
+        container.innerHTML = `
+            <div class="text-center mb-4">
+                <div class="display-4 text-${statusColor} mb-2">
+                    <i class="fas fa-${statusIcon}"></i>
+                </div>
+                <h5 class="font-weight-bold">Verification ${data.is_match ? 'Successful' : 'Discrepancy Found'}</h5>
+            </div>
+            
+            <div class="card bg-light border-0">
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead class="bg-dark text-white text-xs">
+                            <tr><th>ATTRIBUTE</th><th>PORTAL DATA</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Candidate Name</strong></td><td>${data.details.name || 'N/A'}</td></tr>
+                            <tr><td><strong>Father's Name</strong></td><td>${data.details.father_name || 'N/A'}</td></tr>
+                            <tr><td><strong>Mother's Name</strong></td><td>${data.details.mother_name || 'N/A'}</td></tr>
+                            <tr><td><strong>Date of Birth</strong></td><td>${data.details.dob || 'N/A'}</td></tr>
+                            <tr class="bg-${statusColor}-light">
+                                <td><strong>Official GPA</strong></td>
+                                <td class="font-weight-bold text-${statusColor}">${data.board_gpa}</td>
+                            </tr>
+                            <tr><td><strong>System Data</strong></td><td>${data.current_gpa}</td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="mt-3 p-3 bg-white border-top">
+                       <h6 class="font-weight-bold small text-uppercase text-muted mb-2 text-center">Science Subject Audit</h6>
+                       <div class="row text-center">
+                           <div class="col-4 border-right">
+                               <div class="small text-muted">Physics</div>
+                               <div class="font-weight-bold text-primary">${data.details.grades.physics || '-'}</div>
+                           </div>
+                           <div class="col-4 border-right">
+                               <div class="small text-muted">Chemistry</div>
+                               <div class="font-weight-bold text-primary">${data.details.grades.chemistry || '-'}</div>
+                           </div>
+                           <div class="col-4">
+                               <div class="small text-muted">Math</div>
+                               <div class="font-weight-bold text-primary">${data.details.grades.math || '-'}</div>
+                           </div>
+                       </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button type="button" class="btn btn-primary btn-block rounded-pill font-weight-bold" onclick="location.reload()">
+                    <i class="fas fa-check mr-2"></i> Finalize & Close
+                </button>
+            </div>
+        `;
+    }
+
+    // --- Tab Persistence & Real-time Search Logic ---
+    $(document).ready(function() {
+        // 1. Tab Persistence (URL & Storage)
+        const persistenceKey = 'activeStudentTab';
+        const urlParams = new URLSearchParams(window.location.search);
+        let targetTab = urlParams.get('tab'); // 1st Priority: URL Parameter
+        
+        if (!targetTab) {
+            targetTab = localStorage.getItem(persistenceKey); // 2nd Priority: LocalStorage
+        } else {
+            targetTab = '#' + targetTab; // Convert 'academic' to '#academic'
+        }
+        
+        if (targetTab && targetTab !== '#details') {
+            const forceTab = setInterval(function() {
+                const $targetTab = $(`.nav-pills a[href="${targetTab}"]`);
+                if ($targetTab.length > 0) {
+                    $targetTab.tab('show');
+                    $('.nav-pills a.active').removeClass('active');
+                    $('.tab-pane.active').removeClass('active');
+                    $targetTab.addClass('active');
+                    $(targetTab).addClass('active show');
+                }
+            }, 50);
+            setTimeout(() => clearInterval(forceTab), 1000); // Stop after 1s
+        }
+
+        // Save active tab on change
+        $('.nav-pills a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            localStorage.setItem(persistenceKey, $(e.target).attr('href'));
+        });
+
+        // 2. Real-time Quick Search
+        let searchTimer;
+        const $input = $('#profileQuickSearch');
+        const $results = $('#quickSearchResults');
+
+        $input.on('input', function() {
+            clearTimeout(searchTimer);
+            const query = $(this).val().trim();
+
+            if (query.length < 2) {
+                $results.hide().empty();
+                return;
+            }
+
+            searchTimer = setTimeout(function() {
+                $.ajax({
+                    url: "{% url 'api_global_search' %}",
+                    data: { 'q': query },
+                    success: function(html) {
+                        if (html.trim()) {
+                            $results.html(html).show();
+                        } else {
+                            $results.hide();
+                        }
+                    }
+                });
+            }, 300);
+        });
+
+        // Close results on click outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#profileQuickSearch, #quickSearchResults').length) {
+                $results.hide();
+            }
+        });
+
+        // 3. Search Form Enter Handling
+        $('#profileSearchForm').on('submit', function(e) {
+            const query = $input.val().trim();
+            if(!query) return false;
+            
+            const currentTab = $('.nav-pills a.active').attr('href').replace('#', '');
+            const redirectUrl = (id) => `/students/profile/${id}/?tab=${currentTab}`;
+
+            // If an ID pattern is detected, try to jump directly
+            if(/^\d{10,20}$/.test(query)) {
+                e.preventDefault();
+                window.location.href = redirectUrl(query);
+                return;
+            }
+
+            // If there's exactly one result in the dropdown, go to it
+            const $links = $results.find('a[href*="/profile/"]');
+            if ($links.length === 1) {
+                e.preventDefault();
+                const studentId = $links.attr('href').split('/').filter(Boolean).pop();
+                window.location.href = redirectUrl(studentId);
+                return;
+            }
+        });
+    });
+</script>
+
+<style>
+    .bg-success-light { background-color: rgba(40, 167, 69, 0.1); }
+    .bg-danger-light { background-color: rgba(220, 53, 69, 0.1); }
+    .text-xs { font-size: 0.75rem; letter-spacing: 0.5px; }
+</style>
 {% endblock %}

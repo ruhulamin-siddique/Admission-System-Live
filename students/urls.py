@@ -14,12 +14,15 @@ urlpatterns = [
     path('api/bulk-update-execute/', views.api_bulk_update_execute, name='api_bulk_update_execute'),
     path('students/profile/<str:student_id>/', views.student_profile, name='student_profile'),
     path('students/edit/<str:student_id>/', views.edit_student, name='edit_student'),
+    path('students/rectify-id/<str:student_id>/', views.rectify_student_id, name='rectify_student_id'),
     path('students/short-info/<str:student_id>/', views.student_short_info, name='student_short_info'),
     path('students/delete/<str:student_id>/', views.delete_student, name='delete_student'),
     path('reports/academic-intake/', views.academic_intake_report, name='academic_intake_report'),
     path('students/import/', views.import_students, name='import_students'),
     path('students/import/preview/', views.import_preview, name='import_preview'),
     path('students/import/template/', views.download_import_template, name='download_import_template'),
+    path('students/bulk-photo-upload/', views.bulk_photo_upload, name='bulk_photo_upload'),
+    path('students/academic-audit/', views.academic_audit_center, name='academic_audit_center'),
     path('students/data-integrity/', views.data_integrity, name='data_integrity'),
     path('students/data-integrity/scan/', views.api_scan_duplicates, name='api_scan_duplicates'),
     path('students/data-integrity/merge/', views.api_merge_duplicates, name='api_merge_duplicates'),
@@ -35,6 +38,8 @@ urlpatterns = [
     path('api/periodic-students/', views.api_periodic_students, name='api_periodic_students'),
     path('api/program-distribution/', views.api_program_distribution, name='api_program_distribution'),
     path('api/gender-distribution/', views.api_gender_distribution, name='api_gender_distribution'),
+    path('api/board-captcha/', views.api_get_board_captcha, name='api_get_board_captcha'),
+    path('api/verify-board-result/', views.api_verify_board_result, name='api_verify_board_result'),
     
     # Reports & Dynamic Exports
     path('reports/center/', views.reports_center, name='reports_center'),
@@ -55,4 +60,6 @@ urlpatterns = [
     path('reports/export/students/', views.export_students_dynamic, name='export_students_dynamic'),
     path('reports/export/migrations/', views.export_migrations_dynamic, name='export_migrations_dynamic'),
     path('reports/export/cancellations/', views.export_cancellations_dynamic, name='export_cancellations_dynamic'),
+    path('students/mobile-repair/', views.mobile_repair_tool, name='mobile_repair_tool'),
+    path('api/bulk-fix-mobile/', views.api_bulk_fix_mobile, name='api_bulk_fix_mobile'),
 ]

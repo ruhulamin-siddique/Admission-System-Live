@@ -223,15 +223,7 @@ class StudentForm(forms.ModelForm):
         return nid
 
     def clean_student_mobile(self):
-        mobile = self.cleaned_data.get('student_mobile')
-        if mobile:
-            # Strip any non-digit characters
-            mobile = ''.join(filter(str.isdigit, mobile))
-            if not mobile.startswith('01'):
-                raise forms.ValidationError("Mobile number must start with 01")
-            if len(mobile) != 11:
-                raise forms.ValidationError("Mobile number must be exactly 11 digits")
-        return mobile
+        return self._clean_mobile(self.cleaned_data.get('student_mobile'))
 
     def clean_father_mobile(self):
         return self._clean_mobile(self.cleaned_data.get('father_mobile'))
@@ -241,8 +233,14 @@ class StudentForm(forms.ModelForm):
 
     def _clean_mobile(self, mobile):
         if mobile:
-            # Strip any non-digit characters
+            # Strip all non-digit characters
             mobile = ''.join(filter(str.isdigit, mobile))
+            
+            # Handle common prefixes (e.g. 88017... -> 017...)
+            if mobile.startswith('880') and len(mobile) == 13:
+                mobile = mobile[2:]
+            
+            # Final validation: must be 11 digits starting with 01
             if not mobile.startswith('01'):
                 raise forms.ValidationError("Mobile number must start with 01")
             if len(mobile) != 11:

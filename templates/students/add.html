@@ -401,7 +401,29 @@
                 <a href="{% url 'student_list' %}" class="btn btn-sm btn-outline-light rounded-pill"><i class="fas fa-arrow-left"></i> Directory</a>
             </div>
             
-            <form method="POST" id="admissionForm" enctype="multipart/form-data">
+            <!-- Error Summary Alert -->
+    {% if form.errors %}
+    <div class="alert alert-danger shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-exclamation-triangle mr-2 fa-lg"></i>
+            <h6 class="mb-0 font-weight-bold">Form Validation Errors</h6>
+        </div>
+        <ul class="mb-0 small pl-4">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" id="admissionForm" enctype="multipart/form-data">
                 {% csrf_token %}
                 
                 <ul class="nav nav-tabs nav-tabs-custom" id="admissionTabs" role="tablist">
@@ -696,7 +718,12 @@
                         <!-- TAB 4: ACADEMIC -->
                         <div class="tab-pane fade" id="academic" role="tabpanel">
                             <div class="row">
-                                <div class="col-md-12"><h6 class="text-primary font-weight-bold mb-3 border-bottom pb-2"><i class="fas fa-school mr-2"></i>SSC / Equivalent Level</h6></div>
+                                <div class="col-md-12 d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                    <h6 class="text-primary font-weight-bold mb-0"><i class="fas fa-school mr-2"></i>SSC / Equivalent Level</h6>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" onclick="openVerificationModal('SSC')">
+                                        <i class="fas fa-shield-check mr-1"></i> Verify via Board
+                                    </button>
+                                </div>
                                 <div class="col-md-6"><div class="field-outline-group"><label>School Name <span class="text-danger">*</span></label>{{ form.ssc_school }}</div></div>
                                 <div class="col-md-3"><div class="field-outline-group"><label>Passing Year</label>{{ form.ssc_year }}</div></div>
                                 <div class="col-md-3"><div class="field-outline-group"><label>Board <span class="text-danger">*</span></label>{{ form.ssc_board }}</div></div>
@@ -708,7 +735,12 @@
                                 <div class="col-md-4"><div class="field-outline-group"><label>Chemistry</label>{{ form.ssc_chemistry }}</div></div>
                                 <div class="col-md-4"><div class="field-outline-group"><label>Math</label>{{ form.ssc_math }}</div></div>
                                 
-                                <div class="col-md-12 mt-4"><h6 class="text-primary font-weight-bold mb-3 border-bottom pb-2"><i class="fas fa-graduation-cap mr-2"></i>HSC / Equivalent Level</h6></div>
+                                <div class="col-md-12 d-flex justify-content-between align-items-center mt-4 mb-3 border-bottom pb-2">
+                                    <h6 class="text-primary font-weight-bold mb-0"><i class="fas fa-graduation-cap mr-2"></i>HSC / Equivalent Level</h6>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" onclick="openVerificationModal('HSC')">
+                                        <i class="fas fa-shield-check mr-1"></i> Verify via Board
+                                    </button>
+                                </div>
                                 <div class="col-md-6"><div class="field-outline-group"><label>College Name</label>{{ form.hsc_college }}</div></div>
                                 <div class="col-md-3"><div class="field-outline-group"><label>Passing Year</label>{{ form.hsc_year }}</div></div>
                                 <div class="col-md-3"><div class="field-outline-group"><label>Board</label>{{ form.hsc_board }}</div></div>
@@ -1327,4 +1359,315 @@
         </div>
     </div>
 </div>
+
+<!-- Board Verification Modal -->
+<div class="modal fade" id="boardVerificationModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header bg-primary text-white border-bottom-0 p-4">
+                <h5 class="modal-title font-weight-bold" id="boardVerificationModalLabel">
+                    <i class="fas fa-shield-check mr-2"></i> Education Board Verification
+                </h5>
+                <button type="button" class="close text-white opacity-100" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row no-gutters">
+                    <!-- LEFT: INPUTS -->
+                    <div class="col-md-5 border-right bg-light p-4">
+                        <div class="row">
+                            <input type="hidden" id="verify_exam_level">
+                            <div class="col-md-12 mb-3">
+                                <label class="small font-weight-bold text-muted">Board</label>
+                                <select class="form-control rounded-pill border-0 shadow-sm" id="verify_board"></select>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="small font-weight-bold text-muted">Year</label>
+                                <input type="text" class="form-control rounded-pill border-0 shadow-sm" id="verify_year">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="small font-weight-bold text-muted">Roll Number</label>
+                                <input type="text" class="form-control rounded-pill border-0 shadow-sm" id="verify_roll">
+                            </div>
+                            <div class="col-md-12 mb-4">
+                                <label class="small font-weight-bold text-muted">Registration No</label>
+                                <input type="text" class="form-control rounded-pill border-0 shadow-sm" id="verify_reg">
+                            </div>
+                        </div>
+
+                        <!-- CAPTCHA AREA -->
+                        <div class="bg-white p-3 rounded-lg shadow-sm mb-3 text-center border">
+                            <p class="small text-muted mb-2 font-weight-bold">Solve Captcha to Continue</p>
+                            <div id="captcha_container" class="mb-3">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            </div>
+                            <div class="input-group mb-2">
+                                <input type="text" id="verify_captcha" class="form-control border-right-0 rounded-left-pill text-center font-weight-bold" placeholder="????">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary border-left-0 rounded-right-pill bg-white" type="button" onclick="loadBoardCaptcha()">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" id="btn_submit_verify" class="btn btn-primary btn-block rounded-pill font-weight-bold py-2 shadow-sm" onclick="submitBoardVerification()">
+                            <i class="fas fa-search mr-1"></i> Check Result
+                        </button>
+                        
+                        <div id="verify_error" class="alert alert-danger small mt-3 d-none"></div>
+                    </div>
+
+                    <!-- RIGHT: RESULTS -->
+                    <div class="col-md-7 p-4 bg-white">
+                        <div id="verify_placeholder" class="text-center py-5">
+                            <i class="fas fa-info-circle fa-3x text-light mb-3"></i>
+                            <h6 class="text-muted">Verification Results</h6>
+                            <p class="small text-muted px-4">Submit the form on the left to fetch and preview the student data from the board portal.</p>
+                        </div>
+
+                        <div id="verify_result_container" class="d-none h-100">
+                            <div class="bg-success text-white p-3 rounded-lg shadow-sm mb-3">
+                                <h6 class="font-weight-black mb-2 border-bottom border-light pb-1"><i class="fas fa-check-circle mr-1"></i> Verification Successful</h6>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small opacity-75">Student Name:</span>
+                                    <span class="small font-weight-bold text-uppercase" id="res_name"></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small opacity-75">Obtained GPA:</span>
+                                    <span class="small font-weight-bold" id="res_gpa"></span>
+                                </div>
+                            </div>
+
+                            <div class="bg-light text-dark p-3 rounded-lg border">
+                                <h6 class="font-weight-bold mb-2 text-primary small"><i class="fas fa-sync-alt mr-1"></i> Data Sync Preview</h6>
+                                <div id="sync_preview_list" class="pr-2" style="max-height: 350px; overflow-y: scroll; scrollbar-width: thin;">
+                                    <!-- Dynamic Content -->
+                                </div>
+                                <style>
+                                    #sync_preview_list::-webkit-scrollbar { width: 6px; }
+                                    #sync_preview_list::-webkit-scrollbar-track { background: #f8f9fa; }
+                                    #sync_preview_list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+                                </style>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0 p-3">
+                <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Cancel</button>
+                <button type="button" id="btn_accept_result" class="btn btn-success px-5 rounded-pill font-weight-bold shadow-sm d-none" onclick="acceptVerificationResult()">
+                    <i class="fas fa-download mr-1"></i> Apply Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Clone Board Options for Modal
+    $(document).ready(function() {
+        const boardOptions = $('[name="ssc_board"]').html();
+        $('#verify_board').html(boardOptions);
+    });
+
+    let lastVerificationResult = null;
+
+    function openVerificationModal(level) {
+        $('#verify_exam_level').val(level);
+        $('#verify_error').addClass('d-none');
+        $('#verify_result_container').addClass('d-none');
+        $('#btn_submit_verify').removeClass('d-none').prop('disabled', true);
+        $('#btn_accept_result').addClass('d-none');
+        $('#verify_captcha').val('');
+        
+        // Pre-fill data
+        const prefix = level.toLowerCase();
+        $('#verify_board').val($(`[name="${prefix}_board"]`).val());
+        $('#verify_year').val($(`[name="${prefix}_year"]`).val());
+        $('#verify_roll').val($(`[name="${prefix}_roll"]`).val());
+        $('#verify_reg').val($(`[name="${prefix}_reg"]`).val());
+
+        $('#boardVerificationModal').modal('show');
+        loadBoardCaptcha();
+    }
+
+    function loadBoardCaptcha() {
+        $('#verify_captcha').val('');
+        $('#btn_submit_verify').prop('disabled', true);
+        $('#captcha_container').html('<div class="spinner-border text-primary spinner-border-sm"></div><span class="ml-2 small text-muted">Loading Secure Captcha...</span>');
+        $('#verify_error').addClass('d-none');
+        
+        $.ajax({
+            url: "{% url 'api_get_board_captcha' %}",
+            type: "GET",
+            success: function(response) {
+                if(response.success) {
+                    $('#captcha_container').html(`<img src="${response.captcha_image}" class="img-fluid rounded border shadow-sm" style="max-height: 60px;">`);
+                    $('#btn_submit_verify').prop('disabled', false);
+                } else {
+                    $('#captcha_container').html(`<span class="text-danger small font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> ${response.error}</span>`);
+                }
+            },
+            error: function() {
+                $('#captcha_container').html('<span class="text-danger small font-weight-bold">Network Error. Please try again.</span>');
+            }
+        });
+    }
+
+    function submitBoardVerification() {
+        const btn = $('#btn_submit_verify');
+        const originalText = btn.html();
+        btn.html('<span class="spinner-border spinner-border-sm mr-1"></span> Checking...').prop('disabled', true);
+        $('#verify_error').addClass('d-none');
+        $('#verify_result_container').addClass('d-none');
+
+        const payload = {
+            exam: $('#verify_exam_level').val(),
+            board: $('#verify_board').val(),
+            year: $('#verify_year').val(),
+            roll: $('#verify_roll').val(),
+            reg: $('#verify_reg').val(),
+            captcha: $('#verify_captcha').val(),
+            csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+        };
+
+        $.ajax({
+            url: "{% url 'api_verify_board_result' %}",
+            type: "POST",
+            data: payload,
+            success: function(response) {
+                if(response.success) {
+                    lastVerificationResult = response;
+                    $('#res_name').text(response.name || 'Not Available');
+                    $('#res_gpa').text(response.gpa || 'N/A');
+                    
+                    // Build Comprehensive Preview
+                    let previewHtml = '';
+                    const level = $('#verify_exam_level').val();
+                    
+                    // 1. Academic
+                    previewHtml += `<div class="font-weight-bold small text-muted mt-2 border-bottom">Academic Updates</div>`;
+                    previewHtml += `<div class="d-flex justify-content-between"><span>${level} GPA:</span> <span class="text-success font-weight-bold">→ ${response.gpa}</span></div>`;
+                    if(response.group) {
+                        previewHtml += `<div class="d-flex justify-content-between"><span>Group:</span> <span class="text-primary font-weight-bold">→ ${response.group}</span></div>`;
+                    }
+                    if(response.inst_name) {
+                        previewHtml += `<div class="d-flex justify-content-between"><span>Institute:</span> <span class="text-success font-weight-bold text-truncate ml-2" title="${response.inst_name}">→ ${response.inst_name}</span></div>`;
+                    }
+                    
+                    // 2. Personal
+                    previewHtml += `<div class="font-weight-bold small text-muted mt-2 border-bottom">Personal Info</div>`;
+                    const currentName = $('[name="student_name"]').val();
+                    previewHtml += `<div class="d-flex justify-content-between"><span>Name:</span> <span class="${response.name === currentName ? 'text-muted' : 'text-success font-weight-bold'}">→ ${response.name || 'N/A'}</span></div>`;
+                    
+                    const currentFather = $('[name="father_name"]').val();
+                    previewHtml += `<div class="d-flex justify-content-between"><span>Father:</span> <span class="${response.father_name === currentFather ? 'text-muted' : 'text-success font-weight-bold'}">→ ${response.father_name || 'N/A'}</span></div>`;
+                    
+                    const currentMother = $('[name="mother_name"]').val();
+                    previewHtml += `<div class="d-flex justify-content-between"><span>Mother:</span> <span class="${response.mother_name === currentMother ? 'text-muted' : 'text-success font-weight-bold'}">→ ${response.mother_name || 'N/A'}</span></div>`;
+                    
+                    const currentDob = $('[name="dob"]').val();
+                    previewHtml += `<div class="d-flex justify-content-between"><span>DOB:</span> <span class="${response.dob === currentDob ? 'text-muted' : 'text-success font-weight-bold'}">→ ${response.dob || 'N/A'}</span></div>`;
+                    
+                    // 3. Detailed Subject Grades
+                    if(response.all_subjects && Object.keys(response.all_subjects).length > 0) {
+                        previewHtml += `<div class="font-weight-bold small text-muted mt-2 border-bottom">All Subject Grades</div>`;
+                        for(const [subName, subGrade] of Object.entries(response.all_subjects)) {
+                            let colorClass = 'text-dark';
+                            // Highlight mapped subjects
+                            const lowerName = subName.toLowerCase();
+                            if(lowerName.includes('mathematics')) colorClass = 'text-primary font-weight-bold';
+                            if(lowerName.includes('physics')) colorClass = 'text-primary font-weight-bold';
+                            if(lowerName.includes('chemistry')) colorClass = 'text-primary font-weight-bold';
+                            
+                            previewHtml += `<div class="d-flex justify-content-between">
+                                <span class="small">${subName}:</span> 
+                                <span class="${colorClass}">→ ${subGrade}</span>
+                            </div>`;
+                        }
+                    }
+
+                    $('#sync_preview_list').html(previewHtml || '<div class="text-muted">No missing fields found to sync.</div>');
+                    
+                    $('#verify_result_container').removeClass('d-none');
+                    btn.addClass('d-none');
+                    $('#btn_accept_result').removeClass('d-none');
+                } else {
+                    $('#verify_error').removeClass('d-none').html(`<i class="fas fa-times-circle mr-1"></i> ${response.error}`);
+                    btn.html(originalText).prop('disabled', false);
+                    loadBoardCaptcha(); // Refresh captcha on failure
+                }
+            },
+            error: function() {
+                $('#verify_error').removeClass('d-none').html('<i class="fas fa-wifi mr-1"></i> Network error connecting to verification server.');
+                btn.html(originalText).prop('disabled', false);
+            }
+        });
+    }
+
+    function acceptVerificationResult() {
+        if(!lastVerificationResult) return;
+        
+        const data = lastVerificationResult;
+        const level = $('#verify_exam_level').val().toLowerCase();
+        const prefix = level; // ssc or hsc
+        
+        // 1. Apply GPA & School
+        if(data.gpa && data.gpa !== 'N/A') {
+            $(`[name="${prefix}_gpa"]`).val(data.gpa).addClass('is-valid');
+        }
+        if(data.inst_name) {
+            const schoolField = prefix === 'ssc' ? $('[name="ssc_school"]') : $('[name="hsc_college"]');
+            schoolField.val(data.inst_name).addClass('is-valid');
+        }
+        
+        // 2. Apply Subject Grades
+        if(data.grades) {
+            if(data.grades.math) $(`[name="${prefix}_math"]`).val(data.grades.math).addClass('is-valid');
+            if(data.grades.physics) $(`[name="${prefix}_physics"]`).val(data.grades.physics).addClass('is-valid');
+            if(data.grades.chemistry) $(`[name="${prefix}_chemistry"]`).val(data.grades.chemistry).addClass('is-valid');
+        }
+
+        // 3. Apply Personal Info
+        const nameField = $('[name="student_name"]');
+        if(data.name) nameField.val(data.name).addClass('is-valid');
+        
+        const fatherField = $('[name="father_name"]');
+        if(data.father_name) fatherField.val(data.father_name).addClass('is-valid');
+        
+        const motherField = $('[name="mother_name"]');
+        if(data.mother_name) motherField.val(data.mother_name).addClass('is-valid');
+
+        // Date of Birth (Convert DD-MM-YYYY to YYYY-MM-DD)
+        if(data.dob) {
+            const parts = data.dob.split('-');
+            if(parts.length === 3) {
+                const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                $('[name="dob"]').val(formattedDate).addClass('is-valid');
+            }
+        }
+
+        // Gender mapping (Map "MALE"/"FEMALE" to "Male"/"Female")
+        if(data.gender) {
+            let genderVal = data.gender.charAt(0).toUpperCase() + data.gender.slice(1).toLowerCase();
+            $('[name="gender"]').val(genderVal).trigger('change').addClass('is-valid');
+        }
+
+        $('#boardVerificationModal').modal('hide');
+        
+        // Toast Notification
+        if(typeof Swal !== 'undefined') {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: `${level.toUpperCase()} Extended Data Synchronized`,
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+    }
+</script>
 {% endblock %}

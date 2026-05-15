@@ -13,6 +13,7 @@ from exam_billing.models import BillingExam, ExamProgram
 from exam_billing.scope import get_allowed_programs
 import xhtml2pdf.pisa as pisa
 import json
+import zipfile
 from io import BytesIO
 from django.template.loader import get_template
 from urllib.parse import urlencode
@@ -28,7 +29,9 @@ from .utils import (
 )
 import json
 import os
+import requests
 from django.conf import settings
+from .utils_board import BoardVerificationEngine
 
 def link_callback(uri, rel):
     """
@@ -349,6 +352,7 @@ DIRECTORY_FILTER_FIELDS = (
     'type',
     'gender',
     'status',
+    'verification',
     'special_category',
     'sort',
 )
@@ -367,6 +371,10 @@ def _get_directory_params(request):
         key: request.GET.get(key, '').strip()
         for key in DIRECTORY_FILTER_FIELDS
     }
+    
+    # Alias support: 'q' maps to 'search'
+    if not params['search'] and request.GET.get('q'):
+        params['search'] = request.GET.get('q').strip()
 
     valid_sort_values = {choice[0] for choice in DIRECTORY_SORT_OPTIONS}
     if params['sort'] not in valid_sort_values:
@@ -431,6 +439,7 @@ def _apply_directory_filters(queryset, params):
         queryset = queryset.filter(
             Q(student_name__icontains=query) |
             Q(student_id__icontains=query) |
+            Q(old_student_id__icontains=query) |
             Q(student_mobile__icontains=query) |
             Q(father_name__icontains=query)
         )
@@ -451,6 +460,17 @@ def _apply_directory_filters(queryset, params):
         queryset = queryset.exclude(admission_status='Cancelled')
     if params['type']:
         queryset = queryset.filter(program_type=params['type'])
+
+    if params.get('verification'):
+        v_status = params['verification']
+        if v_status == 'ssc_pending':
+            queryset = queryset.filter(ssc_verified=False)
+        elif v_status == 'hsc_pending':
+            queryset = queryset.filter(hsc_verified=False)
+        elif v_status == 'unverified':
+            queryset = queryset.filter(Q(ssc_verified=False) | Q(hsc_verified=False))
+        elif v_status == 'fully_verified':
+            queryset = queryset.filter(ssc_verified=True, hsc_verified=True)
 
     if params['special_category']:
         cat = params['special_category']
@@ -568,6 +588,7 @@ def student_list(request):
         'selected_gender': params['gender'],
         'selected_status': params['status'],
         'selected_type': params['type'],
+        'selected_verification': params['verification'],
         'selected_special_category': params['special_category'],
         'selected_sort': params['sort'],
         'sort_options': _get_directory_sort_choices(),
@@ -575,6 +596,17 @@ def student_list(request):
         'export_querystring': directory_state['export_querystring'],
         'program_map': {p.name: p.short_name or p.name for p in Program.objects.all()},
     }
+
+    # --- Smart Redirect: If search finds exactly 1 student, go to profile ---
+    # We look for 'search' in params which now includes 'q' aliases
+    search_query = params.get('search')
+    if search_query and not request.headers.get('HX-Request'):
+        page_obj = directory_state['page_obj']
+        # If exactly one result is found across all filtered data
+        if page_obj.paginator.count == 1:
+            single_student = page_obj.object_list[0]
+            # Redirect to profile
+            return redirect('student_profile', student_id=single_student.student_id)
 
     template = 'students/partials/directory_results.html' if request.headers.get('HX-Request') else 'students/list.html'
     return render(request, template, context)
@@ -1028,15 +1060,16 @@ def edit_student(request, student_id):
     locked_fields = ['program', 'admission_year', 'cluster', 'hall_attached', 'semester_name', 'program_type', 'student_id']
     
     if request.method == "POST":
-        # Capture original values from the already-fetched instance before form processing
+        # Capture original values for both injection and restoration
         original_values = {field: getattr(student, field) for field in locked_fields}
         
-        form = StudentForm(request.POST, request.FILES, instance=student)
+        # Inject original values into a mutable copy of POST data
+        post_data = request.POST.copy()
+        for field, original_val in original_values.items():
+            if field not in post_data or not post_data.get(field):
+                post_data[field] = original_val
         
-        # Ensure form doesn't fail validation for locked fields that aren't in POST
-        for field in locked_fields:
-            if field in form.fields:
-                form.fields[field].required = False
+        form = StudentForm(post_data, request.FILES, instance=student)
 
         if form.is_valid():
             # This updates the instance but might clear fields missing from POST
@@ -1065,6 +1098,11 @@ def edit_student(request, student_id):
             messages.success(request, f"Profile for {student.student_name} updated successfully.")
             return redirect('student_profile', student_id=student_id)
         else:
+            # IMPORTANT: Restore locked fields (like student_id) even on failure 
+            # so template rendering (profile links, etc.) doesn't break
+            for field, value in original_values.items():
+                setattr(student, field, value)
+                
             # Provide a cleaner summary of validation errors
             error_count = len(form.errors)
             messages.error(request, f"Could not update profile. Please correct the {error_count} error(s) highlighted in the form.")
@@ -1097,6 +1135,83 @@ def edit_student(request, student_id):
         'geo_data_json': json.dumps(BANGLADESH_GEO),
         **_get_history_suggestions()
     })
+
+@require_access('students', 'manage_migrations')
+def rectify_student_id(request, student_id):
+    """
+    Securely re-keys a student's primary ID.
+    Clones record, updates relations, renames media, and deletes original.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "Permission Denied: Only Super-Administrators can rectify Student IDs.")
+        return redirect('student_profile', student_id=student_id)
+
+    student = get_object_or_404(Student, student_id=student_id)
+    
+    if request.method == 'POST':
+        new_id = request.POST.get('new_id', '').strip()
+        reason = request.POST.get('reason', '').strip()
+        
+        if not new_id or new_id == student_id:
+            messages.error(request, "Please provide a new, different Student ID.")
+            return redirect('student_profile', student_id=student_id)
+            
+        if Student.objects.filter(student_id=new_id).exists():
+            messages.error(request, f"Collision Error: ID {new_id} is already in use.")
+            return redirect('student_profile', student_id=student_id)
+
+        try:
+            with transaction.atomic():
+                old_id = student.student_id
+                
+                # 1. Clone the record
+                # We do this by changing PK and saving as new
+                student.pk = new_id
+                student.old_student_id = old_id # Persist alias
+                
+                # 2. Handle Photo Migration
+                if student.photo_path:
+                    old_photo_rel = student.photo_path
+                    ext = os.path.splitext(old_photo_rel)[1]
+                    new_photo_rel = f"students/photos/{new_id}{ext}"
+                    
+                    old_photo_full = os.path.join(settings.MEDIA_ROOT, old_photo_rel)
+                    new_photo_full = os.path.join(settings.MEDIA_ROOT, new_photo_rel)
+                    
+                    if os.path.exists(old_photo_full):
+                        # Ensure directory exists
+                        os.makedirs(os.path.dirname(new_photo_full), exist_ok=True)
+                        os.rename(old_photo_full, new_photo_full)
+                        student.photo_path = new_photo_rel.replace('\\', '/')
+
+                student.save() # Saves as NEW record because PK changed
+                
+                # 3. Update Hard Relations (FKs)
+                AdmissionStatusHistory.objects.filter(student_id=old_id).update(student_id=new_id)
+                
+                # 4. Update Soft Relations (CharFields)
+                ProgramChangeHistory.objects.filter(old_student_id=old_id).update(old_student_id=new_id)
+                ProgramChangeHistory.objects.filter(new_student_id=old_id).update(new_student_id=new_id)
+                SMSHistory.objects.filter(student_id=old_id).update(student_id=new_id)
+                
+                # 5. Log & Audit
+                from core.utils import log_activity
+                log_activity(request, 'UPDATE', 'students', 
+                             f"ID RECTIFICATION: {old_id} -> {new_id}. Reason: {reason}", 
+                             object_id=new_id)
+                
+                # 6. Finalize: Remove old record
+                Student.objects.filter(student_id=old_id).delete()
+                
+                messages.success(request, f"Student ID successfully rectified: {old_id} is now {new_id}.")
+                return redirect('student_profile', student_id=new_id)
+                
+        except Exception as e:
+            messages.error(request, f"Migration Failed: {str(e)}")
+            return redirect('student_profile', student_id=student_id)
+
+    return redirect('student_profile', student_id=student_id)
+
 
 @require_access('students', 'add_student')
 def api_preview_id(request):
@@ -1152,7 +1267,218 @@ def import_students(request):
             
         # Return the partial view instead of redirecting
         return render(request, 'students/partials/import_report.html', {'result': result, 'update_existing': update_existing})
-    return render(request, 'students/import.html')
+    return render(request, 'students/import.html', {'active_tab': 'excel'})
+
+@require_access('students', 'bulk_import')
+def bulk_photo_upload(request):
+    """Handles mass photo updates from a ZIP archive."""
+    if request.method == "POST" and request.FILES.get('zip_file'):
+        zip_file = request.FILES['zip_file']
+        if not zip_file.name.lower().endswith('.zip'):
+            messages.error(request, "Please upload a valid ZIP file.")
+            return render(request, 'students/import.html', {'active_tab': 'photo'})
+
+        try:
+            with zipfile.ZipFile(zip_file, 'r') as z:
+                success_count = 0
+                error_count = 0
+                not_found = []
+                
+                # Define and create storage directory
+                photo_dir_rel = os.path.join('students', 'photos')
+                photo_dir_full = os.path.join(settings.MEDIA_ROOT, photo_dir_rel)
+                if not os.path.exists(photo_dir_full):
+                    os.makedirs(photo_dir_full)
+
+                for filename in z.namelist():
+                    # Skip directories and hidden files
+                    if filename.endswith('/') or filename.startswith('__MACOSX'): continue
+                    
+                    # Process file
+                    basename = os.path.basename(filename)
+                    if not basename: continue
+                    
+                    name_parts = os.path.splitext(basename)
+                    student_id = name_parts[0].strip()
+                    ext = name_parts[1].lower()
+                    
+                    if ext not in ['.jpg', '.jpeg', '.png']:
+                        continue
+
+                    try:
+                        # Try to find student
+                        student = Student.objects.get(student_id=student_id)
+                        
+                        # Save content
+                        new_filename = f"{student_id}{ext}"
+                        target_path_rel = os.path.join(photo_dir_rel, new_filename)
+                        target_path_full = os.path.join(settings.MEDIA_ROOT, target_path_rel)
+                        
+                        with open(target_path_full, 'wb') as f:
+                            f.write(z.read(filename))
+                        
+                        # Update record
+                        student.photo_path = target_path_rel.replace('\\', '/')
+                        student.save()
+                        success_count += 1
+                    except Student.DoesNotExist:
+                        not_found.append(student_id)
+                        error_count += 1
+                
+                if success_count > 0:
+                    messages.success(request, f"Successfully synchronized {success_count} photos.")
+                
+                if error_count > 0:
+                    missing_str = ", ".join(not_found[:5])
+                    if len(not_found) > 5: missing_str += "..."
+                    messages.warning(request, f"{error_count} photos skipped (IDs not in system: {missing_str})")
+                
+                if success_count == 0 and error_count == 0:
+                    messages.info(request, "The ZIP file did not contain any valid image files named by Student ID.")
+                    
+                return redirect('student_list')
+                
+        except zipfile.BadZipFile:
+            messages.error(request, "The uploaded file is not a valid ZIP archive.")
+        except Exception as e:
+            messages.error(request, f"System error during extraction: {str(e)}")
+            
+    return render(request, 'students/import.html', {'active_tab': 'photo'})
+
+@require_access('students', 'data_integrity')
+def academic_audit_center(request):
+    """
+    Centralized hub for managing student board verification statuses.
+    Facilitates mass audit and tracking of academic discrepancies.
+    """
+    from .models import Student
+    from django.db.models import Count, Q
+    
+    # Verification Statistics
+    stats = Student.objects.aggregate(
+        total=Count('student_id'),
+        ssc_count=Count('student_id', filter=Q(ssc_verified=True)),
+        hsc_count=Count('student_id', filter=Q(hsc_verified=True)),
+        both_count=Count('student_id', filter=Q(ssc_verified=True, hsc_verified=True)),
+        pending_count=Count('student_id', filter=Q(ssc_verified=False) | Q(hsc_verified=False))
+    )
+    
+    # Get students for the Verification Queue
+    # Prioritize: 1. Those with logged errors, 2. Unverified students
+    queue_queryset = Student.objects.filter(
+        Q(ssc_verified=False) | Q(hsc_verified=False) | Q(academic_verification_logs__has_key='error')
+    ).order_by('-last_updated')[:25]
+    
+    context = {
+        'stats': stats,
+        'recent_discrepancies': queue_queryset,
+    }
+    return render(request, 'students/reports/academic_audit_center.html', context)
+
+@require_access('students', 'view_directory')
+def api_get_board_captcha(request):
+    """Returns a fresh board captcha as base64 and stores session in cookies."""
+    from .utils_board import BoardVerificationEngine
+    from django.http import JsonResponse
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        engine = BoardVerificationEngine()
+        captcha_b64 = engine.get_captcha()
+        
+        if captcha_b64:
+            # Store session cookies in user's session to maintain portal connection
+            request.session['board_session_cookies'] = requests.utils.dict_from_cookiejar(engine.session.cookies)
+            return JsonResponse({'success': True, 'captcha': captcha_b64})
+        else:
+            logger.error("Board Engine failed to retrieve captcha image.")
+            return JsonResponse({
+                'success': False, 
+                'error': "Education Board Portal (eboardresults.com) is currently unresponsive or blocking the connection. Please try again in a few minutes."
+            })
+    except Exception as e:
+        logger.exception("Exception in api_get_board_captcha")
+        return JsonResponse({'success': False, 'error': f"System Error: {str(e)}"})
+
+@require_access('students', 'view_directory')
+def api_verify_board_result(request):
+    """Executes the verification logic for a specific student and exam type."""
+    from .utils_board import BoardVerificationEngine
+    from .models import Student
+    from django.http import JsonResponse
+    import requests
+    
+    student_id = request.POST.get('student_id')
+    exam_type = request.POST.get('exam_type') # 'SSC' or 'HSC'
+    captcha_value = request.POST.get('captcha')
+    
+    if not all([student_id, exam_type, captcha_value]):
+        return JsonResponse({'success': False, 'error': "Missing required parameters."})
+        
+    student = get_object_or_404(Student, student_id=student_id)
+    
+    # Prepare Engine with saved session
+    engine = BoardVerificationEngine()
+    saved_cookies = request.session.get('board_session_cookies')
+    if saved_cookies:
+        engine.session.cookies.update(saved_cookies)
+        
+    # Get student data for verification
+    if exam_type == 'SSC':
+        roll = student.ssc_roll
+        reg = student.ssc_reg
+        year = student.ssc_year
+        board = student.ssc_board
+        current_gpa = str(student.ssc_gpa)
+    else:
+        roll = student.hsc_roll
+        reg = student.hsc_reg
+        year = student.hsc_year
+        board = student.hsc_board
+        current_gpa = str(student.hsc_gpa)
+
+    if not all([roll, year, board]):
+        return JsonResponse({'success': False, 'error': f"Student's {exam_type} data is incomplete (Roll/Year/Board missing)."})
+
+    result = engine.fetch_result(exam_type, board, year, roll, reg, captcha_value)
+    
+    if result.get('success'):
+        board_gpa = result.get('gpa')
+        # Check for mismatch
+        is_match = (board_gpa == current_gpa)
+        
+        # Update Verification Log
+        log_entry = {
+            'timestamp': timezone.now().isoformat(),
+            'verified_by': request.user.username,
+            'exam': exam_type,
+            'board_data': result,
+            'is_match': is_match,
+            'previous_gpa': current_gpa
+        }
+        
+        logs = student.academic_verification_logs or {}
+        logs[exam_type] = log_entry
+        student.academic_verification_logs = logs
+        
+        if exam_type == 'SSC':
+            student.ssc_verified = True
+        else:
+            student.hsc_verified = True
+            
+        student.save()
+        
+        return JsonResponse({
+            'success': True,
+            'is_match': is_match,
+            'board_gpa': board_gpa,
+            'current_gpa': current_gpa,
+            'details': result
+        })
+    else:
+        return JsonResponse({'success': False, 'error': result.get('error', "Unknown verification error.")})
 
 @require_access('students', 'bulk_import')
 def import_preview(request):
@@ -1918,13 +2244,15 @@ def intake_performance_report(request):
 def api_global_search(request):
     """Real-time global search engine for the header."""
     from django.http import HttpResponse
-    query = request.GET.get('q', '').strip()
+    # Accept both 'search' and 'q'
+    query = request.GET.get('search', request.GET.get('q', '')).strip()
     if not query or len(query) < 2:
         return HttpResponse("") # Return empty if query is too short
 
     from django.db.models import Q
     students = Student.objects.filter(
         Q(student_id__icontains=query) |
+        Q(old_student_id__icontains=query) |
         Q(student_name__icontains=query) |
         Q(student_mobile__icontains=query) |
         Q(student_email__icontains=query) |
@@ -2243,3 +2571,169 @@ def api_bulk_update_execute(request):
         except Exception as e:
             return HttpResponse(f"<div class='alert alert-danger'>Update failed: {escape(str(e))}</div>")
     return HttpResponse("Invalid Request.")
+
+@login_required
+def api_get_board_captcha(request):
+    """Fetches captcha from education board and saves session."""
+    engine = BoardVerificationEngine()
+    captcha_b64 = engine.get_captcha()
+    
+    if captcha_b64:
+        # Save session cookies to Django session to use in verify step
+        import requests.utils
+        request.session['board_cookies'] = requests.utils.dict_from_cookiejar(engine.session.cookies)
+        return JsonResponse({'success': True, 'captcha_image': f"data:image/jpeg;base64,{captcha_b64}"})
+    return JsonResponse({'success': False, 'error': 'Failed to load captcha. Please try again.'})
+
+@login_required
+def api_verify_board_result(request):
+    """Verifies board result using saved session and typed captcha."""
+    if request.method == 'POST':
+        student_id = request.POST.get('student_id')
+        exam_type = request.POST.get('exam_type')
+        captcha = request.POST.get('captcha', '')
+
+        exam = request.POST.get('exam', '')
+        board = request.POST.get('board', '')
+        year = request.POST.get('year', '')
+        roll = request.POST.get('roll', '')
+        reg = request.POST.get('reg', '')
+
+        student = None
+        if student_id and exam_type:
+            try:
+                from .models import Student
+                student = Student.objects.get(student_id=student_id)
+                exam = exam_type.upper()
+                if exam == 'SSC':
+                    board = student.ssc_board
+                    year = student.ssc_year
+                    roll = student.ssc_roll
+                    reg = student.ssc_reg
+                elif exam == 'HSC':
+                    board = student.hsc_board
+                    year = student.hsc_year
+                    roll = student.hsc_roll
+                    reg = student.hsc_reg
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+        
+        engine = BoardVerificationEngine()
+        
+        # Load saved cookies
+        saved_cookies = request.session.get('board_cookies')
+        if not saved_cookies:
+            return JsonResponse({'success': False, 'error': 'Session expired. Please refresh the captcha.'})
+            
+        import requests.utils
+        engine.session.cookies.update(saved_cookies)
+        
+        result = engine.fetch_result(exam, board, year, roll, reg, captcha)
+        
+        # If requested from profile.html, append verification data
+        if student and result.get('success'):
+            current_gpa = student.ssc_gpa if exam == 'SSC' else student.hsc_gpa
+            board_gpa = result.get('gpa', '0.00')
+            
+            # Simple float comparison
+            try:
+                is_match = float(current_gpa) == float(board_gpa)
+            except (ValueError, TypeError):
+                is_match = str(current_gpa) == str(board_gpa)
+                
+            result['is_match'] = is_match
+            result['board_gpa'] = board_gpa
+            result['current_gpa'] = current_gpa
+            
+            # Wrap in details for profile.html compatibility
+            result['details'] = {
+                'name': result.get('name'),
+                'father_name': result.get('father_name'),
+                'mother_name': result.get('mother_name'),
+                'dob': result.get('dob'),
+                'gpa': result.get('gpa'),
+                'grades': result.get('grades', {}),
+                'all_subjects': result.get('all_subjects', {})
+            }
+            
+            if is_match:
+                if exam == 'SSC':
+                    student.ssc_verified = True
+                elif exam == 'HSC':
+                    student.hsc_verified = True
+                student.save()
+                
+        return JsonResponse(result)
+        
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+
+@login_required
+@require_access('students', 'data_integrity')
+def mobile_repair_tool(request):
+    """View to identify and fix mobile numbers missing leading zeros."""
+    # Find potentially broken numbers: 10 digits or doesn't start with 01
+    broken_students = Student.objects.filter(
+        Q(student_mobile__regex=r'^\d{10}$') | 
+        ~Q(student_mobile__startswith='01')
+    ).exclude(student_mobile__isnull=True).exclude(student_mobile='')
+
+    audit_list = []
+    for s in broken_students:
+        mobile = s.student_mobile
+        fixable = False
+        suggested_fix = ""
+        
+        # Simple rule: if 10 digits and first digit is 1-9, prepend 0
+        if len(mobile) == 10 and mobile[0] in '123456789':
+            suggested_fix = '0' + mobile
+            fixable = True
+        
+        audit_list.append({
+            'id': s.student_id,
+            'name': s.student_name,
+            'program': s.program,
+            'batch': s.batch,
+            'mobile': mobile,
+            'suggested_fix': suggested_fix,
+            'fixable': fixable
+        })
+
+    return render(request, 'students/tools/mobile_repair.html', {
+        'audit_list': audit_list,
+        'broken_count': len(audit_list)
+    })
+
+@login_required
+@require_access('students', 'data_integrity')
+def api_bulk_fix_mobile(request):
+    """API to apply suggested fixes to mobile numbers."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'})
+    
+    student_ids = request.POST.getlist('student_ids[]')
+    if not student_ids:
+        # If no specific IDs, maybe "Fix All Fixable" was clicked
+        if request.POST.get('fix_all') == 'true':
+            # Find all 10-digit numeric mobile numbers
+            broken_students = Student.objects.filter(student_mobile__regex=r'^\d{10}$')
+            student_ids = [s.student_id for s in broken_students]
+
+    updated_count = 0
+    with transaction.atomic():
+        for sid in student_ids:
+            try:
+                student = Student.objects.get(student_id=sid)
+                mobile = student.student_mobile
+                if mobile and len(mobile) == 10 and mobile[0] in '123456789':
+                    student.student_mobile = '0' + mobile
+                    student.save()
+                    updated_count += 1
+            except Student.DoesNotExist:
+                continue
+                
+    return JsonResponse({
+        'success': True, 
+        'updated_count': updated_count,
+        'message': f'Successfully updated {updated_count} mobile numbers.'
+    })
