@@ -430,34 +430,53 @@
           {% endif %}
 
           {% has_access 'students' 'bulk_import' as can_import %}
-          {% if can_import %}
-          <li class="nav-item">
-            <a href="{% url 'import_students' %}" class="nav-link {% if request.resolver_match.url_name == 'import_students' %}active{% endif %}">
-              <i class="nav-icon fas fa-file-import"></i>
-              <p>Bulk Import</p>
-            </a>
-          </li>
-          {% endif %}
-
           {% has_access 'students' 'data_integrity' as can_scan %}
-          {% if can_scan %}
-          <li class="nav-item">
-            <a href="{% url 'data_integrity' %}" class="nav-link {% if request.resolver_match.url_name == 'data_integrity' %}active{% endif %}">
-              <i class="nav-icon fas fa-clone"></i>
-              <p>Duplicate Scanner</p>
+          {% has_access 'students' 'academic_audit' as can_audit %}
+          {% has_access 'students' 'mobile_repair' as can_repair %}
+
+          {% if can_import or can_scan or can_audit or can_repair %}
+          <li class="nav-item {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' %}active{% endif %}">
+              <i class="nav-icon fas fa-toolbox"></i>
+              <p>
+                Administrative Tools
+                <i class="right fas fa-angle-left"></i>
+              </p>
             </a>
-          </li>
-          <li class="nav-item">
-            <a href="{% url 'mobile_repair_tool' %}" class="nav-link {% if request.resolver_match.url_name == 'mobile_repair_tool' %}active{% endif %}">
-              <i class="nav-icon fas fa-phone-square-alt"></i>
-              <p>Mobile Repair Tool</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{% url 'academic_audit_center' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_audit_center' %}active{% endif %}">
-              <i class="nav-icon fas fa-shield-halved"></i>
-              <p>Academic Audit</p>
-            </a>
+            <ul class="nav nav-treeview">
+              {% if can_import %}
+              <li class="nav-item">
+                <a href="{% url 'import_students' %}" class="nav-link {% if request.resolver_match.url_name == 'import_students' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Bulk Import</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_scan %}
+              <li class="nav-item">
+                <a href="{% url 'data_integrity' %}" class="nav-link {% if request.resolver_match.url_name == 'data_integrity' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Duplicate Scanner</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_repair %}
+              <li class="nav-item">
+                <a href="{% url 'mobile_repair_tool' %}" class="nav-link {% if request.resolver_match.url_name == 'mobile_repair_tool' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Mobile Repair Tool</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_audit %}
+              <li class="nav-item">
+                <a href="{% url 'academic_audit_center' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_audit_center' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Academic Audit</p>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
           </li>
           {% endif %}
 

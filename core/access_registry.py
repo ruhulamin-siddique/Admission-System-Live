@@ -22,7 +22,9 @@ ACCESS_REGISTRY = {
             "delete_record": ("Delete Student", "Permanently remove student records from system."),
             "export_excel": ("Export to Excel", "Generate and download the 44-column Excel master list."),
             "bulk_import": ("Bulk Excel Import", "Upload and process mass student registrations."),
-            "data_integrity": ("Data Integrity Scanner", "Scan the database and merge duplicate records."),
+            "data_integrity": ("Duplicate Record Scanner", "Identify and merge duplicate student profiles."),
+            "academic_audit": ("Academic Board Audit", "Verify student SSC/HSC data against official education board portals."),
+            "mobile_repair": ("Mobile Number Repair", "Identify and fix incorrectly formatted mobile numbers missing leading zeros."),
             "bulk_update": ("Mass Data Harmonizer", "Modify fields across multiple selected students at once."),
         }
     },

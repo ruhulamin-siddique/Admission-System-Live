@@ -1345,7 +1345,7 @@ def bulk_photo_upload(request):
             
     return render(request, 'students/import.html', {'active_tab': 'photo'})
 
-@require_access('students', 'data_integrity')
+@require_access('students', 'academic_audit')
 def academic_audit_center(request):
     """
     Centralized hub for managing student board verification statuses.
@@ -2587,7 +2587,7 @@ def api_verify_board_result(request):
 
 
 @login_required
-@require_access('students', 'data_integrity')
+@require_access('students', 'mobile_repair')
 def mobile_repair_tool(request):
     """View to identify and fix mobile numbers missing leading zeros."""
     # Find potentially broken numbers: 10 digits or doesn't start with 01
