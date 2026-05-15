@@ -8,33 +8,37 @@
 <div class="container-fluid">
     <!-- Summary Cards -->
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0" style="border-radius: 16px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white;">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100" style="border-radius: 16px; background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: white;">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-uppercase mb-1" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Potential Errors</h6>
+                            <h6 class="text-uppercase mb-1" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Total Errors</h6>
                             <h2 class="font-weight-black mb-0">{{ broken_count }}</h2>
                         </div>
                         <div class="bg-white bg-opacity-20 rounded-circle p-3" style="background: rgba(255,255,255,0.2);">
-                            <i class="fas fa-phone-slash fa-2x"></i>
+                            <i class="fas fa-exclamation-circle fa-2x"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-8">
+        <div class="col-md-9">
             <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
-                <div class="card-body p-4 d-flex align-items-center">
-                    <div>
-                        <h5 class="font-weight-bold mb-2">Automated Repair Engine</h5>
-                        <p class="text-muted mb-0">This tool identifies mobile numbers that likely lost their leading zero during Excel imports. You can bulk-fix them below.</p>
-                    </div>
-                    <div class="ml-auto">
-                        <button class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm" id="btnFixAll" {% if broken_count == 0 %}disabled{% endif %}>
+                <div class="card-body p-4">
+                    <h5 class="font-weight-bold mb-3">Intelligent Repair Center</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary rounded-pill px-4 shadow-sm mr-2 mb-2" id="btnFixAll" {% if broken_count == 0 %}disabled{% endif %}>
                             <i class="fas fa-magic mr-2"></i> Fix All Fixable
                         </button>
+                        <button class="btn btn-outline-danger rounded-pill px-4 mr-2 mb-2" onclick="applyFixes([], false, 'FLOAT')" {% if broken_count == 0 %}disabled{% endif %}>
+                            <i class="fas fa-broom mr-2"></i> Clean Excel Decimals (.0)
+                        </button>
+                        <button class="btn btn-outline-warning rounded-pill px-4 mb-2" onclick="applyFixes([], false, 'MISSING_ZERO')" {% if broken_count == 0 %}disabled{% endif %}>
+                            <i class="fas fa-zero mr-2"></i> Restore Missing Zeros
+                        </button>
                     </div>
+                    <p class="text-muted small mt-2 mb-0"><i class="fas fa-info-circle mr-1"></i> Categorized repairs allow you to fix specific data corruption patterns safely.</p>
                 </div>
             </div>
         </div>
@@ -44,10 +48,10 @@
     <div class="card shadow-sm border-0" style="border-radius: 16px;">
         <div class="card-header bg-white py-3 border-0">
             <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 font-weight-bold">Audit Results</h5>
+                <h5 class="mb-0 font-weight-bold">Detailed Data Audit</h5>
                 <div class="btn-group">
                     <button class="btn btn-light btn-sm rounded-pill px-3 mr-2" id="btnRefresh">
-                        <i class="fas fa-sync-alt mr-1"></i> Rescan
+                        <i class="fas fa-sync-alt mr-1"></i> Rescan Database
                     </button>
                     <button class="btn btn-outline-primary btn-sm rounded-pill px-3" id="btnFixSelected">
                         Fix Selected
@@ -66,10 +70,10 @@
                                     <label class="custom-control-label" for="checkAll"></label>
                                 </div>
                             </th>
-                            <th>Student ID & Name</th>
-                            <th>Current Mobile</th>
+                            <th>Student & Program</th>
+                            <th>Current Issue</th>
                             <th>Suggested Fix</th>
-                            <th>Status</th>
+                            <th>Status / Category</th>
                             <th class="text-right pr-4">Action</th>
                         </tr>
                     </thead>
@@ -87,34 +91,43 @@
                                 <div class="small text-muted">{{ item.id }} | {{ item.program }}</div>
                             </td>
                             <td>
-                                <code class="bg-light px-2 py-1 rounded text-danger">{{ item.mobile }}</code>
+                                <div class="d-flex align-items-center">
+                                    <code class="bg-light px-2 py-1 rounded text-danger mr-2">{{ item.mobile }}</code>
+                                    {% if item.category == 'FLOAT' %}
+                                        <span class="badge badge-pill badge-danger-light py-1" style="font-size: 10px; background: #fff1f2; color: #e11d48;">EXCEL DECIMAL</span>
+                                    {% elif item.category == 'MISSING_ZERO' %}
+                                        <span class="badge badge-pill badge-warning-light py-1" style="font-size: 10px; background: #fffbeb; color: #d97706;">MISSING ZERO</span>
+                                    {% else %}
+                                        <span class="badge badge-pill badge-secondary-light py-1" style="font-size: 10px; background: #f8fafc; color: #64748b;">MALFORMED</span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td>
                                 {% if item.fixable %}
                                     <code class="bg-success-light px-2 py-1 rounded text-success" style="background: #eefdf5;">{{ item.suggested_fix }}</code>
                                 {% else %}
-                                    <span class="text-muted small">Requires Manual Edit</span>
+                                    <span class="text-muted small">N/A</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if item.fixable %}
                                     <span class="badge badge-success-light text-success px-2 py-1" style="background: #eefdf5;">
-                                        <i class="fas fa-check-circle mr-1"></i> Auto-fixable
+                                        <i class="fas fa-check-double mr-1"></i> Safe to Fix
                                     </span>
                                 {% else %}
                                     <span class="badge badge-warning-light text-warning px-2 py-1" style="background: #fffbeb;">
-                                        <i class="fas fa-exclamation-triangle mr-1"></i> Manual Review
+                                        <i class="fas fa-user-edit mr-1"></i> Needs Manual Entry
                                     </span>
                                 {% endif %}
                             </td>
                             <td class="text-right pr-4">
                                 {% if item.fixable %}
                                     <button class="btn btn-sm btn-outline-success rounded-pill px-3 btn-fix-single" data-id="{{ item.id }}">
-                                        Apply Fix
+                                        Apply
                                     </button>
                                 {% else %}
-                                    <a href="{% url 'edit_student' item.id %}" class="btn btn-sm btn-light rounded-pill px-3">
-                                        <i class="fas fa-edit mr-1"></i> Edit
+                                    <a href="{% url 'edit_student' item.id %}?tab=details" class="btn btn-sm btn-dark rounded-pill px-3">
+                                        <i class="fas fa-external-link-alt mr-1"></i> Edit
                                     </a>
                                 {% endif %}
                             </td>
@@ -159,13 +172,21 @@
 $(document).ready(function() {
     const csrftoken = '{{ csrf_token }}';
 
-    function applyFixes(studentIds, fixAll = false) {
-        if (!studentIds.length && !fixAll) {
+    function applyFixes(studentIds, fixAll = false, category = null) {
+        if (!studentIds.length && !fixAll && !category) {
             alert('Please select at least one record to fix.');
             return;
         }
 
-        const btn = fixAll ? $('#btnFixAll') : $('#btnFixSelected');
+        let btn;
+        if (category === 'FLOAT') {
+            btn = $('button[onclick*="FLOAT"]');
+        } else if (category === 'MISSING_ZERO') {
+            btn = $('button[onclick*="MISSING_ZERO"]');
+        } else {
+            btn = fixAll ? $('#btnFixAll') : $('#btnFixSelected');
+        }
+        
         const originalHtml = btn.html();
         btn.html('<i class="fas fa-spinner fa-spin mr-2"></i> Processing...').prop('disabled', true);
 
@@ -175,6 +196,7 @@ $(document).ready(function() {
             data: {
                 'student_ids[]': studentIds,
                 'fix_all': fixAll,
+                'category': category,
                 'csrfmiddlewaretoken': csrftoken
             },
             success: function(response) {

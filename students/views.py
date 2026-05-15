@@ -2690,25 +2690,48 @@ def api_verify_board_result(request):
 
 @login_required
 @require_access('students', 'mobile_repair')
+def _clean_mobile_number(mobile):
+    """Helper to strip float suffixes, non-numeric chars, and add missing leading zeros."""
+    if not mobile: return None, False
+    
+    # 1. Stringify and strip .0 (Excel float error)
+    s = str(mobile).strip()
+    if s.endswith('.0'):
+        s = s[:-2]
+    
+    # 2. Remove all non-digits
+    import re
+    s = re.sub(r'\D', '', s)
+    
+    # 3. If 10 digits and starts with 1-9, prepend 0
+    if len(s) == 10 and s[0] in '123456789':
+        s = '0' + s
+        
+    # Valid Bangladesh mobile is 11 digits starting with 01
+    is_valid = len(s) == 11 and s.startswith('01')
+    return s, is_valid
+
+@login_required
+@require_access('students', 'mobile_repair')
 def mobile_repair_tool(request):
-    """View to identify and fix mobile numbers missing leading zeros."""
-    # Find potentially broken numbers: 10 digits or doesn't start with 01
-    broken_students = Student.objects.filter(
-        Q(student_mobile__regex=r'^\d{10}$') | 
-        ~Q(student_mobile__startswith='01')
-    ).exclude(student_mobile__isnull=True).exclude(student_mobile='')
+    """Enhanced view to identify and categorize mobile number errors."""
+    # Find all students with malformed numbers (excluding null/empty)
+    malformed_students = Student.objects.exclude(student_mobile__isnull=True).exclude(student_mobile='').filter(
+        ~Q(student_mobile__regex=r'^01\d{9}$')
+    )
 
     audit_list = []
-    for s in broken_students:
+    for s in malformed_students:
         mobile = s.student_mobile
-        fixable = False
-        suggested_fix = ""
+        suggested_fix, is_valid = _clean_mobile_number(mobile)
         
-        # Simple rule: if 10 digits and first digit is 1-9, prepend 0
-        if len(mobile) == 10 and mobile[0] in '123456789':
-            suggested_fix = '0' + mobile
-            fixable = True
-        
+        # Determine Issue Category
+        category = "OTHER"
+        if str(mobile).endswith('.0'):
+            category = "FLOAT"
+        elif len(str(mobile)) == 10 and str(mobile)[0] in '123456789':
+            category = "MISSING_ZERO"
+            
         audit_list.append({
             'id': s.student_id,
             'name': s.student_name,
@@ -2716,7 +2739,9 @@ def mobile_repair_tool(request):
             'batch': s.batch,
             'mobile': mobile,
             'suggested_fix': suggested_fix,
-            'fixable': fixable
+            'is_valid': is_valid,
+            'category': category,
+            'fixable': is_valid and suggested_fix != mobile
         })
 
     return render(request, 'students/tools/mobile_repair.html', {
@@ -2727,27 +2752,47 @@ def mobile_repair_tool(request):
 @login_required
 @require_access('students', 'data_integrity')
 def api_bulk_fix_mobile(request):
-    """API to apply suggested fixes to mobile numbers."""
+    """Enhanced API to apply robust mobile repairs with activity logging."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST required'})
     
     student_ids = request.POST.getlist('student_ids[]')
-    if not student_ids:
-        # If no specific IDs, maybe "Fix All Fixable" was clicked
-        if request.POST.get('fix_all') == 'true':
-            # Find all 10-digit numeric mobile numbers
-            broken_students = Student.objects.filter(student_mobile__regex=r'^\d{10}$')
-            student_ids = [s.student_id for s in broken_students]
+    fix_all = request.POST.get('fix_all') == 'true'
+    category_filter = request.POST.get('category')
+
+    if fix_all or category_filter:
+        # Find candidates for bulk fix
+        query = Student.objects.exclude(student_mobile__isnull=True).exclude(student_mobile='')
+        if category_filter == 'FLOAT':
+            query = query.filter(student_mobile__endswith='.0')
+        elif category_filter == 'MISSING_ZERO':
+            query = query.filter(student_mobile__regex=r'^\d{10}$')
+        else:
+            # Fallback to general malformed
+            query = query.filter(~Q(student_mobile__regex=r'^01\d{9}$'))
+            
+        student_ids = list(query.values_list('student_id', flat=True))
 
     updated_count = 0
+    from core.utils import log_activity
+    
     with transaction.atomic():
         for sid in student_ids:
             try:
                 student = Student.objects.get(student_id=sid)
-                mobile = student.student_mobile
-                if mobile and len(mobile) == 10 and mobile[0] in '123456789':
-                    student.student_mobile = '0' + mobile
+                old_mobile = student.student_mobile
+                new_mobile, is_valid = _clean_mobile_number(old_mobile)
+                
+                if is_valid and new_mobile != old_mobile:
+                    student.student_mobile = new_mobile
                     student.save()
+                    
+                    # Log to ActivityLog & Unified Timeline
+                    log_activity(
+                        request, 'UPDATE', 'students', 
+                        f'Automated Mobile Repair: Fixed "{old_mobile}" -> "{new_mobile}"',
+                        object_id=sid
+                    )
                     updated_count += 1
             except Student.DoesNotExist:
                 continue
@@ -2755,5 +2800,5 @@ def api_bulk_fix_mobile(request):
     return JsonResponse({
         'success': True, 
         'updated_count': updated_count,
-        'message': f'Successfully updated {updated_count} mobile numbers.'
+        'message': f'Successfully repaired {updated_count} mobile records.'
     })
