@@ -1375,110 +1375,9 @@ def academic_audit_center(request):
     }
     return render(request, 'students/reports/academic_audit_center.html', context)
 
-@require_access('students', 'view_directory')
-def api_get_board_captcha(request):
-    """Returns a fresh board captcha as base64 and stores session in cookies."""
-    from .utils_board import BoardVerificationEngine
-    from django.http import JsonResponse
-    import logging
-    
-    logger = logging.getLogger(__name__)
-    
-    try:
-        engine = BoardVerificationEngine()
-        captcha_b64 = engine.get_captcha()
-        
-        if captcha_b64:
-            # Store session cookies in user's session to maintain portal connection
-            request.session['board_session_cookies'] = requests.utils.dict_from_cookiejar(engine.session.cookies)
-            return JsonResponse({'success': True, 'captcha': captcha_b64})
-        else:
-            logger.error("Board Engine failed to retrieve captcha image.")
-            return JsonResponse({
-                'success': False, 
-                'error': "Education Board Portal (eboardresults.com) is currently unresponsive or blocking the connection. Please try again in a few minutes."
-            })
-    except Exception as e:
-        logger.exception("Exception in api_get_board_captcha")
-        return JsonResponse({'success': False, 'error': f"System Error: {str(e)}"})
+# NOTE: api_get_board_captcha is defined below (consolidated single definition)
 
-@require_access('students', 'view_directory')
-def api_verify_board_result(request):
-    """Executes the verification logic for a specific student and exam type."""
-    from .utils_board import BoardVerificationEngine
-    from .models import Student
-    from django.http import JsonResponse
-    import requests
-    
-    student_id = request.POST.get('student_id')
-    exam_type = request.POST.get('exam_type') # 'SSC' or 'HSC'
-    captcha_value = request.POST.get('captcha')
-    
-    if not all([student_id, exam_type, captcha_value]):
-        return JsonResponse({'success': False, 'error': "Missing required parameters."})
-        
-    student = get_object_or_404(Student, student_id=student_id)
-    
-    # Prepare Engine with saved session
-    engine = BoardVerificationEngine()
-    saved_cookies = request.session.get('board_session_cookies')
-    if saved_cookies:
-        engine.session.cookies.update(saved_cookies)
-        
-    # Get student data for verification
-    if exam_type == 'SSC':
-        roll = student.ssc_roll
-        reg = student.ssc_reg
-        year = student.ssc_year
-        board = student.ssc_board
-        current_gpa = str(student.ssc_gpa)
-    else:
-        roll = student.hsc_roll
-        reg = student.hsc_reg
-        year = student.hsc_year
-        board = student.hsc_board
-        current_gpa = str(student.hsc_gpa)
-
-    if not all([roll, year, board]):
-        return JsonResponse({'success': False, 'error': f"Student's {exam_type} data is incomplete (Roll/Year/Board missing)."})
-
-    result = engine.fetch_result(exam_type, board, year, roll, reg, captcha_value)
-    
-    if result.get('success'):
-        board_gpa = result.get('gpa')
-        # Check for mismatch
-        is_match = (board_gpa == current_gpa)
-        
-        # Update Verification Log
-        log_entry = {
-            'timestamp': timezone.now().isoformat(),
-            'verified_by': request.user.username,
-            'exam': exam_type,
-            'board_data': result,
-            'is_match': is_match,
-            'previous_gpa': current_gpa
-        }
-        
-        logs = student.academic_verification_logs or {}
-        logs[exam_type] = log_entry
-        student.academic_verification_logs = logs
-        
-        if exam_type == 'SSC':
-            student.ssc_verified = True
-        else:
-            student.hsc_verified = True
-            
-        student.save()
-        
-        return JsonResponse({
-            'success': True,
-            'is_match': is_match,
-            'board_gpa': board_gpa,
-            'current_gpa': current_gpa,
-            'details': result
-        })
-    else:
-        return JsonResponse({'success': False, 'error': result.get('error', "Unknown verification error.")})
+# NOTE: api_verify_board_result is defined below (consolidated single definition)
 
 @require_access('students', 'bulk_import')
 def import_preview(request):
@@ -2574,98 +2473,117 @@ def api_bulk_update_execute(request):
 
 @login_required
 def api_get_board_captcha(request):
-    """Fetches captcha from education board and saves session."""
+    """Fetches captcha from education board and saves session (BUG-02/03 fixed)."""
     engine = BoardVerificationEngine()
     captcha_b64 = engine.get_captcha()
-    
+
     if captcha_b64:
-        # Save session cookies to Django session to use in verify step
         import requests.utils
-        request.session['board_cookies'] = requests.utils.dict_from_cookiejar(engine.session.cookies)
+        # BUG-02 FIX: Use 'board_session_cookies' — the key api_verify_board_result reads
+        request.session['board_session_cookies'] = requests.utils.dict_from_cookiejar(engine.session.cookies)
+        # BUG-03 FIX: Key is 'captcha_image' matching what profile.html and edit.html expect
         return JsonResponse({'success': True, 'captcha_image': f"data:image/jpeg;base64,{captcha_b64}"})
     return JsonResponse({'success': False, 'error': 'Failed to load captcha. Please try again.'})
 
+
 @login_required
 def api_verify_board_result(request):
-    """Verifies board result using saved session and typed captcha."""
-    if request.method == 'POST':
-        student_id = request.POST.get('student_id')
-        exam_type = request.POST.get('exam_type')
-        captcha = request.POST.get('captcha', '')
+    """Consolidated board verification endpoint — handles both profile & edit page flows.
 
-        exam = request.POST.get('exam', '')
-        board = request.POST.get('board', '')
-        year = request.POST.get('year', '')
-        roll = request.POST.get('roll', '')
-        reg = request.POST.get('reg', '')
+    Mode 1 (profile.html): POST includes student_id + exam_type.
+                           Loads student data from DB, saves verified flag immediately.
+    Mode 2 (edit.html):    POST includes exam + board + year + roll + reg.
+                           No student lookup; verified flag saved later on form submit.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
-        student = None
-        if student_id and exam_type:
-            try:
-                from .models import Student
-                student = Student.objects.get(student_id=student_id)
-                exam = exam_type.upper()
-                if exam == 'SSC':
-                    board = student.ssc_board
-                    year = student.ssc_year
-                    roll = student.ssc_roll
-                    reg = student.ssc_reg
-                elif exam == 'HSC':
-                    board = student.hsc_board
-                    year = student.hsc_year
-                    roll = student.hsc_roll
-                    reg = student.hsc_reg
-            except Exception as e:
-                return JsonResponse({'success': False, 'error': str(e)})
-        
-        engine = BoardVerificationEngine()
-        
-        # Load saved cookies
-        saved_cookies = request.session.get('board_cookies')
-        if not saved_cookies:
-            return JsonResponse({'success': False, 'error': 'Session expired. Please refresh the captcha.'})
-            
-        import requests.utils
-        engine.session.cookies.update(saved_cookies)
-        
-        result = engine.fetch_result(exam, board, year, roll, reg, captcha)
-        
-        # If requested from profile.html, append verification data
-        if student and result.get('success'):
-            current_gpa = student.ssc_gpa if exam == 'SSC' else student.hsc_gpa
-            board_gpa = result.get('gpa', '0.00')
-            
-            # Simple float comparison
-            try:
-                is_match = float(current_gpa) == float(board_gpa)
-            except (ValueError, TypeError):
-                is_match = str(current_gpa) == str(board_gpa)
-                
-            result['is_match'] = is_match
-            result['board_gpa'] = board_gpa
-            result['current_gpa'] = current_gpa
-            
-            # Wrap in details for profile.html compatibility
-            result['details'] = {
-                'name': result.get('name'),
-                'father_name': result.get('father_name'),
-                'mother_name': result.get('mother_name'),
-                'dob': result.get('dob'),
-                'gpa': result.get('gpa'),
-                'grades': result.get('grades', {}),
-                'all_subjects': result.get('all_subjects', {})
-            }
-            
-            if is_match:
-                if exam == 'SSC':
-                    student.ssc_verified = True
-                elif exam == 'HSC':
-                    student.hsc_verified = True
-                student.save()
-                
-        return JsonResponse(result)
-        
-    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+    captcha = request.POST.get('captcha', '')
+    student_id = request.POST.get('student_id')
+    exam_type = request.POST.get('exam_type')
+
+    exam = request.POST.get('exam', '')
+    board = request.POST.get('board', '')
+    year = request.POST.get('year', '')
+    roll = request.POST.get('roll', '')
+    reg = request.POST.get('reg', '')
+
+    student = None
+    current_gpa = None
+
+    # Mode 1: profile.html passes student_id + exam_type
+    if student_id and exam_type:
+        try:
+            from .models import Student
+            student = Student.objects.get(student_id=student_id)
+            exam = exam_type.upper()
+            if exam == 'SSC':
+                board, year, roll, reg = student.ssc_board, student.ssc_year, student.ssc_roll, student.ssc_reg
+                current_gpa = str(student.ssc_gpa)
+            elif exam == 'HSC':
+                board, year, roll, reg = student.hsc_board, student.hsc_year, student.hsc_roll, student.hsc_reg
+                current_gpa = str(student.hsc_gpa)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    engine = BoardVerificationEngine()
+
+    # BUG-02 FIX: Read from the correct session key
+    saved_cookies = request.session.get('board_session_cookies')
+    if not saved_cookies:
+        return JsonResponse({'success': False, 'error': 'Session expired. Please refresh the captcha.'})
+
+    import requests.utils
+    engine.session.cookies.update(saved_cookies)
+
+    result = engine.fetch_result(exam, board, year, roll, reg, captcha)
+
+    # Mode 1 only: save verified status to DB immediately
+    if student and result.get('success'):
+        board_gpa = result.get('gpa', '0.00')
+        try:
+            is_match = float(current_gpa) == float(board_gpa)
+        except (ValueError, TypeError):
+            is_match = str(current_gpa) == str(board_gpa)
+
+        result['is_match'] = is_match
+        result['board_gpa'] = board_gpa
+        result['current_gpa'] = current_gpa
+
+        # BUG-04 FIX: Mark verified on any successful board fetch, not just on GPA match
+        log_entry = {
+            'timestamp': timezone.now().isoformat(),
+            'verified_by': request.user.username,
+            'exam': exam,
+            'board_gpa': board_gpa,
+            'stored_gpa': current_gpa,
+            'is_match': is_match,
+        }
+        try:
+            logs = getattr(student, 'academic_verification_logs', None) or {}
+            logs[exam] = log_entry
+            student.academic_verification_logs = logs
+        except AttributeError:
+            pass
+
+        if exam == 'SSC':
+            student.ssc_verified = True
+        elif exam == 'HSC':
+            student.hsc_verified = True
+        student.save()
+
+        result['details'] = {
+            'name': result.get('name'),
+            'father_name': result.get('father_name'),
+            'mother_name': result.get('mother_name'),
+            'dob': result.get('dob'),
+            'gpa': result.get('gpa'),
+            'grades': result.get('grades', {}),
+            'all_subjects': result.get('all_subjects', {}),
+        }
+
+    return JsonResponse(result)
+
 
 
 @login_required

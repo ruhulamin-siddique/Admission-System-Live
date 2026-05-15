@@ -1262,7 +1262,21 @@
         $(`#id_${prefix}_verified`).val('true');
 
         $('#boardVerificationModal').modal('hide');
-        
+
+        // BUG-05 FIX: Warn user that verification is pending a form save
+        const existingBanner = document.getElementById('verify-save-warning');
+        if (existingBanner) existingBanner.remove();
+        const banner = document.createElement('div');
+        banner.id = 'verify-save-warning';
+        banner.className = 'alert alert-warning alert-dismissible font-weight-bold shadow-sm';
+        banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;border-radius:12px;min-width:380px;text-align:center;';
+        banner.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i>
+            <strong>${prefix.toUpperCase()} Verification applied.</strong>
+            Click <u>Update Profile</u> to save permanently.
+            <button type="button" class="close" onclick="this.parentElement.remove()">&times;</button>`;
+        document.body.appendChild(banner);
+        setTimeout(() => { if (banner.parentElement) banner.remove(); }, 8000);
+
         // Toast Notification
         if(typeof Swal !== 'undefined') {
             Swal.fire({

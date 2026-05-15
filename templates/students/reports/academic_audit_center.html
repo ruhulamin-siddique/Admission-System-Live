@@ -53,7 +53,7 @@
                         <i class="fas fa-list-check text-primary mr-2"></i> Verification Queue
                     </h3>
                     <div class="card-tools">
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill">
+                        <button type="button" id="btnFilterUnverified" class="btn btn-sm btn-outline-primary rounded-pill" onclick="toggleUnverifiedFilter()">
                             <i class="fas fa-filter mr-1"></i> Filter Unverified
                         </button>
                     </div>
@@ -130,5 +130,34 @@
     body.dark-mode .bg-light { background: #0f172a !important; color: #94a3b8 !important; }
     .info-box-number { font-size: 1.5rem; font-weight: 800; }
     .table th { border-top: 0 !important; }
+    tr.verified-hidden { display: none; }
 </style>
+
+<script>
+// BUG-08 FIX: Wire up the Filter Unverified button
+let filteringUnverified = false;
+function toggleUnverifiedFilter() {
+    filteringUnverified = !filteringUnverified;
+    const btn = document.getElementById('btnFilterUnverified');
+    const rows = document.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+        // A row is "fully verified" if it has NO badge-warning cells
+        const hasPending = row.querySelector('.badge-warning') !== null;
+        if (filteringUnverified && !hasPending) {
+            row.classList.add('verified-hidden');
+        } else {
+            row.classList.remove('verified-hidden');
+        }
+    });
+
+    if (filteringUnverified) {
+        btn.classList.replace('btn-outline-primary', 'btn-primary');
+        btn.innerHTML = '<i class="fas fa-filter-circle-xmark mr-1"></i> Show All';
+    } else {
+        btn.classList.replace('btn-primary', 'btn-outline-primary');
+        btn.innerHTML = '<i class="fas fa-filter mr-1"></i> Filter Unverified';
+    }
+}
+</script>
 {% endblock %}

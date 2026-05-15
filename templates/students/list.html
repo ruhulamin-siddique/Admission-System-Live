@@ -1199,35 +1199,42 @@ function openBulkUpdateModal() {
         $('#bulkUpdateModal').modal('show');
     });
 }
-    // Global Copy Function
-    window.copyToClipboard = function(text, btn) {
-        if (!navigator.clipboard) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                toastr.success(`ID ${text} copied!`);
-            } catch (err) {
-                toastr.error('Failed to copy');
-            }
-            document.body.removeChild(textArea);
-            return;
-        }
-        
-        navigator.clipboard.writeText(text).then(() => {
-            toastr.success(`ID ${text} copied!`);
-            const icon = btn.querySelector('i');
+// BUG-06 FIX: Properly scoped at top level (not indented after openBulkUpdateModal)
+window.copyToClipboard = function(text, btn) {
+    const icon = btn ? btn.querySelector('i') : null;
+    function showSuccess() {
+        if (icon) {
+            // BUG-07 FIX: Icon feedback in both paths
             icon.classList.replace('far', 'fas');
             icon.classList.replace('fa-copy', 'fa-check');
             setTimeout(() => {
                 icon.classList.replace('fas', 'far');
                 icon.classList.replace('fa-check', 'fa-copy');
-            }, 1000);
-        }).catch(err => {
+            }, 1200);
+        }
+        toastr.success(`ID ${text} copied!`);
+    }
+    if (!navigator.clipboard) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showSuccess();
+        } catch (err) {
             toastr.error('Failed to copy');
-        });
-    };
+        }
+        document.body.removeChild(textArea);
+        return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+        showSuccess();
+    }).catch(() => {
+        toastr.error('Failed to copy');
+    });
+};
 </script>
 {% endblock %}
