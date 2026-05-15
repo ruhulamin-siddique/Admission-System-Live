@@ -23,6 +23,11 @@
     body.dark-mode .card-outline.card-primary { border-top-color: #38bdf8; }
     body.dark-mode .card-outline.card-info { border-top-color: #0ea5e9; }
     body.dark-mode .text-dark { color: #f8fafc !important; }
+    
+    .bg-purple { background-color: #6f42c1 !important; color: #fff !important; }
+    .bg-teal { background-color: #20c997 !important; color: #fff !important; }
+    .timeline-header { font-size: 0.95rem !important; }
+    .timeline-item { border-radius: 12px !important; }
 </style>
 {% endblock %}
 
@@ -182,7 +187,7 @@
                     <li class="nav-item"><a class="nav-link active" href="#details" data-toggle="tab">Full Details</a></li>
                     <li class="nav-item"><a class="nav-link" href="#academic" data-toggle="tab">Academic History</a></li>
                     <li class="nav-item"><a class="nav-link" href="#financial" data-toggle="tab">Financial</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#history" data-toggle="tab">Program History</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#timeline" data-toggle="tab"><i class="fas fa-history mr-1"></i> Life Cycle</a></li>
                 </ul>
             </div><!-- /.card-header -->
             <div class="card-body">
@@ -384,28 +389,30 @@
                         </div>
                     </div>
 
-                    <div class="tab-pane" id="history">
+                    <div class="tab-pane" id="timeline">
                         <div class="timeline timeline-inverse">
-                            {% for history in program_history %}
+                            {% for event in timeline %}
                             <div class="time-label">
-                                <span class="bg-primary">{{ history.change_date|date:"d M. Y" }}</span>
+                                <span class="{{ event.badge_class }}">{{ event.timestamp|date:"d M. Y" }}</span>
                             </div>
                             <div>
-                                <i class="fas fa-exchange-alt bg-warning"></i>
-                                <div class="timeline-item">
-                                    <span class="time"><i class="far fa-clock"></i> {{ history.change_date|time }}</span>
-                                    <h3 class="timeline-header">Program Changed</h3>
+                                <i class="{{ event.icon }} {{ event.badge_class }}"></i>
+                                <div class="timeline-item shadow-sm">
+                                    <span class="time"><i class="far fa-clock"></i> {{ event.timestamp|time }}</span>
+                                    <h3 class="timeline-header font-weight-bold">{{ event.title }}</h3>
                                     <div class="timeline-body">
-                                        Changed from <b>{{ history.old_program }}</b> ({{ history.old_student_id }}) 
-                                        to <b>{{ history.new_program }}</b> ({{ history.new_student_id }}).
-                                        <br>
-                                        <small class="text-muted">{{ history.notes }}</small>
+                                        {{ event.description }}
+                                        <div class="mt-2 small">
+                                            <span class="text-muted"><i class="fas fa-user-edit mr-1"></i> Performed by:</span>
+                                            <span class="badge badge-light border">{{ event.user }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             {% empty %}
-                            <div class="text-center py-4">
-                                <p class="text-muted">No program changes recorded.</p>
+                            <div class="text-center py-5">
+                                <i class="fas fa-ghost fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No timeline events recorded for this student.</p>
                             </div>
                             {% endfor %}
                             <div><i class="far fa-clock bg-gray"></i></div>
@@ -461,9 +468,6 @@
         </div>
     </div>
 </div>
-{% endif %}
-{% if user.is_superuser %}
-<!-- ID Rectification Modal ... existing ... -->
 {% endif %}
 
 <!-- Board Verification Modal -->

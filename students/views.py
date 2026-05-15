@@ -1539,14 +1539,116 @@ def change_program(request, student_id):
 
 @require_access('students', 'view_directory')
 def student_profile(request, student_id):
-    """Full detail view for a student profile."""
-    student = Student.objects.get(pk=student_id)
+    """Full detail view for a student profile with unified timeline."""
+    from core.models import ActivityLog
+    from django.utils.dateparse import parse_datetime
+    
+    student = get_object_or_404(Student, pk=student_id)
+    timeline = []
+
+    # 1. Admission Event
+    timeline.append({
+        'timestamp': student.created_at,
+        'icon': 'fas fa-user-plus',
+        'badge_class': 'bg-success',
+        'title': 'Initial Admission',
+        'description': f'Student record created in the system for {student.program}.',
+        'user': 'Admission Office'
+    })
+
+    # 2. Program/ID Change Events
+    # We look for any history tied to the CURRENT ID or the OLD ID recorded in the student model
+    id_list = [student_id]
+    if student.old_student_id:
+        id_list.append(student.old_student_id)
+
     program_history = ProgramChangeHistory.objects.filter(
-        Q(old_student_id=student_id) | Q(new_student_id=student_id)
-    ).order_by('-change_date')
+        Q(old_student_id__in=id_list) | Q(new_student_id__in=id_list)
+    ).order_by('change_date')
+    
+    for entry in program_history:
+        # Track previous IDs for full log coverage
+        if entry.old_student_id not in id_list: id_list.append(entry.old_student_id)
+        if entry.new_student_id not in id_list: id_list.append(entry.new_student_id)
+
+        if entry.old_student_id != entry.new_student_id:
+            timeline.append({
+                'timestamp': entry.change_date,
+                'icon': 'fas fa-fingerprint',
+                'badge_class': 'bg-purple',
+                'title': 'Student ID Rectified',
+                'description': f'ID changed from {entry.old_student_id} to {entry.new_student_id}.',
+                'user': 'Registrar'
+            })
+        if entry.old_program != entry.new_program:
+            timeline.append({
+                'timestamp': entry.change_date,
+                'icon': 'fas fa-exchange-alt',
+                'badge_class': 'bg-warning',
+                'title': 'Program Migration',
+                'description': f'Migrated from {entry.old_program} to {entry.new_program}.',
+                'user': 'Academic Office'
+            })
+
+    # 3. Admission Status Changes
+    status_history = AdmissionStatusHistory.objects.filter(student=student).order_by('change_date')
+    for entry in status_history:
+        timeline.append({
+            'timestamp': entry.change_date,
+            'icon': 'fas fa-user-tag',
+            'badge_class': 'bg-danger' if entry.new_status != 'Active' else 'bg-primary',
+            'title': f'Status Change: {entry.new_status}',
+            'description': f'Reason: {entry.get_reason_category_display()}. {entry.custom_notes or ""}',
+            'user': entry.performed_by.username if entry.performed_by else 'Admin'
+        })
+
+    # 4. Board Verification Events
+    if student.academic_verification_logs:
+        for exam, data in student.academic_verification_logs.items():
+            if isinstance(data, dict) and 'timestamp' in data:
+                ts = parse_datetime(data['timestamp']) or student.last_updated
+                timeline.append({
+                    'timestamp': ts,
+                    'icon': 'fas fa-check-double',
+                    'badge_class': 'bg-info',
+                    'title': f'{exam} Board Verified',
+                    'description': f"Successfully cross-checked with Board. Board GPA: {data.get('board_gpa', 'N/A')}.",
+                    'user': data.get('verified_by', 'System')
+                })
+
+    # 5. Activity Logs (General Updates)
+    logs = ActivityLog.objects.filter(module='students', object_id__in=id_list).order_by('timestamp')
+    for log in logs:
+        # Skip migration/status logs if they contain redundant text already covered by specialized histories
+        desc = log.description.lower()
+        if 'migrated' in desc or 'status change' in desc or 'rectified' in desc:
+            continue
+            
+        icon = 'fas fa-edit'
+        badge = 'bg-secondary'
+        if 'mobile' in desc:
+            icon = 'fas fa-phone-alt'
+            badge = 'bg-info'
+        elif 'photo' in desc:
+            icon = 'fas fa-camera'
+            badge = 'bg-teal'
+            
+        timeline.append({
+            'timestamp': log.timestamp,
+            'icon': icon,
+            'badge_class': badge,
+            'title': 'Profile Updated',
+            'description': log.description,
+            'user': log.user.username if log.user else 'System'
+        })
+
+    # Final Sort: Newest First
+    timeline.sort(key=lambda x: x['timestamp'], reverse=True)
+
     return render(request, 'students/profile.html', {
         'student': student,
-        'program_history': program_history
+        'program_history': program_history,
+        'timeline': timeline
     })
 
 @require_access('reports', 'view_analytics')

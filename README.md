@@ -1,7 +1,7 @@
 # Admission Suite - Professional Admission Management System
 
 > **Developed by**: Ruhulamin Siddique  
-> **Last Updated**: 2026-05-01
+> **Last Updated**: 2026-05-16
 > **Status**: Production Ready 🚀
 
 A high-performance, secure, and modern Django-based web application designed for managing student admissions, academic records, and institutional examination billing.
@@ -19,23 +19,27 @@ A high-performance, secure, and modern Django-based web application designed for
 - **Theme Engine**: Persistent **Dark Mode** toggle with AdminLTE native integration.
 - **Sticky Layout**: One-click "Pin/Unpin" header toggle preserved across sessions.
 
-### 💰 Exam Billing & Remuneration (NEW)
-- **Automated Calculations**: Sophisticated engine for computing faculty remuneration across multiple exam parts (Question Setting, Script Examination, Moderation, etc.).
+### 💰 Exam Billing & Remuneration
+- **Automated Calculations**: Sophisticated engine for computing faculty remuneration across multiple exam parts.
 - **Premium Analytics**: Real-time projected payable tracking and departmental progress monitoring.
 - **Document Generation**: One-click generation of professional PDF bills, attendance sheets, and summary statements.
-- **Faculty Directory**: Centralized profile management with employee ID and academic department synchronization.
 
-### 👤 Staff Identity Hub 2.0
-- **Premium Dashboards**: Every staff member has a glassmorphism-styled personal dashboard.
-- **Work Analytics**: Individual stats tracking (Total Admissions Performed, Account Age).
-- **Personal Timeline**: A vertical history of the specific user's latest actions for accountability.
-- **Avatar Management**: Full support for professional profile photos with fallback initial avatars.
+### 👤 Student Life Cycle 360
+- **Unified Timeline**: A vertical history showing every event from admission and migration to board verification and status changes.
+- **Academic Board Verification**: Human-in-the-loop scraping engine for automated SSC/HSC verification from official board portals.
+- **Program Migrations**: Automated handling of department changes with full historical tracking.
+- **Identity Hub**: Advanced ID rectification tools that preserve data integrity across the entire suite.
+
+### 📊 Strategic Intelligence
+- **Geographic Insights**: Dynamic heatmaps and district-wise recruitment analytics.
+- **Institutional Intelligence**: Top feeder school/college tracking with intake quality analysis.
+- **Financial Analytics**: Comprehensive revenue, waiver, and installment tracking.
+- **Subject Performance**: Deep-dive analysis of science subject marks (Phy/Che/Mat) by intake batch.
 
 ### 🛡️ Security & Performance
-- **RBAC (Role-Based Access Control)**: Granular permission system for modules and specific tasks.
-- **Identity Security**: Redesigned password management portal with "Security-First" aesthetics.
+- **Granular RBAC**: Role-Based Access Control with task-level precision (Manage Audit, Manage Roles, Manage API, etc.).
+- **Audit Logging**: Comprehensive activity tracking with session handshakes and IP logging.
 - **Universal Database Engine**: Seamlessly switches between **MySQL (Production)** and **SQLite (Local Development)**.
-- **Security by Default**: Global authentication enforcement and session hardening.
 
 ## 🛠️ Technology Stack
 
@@ -48,14 +52,14 @@ A high-performance, secure, and modern Django-based web application designed for
 
 ```text
 Admission/
-├── admission_system/      # Project configuration (settings, main URLs)
+├── admission_system/      # Project configuration
 ├── core/                  # Security, RBAC, User Profiles, Activity Logging
-├── exam_billing/          # Remuneration module (Exams, Faculty, Billing)
-├── students/              # Admission module (Student Records, Reports)
-├── master_data/           # Academic settings (Programs, Halls, Sessions)
-├── static/                # Global static assets (css, js, images)
-├── templates/             # Global templates and layout components
-├── .env                   # Environment variables (Not in Version Control)
+├── exam_billing/          # Remuneration module
+├── students/              # Admission & Verification module
+├── master_data/           # Academic master data (Programs, Halls, etc.)
+├── static/                # Global static assets
+├── templates/             # Premium layout components
+├── .env                   # Environment variables
 └── manage.py              # Django management script
 ```
 
