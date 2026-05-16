@@ -60,6 +60,7 @@ urlpatterns = [
     path('reports/export/students/', views.export_students_dynamic, name='export_students_dynamic'),
     path('reports/export/migrations/', views.export_migrations_dynamic, name='export_migrations_dynamic'),
     path('reports/export/cancellations/', views.export_cancellations_dynamic, name='export_cancellations_dynamic'),
+    path('api/bulk-verify-init/', views.api_bulk_verify_init, name='bulk_verify_init'),
     path('students/mobile-repair/', views.mobile_repair_tool, name='mobile_repair_tool'),
     path('api/bulk-fix-mobile/', views.api_bulk_fix_mobile, name='api_bulk_fix_mobile'),
 ]

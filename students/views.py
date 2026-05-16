@@ -2688,8 +2688,6 @@ def api_verify_board_result(request):
 
 
 
-@login_required
-@require_access('students', 'mobile_repair')
 def _clean_mobile_number(mobile):
     """Helper to strip float suffixes, non-numeric chars, and add missing leading zeros."""
     if not mobile: return None, False
@@ -2801,4 +2799,45 @@ def api_bulk_fix_mobile(request):
         'success': True, 
         'updated_count': updated_count,
         'message': f'Successfully repaired {updated_count} mobile records.'
+    })
+
+@login_required
+@require_access('students', 'academic_audit')
+def api_bulk_verify_init(request):
+    """Prepares a queue of board verification tasks for a batch of students."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'})
+    
+    student_ids = request.POST.getlist('student_ids[]')
+    types = request.POST.getlist('types[]') # ['SSC', 'HSC']
+    
+    if not student_ids:
+        return JsonResponse({'success': False, 'error': 'No students selected.'})
+    
+    tasks = []
+    # Use filter to get students
+    students = Student.objects.filter(student_id__in=student_ids)
+    
+    for s in students:
+        for t in types:
+            # Only add task if board data exists for that exam
+            has_data = False
+            roll = s.ssc_roll if t == 'SSC' else s.hsc_roll
+            board = s.ssc_board if t == 'SSC' else s.hsc_board
+            
+            if roll and board:
+                tasks.append({
+                    'student_id': s.student_id,
+                    'name': s.student_name,
+                    'exam': t,
+                    'board': board,
+                    'year': s.ssc_year if t == 'SSC' else s.hsc_year,
+                    'roll': roll,
+                    'reg': s.ssc_reg if t == 'SSC' else s.hsc_reg,
+                })
+                
+    return JsonResponse({
+        'success': True,
+        'total_tasks': len(tasks),
+        'tasks': tasks
     })

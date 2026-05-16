@@ -939,6 +939,9 @@
     <button class="btn btn-warning font-weight-bold rounded-pill px-4 shadow-sm" onclick="openBulkUpdateModal()">
         <i class="fas fa-magic mr-2"></i> Mass Update
     </button>
+    <button class="btn btn-info font-weight-bold rounded-pill px-4 shadow-sm" onclick="initiateBulkAudit()">
+        <i class="fas fa-shield-halved mr-2"></i> Board Audit
+    </button>
     <button class="btn btn-outline-light rounded-circle" style="width: 38px; height: 38px; padding: 0;" onclick="clearSelection()" title="Clear Selection">
         <i class="fas fa-times"></i>
     </button>
@@ -948,6 +951,49 @@
 <!-- Bulk Update Modal Container -->
 <div class="modal fade" id="bulkUpdateModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div id="bulkUpdateModalContent"></div>
+</div>
+
+<!-- Bulk Audit Initialization Modal -->
+<div class="modal fade" id="bulkAuditInitModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-info text-white border-0 py-4">
+                <h5 class="modal-title font-weight-black"><i class="fas fa-shield-halved mr-2"></i> Board Audit Configuration</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-4">Select the academic records you want to verify for the <span id="audit-count-label" class="font-weight-bold text-dark">0</span> selected students.</p>
+                <div class="custom-control custom-checkbox mb-3">
+                    <input type="checkbox" class="custom-control-input" id="audit-ssc" checked>
+                    <label class="custom-control-label font-weight-bold" for="audit-ssc">Verify SSC (Secondary) Records</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="audit-hsc" checked>
+                    <label class="custom-control-label font-weight-bold" for="audit-hsc">Verify HSC (Higher Secondary) Records</label>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light py-3">
+                <button type="button" class="btn btn-link text-muted" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info px-4 rounded-pill font-weight-black" onclick="startBulkAudit()">
+                    Start Sequence <i class="fas fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Audit Execution Modal (The Loop) -->
+<div class="modal fade" id="bulkAuditLoopModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-2xl overflow-hidden" style="border-radius: 24px;">
+            <div class="progress" style="height: 6px; border-radius: 0; background: #e2e8f0;">
+                <div id="audit-progress" class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div class="modal-body p-0" id="audit-task-container">
+                <!-- Task content injected via BoardAuditManager -->
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Info Overlay Backdrop -->
@@ -1236,5 +1282,227 @@ window.copyToClipboard = function(text, btn) {
         toastr.error('Failed to copy');
     });
 };
+
+// --- Bulk Board Audit Manager ---
+const BoardAuditManager = {
+    queue: [],
+    currentIndex: 0,
+    results: { matched: 0, mismatch: 0, error: 0 },
+
+    init(tasks) {
+        this.queue = tasks;
+        this.currentIndex = 0;
+        this.results = { matched: 0, mismatch: 0, error: 0 };
+        this.renderTask();
+        $('#bulkAuditLoopModal').modal('show');
+    },
+
+    renderTask() {
+        if (this.currentIndex >= this.queue.length) {
+            this.showSummary();
+            return;
+        }
+
+        const task = this.queue[this.currentIndex];
+        const progress = ((this.currentIndex) / this.queue.length) * 100;
+        document.getElementById('audit-progress').style.width = progress + '%';
+
+        const container = document.getElementById('audit-task-container');
+        container.innerHTML = `
+            <div class="p-4 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge badge-info px-2 py-1 mb-1">${task.exam} AUDIT</span>
+                    <h5 class="font-weight-black mb-0">${task.name}</h5>
+                    <p class="text-muted small mb-0">${task.student_id} | ${task.board} ${task.year}</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs font-weight-bold text-uppercase text-muted">Progress</div>
+                    <div class="font-weight-black text-info" style="font-size: 1.2rem;">${this.currentIndex + 1} <span class="text-muted" style="font-weight: 400; font-size: 0.9rem;">/ ${this.queue.length}</span></div>
+                </div>
+            </div>
+            <div class="p-4">
+                <div id="audit-captcha-section">
+                    <div class="text-center mb-4">
+                        <div id="audit-loader" class="py-3">
+                            <div class="spinner-border text-info" role="status"></div>
+                            <p class="mt-2 text-muted small">Connecting to Board Portal...</p>
+                        </div>
+                        <div id="audit-captcha-wrapper" style="display:none;">
+                            <p class="small font-weight-bold text-muted mb-2 text-uppercase" style="letter-spacing:1px;">Enter Security Captcha</p>
+                            <img id="audit-captcha-img" src="" class="img-fluid border rounded shadow-sm mb-2" style="max-height: 80px;">
+                            <input type="text" id="audit-captcha-input" class="form-control form-control-lg text-center font-weight-black mx-auto" 
+                                   placeholder="????" style="width: 140px; border: 2px solid #0dcaf0; letter-spacing: 4px;" maxlength="6" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-info btn-block btn-lg rounded-pill font-weight-black shadow-sm py-3" onclick="BoardAuditManager.submitTask()">
+                            VERIFY & CONTINUE <i class="fas fa-chevron-right ml-2"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-link btn-sm text-muted" onclick="BoardAuditManager.skipTask()">Skip this record</button>
+                    </div>
+                </div>
+                <div id="audit-result-section" style="display:none;" class="text-center py-4">
+                    <!-- Feedback shown briefly between tasks -->
+                </div>
+            </div>
+        `;
+
+        this.loadCaptcha();
+        
+        // Auto-focus input after slight delay
+        setTimeout(() => {
+            const input = document.getElementById('audit-captcha-input');
+            if(input) {
+                input.focus();
+                input.addEventListener('keypress', (e) => {
+                    if(e.key === 'Enter') this.submitTask();
+                });
+            }
+        }, 500);
+    },
+
+    loadCaptcha() {
+        fetch('{% url "api_get_board_captcha" %}')
+            .then(r => r.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById('audit-loader').style.display = 'none';
+                    document.getElementById('audit-captcha-wrapper').style.display = 'block';
+                    document.getElementById('audit-captcha-img').src = data.captcha_image;
+                    document.getElementById('audit-captcha-input').value = '';
+                } else {
+                    toastr.error("Board portal busy. Retrying...");
+                    setTimeout(() => this.loadCaptcha(), 2000);
+                }
+            });
+    },
+
+    submitTask() {
+        const captcha = document.getElementById('audit-captcha-input').value;
+        if(!captcha) return;
+
+        const task = this.queue[this.currentIndex];
+        const btn = document.querySelector('#audit-task-container button.btn-info');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Verifying...';
+
+        const formData = new FormData();
+        formData.append('student_id', task.student_id);
+        formData.append('exam_type', task.exam);
+        formData.append('captcha', captcha);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('{% url "api_verify_board_result" %}', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if(data.success) {
+                    this.showFeedback(data.is_match);
+                } else {
+                    toastr.error(data.error || "Verification failed.");
+                    btn.disabled = false;
+                    btn.innerHTML = 'VERIFY & CONTINUE <i class="fas fa-chevron-right ml-2"></i>';
+                    this.loadCaptcha(); // Reload captcha on failure
+                }
+            });
+    },
+
+    showFeedback(isMatch) {
+        if(isMatch) this.results.matched++; else this.results.mismatch++;
+        
+        const container = document.getElementById('audit-captcha-section');
+        const feedback = document.getElementById('audit-result-section');
+        container.style.display = 'none';
+        feedback.style.display = 'block';
+        
+        feedback.innerHTML = `
+            <div class="animate__animated animate__zoomIn">
+                <i class="fas ${isMatch ? 'fa-check-circle text-success' : 'fa-exclamation-circle text-danger'} fa-5x mb-3"></i>
+                <h4 class="font-weight-black">${isMatch ? 'DATA MATCHED' : 'DISCREPANCY FOUND'}</h4>
+                <p class="text-muted">${isMatch ? 'Records updated successfully.' : 'Marked for manual review.'}</p>
+            </div>
+        `;
+
+        setTimeout(() => {
+            this.currentIndex++;
+            this.renderTask();
+        }, 800);
+    },
+
+    skipTask() {
+        this.currentIndex++;
+        this.renderTask();
+    },
+
+    showSummary() {
+        document.getElementById('audit-progress').style.width = '100%';
+        const container = document.getElementById('audit-task-container');
+        container.innerHTML = `
+            <div class="p-5 text-center">
+                <div class="mb-4">
+                    <i class="fas fa-flag-checkered fa-4x text-info"></i>
+                </div>
+                <h3 class="font-weight-black mb-2">Audit Sequence Complete</h3>
+                <p class="text-muted mb-4">You have successfully processed all tasks in this batch.</p>
+                
+                <div class="row mb-5">
+                    <div class="col-4 border-right">
+                        <div class="h3 font-weight-black text-success mb-0">${this.results.matched}</div>
+                        <div class="small text-muted text-uppercase">Matched</div>
+                    </div>
+                    <div class="col-4 border-right">
+                        <div class="h3 font-weight-black text-danger mb-0">${this.results.mismatch}</div>
+                        <div class="small text-muted text-uppercase">Mismatch</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="h3 font-weight-black text-muted mb-0">${this.queue.length - this.results.matched - this.results.mismatch}</div>
+                        <div class="small text-muted text-uppercase">Skipped</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block btn-lg rounded-pill font-weight-black py-3" onclick="location.reload()">
+                    CLOSE & REFRESH DIRECTORY
+                </button>
+            </div>
+        `;
+    }
+};
+
+function initiateBulkAudit() {
+    const checked = document.querySelectorAll('.student-checkbox:checked');
+    document.getElementById('audit-count-label').textContent = checked.length;
+    $('#bulkAuditInitModal').modal('show');
+}
+
+function startBulkAudit() {
+    const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+    const types = [];
+    if(document.getElementById('audit-ssc').checked) types.push('SSC');
+    if(document.getElementById('audit-hsc').checked) types.push('HSC');
+
+    if(types.length === 0) {
+        toastr.warning("Please select at least one record type.");
+        return;
+    }
+
+    $('#bulkAuditInitModal').modal('hide');
+    
+    // Initialize tasks
+    const formData = new FormData();
+    ids.forEach(id => formData.append('student_ids[]', id));
+    types.forEach(t => formData.append('types[]', t));
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch('{% url "bulk_verify_init" %}', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if(data.success && data.tasks.length > 0) {
+                BoardAuditManager.init(data.tasks);
+            } else {
+                toastr.error(data.error || "No valid records found for verification.");
+            }
+        });
+}
 </script>
 {% endblock %}
