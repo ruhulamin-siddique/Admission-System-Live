@@ -932,17 +932,22 @@
 <!-- Floating Action Bar for Bulk Update -->
 {% has_access 'students' 'bulk_update' as can_bulk_update %}
 {% if can_bulk_update %}
-<div id="bulk-action-bar" class="position-fixed shadow-lg" style="bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 1050; transition: bottom 0.3s ease-in-out; background: linear-gradient(135deg, #1f2937, #111827); padding: 15px 25px; border-radius: 50px; display: flex; align-items: center; gap: 20px;">
-    <div class="text-white font-weight-bold">
-        <span id="selected-count" class="badge badge-primary mr-2" style="font-size: 1.1rem; padding: 6px 12px; border-radius: 20px;">0</span> Students Selected
+<div id="bulk-action-bar" class="position-fixed shadow-lg" style="bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 1050; transition: bottom 0.3s ease-in-out; background: linear-gradient(135deg, #1f2937, #111827); padding: 10px 18px; border-radius: 50px; display: flex; align-items: center; gap: 8px; max-width: 95vw; width: max-content;">
+    <div class="text-white d-flex align-items-center">
+        <span id="selected-count" class="badge badge-primary" style="font-size: 1rem; padding: 5px 10px; border-radius: 20px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);">0</span>
     </div>
-    <button class="btn btn-warning font-weight-bold rounded-pill px-4 shadow-sm" onclick="openBulkUpdateModal()">
-        <i class="fas fa-magic mr-2"></i> Mass Update
+    
+    <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.15); margin: 0 5px;"></div>
+
+    <button class="btn btn-warning font-weight-bold rounded-pill px-3 px-md-4 shadow-sm" onclick="openBulkUpdateModal()" title="Mass Update">
+        <i class="fas fa-magic"></i> <span class="ml-1 d-none d-md-inline">Mass Update</span>
     </button>
-    <button class="btn btn-info font-weight-bold rounded-pill px-4 shadow-sm" onclick="initiateBulkAudit()">
-        <i class="fas fa-shield-halved mr-2"></i> Board Audit
+    
+    <button class="btn btn-info font-weight-bold rounded-pill px-3 px-md-4 shadow-sm" onclick="initiateBulkAudit()" title="Board Audit">
+        <i class="fas fa-shield-halved"></i> <span class="ml-1 d-none d-md-inline">Board Audit</span>
     </button>
-    <button class="btn btn-outline-light rounded-circle" style="width: 38px; height: 38px; padding: 0;" onclick="clearSelection()" title="Clear Selection">
+    
+    <button class="btn btn-outline-danger border-0 rounded-circle ml-1" style="width: 32px; height: 32px; padding: 0; line-height: 32px;" onclick="clearSelection()" title="Clear Selection">
         <i class="fas fa-times"></i>
     </button>
 </div>

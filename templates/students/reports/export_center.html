@@ -46,6 +46,9 @@
                         <li class="nav-item flex-fill">
                             <a class="nav-link text-center" id="cancellations-tab" data-toggle="pill" href="#cancellations" role="tab"><i class="fas fa-user-slash mr-2"></i> Cancellation Audit Logs</a>
                         </li>
+                        <li class="nav-item flex-fill">
+                            <a class="nav-link text-center" id="photos-tab" data-toggle="pill" href="#photos" role="tab"><i class="fas fa-camera-retro mr-2"></i> Photo Repository</a>
+                        </li>
                     </ul>
                 </div>
 
@@ -169,33 +172,144 @@
                         <!-- TAB 3: CANCELLATION AUDIT -->
                         <div class="tab-pane fade" id="cancellations" role="tabpanel">
                             <div class="text-center py-4">
-                                <h3><i class="fas fa-user-slash fa-2x mb-3 text-danger"></i></h3>
+                                <div class="icon-box mb-3 mx-auto" style="width: 80px; height: 80px; background: rgba(220, 53, 69, 0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user-slash fa-2x text-danger"></i>
+                                </div>
                                 <h4 class="font-weight-bold text-danger">Admission Cancellation Audit</h4>
-                                <p class="text-muted">Export detailed records of retracted or suspended admissions.</p>
+                                <p class="text-muted mb-4">Export detailed records of retracted or suspended admissions for regulatory compliance.</p>
                              </div>
-                             <form action="{% url 'export_cancellations_dynamic' %}" method="GET" class="filter-section mt-4">
+                             
+                             <form action="{% url 'export_cancellations_dynamic' %}" method="GET" class="filter-section mt-4 shadow-sm border-0">
                                 <div class="row justify-content-center">
-                                    <div class="col-md-4">
+                                    <div class="col-md-5">
                                         <div class="form-group">
-                                            <label class="small font-weight-bold">Search Student ID</label>
-                                            <input type="text" name="search" class="form-control rounded-pill" placeholder="Optional search...">
+                                            <label class="small font-weight-black text-uppercase letter-spacing-1 text-muted mb-2">Search Records</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text bg-white border-right-0 rounded-left-pill px-3"><i class="fas fa-search text-muted"></i></span>
+                                                </div>
+                                                <input type="text" name="search" class="form-control border-left-0 rounded-right-pill h-auto py-2" placeholder="Student ID or Reason...">
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-7">
                                         <div class="form-group">
-                                            <label class="small font-weight-bold">Cancellation Period</label>
-                                            <div class="d-flex" style="gap: 10px;">
-                                                <input type="date" name="start_date" class="form-control rounded-pill">
-                                                <span class="align-self-center">to</span>
-                                                <input type="date" name="end_date" class="form-control rounded-pill">
+                                            <label class="small font-weight-black text-uppercase letter-spacing-1 text-muted mb-2">Cancellation Period</label>
+                                            <div class="d-flex align-items-center" style="gap: 15px;">
+                                                <input type="date" name="start_date" class="form-control rounded-pill h-auto py-2 shadow-none border-2">
+                                                <span class="text-muted font-weight-bold">to</span>
+                                                <input type="date" name="end_date" class="form-control rounded-pill h-auto py-2 shadow-none border-2">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="text-center mt-4">
-                                    <button type="submit" class="btn btn-danger btn-lg rounded-pill px-5 shadow-lg">Export Cancellation Logs</button>
+                                <div class="text-center mt-5">
+                                    <button type="submit" class="btn btn-danger btn-lg rounded-pill px-5 shadow-lg transform-hover">
+                                        <i class="fas fa-file-export mr-2"></i> Export Cancellation Audit Log
+                                    </button>
                                 </div>
                              </form>
+                        </div>
+
+                        <!-- TAB 4: PHOTO REPOSITORY EXPORT -->
+                        <div class="tab-pane fade" id="photos" role="tabpanel">
+                            <div class="text-center py-4">
+                                <div class="icon-box mb-3 mx-auto" style="width: 80px; height: 80px; background: rgba(40, 167, 69, 0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-images fa-2x text-success"></i>
+                                </div>
+                                <h4 class="font-weight-bold text-success">Student Photo Repository</h4>
+                                <p class="text-muted mb-4">Generate high-fidelity ZIP archives of student identity photos for offline usage.</p>
+                            </div>
+                            
+                            <form action="{% url 'export_photos_zip' %}" method="POST" class="mt-4">
+                                {% csrf_token %}
+                                <div class="filter-section shadow-sm border-0">
+                                    <h5 class="font-weight-bold mb-4 d-flex align-items-center">
+                                        <span class="badge badge-success-soft mr-2"><i class="fas fa-cog"></i></span> Archive Configuration
+                                    </h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="small font-weight-black text-uppercase text-muted mb-2">Search Scope</label>
+                                                <input type="text" name="search" class="form-control rounded-pill border-2" placeholder="Leave blank for all...">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-black text-uppercase text-muted mb-2">Academic Program</label>
+                                                <select name="program" class="form-control rounded-pill border-2 custom-select-pill">
+                                                    <option value="All">All Departments</option>
+                                                    <option value="CSE">CSE</option>
+                                                    <option value="EEE">EEE</option>
+                                                    <option value="CE">CE</option>
+                                                    <option value="ME">ME</option>
+                                                    <option value="IPE">IPE</option>
+                                                    <option value="BBA">BBA</option>
+                                                    <option value="English">English</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-black text-uppercase text-muted mb-2">Batch Number</label>
+                                                <input type="number" name="batch" class="form-control rounded-pill border-2" placeholder="e.g. 60">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-black text-uppercase text-muted mb-2">Semester</label>
+                                                <select name="semester" class="form-control rounded-pill border-2 custom-select-pill">
+                                                    <option value="All">All Semesters</option>
+                                                    <option value="1st">1st</option>
+                                                    <option value="2nd">2nd</option>
+                                                    <option value="3rd">3rd</option>
+                                                    <option value="4th">4th</option>
+                                                    <option value="5th">5th</option>
+                                                    <option value="6th">6th</option>
+                                                    <option value="7th">7th</option>
+                                                    <option value="8th">8th</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-black text-uppercase text-muted mb-2">Residential Hall</label>
+                                                <input type="text" name="hall" class="form-control rounded-pill border-2" placeholder="Hall name...">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mt-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-black text-uppercase text-muted mb-2">Enrollment Status</label>
+                                                <select name="status" class="form-control rounded-pill border-2 custom-select-pill">
+                                                    <option value="All">All Statuses</option>
+                                                    <option value="Active">Active Students</option>
+                                                    <option value="Inactive">Inactive/Graduated</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mt-3">
+                                            <div class="form-group">
+                                                <label class="small font-weight-black text-uppercase text-muted mb-2">Date Filter (Optional)</label>
+                                                <div class="d-flex align-items-center" style="gap: 12px;">
+                                                    <input type="date" name="start_date" class="form-control rounded-pill border-2">
+                                                    <span class="text-muted font-weight-bold small">TO</span>
+                                                    <input type="date" name="end_date" class="form-control rounded-pill border-2">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center mt-5">
+                                    <div class="alert alert-success d-inline-flex align-items-center rounded-pill px-4 py-2 small mb-4" style="background: rgba(40, 167, 69, 0.05); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2);">
+                                        <i class="fas fa-sparkles mr-2"></i> Files will be renamed to <b>[STUDENT_ID]_[NAME].jpg</b> for easy archival.
+                                    </div>
+                                    <br>
+                                    <button type="submit" class="btn btn-success btn-lg rounded-pill px-5 shadow-lg transform-hover font-weight-black">
+                                        <i class="fas fa-file-zipper mr-2"></i> Generate Smart Photo Archive
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

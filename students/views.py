@@ -30,6 +30,8 @@ from .utils import (
 import json
 import os
 import requests
+import base64
+from django.core.files.base import ContentFile
 from django.conf import settings
 from .utils_board import BoardVerificationEngine
 
@@ -913,10 +915,95 @@ def api_gender_distribution(request):
     ]
     return JsonResponse({'distribution': data, 'total': total})
 
+def api_bulk_photo_zip(request):
+    """Packages student photos into a ZIP archive with support for direct selection or dynamic filtering."""
+    if request.method != 'POST':
+        return HttpResponse("Method not allowed", status=405)
+        
+    student_ids = request.POST.getlist('student_ids[]')
+    
+    if student_ids:
+        # Priority 1: Specific selection from Directory
+        students = Student.objects.filter(student_id__in=student_ids)
+    else:
+        # Priority 2: Dynamic filtering from Export Center
+        query = request.POST.get('search', '')
+        program = request.POST.get('program')
+        status = request.POST.get('status')
+        batch = request.POST.get('batch')
+        semester = request.POST.get('semester')
+        hall = request.POST.get('hall')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        
+        students = Student.objects.all()
+        if query:
+            students = students.filter(Q(student_name__icontains=query) | Q(student_id__icontains=query))
+        if program and program != 'All':
+            students = students.filter(program=program)
+        if status and status != 'All':
+            students = students.filter(admission_status=status)
+        if batch:
+            students = students.filter(batch=batch)
+        if semester and semester != 'All':
+            students = students.filter(semester_name=semester)
+        if hall:
+            students = students.filter(hall_attached__icontains=hall)
+        if start_date:
+            students = students.filter(admission_date__gte=start_date)
+        if end_date:
+            students = students.filter(admission_date__lte=end_date)
+            
+    students = students.exclude(photo_path__isnull=True).exclude(photo_path='')
+    
+    if not students.exists():
+        return HttpResponse("Error: No photos found for the selected criteria.", status=404)
+        
+    # Create ZIP in memory
+    buffer = BytesIO()
+    try:
+        with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            files_added = 0
+            for student in students:
+                raw_path = str(student.photo_path or '').strip()
+                if not raw_path: continue
+                    
+                if raw_path.startswith(settings.MEDIA_URL):
+                    raw_path = raw_path[len(settings.MEDIA_URL):].lstrip('/')
+                elif raw_path.startswith('/media/'):
+                    raw_path = raw_path[len('/media/'):].lstrip('/')
+                
+                full_path = os.path.normpath(os.path.join(settings.MEDIA_ROOT, raw_path))
+                
+                if os.path.exists(full_path):
+                    ext = os.path.splitext(full_path)[1].lower() or '.jpg'
+                    safe_name = "".join([c for c in student.student_name if c.isalnum() or c==' ']).strip().replace(' ', '_')
+                    zip_filename = f"{student.student_id}_{safe_name}{ext}"
+                    zip_file.write(full_path, zip_filename)
+                    files_added += 1
+            
+            if files_added == 0:
+                return HttpResponse("Error: Physical files missing on server for these records.", status=404)
+    except Exception as e:
+        return HttpResponse(f"Server Error: {str(e)}", status=500)
+
+    buffer.seek(0)
+    
+    # Log the export activity
+    from core.utils import log_activity
+    log_activity(request, 'EXPORT', 'students', f'Exported {files_added} student photos to ZIP', object_id='bulk_zip')
+    
+    response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+    timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+    response['Content-Disposition'] = f'attachment; filename="Student_Photos_Export_{timestamp}.zip"'
+    return response
+
 def _handle_student_photo(request, student):
-    """Saves student photo and returns the relative path."""
+    """Saves student photo (standard upload or Base64 camera data)."""
     photo = request.FILES.get('student_photo')
-    if not photo:
+    camera_data = request.POST.get('camera_photo')
+    
+    if not photo and not camera_data:
         return None
         
     # Ensure directory exists
@@ -924,17 +1011,27 @@ def _handle_student_photo(request, student):
     if not os.path.exists(photo_dir):
         os.makedirs(photo_dir, exist_ok=True)
         
-    # Create filename: student_id.extension
-    ext = os.path.splitext(photo.name)[1].lower()
-    if ext not in ['.jpg', '.jpeg', '.png']:
-        return None
-        
-    filename = f"{student.student_id}{ext}"
+    if camera_data:
+        # Handle Base64 from Camera
+        try:
+            format, imgstr = camera_data.split(';base64,') 
+            ext = "." + format.split('/')[-1]
+            photo_content = ContentFile(base64.b64decode(imgstr))
+            filename = f"{student.student_id}{ext}"
+        except Exception as e:
+            return None
+    else:
+        # Handle Standard File Upload
+        ext = os.path.splitext(photo.name)[1].lower()
+        if ext not in ['.jpg', '.jpeg', '.png']:
+            return None
+        filename = f"{student.student_id}{ext}"
+        photo_content = photo
+
     file_path = os.path.join(photo_dir, filename)
     
     # Delete old file if it's different
     if student.photo_path:
-        # Check if the path is already media-relative
         old_rel_path = student.photo_path.replace(settings.MEDIA_URL, '').lstrip('/')
         old_full_path = os.path.join(settings.MEDIA_ROOT, old_rel_path)
         if os.path.exists(old_full_path) and old_full_path != file_path:
@@ -944,10 +1041,14 @@ def _handle_student_photo(request, student):
                 pass
                 
     # Save new file
-    with open(file_path, 'wb+') as destination:
-        for chunk in photo.chunks():
-            destination.write(chunk)
-            
+    if camera_data:
+        with open(file_path, 'wb') as f:
+            f.write(photo_content.read())
+    else:
+        with open(file_path, 'wb+') as destination:
+            for chunk in photo.chunks():
+                destination.write(chunk)
+                
     return f"student_photos/{filename}"
 
 from .forms import StudentForm

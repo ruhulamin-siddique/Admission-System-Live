@@ -28,8 +28,13 @@
     .bg-teal { background-color: #20c997 !important; color: #fff !important; }
     .timeline-header { font-size: 0.95rem !important; }
     .timeline-item { border-radius: 12px !important; }
+    
+    /* Verification UI Utilities */
+    .bg-primary-soft { background-color: rgba(0, 64, 133, 0.08) !important; }
+    .font-weight-black { font-weight: 900 !important; }
 </style>
 {% endblock %}
+
 
 {% block content %}
 <!-- Profile Header Actions -->
@@ -638,42 +643,71 @@
             
             <div class="card bg-light border-0">
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
-                        <thead class="bg-dark text-white text-xs">
-                            <tr><th>ATTRIBUTE</th><th>PORTAL DATA</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr><td><strong>Candidate Name</strong></td><td>${data.details.name || 'N/A'}</td></tr>
-                            <tr><td><strong>Father's Name</strong></td><td>${data.details.father_name || 'N/A'}</td></tr>
-                            <tr><td><strong>Mother's Name</strong></td><td>${data.details.mother_name || 'N/A'}</td></tr>
-                            <tr><td><strong>Date of Birth</strong></td><td>${data.details.dob || 'N/A'}</td></tr>
-                            <tr class="bg-${statusColor}-light">
-                                <td><strong>Official GPA</strong></td>
-                                <td class="font-weight-bold text-${statusColor}">${data.board_gpa}</td>
-                            </tr>
-                            <tr><td><strong>System Data</strong></td><td>${data.current_gpa}</td></tr>
-                        </tbody>
-                    </table>
+                    <!-- Institutional Context -->
+                    <div class="p-3 bg-white">
+                        <div class="font-weight-black small text-uppercase text-muted mb-2 border-bottom pb-1" style="letter-spacing:1px">Institutional Context</div>
+                        <div class="d-flex justify-content-between mb-1"><span>Candidate Name:</span> <span class="text-dark font-weight-bold">${data.details.name || 'N/A'}</span></div>
+                        <div class="d-flex justify-content-between mb-1"><span>Father's Name:</span> <span class="text-muted">${data.details.father_name || 'N/A'}</span></div>
+                        <div class="d-flex justify-content-between mb-1"><span>Mother's Name:</span> <span class="text-muted">${data.details.mother_name || 'N/A'}</span></div>
+                        <div class="d-flex justify-content-between mb-1"><span>Date of Birth:</span> <span class="text-muted">${data.details.dob || 'N/A'}</span></div>
+                    </div>
+
+                    <!-- GPA Comparison -->
+                    <div class="d-flex bg-dark text-white">
+                        <div class="col-6 p-3 border-right border-secondary text-center">
+                            <span class="small text-uppercase text-muted d-block mb-1">System Data</span>
+                            <h4 class="font-weight-black mb-0">${data.current_gpa}</h4>
+                        </div>
+                        <div class="col-6 p-3 text-center bg-${statusColor}-light text-${statusColor}">
+                            <span class="small text-uppercase opacity-75 d-block mb-1">Official Board GPA</span>
+                            <h4 class="font-weight-black mb-0">${data.board_gpa}</h4>
+                        </div>
+                    </div>
                     
-                    <div class="mt-3 p-3 bg-white border-top">
-                       <h6 class="font-weight-bold small text-uppercase text-muted mb-2 text-center">Science Subject Audit</h6>
-                       <div class="row text-center">
-                           <div class="col-4 border-right">
-                               <div class="small text-muted">Physics</div>
-                               <div class="font-weight-bold text-primary">${data.details.grades.physics || '-'}</div>
-                           </div>
-                           <div class="col-4 border-right">
-                               <div class="small text-muted">Chemistry</div>
-                               <div class="font-weight-bold text-primary">${data.details.grades.chemistry || '-'}</div>
-                           </div>
-                           <div class="col-4">
-                               <div class="small text-muted">Math</div>
-                               <div class="font-weight-bold text-primary">${data.details.grades.math || '-'}</div>
-                           </div>
-                       </div>
+                    <!-- Academic Transcript Table -->
+                    <div class="p-3 bg-white border-top">
+                        <h6 class="font-weight-black small text-uppercase text-muted mb-2 border-bottom pb-1" style="letter-spacing:1px">Academic Transcript Audit</h6>
+                        <table class="table table-sm table-borderless mb-0" style="font-size: 0.8rem;">
+                            <thead class="bg-light text-muted">
+                                <tr>
+                                    <th class="py-1">Subject</th>
+                                    <th class="py-1 text-center">GL</th>
+                                    <th class="py-1 text-center">GP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(() => {
+                                    if (!data.details.all_subjects || Object.keys(data.details.all_subjects).length === 0) {
+                                        return '<tr><td colspan="3" class="text-center text-muted">No detailed subjects available.</td></tr>';
+                                    }
+                                    
+                                    const gradeToPoint = (g) => {
+                                        const map = {'A+': '5.00', 'A': '4.00', 'A-': '3.50', 'B': '3.00', 'C': '2.00', 'D': '1.00', 'F': '0.00'};
+                                        return map[g] || '0.00';
+                                    };
+
+                                    let html = '';
+                                    for(const [subName, subGrade] of Object.entries(data.details.all_subjects)) {
+                                        const lowerName = subName.toLowerCase();
+                                        const isCore = lowerName.includes('physics') || lowerName.includes('chemistry') || 
+                                                       lowerName.includes('mathematics') || lowerName.includes('math');
+                                        const gp = gradeToPoint(subGrade);
+                                        
+                                        html += `
+                                            <tr class="${isCore ? 'bg-primary-soft font-weight-bold' : ''}" style="border-bottom: 1px solid #f1f3f5;">
+                                                <td class="py-2">${subName}</td>
+                                                <td class="py-2 text-center text-primary font-weight-black">${subGrade}</td>
+                                                <td class="py-2 text-center text-muted font-weight-bold">${gp}</td>
+                                            </tr>`;
+                                    }
+                                    return html;
+                                })()}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
             
             <div class="mt-4">
                 <button type="button" class="btn btn-primary btn-block rounded-pill font-weight-bold" onclick="location.reload()">
