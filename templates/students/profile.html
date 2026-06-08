@@ -494,6 +494,27 @@
                 <div id="verifyError" class="alert alert-danger small font-weight-bold mb-3 d-none">
                     <i class="fas fa-exclamation-triangle mr-1"></i> <span id="verifyErrorMsg"></span>
                 </div>
+
+                <!-- Geoblock Warning & Fallback Manual Links -->
+                <div id="geoblockAlert" class="alert alert-warning small d-none" style="border-radius: 12px; border-left: 5px solid #ffc107; background-color: #fffbeb; color: #856404;">
+                    <div class="font-weight-bold mb-1">
+                        <i class="fas fa-network-wired mr-2"></i> Server Geoblock Notice
+                    </div>
+                    <p class="mb-2" style="font-size: 0.8rem; line-height: 1.4; color: #664d03;">
+                        Your live server is hosted internationally, and the Bangladeshi government firewall blocks incoming automated queries. 
+                    </p>
+                    <div class="border-top pt-2">
+                        <span class="font-weight-bold small d-block mb-2" style="color: #664d03;">Alternative: Open official link, verify manually</span>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="https://eboardresults.com" target="_blank" class="btn btn-xs btn-info font-weight-bold rounded-pill px-3 py-1 shadow-sm mr-2 text-white">
+                                <i class="fas fa-external-link-alt mr-1"></i> eBoardResults Portal
+                            </a>
+                            <a href="http://www.educationboardresults.gov.bd" target="_blank" class="btn btn-xs btn-outline-secondary font-weight-bold rounded-pill px-3 py-1">
+                                <i class="fas fa-external-link-alt mr-1"></i> Official Portal
+                            </a>
+                        </div>
+                    </div>
+                </div>
                 
                 <div id="captchaContainer" style="display: none;">
                     <div class="alert alert-light border small mb-3">
@@ -553,10 +574,12 @@
         const loader = document.getElementById('captchaLoader');
         const container = document.getElementById('captchaContainer');
         const resultContainer = document.getElementById('verifyResultContainer');
+        const geoblockAlert = document.getElementById('geoblockAlert');
         
         loader.style.display = 'block';
         container.style.display = 'none';
         resultContainer.style.display = 'none';
+        geoblockAlert.classList.add('d-none'); // Hide initially
         
         fetch("{% url 'api_get_board_captcha' %}")
             .then(r => {
@@ -570,9 +593,11 @@
                     container.style.display = 'block';
                     document.getElementById('captchaValue').value = '';
                     document.getElementById('captchaValue').focus();
+                    geoblockAlert.classList.add('d-none');
                 } else {
                     document.getElementById('verifyErrorMsg').innerText = data.error || "Failed to load captcha.";
                     document.getElementById('verifyError').classList.remove('d-none');
+                    geoblockAlert.classList.remove('d-none'); // Show geoblock notice!
                     loader.style.display = 'none';
                     container.style.display = 'block'; // Show container anyway so they can try to reload
                 }
@@ -580,6 +605,7 @@
             .catch(err => {
                 loader.innerHTML = `<div class="text-danger"><i class="fas fa-wifi-slash fa-2x mb-2"></i><p>Network Error: ${err.message}</p><button class="btn btn-sm btn-outline-primary" onclick="loadCaptcha()">Retry Connection</button></div>`;
                 loader.style.display = 'block';
+                geoblockAlert.classList.remove('d-none'); // Show geoblock notice!
                 console.error("Verification Error:", err);
             });
     }

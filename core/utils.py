@@ -7,14 +7,17 @@ def log_activity(request, action_type, module, description, object_id=None, scop
     Captures user, action, module, description, IP address, and timestamp.
     'scope' can be used to filter notifications by department/program.
     """
-    user = request.user if request.user.is_authenticated else None
+    user = getattr(request, 'user', None)
+    if user and not user.is_authenticated:
+        user = None
     
     # Get IP Address
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    meta = getattr(request, 'META', {})
+    x_forwarded_for = meta.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
     else:
-        ip = request.META.get('REMOTE_ADDR')
+        ip = meta.get('REMOTE_ADDR', None)
     
     return ActivityLog.objects.create(
         user=user,

@@ -302,9 +302,10 @@ def get_intake_performance_analysis():
     # Parse batches and sort them numerically
     batch_objects = []
     for b in all_batches_raw:
-        nums = re.findall(r'\d+', b)
-        if nums:
-            batch_objects.append({'name': b, 'num': int(nums[0])})
+        if b:
+            nums = re.findall(r'\d+', b)
+            if nums:
+                batch_objects.append({'name': b, 'num': int(nums[0])})
     
     # Sort by number descending and take top 10
     batch_objects.sort(key=lambda x: x['num'], reverse=True)

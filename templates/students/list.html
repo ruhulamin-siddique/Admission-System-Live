@@ -1337,6 +1337,19 @@ const BoardAuditManager = {
                             <img id="audit-captcha-img" src="" class="img-fluid border rounded shadow-sm mb-2" style="max-height: 80px;">
                             <input type="text" id="audit-captcha-input" class="form-control form-control-lg text-center font-weight-black mx-auto" 
                                    placeholder="????" style="width: 140px; border: 2px solid #0dcaf0; letter-spacing: 4px;" maxlength="6" autocomplete="off">
+                            
+                            <!-- Geoblock Warning & Fallback Manual Links -->
+                            <div class="alert alert-warning small mt-3 text-left" style="border-radius: 12px; border-left: 4px solid #ffc107; background-color: #fffbeb; color: #856404; line-height: 1.4;">
+                                <div class="font-weight-bold mb-1"><i class="fas fa-network-wired mr-1"></i> Server Geoblock Notice</div>
+                                <span class="text-muted d-block mb-2" style="font-size:0.75rem;">Your server is hosted internationally, and direct automated verification is geoblocked by the firewall.</span>
+                                <div class="border-top pt-2">
+                                    <span class="d-block font-weight-bold small mb-1" style="color: #664d03;">Alternative: Open official links to verify</span>
+                                    <div class="d-flex gap-2">
+                                        <a href="https://eboardresults.com" target="_blank" class="btn btn-xs btn-info font-weight-bold px-2 py-1 text-white mr-1"><i class="fas fa-external-link-alt"></i> eBoard</a>
+                                        <a href="http://www.educationboardresults.gov.bd" target="_blank" class="btn btn-xs btn-outline-secondary font-weight-bold px-2 py-1"><i class="fas fa-external-link-alt"></i> Official</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
@@ -1369,18 +1382,27 @@ const BoardAuditManager = {
     },
 
     loadCaptcha() {
+        const loader = document.getElementById('audit-loader');
+        const wrapper = document.getElementById('audit-captcha-wrapper');
+        
         fetch('{% url "api_get_board_captcha" %}')
             .then(r => r.json())
             .then(data => {
                 if(data.success) {
-                    document.getElementById('audit-loader').style.display = 'none';
-                    document.getElementById('audit-captcha-wrapper').style.display = 'block';
+                    if(loader) loader.style.display = 'none';
+                    if(wrapper) wrapper.style.display = 'block';
                     document.getElementById('audit-captcha-img').src = data.captcha_image;
                     document.getElementById('audit-captcha-input').value = '';
                 } else {
-                    toastr.error("Board portal busy. Retrying...");
-                    setTimeout(() => this.loadCaptcha(), 2000);
+                    toastr.error("Board portal unreachable from server.");
+                    if(loader) loader.style.display = 'none';
+                    if(wrapper) wrapper.style.display = 'block'; // Show wrapper anyway so they can see manual links!
                 }
+            })
+            .catch(err => {
+                toastr.error("Connection failed.");
+                if(loader) loader.style.display = 'none';
+                if(wrapper) wrapper.style.display = 'block';
             });
     },
 

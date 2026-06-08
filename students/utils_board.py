@@ -50,6 +50,14 @@ class BoardVerificationEngine:
             'Accept': '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
         })
+        
+        # Configure outbound proxy if specified in settings.py (e.g., to bypass government geoblocks)
+        board_proxy = getattr(settings, 'BOARD_PROXY', None)
+        if board_proxy:
+            self.session.proxies = {
+                'http': board_proxy,
+                'https': board_proxy
+            }
 
     def get_captcha(self, use_fallback=False):
         """Fetches a fresh captcha and returns it as a base64 string."""

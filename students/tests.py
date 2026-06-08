@@ -201,7 +201,11 @@ class StudentDirectoryTests(TestCase):
         self.assertEqual(students, [self.cancelled_student])
 
     def test_directory_renders_combined_parent_column(self):
-        response = self.client.get(reverse('student_list'), {'search': self.inactive_student.student_id})
+        response = self.client.get(
+            reverse('student_list'),
+            {'search': self.inactive_student.student_id},
+            HTTP_HX_REQUEST='true',
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '<th>Parents</th>', html=True)
@@ -212,7 +216,7 @@ class StudentDirectoryTests(TestCase):
         response = self.client.get(reverse('student_list'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Clear Filters')
+        self.assertContains(response, 'btn-clear-filters')
         self.assertContains(response, 'name="sort"')
         self.assertContains(response, '?per_page=25')
         self.assertContains(response, 'sort=dept_batch_serial')
@@ -230,7 +234,11 @@ class StudentDirectoryTests(TestCase):
 
         for params, assertion in cases:
             with self.subTest(params=params):
-                response = self.client.get(reverse('student_list'), params)
+                response = self.client.get(
+                    reverse('student_list'),
+                    params,
+                    HTTP_HX_REQUEST='true',
+                )
                 rows = list(response.context['page_obj'].paginator.object_list)
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue(assertion(rows))
