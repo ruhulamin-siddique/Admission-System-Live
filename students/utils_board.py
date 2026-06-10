@@ -185,7 +185,11 @@ class BoardVerificationEngine:
                     # Extract GPA from res_detail (e.g., "GPA=5.00")
                     res_detail = res.get('res_detail', '')
                     if 'GPA=' in res_detail:
-                        parsed['gpa'] = res_detail.split('GPA=')[-1].strip()
+                        gpa_str = res_detail.split('GPA=')[-1].strip()
+                        try:
+                            parsed['gpa'] = f"{float(gpa_str):.2f}"
+                        except ValueError:
+                            parsed['gpa'] = gpa_str
                     elif 'PASSED' in res_detail.upper():
                          parsed['gpa'] = 'PASSED'
                     else:
@@ -216,10 +220,10 @@ class BoardVerificationEngine:
                     # Target specific grades for the admission form
                     grades = {}
                     for code, grade in grade_map.items():
-                        # Standard Codes: 109=Math, 136=Phy, 137=Chem, 126=Higher Math
-                        if code == '109': grades['math'] = grade_to_gpa(grade)
-                        elif code == '136': grades['physics'] = grade_to_gpa(grade)
-                        elif code == '137': grades['chemistry'] = grade_to_gpa(grade)
+                        # Standard Codes: 109=Math (SSC), 265=Math (HSC), 136=Phy (SSC), 174=Phy (HSC), 137=Chem (SSC), 176=Chem (HSC), 126=Higher Math (SSC)
+                        if code == '109' or code == '265': grades['math'] = grade_to_gpa(grade)
+                        elif code == '136' or code == '174': grades['physics'] = grade_to_gpa(grade)
+                        elif code == '137' or code == '176': grades['chemistry'] = grade_to_gpa(grade)
                         elif code == '126': grades['higher_math'] = grade_to_gpa(grade)
                     
                     parsed['grades'] = grades
@@ -248,7 +252,10 @@ class BoardVerificationEngine:
                         value = cells[1].get_text(strip=True)
                         
                         if 'GPA' in label:
-                            data['gpa'] = value
+                            try:
+                                data['gpa'] = f"{float(value):.2f}"
+                            except ValueError:
+                                data['gpa'] = value
                         elif 'NAME OF STUDENT' in label or ('NAME' in label and 'FATHER' not in label and 'MOTHER' not in label):
                             data['name'] = value
                         elif 'FATHER' in label:

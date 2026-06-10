@@ -559,8 +559,10 @@
 <script>
     let currentVerifyType = '';
     let currentStudentId = '';
+    let lastProfileVerificationResult = null;
 
     function openVerificationModal(type, sid) {
+        lastProfileVerificationResult = null;
         currentVerifyType = type;
         currentStudentId = sid;
         document.getElementById('verifyTitle').innerText = type;
@@ -652,6 +654,7 @@
     }
 
     function renderVerificationResult(data) {
+        lastProfileVerificationResult = data;
         document.getElementById('captchaContainer').style.display = 'none';
         const container = document.getElementById('verifyResultContainer');
         container.style.display = 'block';
@@ -682,11 +685,11 @@
                     <div class="d-flex bg-dark text-white">
                         <div class="col-6 p-3 border-right border-secondary text-center">
                             <span class="small text-uppercase text-muted d-block mb-1">System Data</span>
-                            <h4 class="font-weight-black mb-0">${data.current_gpa}</h4>
+                            <h4 class="font-weight-black mb-0">${formatGpaVal(data.current_gpa)}</h4>
                         </div>
                         <div class="col-6 p-3 text-center bg-${statusColor}-light text-${statusColor}">
                             <span class="small text-uppercase opacity-75 d-block mb-1">Official Board GPA</span>
-                            <h4 class="font-weight-black mb-0">${data.board_gpa}</h4>
+                            <h4 class="font-weight-black mb-0">${formatGpaVal(data.board_gpa)}</h4>
                         </div>
                     </div>
                     
@@ -735,12 +738,65 @@
             </div>
 
             
-            <div class="mt-4">
-                <button type="button" class="btn btn-primary btn-block rounded-pill font-weight-bold" onclick="location.reload()">
+            <div class="mt-4 d-flex">
+                <button type="button" id="btn_copy_profile_result" class="btn btn-outline-primary rounded-pill font-weight-bold mr-2 flex-grow-1" onclick="copyProfileVerificationResult()">
+                    <i class="fas fa-copy mr-1"></i> Copy Details
+                </button>
+                <button type="button" class="btn btn-primary rounded-pill font-weight-bold flex-grow-1" onclick="location.reload()">
                     <i class="fas fa-check mr-2"></i> Finalize & Close
                 </button>
             </div>
         `;
+    }
+
+    const formatGpaVal = (val) => {
+        if (!val || val === 'N/A') return 'N/A';
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? val : parsed.toFixed(2);
+    };
+
+    function copyProfileVerificationResult() {
+        if(!lastProfileVerificationResult) return;
+        const data = lastProfileVerificationResult;
+        const details = data.details || {};
+        const exam = currentVerifyType || '';
+        
+        let text = `--- EDUCATION BOARD VERIFICATION AUDIT (${exam}) ---\n`;
+        text += `System GPA: ${formatGpaVal(data.current_gpa)}\n`;
+        text += `Board GPA: ${formatGpaVal(data.board_gpa)}\n`;
+        text += `Match Status: ${data.is_match ? 'Matched' : 'Discrepancy'}\n`;
+        text += `\n`;
+        text += `[Candidate Details]\n`;
+        text += `Name: ${details.name || 'N/A'}\n`;
+        text += `Father's Name: ${details.father_name || 'N/A'}\n`;
+        text += `Mother's Name: ${details.mother_name || 'N/A'}\n`;
+        text += `Date of Birth: ${details.dob || 'N/A'}\n`;
+        text += `\n`;
+        
+        if (details.all_subjects && Object.keys(details.all_subjects).length > 0) {
+            text += `[Academic Transcript]\n`;
+            const gradeToPoint = (g) => {
+                const map = {'A+': '5.00', 'A': '4.00', 'A-': '3.50', 'B': '3.00', 'C': '2.00', 'D': '1.00', 'F': '0.00'};
+                return map[g] || '0.00';
+            };
+            for (const [subName, subGrade] of Object.entries(details.all_subjects)) {
+                text += `- ${subName}: ${subGrade} (GP: ${gradeToPoint(subGrade)})\n`;
+            }
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('btn_copy_profile_result');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check mr-1"></i> Copied!';
+            btn.className = 'btn btn-success rounded-pill font-weight-bold mr-2 flex-grow-1';
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.className = 'btn btn-outline-primary rounded-pill font-weight-bold mr-2 flex-grow-1';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert('Could not copy to clipboard automatically. Please copy the details manually.');
+        });
     }
 
     // --- Tab Persistence & Real-time Search Logic ---

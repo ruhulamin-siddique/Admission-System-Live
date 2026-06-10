@@ -38,6 +38,8 @@ urlpatterns = [
     path('api/periodic-students/', views.api_periodic_students, name='api_periodic_students'),
     path('api/program-distribution/', views.api_program_distribution, name='api_program_distribution'),
     path('api/gender-distribution/', views.api_gender_distribution, name='api_gender_distribution'),
+    path('api/special-distribution/', views.api_special_distribution, name='api_special_distribution'),
+    path('api/hall-distribution/', views.api_hall_distribution, name='api_hall_distribution'),
     path('api/board-captcha/', views.api_get_board_captcha, name='api_get_board_captcha'),
     path('api/verify-board-result/', views.api_verify_board_result, name='api_verify_board_result'),
     

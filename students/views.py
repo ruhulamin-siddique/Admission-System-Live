@@ -9,8 +9,6 @@ from django.contrib.auth.decorators import login_required
 from django.utils.html import escape
 from django.utils import timezone
 from core.decorators import require_access
-from exam_billing.models import BillingExam, ExamProgram
-from exam_billing.scope import get_allowed_programs
 import xhtml2pdf.pisa as pisa
 import json
 import zipfile
@@ -118,15 +116,20 @@ def dashboard(request):
         count = Student.objects.filter(batch=b_obj['name']).count()
         intake_trends.append({'batch': b_obj['name'], 'count': count})
 
-    # Fetch Program Name to Short Name mapping for tooltips and display
-    program_map = {p.name: p.short_name or p.name for p in Program.objects.all()}
+    # Fetch Program Name to Short Name mapping for tooltips and display (case-insensitive lookup helper)
+    program_map = {}
+    for p in Program.objects.all():
+        canonical = p.short_name or p.name
+        program_map[p.name.lower()] = canonical
+        if p.short_name:
+            program_map[p.short_name.lower()] = canonical
 
     # Program Distribution
     program_dist_qs = Student.objects.values('program').annotate(count=Count('student_id'))
     agg_dist = {}
     for item in program_dist_qs:
         full_name = item['program'] or 'Unknown'
-        short = program_map.get(full_name, full_name).strip().upper()
+        short = program_map.get(full_name.lower(), full_name).strip().upper()
         if short not in agg_dist:
             agg_dist[short] = {
                 'program': full_name,
@@ -184,6 +187,10 @@ def dashboard(request):
             active=Count('student_id', filter=Q(admission_status='Active')),
             cancelled=Count('student_id', filter=Q(admission_status='Cancelled')),
             non_residential=Count('student_id', filter=Q(is_non_residential=True)),
+            hall_auah=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_attached='AUAH')),
+            hall_btbh=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached='BTBH') | Q(hall_attached='TBH'))),
+            hall_zh=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_attached='ZH')),
+            unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
             revenue=Sum('admission_payment'),
             quota=Count('student_id', filter=Q(is_armed_forces_child=True) | Q(is_freedom_fighter_child=True) | Q(is_july_joddha_2024=True))
         ).order_by('-total')
@@ -191,7 +198,7 @@ def dashboard(request):
         aggregated_intake = {}
         for item in latest_intake_qs:
             full_name = item['program'] or 'Unknown'
-            short = program_map.get(full_name, full_name).strip().upper()
+            short = program_map.get(full_name.lower(), full_name).strip().upper()
             
             if short not in aggregated_intake:
                 aggregated_intake[short] = {
@@ -203,6 +210,10 @@ def dashboard(request):
                     'active': 0,
                     'cancelled': 0,
                     'non_residential': 0,
+                    'hall_auah': 0,
+                    'hall_btbh': 0,
+                    'hall_zh': 0,
+                    'unspecified': 0,
                     'revenue': 0.0,
                     'quota': 0
                 }
@@ -213,6 +224,10 @@ def dashboard(request):
             aggregated_intake[short]['active'] += item['active']
             aggregated_intake[short]['cancelled'] += item['cancelled']
             aggregated_intake[short]['non_residential'] += item['non_residential']
+            aggregated_intake[short]['hall_auah'] += item['hall_auah']
+            aggregated_intake[short]['hall_btbh'] += item['hall_btbh']
+            aggregated_intake[short]['hall_zh'] += item['hall_zh']
+            aggregated_intake[short]['unspecified'] += item['unspecified']
             aggregated_intake[short]['revenue'] += float(item['revenue'] or 0)
             aggregated_intake[short]['quota'] += item['quota']
 
@@ -229,7 +244,7 @@ def dashboard(request):
         agg_bd = {}
         for item in qs.values('program').annotate(count=Count('student_id')):
             full_name = item['program'] or 'Unknown'
-            short = program_map.get(full_name, full_name).strip().upper()
+            short = program_map.get(full_name.lower(), full_name).strip().upper()
             if short not in agg_bd:
                 agg_bd[short] = {
                     'program': full_name,
@@ -272,7 +287,7 @@ def dashboard(request):
             'student_id': s.student_id,
             'student_name': s.student_name,
             'program': s.program,
-            'short_name': program_map.get(s.program, s.program),
+            'short_name': program_map.get(s.program.lower() if s.program else '', s.program),
             'batch': s.batch,
             'admission_status': s.admission_status,
             'created_at': s.created_at
@@ -286,6 +301,8 @@ def dashboard(request):
         armed_forces=Count('student_id', filter=Q(is_armed_forces_child=True)),
         credit_transfer=Count('student_id', filter=Q(is_credit_transfer=True)),
         non_residential=Count('student_id', filter=Q(is_non_residential=True)),
+        residential=Count('student_id', filter=Q(is_non_residential=False) & ~Q(hall_attached__isnull=True) & ~Q(hall_attached='')),
+        unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
     )
 
     stats = {
@@ -307,30 +324,6 @@ def dashboard(request):
         'all_batches': sorted([b for b in all_batches if b], reverse=True),
         'pending_registrations': User.objects.filter(profile__registration_status='PENDING').count()
     }
-    # --- Exam Billing Integration ---
-    billing_stats = {
-        'has_access': request.user.profile.has_access('exam_billing', 'view_dashboard'),
-        'active_exams': [],
-        'pending_approvals': 0,
-        'my_pending_tasks': 0
-    }
-    
-    if billing_stats['has_access']:
-        allowed_programs = get_allowed_programs(request.user)
-        active_exams = BillingExam.objects.exclude(status='finalized').prefetch_related('programs')
-        
-        # Filter exams where the user has at least one allowed program
-        if not request.user.is_superuser and not request.user.profile.has_access('exam_billing', 'view_all_departments'):
-            active_exams = active_exams.filter(programs__program__in=allowed_programs).distinct()
-            billing_stats['my_pending_tasks'] = ExamProgram.objects.filter(
-                program__in=allowed_programs, 
-                status__in=['draft']
-            ).count()
-        else:
-            billing_stats['pending_approvals'] = ExamProgram.objects.filter(status='submitted').count()
-
-        billing_stats['active_exams'] = active_exams[:5]
-
     return render(request, 'students/dashboard.html', {
         'stats': stats,
         'intake_trends': json.dumps(intake_trends),
@@ -338,8 +331,7 @@ def dashboard(request):
         'gender_chart_data': json.dumps(gender_chart_data),
         'financials': financials,
         'latest_batch': latest_batch,
-        'latest_batch_intake': latest_batch_intake,
-        'billing_stats': billing_stats
+        'latest_batch_intake': latest_batch_intake
     })
 
 from django.core.paginator import Paginator
@@ -479,6 +471,10 @@ def _apply_directory_filters(queryset, params):
         cat = params['special_category']
         if cat == 'non_residential':
             queryset = queryset.filter(is_non_residential=True)
+        elif cat == 'residential':
+            queryset = queryset.filter(is_non_residential=False).exclude(hall_attached__isnull=True).exclude(hall_attached='')
+        elif cat == 'unspecified':
+            queryset = queryset.filter(is_non_residential=False).filter(Q(hall_attached__isnull=True) | Q(hall_attached=''))
         elif cat == 'freedom_fighter':
             queryset = queryset.filter(is_freedom_fighter_child=True)
         elif cat == 'armed_forces':
@@ -597,7 +593,14 @@ def student_list(request):
         'sort_options': _get_directory_sort_choices(),
         'filter_metadata': directory_state['filter_metadata'],
         'export_querystring': directory_state['export_querystring'],
-        'program_map': {p.name: p.short_name or p.name for p in Program.objects.all()},
+        'program_map': {
+            **{p.name.lower(): p.short_name or p.name for p in Program.objects.all()},
+            **{p.name: p.short_name or p.name for p in Program.objects.all()},
+            **{p.name.upper(): p.short_name or p.name for p in Program.objects.all()},
+            **{p.short_name.lower(): p.short_name or p.name for p in Program.objects.all() if p.short_name},
+            **{p.short_name: p.short_name or p.name for p in Program.objects.all() if p.short_name},
+            **{p.short_name.upper(): p.short_name or p.name for p in Program.objects.all() if p.short_name}
+        },
     }
 
     # --- Smart Redirect: If search finds exactly 1 student, go to profile ---
@@ -875,13 +878,19 @@ def api_program_distribution(request):
         qs = qs.filter(batch=batch)
         
     # Program Distribution logic (same as in dashboard)
-    program_map = {p.name: p.short_name or p.name for p in Program.objects.all()}
+    program_map = {}
+    for p in Program.objects.all():
+        canonical = p.short_name or p.name
+        program_map[p.name.lower()] = canonical
+        if p.short_name:
+            program_map[p.short_name.lower()] = canonical
+            
     dist_qs = qs.values('program').annotate(count=Count('student_id'))
     
     agg_dist = {}
     for item in dist_qs:
         full_name = item['program'] or 'Unknown'
-        short = program_map.get(full_name, full_name).strip().upper()
+        short = program_map.get(full_name.lower(), full_name).strip().upper()
         if short not in agg_dist:
             agg_dist[short] = {'short_name': short, 'count': 0}
         agg_dist[short]['count'] += item['count']
@@ -914,6 +923,85 @@ def api_gender_distribution(request):
         } 
         for g in gender_dist
     ]
+    return JsonResponse({'distribution': data, 'total': total})
+
+@require_access('dashboard', 'view')
+def api_special_distribution(request):
+    """Returns JSON data for special designations, optionally filtered by batch."""
+    batch = request.GET.get('batch')
+    
+    qs = Student.objects.all()
+    if batch and batch != 'all':
+        qs = qs.filter(batch=batch)
+        
+    stats = qs.aggregate(
+        freedom_fighter=Count('student_id', filter=Q(is_freedom_fighter_child=True)),
+        july_joddha=Count('student_id', filter=Q(is_july_joddha_2024=True)),
+        armed_forces=Count('student_id', filter=Q(is_armed_forces_child=True)),
+        credit_transfer=Count('student_id', filter=Q(is_credit_transfer=True)),
+        non_residential=Count('student_id', filter=Q(is_non_residential=True)),
+        residential=Count('student_id', filter=Q(is_non_residential=False) & ~Q(hall_attached__isnull=True) & ~Q(hall_attached='')),
+        unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
+    )
+    return JsonResponse(stats)
+
+@require_access('dashboard', 'view')
+def api_hall_distribution(request):
+    """Returns JSON data for hall distribution, optionally filtered by batch."""
+    batch = request.GET.get('batch')
+    
+    qs = Student.objects.all()
+    if batch and batch != 'all':
+        qs = qs.filter(batch=batch)
+        
+    hall_map = {
+        'AUAH': 'Abbas Uddin Ahmed Hall',
+        'BTBH': 'Taramon Bibi Hall',
+        'TBH': 'Taramon Bibi Hall',
+        'ZH': 'Zikrul Hoque Hall'
+    }
+    
+    # Exclude non-residential from hall counts, count separately
+    non_res_count = qs.filter(is_non_residential=True).count()
+    unspec_count = qs.filter(is_non_residential=False).filter(Q(hall_attached__isnull=True) | Q(hall_attached='')).count()
+    
+    dist_qs = qs.filter(is_non_residential=False).exclude(hall_attached__isnull=True).exclude(hall_attached='').values('hall_attached').annotate(count=Count('student_id'))
+    
+    agg_dist = {}
+    total = qs.count()
+    
+    for item in dist_qs:
+        hall_code = item['hall_attached']
+        count = item['count']
+        name = hall_map.get(hall_code, hall_code)
+        if name not in agg_dist:
+            agg_dist[name] = {'hall': name, 'count': 0}
+        agg_dist[name]['count'] += count
+        
+    data = [
+        {
+            'hall': name,
+            'count': info['count'],
+            'percentage': round((info['count'] / total * 100), 1) if total > 0 else 0
+        }
+        for name, info in agg_dist.items()
+    ]
+    
+    if unspec_count > 0:
+        data.append({
+            'hall': 'Unspecified',
+            'count': unspec_count,
+            'percentage': round((unspec_count / total * 100), 1) if total > 0 else 0
+        })
+        
+    if non_res_count > 0:
+        data.append({
+            'hall': 'Non-Residential',
+            'count': non_res_count,
+            'percentage': round((non_res_count / total * 100), 1) if total > 0 else 0
+        })
+        
+    data.sort(key=lambda x: x['count'], reverse=True)
     return JsonResponse({'distribution': data, 'total': total})
 
 def api_bulk_photo_zip(request):

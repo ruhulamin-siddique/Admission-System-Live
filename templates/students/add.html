@@ -1112,6 +1112,14 @@
             }
         });
 
+        // Auto-format GPA and subject grades to 2 decimal places on blur
+        $('[name$="_gpa"], [name$="_physics"], [name$="_chemistry"], [name$="_math"]').on('blur', function() {
+            let val = $(this).val();
+            if(val && !isNaN(parseFloat(val))) {
+                $(this).val(parseFloat(val).toFixed(2));
+            }
+        });
+
         // Parent Mobile Validation Helper
         function setupMobileValidation($input, $help) {
             $input.on('input', function() {
@@ -1482,7 +1490,10 @@
                 </div>
             </div>
             <div class="modal-footer bg-light border-top-0 p-3">
-                <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-link text-muted font-weight-bold mr-auto" data-dismiss="modal">Cancel</button>
+                <button type="button" id="btn_copy_result" class="btn btn-outline-primary px-4 rounded-pill font-weight-bold shadow-sm d-none" onclick="copyVerificationResult()">
+                    <i class="fas fa-copy mr-1"></i> Copy Details
+                </button>
                 <button type="button" id="btn_accept_result" class="btn btn-success px-5 rounded-pill font-weight-bold shadow-sm d-none" onclick="acceptVerificationResult()">
                     <i class="fas fa-download mr-1"></i> Apply Data
                 </button>
@@ -1508,6 +1519,7 @@
         $('#verify_result_container').addClass('d-none');
         $('#btn_submit_verify').removeClass('d-none').prop('disabled', true);
         $('#btn_accept_result').addClass('d-none');
+        $('#btn_copy_result').addClass('d-none');
         $('#verify_captcha').val('');
         
         // Pre-fill data
@@ -1641,6 +1653,7 @@
                     $('#verify_result_container').removeClass('d-none');
                     btn.addClass('d-none');
                     $('#btn_accept_result').removeClass('d-none');
+                    $('#btn_copy_result').removeClass('d-none');
                 } else {
                     $('#verify_error').removeClass('d-none').html(`
                         <div class="d-flex align-items-center">
@@ -1653,6 +1666,7 @@
                     `);
                     $('#verify_placeholder').removeClass('d-none');
                     btn.html(originalText).prop('disabled', false);
+                    $('#btn_copy_result').addClass('d-none');
                     loadBoardCaptcha(); // Refresh captcha on failure
                 }
             },
@@ -1671,8 +1685,13 @@
         const prefix = level; // ssc or hsc
         
         // 1. Apply GPA & School
-        if(data.gpa && data.gpa !== 'N/A') {
-            $(`[name="${prefix}_gpa"]`).val(data.gpa).addClass('is-valid');
+        if(data.gpa !== undefined && data.gpa !== null && data.gpa !== 'N/A' && data.gpa !== '') {
+            let parsedGpa = parseFloat(data.gpa);
+            if (!isNaN(parsedGpa)) {
+                $(`[name="${prefix}_gpa"]`).val(parsedGpa.toFixed(2)).addClass('is-valid');
+            } else {
+                $(`[name="${prefix}_gpa"]`).val(data.gpa).addClass('is-valid');
+            }
         }
         if(data.inst_name) {
             const schoolField = prefix === 'ssc' ? $('[name="ssc_school"]') : $('[name="hsc_college"]');
@@ -1681,9 +1700,15 @@
         
         // 2. Apply Subject Grades
         if(data.grades) {
-            if(data.grades.math) $(`[name="${prefix}_math"]`).val(data.grades.math).addClass('is-valid');
-            if(data.grades.physics) $(`[name="${prefix}_physics"]`).val(data.grades.physics).addClass('is-valid');
-            if(data.grades.chemistry) $(`[name="${prefix}_chemistry"]`).val(data.grades.chemistry).addClass('is-valid');
+            if(data.grades.math !== undefined && data.grades.math !== null) {
+                $(`[name="${prefix}_math"]`).val(parseFloat(data.grades.math).toFixed(2)).addClass('is-valid');
+            }
+            if(data.grades.physics !== undefined && data.grades.physics !== null) {
+                $(`[name="${prefix}_physics"]`).val(parseFloat(data.grades.physics).toFixed(2)).addClass('is-valid');
+            }
+            if(data.grades.chemistry !== undefined && data.grades.chemistry !== null) {
+                $(`[name="${prefix}_chemistry"]`).val(parseFloat(data.grades.chemistry).toFixed(2)).addClass('is-valid');
+            }
         }
 
         // 3. Apply Personal Info
@@ -1731,6 +1756,57 @@
                 timer: 3000
             });
         }
+    }
+
+    function copyVerificationResult() {
+        if (!lastVerificationResult) return;
+        const r = lastVerificationResult;
+        const level = $('#verify_exam_level').val();
+        const roll = $('#verify_roll').val();
+        const reg = $('#verify_reg').val();
+        const board = $('#verify_board').val();
+        const year = $('#verify_year').val();
+
+        let text = `--- EDUCATION BOARD VERIFICATION RESULT (${level}) ---\n`;
+        text += `Board: ${r.board || board}\n`;
+        text += `Year: ${r.year || year}\n`;
+        text += `Roll No: ${roll}\n`;
+        text += `Reg No: ${reg}\n`;
+        if (r.group) text += `Group/Track: ${r.group}\n`;
+        if (r.inst_name) text += `Institute: ${r.inst_name}\n`;
+        text += `\n`;
+        text += `[Candidate Details]\n`;
+        text += `Name: ${r.name || 'N/A'}\n`;
+        text += `Father's Name: ${r.father_name || 'N/A'}\n`;
+        text += `Mother's Name: ${r.mother_name || 'N/A'}\n`;
+        text += `Date of Birth: ${r.dob || 'N/A'}\n`;
+        text += `Gender: ${r.gender || 'N/A'}\n`;
+        text += `\n`;
+        text += `[Result Details]\n`;
+        text += `GPA: ${r.gpa || 'N/A'}\n`;
+        
+        if (r.all_subjects && Object.keys(r.all_subjects).length > 0) {
+            text += `\n[Academic Transcript]\n`;
+            const gradeToPoint = (g) => {
+                const map = {'A+': '5.00', 'A': '4.00', 'A-': '3.50', 'B': '3.00', 'C': '2.00', 'D': '1.00', 'F': '0.00'};
+                return map[g] || '0.00';
+            };
+            for (const [subName, subGrade] of Object.entries(r.all_subjects)) {
+                text += `- ${subName}: ${subGrade} (GP: ${gradeToPoint(subGrade)})\n`;
+            }
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = $('#btn_copy_result');
+            const originalHtml = btn.html();
+            btn.html('<i class="fas fa-check mr-1"></i> Copied!').removeClass('btn-outline-primary').addClass('btn-success');
+            setTimeout(() => {
+                btn.html(originalHtml).removeClass('btn-success').addClass('btn-outline-primary');
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert('Could not copy to clipboard automatically. Please copy the details manually.');
+        });
     }
 </script>
 {% endblock %}
