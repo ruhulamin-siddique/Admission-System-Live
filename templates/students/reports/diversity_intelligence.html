@@ -13,6 +13,20 @@
         margin-bottom: 2rem;
     }
     .badge-diversity { border-radius: 20px; padding: 6px 15px; font-weight: 700; }
+    .clickable-row-demographic { cursor: pointer; transition: background-color 0.2s; }
+    .clickable-row-demographic:hover { background-color: rgba(0, 0, 0, 0.02); }
+    
+    /* Dark Mode Overrides */
+    body.dark-mode .diversity-card { background: #1e293b; color: #f8fafc; }
+    body.dark-mode .diversity-card .bg-light { background-color: #334155 !important; }
+    body.dark-mode .diversity-card .table { color: #f8fafc; }
+    body.dark-mode .diversity-card .text-muted { color: #94a3b8 !important; }
+    body.dark-mode .clickable-row-demographic:hover { background-color: rgba(255, 255, 255, 0.05); }
+    body.dark-mode .modal-content { background: #1e293b; color: #f8fafc; }
+    body.dark-mode .modal-content .table { color: #f8fafc; }
+    body.dark-mode .modal-content .bg-light { background-color: #334155 !important; }
+    body.dark-mode .modal-content .text-muted { color: #94a3b8 !important; }
+    body.dark-mode .modal-header.bg-primary { background: #1e40af !important; }
 </style>
 {% endblock %}
 
@@ -45,6 +59,46 @@
                 }]
             },
             options: { cutout: '65%' }
+        });
+
+        // 3. Row clicks for Demographic Modal Drilldown
+        $(document).on('click', '.clickable-row-demographic', function() {
+            const type = $(this).data('type');
+            const value = $(this).data('value');
+            const year = $('select[name="year"]').val();
+            const program = $('select[name="program"]').val();
+            const batch = $('select[name="batch"]').val();
+
+            // Show loading state in modal
+            $('#demographicModalBody').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Fetching student records...</p>
+                </div>
+            `);
+
+            // Show modal
+            $('#diversityStudentsModal').modal('show');
+
+            const params = {};
+            if (year) params.year = year;
+            if (program) params.program = program;
+            if (batch) params.batch = batch;
+            if (type === 'gender') params.gender = value;
+            if (type === 'religion') params.religion = value;
+
+            $.get("{% url 'api_demographic_students' %}", params, function(html) {
+                $('#demographicModalBody').html(html);
+            }).fail(function(xhr) {
+                $('#demographicModalBody').html(`
+                    <div class="alert alert-danger m-3">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Failed to load records. ${xhr.status === 403 ? 'Access Denied.' : 'Please try again later.'}
+                    </div>
+                `);
+            });
         });
     });
 </script>
@@ -126,8 +180,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for g in data.gender %}
-                            <tr>
+                             {% for g in data.gender %}
+                            <tr class="clickable-row-demographic" data-type="gender" data-value="{{ g.gender }}">
                                 <td class="pl-4 text-muted">Gender</td>
                                 <td class="font-weight-bold">{{ g.gender }}</td>
                                 <td class="text-center">{{ g.count }}</td>
@@ -136,7 +190,7 @@
                             {% endfor %}
                             <tr class="bg-light"><td colspan="4"></td></tr>
                             {% for r in data.religion %}
-                            <tr>
+                            <tr class="clickable-row-demographic" data-type="religion" data-value="{{ r.religion }}">
                                 <td class="pl-4 text-muted">Religion</td>
                                 <td class="font-weight-bold">{{ r.religion }}</td>
                                 <td class="text-center">{{ r.count }}</td>
@@ -145,6 +199,27 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Diversity Students Drill-down Modal -->
+<div class="modal fade" id="diversityStudentsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header bg-primary text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-users mr-2"></i> Student Breakdown</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" id="demographicModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Fetching student records...</p>
                 </div>
             </div>
         </div>

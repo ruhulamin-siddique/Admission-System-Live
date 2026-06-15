@@ -588,6 +588,12 @@
                   <p>Role Matrix</p>
                 </a>
               </li>
+              <li class="nav-item">
+                <a href="{% url 'audit_logs' %}" class="nav-link {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Security Logs</p>
+                </a>
+              </li>
               {% endif %}
               {% has_access 'security' 'manage_api' as can_manage_api %}
               {% if can_manage_api %}

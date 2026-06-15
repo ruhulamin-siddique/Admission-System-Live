@@ -42,7 +42,10 @@ elif not DEBUG and SECRET_KEY.startswith('django-insecure-'):
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'portal.baust.edu.bd,www.portal.baust.edu.bd,localhost,127.0.0.1').split(',')
 
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://portal.baust.edu.bd').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    'CSRF_TRUSTED_ORIGINS',
+    'https://portal.baust.edu.bd,https://www.portal.baust.edu.bd,http://localhost:8000,http://127.0.0.1:8000'
+).split(',')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

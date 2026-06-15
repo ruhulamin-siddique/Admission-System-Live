@@ -112,7 +112,7 @@
                                                 <select name="new_program" class="form-control form-control-lg border-2" required>
                                                      <option value="">Select Target Program</option>
                                                      {% for p in programs %}
-                                                         <option value="{{ p.name }}" {% if student.program == p.name %}selected{% endif %}>{{ p.name }}</option>
+                                                         <option value="{% if p.short_name %}{{ p.short_name }}{% else %}{{ p.name }}{% endif %}" {% if student.program == p.name or student.program == p.short_name %}selected{% endif %}>{{ p.name }}</option>
                                                      {% endfor %}
                                                  </select>
                                             </div>

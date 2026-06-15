@@ -32,6 +32,76 @@
     /* Verification UI Utilities */
     .bg-primary-soft { background-color: rgba(0, 64, 133, 0.08) !important; }
     .font-weight-black { font-weight: 900 !important; }
+
+    /* Desktop Header Actions Layout */
+    .profile-header-actions {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+    }
+    .profile-header-actions .profile-back-btn {
+        flex-shrink: 0;
+    }
+    .profile-header-actions .search-wrapper {
+        flex-grow: 1;
+        max-width: 450px;
+        margin: 0 20px;
+        min-width: 280px;
+    }
+    .profile-header-actions .edit-btn-wrapper {
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    /* Mobile Responsive Overrides */
+    @media (max-width: 767.98px) {
+        .profile-header-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            padding: 15px !important;
+        }
+        .profile-header-actions .profile-back-btn {
+            width: 100% !important;
+            text-align: center !important;
+            margin-bottom: 10px !important;
+        }
+        .profile-header-actions .search-wrapper {
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            margin: 0 0 10px 0 !important;
+            order: -1 !important; /* Put search box at the top on mobile */
+        }
+        .profile-header-actions .edit-btn-wrapper {
+            width: 100% !important;
+            margin-left: 0 !important;
+        }
+        .profile-header-actions .edit-btn-wrapper .btn {
+            width: 100% !important;
+            text-align: center !important;
+        }
+        
+        /* Horizontally scrollable tabs on mobile */
+        .nav-pills {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding-bottom: 8px !important;
+        }
+        .nav-pills .nav-item {
+            flex: 0 0 auto !important;
+            margin-right: 6px !important;
+        }
+        
+        .card-title {
+            font-size: 1.1rem !important;
+        }
+        .table td {
+            padding: 0.5rem 0.25rem !important;
+            font-size: 0.85rem !important;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -40,30 +110,29 @@
 <!-- Profile Header Actions -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-3 shadow-sm" style="border-radius: 12px;">
-            <div class="d-flex align-items-center mb-2 mb-md-0">
-                <a href="{% url 'student_list' %}" class="btn btn-outline-secondary font-weight-bold mr-3" style="border-radius: 10px;">
-                    <i class="fas fa-arrow-left mr-2"></i> Back to Directory
-                </a>
-                <div class="position-relative" style="min-width: 300px;">
-                    <form action="{% url 'student_list' %}" method="GET" id="profileSearchForm" class="mb-0">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
-                            </div>
-                            <input type="text" name="search" id="profileQuickSearch" class="form-control border-0 bg-light" 
-                                   placeholder="Jump to another student..." autocomplete="off" style="border-radius: 0 10px 10px 0;">
+        <div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-3 shadow-sm profile-header-actions" style="border-radius: 12px;">
+            <a href="{% url 'student_list' %}" class="btn btn-outline-secondary font-weight-bold profile-back-btn" style="border-radius: 10px; white-space: nowrap;">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Directory
+            </a>
+            
+            <div class="position-relative search-wrapper">
+                <form action="{% url 'student_list' %}" method="GET" id="profileSearchForm" class="mb-0">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
                         </div>
-                    </form>
-                    <!-- Search Results Dropdown -->
-                    <div id="quickSearchResults" class="dropdown-menu shadow-lg border-0 w-100 mt-1 p-0 overflow-hidden" 
-                         style="display: none; position: absolute; top: 100%; left: 0; z-index: 1050; border-radius: 12px; max-height: 400px; overflow-y: auto;">
+                        <input type="text" name="search" id="profileQuickSearch" class="form-control border-0 bg-light" 
+                               placeholder="Jump to another student..." autocomplete="off" style="border-radius: 0 10px 10px 0;">
                     </div>
+                </form>
+                <!-- Search Results Dropdown -->
+                <div id="quickSearchResults" class="dropdown-menu shadow-lg border-0 w-100 mt-1 p-0 overflow-hidden" 
+                     style="display: none; position: absolute; top: 100%; left: 0; z-index: 1050; border-radius: 12px; max-height: 400px; overflow-y: auto;">
                 </div>
             </div>
             
-            <div class="d-flex align-items-center">
-                <a href="{% url 'edit_student' student.student_id %}" class="btn btn-primary font-weight-bold px-4 shadow-sm" style="border-radius: 10px;">
+            <div class="edit-btn-wrapper">
+                <a href="{% url 'edit_student' student.student_id %}" class="btn btn-primary font-weight-bold px-4 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
                     <i class="fas fa-edit mr-2"></i> Edit Profile
                 </a>
             </div>
@@ -277,20 +346,22 @@
                                             </tr>
                                             <tr class="bg-light">
                                                 <td colspan="2" class="p-0">
-                                                    <table class="table table-bordered table-sm mb-0 text-center" style="font-size: 0.75rem;">
-                                                        <tr class="bg-gray-light">
-                                                            <th>Subject</th>
-                                                            <th>Physics</th>
-                                                            <th>Chemistry</th>
-                                                            <th>Math</th>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>GP / GL</strong></td>
-                                                            <td>{{ student.ssc_physics|default:"-" }} / <strong>{{ student.ssc_physics|gpa_to_gl }}</strong></td>
-                                                            <td>{{ student.ssc_chemistry|default:"-" }} / <strong>{{ student.ssc_chemistry|gpa_to_gl }}</strong></td>
-                                                            <td>{{ student.ssc_math|default:"-" }} / <strong>{{ student.ssc_math|gpa_to_gl }}</strong></td>
-                                                        </tr>
-                                                    </table>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered table-sm mb-0 text-center" style="font-size: 0.75rem; min-width: 320px;">
+                                                            <tr class="bg-gray-light">
+                                                                <th>Subject</th>
+                                                                <th>Physics</th>
+                                                                <th>Chemistry</th>
+                                                                <th>Math</th>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><strong>GP / GL</strong></td>
+                                                                <td>{{ student.ssc_physics|default:"-" }} / <strong>{{ student.ssc_physics|gpa_to_gl }}</strong></td>
+                                                                <td>{{ student.ssc_chemistry|default:"-" }} / <strong>{{ student.ssc_chemistry|gpa_to_gl }}</strong></td>
+                                                                <td>{{ student.ssc_math|default:"-" }} / <strong>{{ student.ssc_math|gpa_to_gl }}</strong></td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -346,20 +417,22 @@
                                             </tr>
                                             <tr class="bg-light">
                                                 <td colspan="2" class="p-0">
-                                                    <table class="table table-bordered table-sm mb-0 text-center" style="font-size: 0.75rem;">
-                                                        <tr class="bg-gray-light">
-                                                            <th>Subject</th>
-                                                            <th>Physics</th>
-                                                            <th>Chemistry</th>
-                                                            <th>Math</th>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>GP / GL</strong></td>
-                                                            <td>{{ student.hsc_physics|default:"-" }} / <strong>{{ student.hsc_physics|gpa_to_gl }}</strong></td>
-                                                            <td>{{ student.hsc_chemistry|default:"-" }} / <strong>{{ student.hsc_chemistry|gpa_to_gl }}</strong></td>
-                                                            <td>{{ student.hsc_math|default:"-" }} / <strong>{{ student.hsc_math|gpa_to_gl }}</strong></td>
-                                                        </tr>
-                                                    </table>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered table-sm mb-0 text-center" style="font-size: 0.75rem; min-width: 320px;">
+                                                            <tr class="bg-gray-light">
+                                                                <th>Subject</th>
+                                                                <th>Physics</th>
+                                                                <th>Chemistry</th>
+                                                                <th>Math</th>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><strong>GP / GL</strong></td>
+                                                                <td>{{ student.hsc_physics|default:"-" }} / <strong>{{ student.hsc_physics|gpa_to_gl }}</strong></td>
+                                                                <td>{{ student.hsc_chemistry|default:"-" }} / <strong>{{ student.hsc_chemistry|gpa_to_gl }}</strong></td>
+                                                                <td>{{ student.hsc_math|default:"-" }} / <strong>{{ student.hsc_math|gpa_to_gl }}</strong></td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             <tr>

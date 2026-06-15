@@ -71,7 +71,8 @@ def get_institutional_intelligence(year=None, batch=None, program=None):
 
 def get_geographic_insights(year=None, batch=None, program=None):
     """
-    Aggregates student distribution by Division and District.
+    Aggregates student distribution by Division, District, and Upazila.
+    Includes data integrity completeness calculations and interactive hierarchy structure.
     """
     queryset = Student.objects.all()
     if batch:
@@ -84,11 +85,58 @@ def get_geographic_insights(year=None, batch=None, program=None):
 
     division_split = queryset.values('present_division').annotate(count=Count('student_id')).order_by('-count')
     district_split = queryset.values('present_district').annotate(count=Count('student_id')).order_by('-count')
+    upazila_split = queryset.values('present_upazila').annotate(count=Count('student_id')).order_by('-count')
+
+    total = queryset.count()
+    missing_division = queryset.filter(Q(present_division__isnull=True) | Q(present_division='')).count()
+    missing_district = queryset.filter(Q(present_district__isnull=True) | Q(present_district='')).count()
+    missing_upazila = queryset.filter(Q(present_upazila__isnull=True) | Q(present_upazila='')).count()
+    complete_profiles = queryset.exclude(
+        Q(present_division__isnull=True) | Q(present_division='') |
+        Q(present_district__isnull=True) | Q(present_district='') |
+        Q(present_upazila__isnull=True) | Q(present_upazila='')
+    ).count()
+    completeness_percentage = round((complete_profiles / total * 100), 1) if total > 0 else 0
+
+    represented_divisions = queryset.exclude(Q(present_division__isnull=True) | Q(present_division='')).values('present_division').distinct().count()
+    represented_districts = queryset.exclude(Q(present_district__isnull=True) | Q(present_district='')).values('present_district').distinct().count()
+    represented_upazilas = queryset.exclude(Q(present_upazila__isnull=True) | Q(present_upazila='')).values('present_upazila').distinct().count()
+
+    # Build geo-hierarchy
+    geo_hierarchy = {}
+    hierarchy_qs = queryset.values('present_division', 'present_district', 'present_upazila').annotate(count=Count('student_id'))
+    for item in hierarchy_qs:
+        div = item['present_division'] or 'Unspecified'
+        dist = item['present_district'] or 'Unspecified'
+        upz = item['present_upazila'] or 'Unspecified'
+        count = item['count']
+        
+        if div not in geo_hierarchy:
+            geo_hierarchy[div] = {'count': 0, 'districts': {}}
+        geo_hierarchy[div]['count'] += count
+        
+        if dist not in geo_hierarchy[div]['districts']:
+            geo_hierarchy[div]['districts'][dist] = {'count': 0, 'upazilas': {}}
+        geo_hierarchy[div]['districts'][dist]['count'] += count
+        
+        geo_hierarchy[div]['districts'][dist]['upazilas'][upz] = count
 
     return {
         'division_split': list(division_split),
         'district_split': list(district_split),
-        'total_students': queryset.count()
+        'upazila_split': list(upazila_split),
+        'total_students': total,
+        'geo_hierarchy': geo_hierarchy,
+        'integrity': {
+            'missing_division': missing_division,
+            'missing_district': missing_district,
+            'missing_upazila': missing_upazila,
+            'complete_profiles': complete_profiles,
+            'completeness_percentage': completeness_percentage,
+            'represented_divisions': represented_divisions,
+            'represented_districts': represented_districts,
+            'represented_upazilas': represented_upazilas,
+        }
     }
 
 def get_research_demographics(year=None, batch=None, program=None):

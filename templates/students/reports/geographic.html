@@ -18,15 +18,34 @@
         margin-bottom: 10px;
         transition: all 0.2s;
         border: 1px solid transparent;
+        cursor: pointer;
     }
     .division-item:hover {
         background: #fff;
         border-color: #3b82f6;
         transform: translateX(5px);
     }
+    .division-item.unspecified-item {
+        border-color: #fee2e2;
+        background: #fef2f2;
+    }
+    .division-item.unspecified-item:hover {
+        border-color: #ef4444;
+        background: #fff;
+    }
     .progress-compact {
         height: 6px;
         border-radius: 3px;
+    }
+    .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .badge-soft-danger {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        font-weight: 700;
+        font-size: 0.75rem;
     }
     .dark-mode .division-item {
         background: #1e293b;
@@ -36,8 +55,42 @@
     .dark-mode .division-item:hover {
         background: #334155;
     }
+    .dark-mode .division-item.unspecified-item {
+        background: rgba(220, 53, 69, 0.05);
+        border-color: rgba(220, 53, 69, 0.2);
+    }
+    .dark-mode .division-item.unspecified-item:hover {
+        background: rgba(220, 53, 69, 0.15);
+    }
     .dark-mode .card-header, .dark-mode h2 {
         color: #f1f5f9 !important;
+    }
+
+    /* Interactive Explorer & Integrity CSS */
+    .explorer-div-btn, .explorer-dist-btn, .explorer-upz-btn {
+        text-align: left;
+        border: none;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        border-radius: 0 !important;
+        transition: background 0.15s;
+    }
+    .explorer-div-btn:last-child, .explorer-dist-btn:last-child, .explorer-upz-btn:last-child {
+        border-bottom: none;
+    }
+    .dark-mode .explorer-div-btn, .dark-mode .explorer-dist-btn, .dark-mode .explorer-upz-btn {
+        background: #1e293b;
+        color: #cbd5e1;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .dark-mode .explorer-div-btn:hover, .dark-mode .explorer-dist-btn:hover, .dark-mode .explorer-upz-btn:hover {
+        background: #334155;
+    }
+    .dark-mode .explorer-div-btn.active, .dark-mode .explorer-dist-btn.active, .dark-mode .explorer-upz-btn.active {
+        background: #3b82f6 !important;
+        color: #fff !important;
+    }
+    .dark-mode .list-group-flush {
+        border-color: rgba(255,255,255,0.1) !important;
     }
 </style>
 {% endblock %}
@@ -80,6 +133,90 @@
                 plugins: { legend: { display: false } }
             }
         });
+
+        // 3. Hierarchical Regional Explorer Logic
+        const geoHierarchy = data.geo_hierarchy || {};
+        const explorerDivs = $('#explorerDivisions');
+        const explorerDists = $('#explorerDistricts');
+        const explorerUpz = $('#explorerUpazilas');
+
+        // Render Divisions
+        explorerDivs.empty();
+        Object.keys(geoHierarchy).sort().forEach(divName => {
+            const divData = geoHierarchy[divName];
+            explorerDivs.append(`
+                <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 explorer-div-btn" data-division="${divName}">
+                    <span class="font-weight-bold small">${divName}</span>
+                    <span class="badge badge-light border small">${divData.count}</span>
+                </button>
+            `);
+        });
+
+        // Click Division
+        explorerDivs.on('click', '.explorer-div-btn', function() {
+            $('.explorer-div-btn').removeClass('active bg-primary text-white');
+            $(this).addClass('active bg-primary text-white');
+            
+            const divName = $(this).data('division');
+            const districts = geoHierarchy[divName].districts;
+            
+            explorerDists.empty();
+            explorerUpz.html('<div class="text-center py-5 text-muted small italic">Select a District</div>');
+            
+            Object.keys(districts).sort().forEach(distName => {
+                const distData = districts[distName];
+                explorerDists.append(`
+                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 explorer-dist-btn" data-division="${divName}" data-district="${distName}">
+                        <span class="font-weight-bold small">${distName}</span>
+                        <span class="badge badge-light border small">${distData.count}</span>
+                    </button>
+                `);
+            });
+        });
+
+        // Click District
+        explorerDists.on('click', '.explorer-dist-btn', function() {
+            $('.explorer-dist-btn').removeClass('active bg-primary text-white');
+            $(this).addClass('active bg-primary text-white');
+            
+            const divName = $(this).data('division');
+            const distName = $(this).data('district');
+            const upazilas = geoHierarchy[divName].districts[distName].upazilas;
+            
+            explorerUpz.empty();
+            Object.keys(upazilas).sort().forEach(upzName => {
+                const count = upazilas[upzName];
+                explorerUpz.append(`
+                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 explorer-upz-btn" data-upazila="${upzName}">
+                        <span class="font-weight-bold small">${upzName}</span>
+                        <span class="badge badge-info small">${count}</span>
+                    </button>
+                `);
+            });
+        });
+
+        // Click Upazila (opens student details modal)
+        explorerUpz.on('click', '.explorer-upz-btn', function() {
+            const upzName = $(this).data('upazila');
+            const urlParams = new URLSearchParams({
+                upazila: upzName,
+                year: '{{ selected_year|default:"" }}',
+                program: '{{ selected_program|default:"" }}',
+                batch: '{{ selected_batch|default:"" }}'
+            });
+            
+            $('#geoModalBody').html(`
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div>
+                    <p class="text-muted mt-2">Fetching student records...</p>
+                </div>
+            `);
+            $('#geoStudentsModal').modal('show');
+            
+            $.get("{% url 'api_geographic_students' %}?" + urlParams.toString(), function(res) {
+                $('#geoModalBody').html(res);
+            });
+        });
     });
 </script>
 {% endblock %}
@@ -117,6 +254,71 @@
     </div>
 </div>
 
+<!-- Geographical Integrity & Representativeness Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+        <div class="card shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #3b82f6;">
+            <div class="card-body py-3">
+                <div class="text-muted small font-weight-bold text-uppercase">Represented Divisions</div>
+                <div class="h3 font-weight-bold text-dark mb-0 mt-1">{{ data.integrity.represented_divisions }} <span class="small text-muted">/ 8</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+        <div class="card shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #10b981;">
+            <div class="card-body py-3">
+                <div class="text-muted small font-weight-bold text-uppercase">Represented Districts</div>
+                <div class="h3 font-weight-bold text-dark mb-0 mt-1">{{ data.integrity.represented_districts }} <span class="small text-muted">/ 64</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+        <div class="card shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid #8b5cf6;">
+            <div class="card-body py-3">
+                <div class="text-muted small font-weight-bold text-uppercase">Represented Upazilas</div>
+                <div class="h3 font-weight-bold text-dark mb-0 mt-1">{{ data.integrity.represented_upazilas }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+        <div class="card shadow-sm h-100" style="border-radius: 12px; border-left: 4px solid {% if data.integrity.completeness_percentage >= 90 %}#10b981{% elif data.integrity.completeness_percentage >= 75 %}#f59e0b{% else %}#ef4444{% endif %};">
+            <div class="card-body py-3">
+                <div class="text-muted small font-weight-bold text-uppercase">Geo Profile Completeness</div>
+                <div class="h3 font-weight-bold text-dark mb-0 mt-1">{{ data.integrity.completeness_percentage }}%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Geographical Integrity Warning & Fix Handler -->
+{% if data.integrity.missing_division > 0 or data.integrity.missing_district > 0 or data.integrity.missing_upazila > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning border-0 shadow-sm mb-0" style="border-radius: 12px; background-color: rgba(245, 158, 11, 0.1); color: #b45309;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                <div class="d-flex align-items-center py-1">
+                    <i class="fas fa-exclamation-triangle fa-lg mr-3"></i>
+                    <div>
+                        <strong class="font-weight-bold">Geographical Data Cleanup Required:</strong> Some student records have incomplete address structures.
+                        <div class="small mt-1">
+                            Missing Division: <strong class="mr-2">{{ data.integrity.missing_division }}</strong> | 
+                            Missing District: <strong class="mr-2">{{ data.integrity.missing_district }}</strong> | 
+                            Missing Upazila/Thana: <strong>{{ data.integrity.missing_upazila }}</strong>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-warning font-weight-bold rounded-pill px-3 mt-2 mt-md-0"
+                        hx-get="{% url 'api_geographic_students' %}?division=Unspecified&year={{ selected_year|default:'' }}&program={{ selected_program|default:'' }}&batch={{ selected_batch|default:'' }}"
+                        hx-target="#geoModalBody"
+                        data-toggle="modal" data-target="#geoStudentsModal">
+                    <i class="fas fa-magic mr-1"></i> View & Fix Records
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <!-- Division Split -->
     <div class="col-lg-5 mb-4">
@@ -126,13 +328,21 @@
                 <canvas id="divisionChart" style="min-height: 300px;"></canvas>
                 <div class="mt-4">
                     {% for div in data.division_split %}
-                    <div class="division-item">
+                    <div class="division-item {% if not div.present_division %}unspecified-item{% endif %}"
+                         hx-get="{% url 'api_geographic_students' %}?division={{ div.present_division|default:'Unspecified'|urlencode }}&year={{ selected_year|default:'' }}&program={{ selected_program|default:'' }}&batch={{ selected_batch|default:'' }}"
+                         hx-target="#geoModalBody"
+                         data-toggle="modal" data-target="#geoStudentsModal">
                         <div class="d-flex justify-content-between mb-1">
-                            <span class="font-weight-bold">{{ div.present_division|default:"Unspecified" }}</span>
+                            <span class="font-weight-bold">
+                                {{ div.present_division|default:"Unspecified" }}
+                                {% if not div.present_division %}
+                                <span class="badge badge-soft-danger text-danger ml-2"><i class="fas fa-exclamation-triangle mr-1"></i>Needs Fix</span>
+                                {% endif %}
+                            </span>
                             <span class="text-primary font-weight-bold">{{ div.count }}</span>
                         </div>
                         <div class="progress progress-compact">
-                            <div class="progress-bar" style="width: {% widthratio div.count data.total_students 100 %}%"></div>
+                            <div class="progress-bar {% if not div.present_division %}bg-danger{% endif %}" style="width: {% widthratio div.count data.total_students 100 %}%"></div>
                         </div>
                     </div>
                     {% endfor %}
@@ -150,9 +360,9 @@
             <div class="card-body">
                 <canvas id="districtChart" style="min-height: 350px;"></canvas>
                 <div class="mt-4">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="bg-light">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="bg-light text-muted small text-uppercase" style="position: sticky; top: 0; z-index: 10; background: #fff;">
                                 <tr>
                                     <th>District</th>
                                     <th>Count</th>
@@ -161,15 +371,120 @@
                             </thead>
                             <tbody>
                                 {% for dist in data.district_split|slice:":20" %}
-                                <tr>
-                                    <td>{{ dist.present_district|default:"Unspecified" }}</td>
-                                    <td><span class="badge badge-info">{{ dist.count }}</span></td>
+                                <tr class="clickable-row {% if not dist.present_district %}table-danger{% endif %}"
+                                    hx-get="{% url 'api_geographic_students' %}?district={{ dist.present_district|default:'Unspecified'|urlencode }}&year={{ selected_year|default:'' }}&program={{ selected_program|default:'' }}&batch={{ selected_batch|default:'' }}"
+                                    hx-target="#geoModalBody"
+                                    data-toggle="modal" data-target="#geoStudentsModal">
+                                    <td class="font-weight-bold">
+                                        {{ dist.present_district|default:"Unspecified" }}
+                                        {% if not dist.present_district %}
+                                        <span class="badge badge-soft-danger text-danger ml-2"><i class="fas fa-exclamation-triangle mr-1"></i>Needs Fix</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="badge {% if not dist.present_district %}badge-danger{% else %}badge-info{% endif %}">{{ dist.count }}</span></td>
                                     <td>{% widthratio dist.count data.total_students 100 %}%</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Top Upazilas / Thanas -->
+    <div class="col-lg-5 mb-4">
+        <div class="card geo-card h-100">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold">Top 15 Upazilas / Thanas</h3></div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="bg-light text-muted small text-uppercase" style="position: sticky; top: 0; z-index: 10; background: #fff;">
+                            <tr>
+                                <th>Upazila / Thana</th>
+                                <th>Count</th>
+                                <th>% of Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for upz in data.upazila_split|slice:":15" %}
+                            <tr class="clickable-row {% if not upz.present_upazila %}table-danger{% endif %}"
+                                hx-get="{% url 'api_geographic_students' %}?upazila={{ upz.present_upazila|default:'Unspecified'|urlencode }}&year={{ selected_year|default:'' }}&program={{ selected_program|default:'' }}&batch={{ selected_batch|default:'' }}"
+                                hx-target="#geoModalBody"
+                                data-toggle="modal" data-target="#geoStudentsModal">
+                                <td class="font-weight-bold">
+                                    {{ upz.present_upazila|default:"Unspecified" }}
+                                    {% if not upz.present_upazila %}
+                                    <span class="badge badge-soft-danger text-danger ml-2"><i class="fas fa-exclamation-triangle mr-1"></i>Needs Fix</span>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge {% if not upz.present_upazila %}badge-danger{% else %}badge-info{% endif %}">{{ upz.count }}</span></td>
+                                <td>{% widthratio upz.count data.total_students 100 %}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Regional Explorer -->
+    <div class="col-lg-7 mb-4">
+        <div class="card geo-card h-100">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">Interactive Regional Explorer</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Select a division and district to inspect the represented Upazilas/Thanas and drill down to students.</p>
+                
+                <div class="row mt-3">
+                    <!-- Division Pane -->
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <h6 class="font-weight-bold text-uppercase text-muted small mb-2"><i class="fas fa-map mr-1"></i> Divisions</h6>
+                        <div class="list-group list-group-flush border rounded" id="explorerDivisions" style="max-height: 250px; overflow-y: auto;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                    <!-- District Pane -->
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <h6 class="font-weight-bold text-uppercase text-muted small mb-2"><i class="fas fa-map-pin mr-1"></i> Districts</h6>
+                        <div class="list-group list-group-flush border rounded" id="explorerDistricts" style="max-height: 250px; overflow-y: auto;">
+                            <div class="text-center py-5 text-muted small italic">Select a Division</div>
+                        </div>
+                    </div>
+                    <!-- Upazila Pane -->
+                    <div class="col-md-4">
+                        <h6 class="font-weight-bold text-uppercase text-muted small mb-2"><i class="fas fa-building mr-1"></i> Upazilas / Thanas</h6>
+                        <div class="list-group list-group-flush border rounded" id="explorerUpazilas" style="max-height: 250px; overflow-y: auto;">
+                            <div class="text-center py-5 text-muted small italic">Select a District</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Geographic Students Modal -->
+<div class="modal fade" id="geoStudentsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header bg-primary text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-map-marked-alt mr-2"></i> Geographic Student List</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" id="geoModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Fetching student records...</p>
                 </div>
             </div>
         </div>

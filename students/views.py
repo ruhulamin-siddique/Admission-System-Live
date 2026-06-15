@@ -282,7 +282,7 @@ def dashboard(request):
 
     # Recent Students with Short Names (Ordered by Creation Date)
     recent_students = []
-    for s in Student.objects.order_by('-created_at')[:10]:
+    for s in Student.objects.order_by('-created_at')[:20]:
         recent_students.append({
             'student_id': s.student_id,
             'student_name': s.student_name,
@@ -305,6 +305,16 @@ def dashboard(request):
         unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
     )
 
+    # Top References (Sources / Channels) for the current batch
+    ref_qs = Student.objects.filter(batch=latest_batch) if latest_batch else Student.objects.all()
+    top_references = list(
+        ref_qs.exclude(reference__isnull=True)
+        .exclude(reference='')
+        .values('reference')
+        .annotate(count=Count('student_id'))
+        .order_by('-count')[:5]
+    )
+
     stats = {
         'total_students': Student.objects.count(),
         'active_students': Student.objects.filter(admission_status='Active').count(),
@@ -322,8 +332,61 @@ def dashboard(request):
         'total_batch_students': total_batch_students,
         'periodic': periodic_stats,
         'all_batches': sorted([b for b in all_batches if b], reverse=True),
-        'pending_registrations': User.objects.filter(profile__registration_status='PENDING').count()
+        'pending_registrations': User.objects.filter(profile__registration_status='PENDING').count(),
+        'top_references': top_references
     }
+    # Calculate Batch-Department matrix
+    raw_matrix_data = Student.objects.values('batch', 'batch_number', 'program').annotate(count=Count('student_id'))
+    unique_matrix_programs = set()
+    for item in raw_matrix_data:
+        prog = item['program'] or 'Unknown'
+        short_prog = program_map.get(prog.lower(), prog).strip().upper()
+        unique_matrix_programs.add(short_prog)
+    
+    matrix_cols = sorted(list(unique_matrix_programs))
+    
+    matrix_dict = {}
+    for item in raw_matrix_data:
+        b_name = item['batch'] or 'Unknown'
+        b_num = item['batch_number'] or 0
+        prog = item['program'] or 'Unknown'
+        short_prog = program_map.get(prog.lower(), prog).strip().upper()
+        count = item['count']
+        
+        if b_name not in matrix_dict:
+            matrix_dict[b_name] = {
+                'batch_name': b_name,
+                'batch_number': b_num,
+                'counts': {},
+                'row_total': 0
+            }
+            
+        matrix_dict[b_name]['counts'][short_prog] = matrix_dict[b_name]['counts'].get(short_prog, 0) + count
+        matrix_dict[b_name]['row_total'] += count
+
+    # Sort rows by batch_number descending, then batch name descending
+    sorted_batches = sorted(
+        matrix_dict.keys(),
+        key=lambda k: (matrix_dict[k]['batch_number'] or 0, matrix_dict[k]['batch_name']),
+        reverse=True
+    )
+    
+    matrix_rows = []
+    for b_key in sorted_batches:
+        row = matrix_dict[b_key]
+        prog_counts = []
+        for p in matrix_cols:
+            prog_counts.append(row['counts'].get(p, 0))
+        row['prog_counts'] = prog_counts
+        matrix_rows.append(row)
+        
+    column_totals = []
+    grand_total = 0
+    for p in matrix_cols:
+        col_total = sum(row['counts'].get(p, 0) for row in matrix_dict.values())
+        column_totals.append(col_total)
+        grand_total += col_total
+
     return render(request, 'students/dashboard.html', {
         'stats': stats,
         'intake_trends': json.dumps(intake_trends),
@@ -331,7 +394,11 @@ def dashboard(request):
         'gender_chart_data': json.dumps(gender_chart_data),
         'financials': financials,
         'latest_batch': latest_batch,
-        'latest_batch_intake': latest_batch_intake
+        'latest_batch_intake': latest_batch_intake,
+        'matrix_cols': matrix_cols,
+        'matrix_rows': matrix_rows,
+        'column_totals': column_totals,
+        'grand_total': grand_total,
     })
 
 from django.core.paginator import Paginator
@@ -1004,6 +1071,155 @@ def api_hall_distribution(request):
     data.sort(key=lambda x: x['count'], reverse=True)
     return JsonResponse({'distribution': data, 'total': total})
 
+@require_access('dashboard', 'view')
+def api_intake_distribution(request):
+    """Returns JSON data containing program-wise intake breakdown for a requested batch."""
+    batch = request.GET.get('batch')
+    
+    program_map = {}
+    for p in Program.objects.all():
+        canonical = p.short_name or p.name
+        program_map[p.name.lower()] = canonical
+        if p.short_name:
+            program_map[p.short_name.lower()] = canonical
+
+    if batch == 'all' or not batch:
+        batch_students = Student.objects.all()
+        batch_title = "Overall System"
+    else:
+        batch_students = Student.objects.filter(batch=batch)
+        batch_title = f"{batch} Batch"
+
+    total_batch_students = batch_students.count()
+
+    intake_qs = batch_students.values('program').annotate(
+        total=Count('student_id'),
+        male=Count('student_id', filter=Q(gender='Male')),
+        female=Count('student_id', filter=Q(gender='Female')),
+        active=Count('student_id', filter=Q(admission_status='Active')),
+        cancelled=Count('student_id', filter=Q(admission_status='Cancelled')),
+        non_residential=Count('student_id', filter=Q(is_non_residential=True)),
+        hall_auah=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_attached='AUAH')),
+        hall_btbh=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached='BTBH') | Q(hall_attached='TBH'))),
+        hall_zh=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_attached='ZH')),
+        unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
+        quota=Count('student_id', filter=Q(is_armed_forces_child=True) | Q(is_freedom_fighter_child=True) | Q(is_july_joddha_2024=True))
+    ).order_by('-total')
+
+    aggregated_intake = {}
+    for item in intake_qs:
+        full_name = item['program'] or 'Unknown'
+        short = program_map.get(full_name.lower(), full_name).strip().upper()
+        
+        if short not in aggregated_intake:
+            aggregated_intake[short] = {
+                'program': full_name,
+                'short_name': short,
+                'count': 0,
+                'male': 0,
+                'female': 0,
+                'active': 0,
+                'cancelled': 0,
+                'non_residential': 0,
+                'hall_auah': 0,
+                'hall_btbh': 0,
+                'hall_zh': 0,
+                'unspecified': 0,
+                'quota': 0
+            }
+            
+        aggregated_intake[short]['count'] += item['total']
+        aggregated_intake[short]['male'] += item['male']
+        aggregated_intake[short]['female'] += item['female']
+        aggregated_intake[short]['active'] += item['active']
+        aggregated_intake[short]['cancelled'] += item['cancelled']
+        aggregated_intake[short]['non_residential'] += item['non_residential']
+        aggregated_intake[short]['hall_auah'] += item['hall_auah']
+        aggregated_intake[short]['hall_btbh'] += item['hall_btbh']
+        aggregated_intake[short]['hall_zh'] += item['hall_zh']
+        aggregated_intake[short]['unspecified'] += item['unspecified']
+        aggregated_intake[short]['quota'] += item['quota']
+
+    intake_list = list(aggregated_intake.values())
+    intake_list.sort(key=lambda x: x['count'], reverse=True)
+
+    return JsonResponse({
+        'batch_name': batch_title,
+        'total_students': total_batch_students,
+        'intake': intake_list
+    })
+
+@require_access('dashboard', 'view')
+def api_religion_distribution(request):
+    """Returns JSON data for religion distribution, optionally filtered by batch."""
+    batch = request.GET.get('batch')
+    
+    qs = Student.objects.all()
+    if batch and batch != 'all':
+        qs = qs.filter(batch=batch)
+        
+    religion_dist = qs.annotate(
+        religion_label=Coalesce('religion', Value('Unknown'))
+    ).values('religion_label').annotate(count=Count('student_id')).order_by('-count')
+    
+    total = sum(r['count'] for r in religion_dist)
+    data = [
+        {
+            'religion': r['religion_label'] or 'Unknown',
+            'count': r['count'],
+            'percentage': round((r['count'] / total * 100), 1) if total > 0 else 0
+        }
+        for r in religion_dist
+    ]
+    return JsonResponse({'distribution': data, 'total': total})
+
+@require_access('reports', 'view_analytics')
+def api_demographic_students(request):
+    """Returns a partial list of students filtered by gender or religion for demographic drill-down modals."""
+    gender = request.GET.get('gender')
+    religion = request.GET.get('religion')
+    batch = request.GET.get('batch')
+    year = request.GET.get('year')
+    program = request.GET.get('program')
+    
+    queryset = Student.objects.all()
+    
+    # Apply standard page filters
+    if batch:
+        queryset = queryset.filter(batch=batch)
+    elif year:
+        queryset = queryset.filter(admission_year=year)
+    if program:
+        queryset = queryset.filter(program=program)
+        
+    # Apply demographic filter
+    if gender is not None:
+        if gender == 'Unspecified' or gender == '' or gender.lower() == 'unknown':
+            queryset = queryset.filter(Q(gender__isnull=True) | Q(gender='') | Q(gender='Unknown'))
+            gender = 'Unspecified'
+        else:
+            queryset = queryset.filter(gender=gender)
+            
+    if religion is not None:
+        if religion == 'Unspecified' or religion == '' or religion.lower() == 'unknown':
+            queryset = queryset.filter(Q(religion__isnull=True) | Q(religion='') | Q(religion='Unknown'))
+            religion = 'Unspecified'
+        else:
+            queryset = queryset.filter(religion=religion)
+            
+    queryset = queryset.order_by('-created_at')
+    count = queryset.count()
+    
+    return render(request, 'students/partials/demographic_student_list.html', {
+        'students': queryset[:100],  # Limit to 100 for modal preview performance
+        'count': count,
+        'gender': gender,
+        'religion': religion,
+        'batch': batch,
+        'year': year,
+        'program': program,
+    })
+
 def api_bulk_photo_zip(request):
     """Packages student photos into a ZIP archive with support for direct selection or dynamic filtering."""
     if request.method != 'POST':
@@ -1264,6 +1480,7 @@ def edit_student(request, student_id):
         if form.is_valid():
             # This updates the instance but might clear fields missing from POST
             student = form.save(commit=False)
+            student.changed_by_user = request.user
             
             # RE-ENFORCE LOCKED FIELDS: Restore the values captured before form processing
             for field, value in original_values.items():
@@ -2133,6 +2350,75 @@ def institutional_report(request):
     })
 
 @require_access('reports', 'view_analytics')
+def api_institutional_students(request):
+    """Returns a list of students for institutional drill-down modal."""
+    school = request.GET.get('school')
+    college = request.GET.get('college')
+    year = request.GET.get('year')
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    queryset = Student.objects.all()
+    if batch:
+        queryset = queryset.filter(batch=batch)
+    elif year:
+        queryset = queryset.filter(admission_year=year)
+    if program:
+        queryset = queryset.filter(program=program)
+        
+    if school:
+        queryset = queryset.filter(ssc_school=school)
+    elif college:
+        queryset = queryset.filter(hsc_college=college)
+        
+    queryset = queryset.order_by('student_id')
+    count = queryset.count()
+    
+    return render(request, 'students/partials/institution_student_list.html', {
+        'students': queryset[:200],
+        'count': count,
+        'school': school,
+        'college': college,
+        'year': year,
+        'program': program,
+        'batch': batch,
+    })
+
+@require_access('reports', 'view_analytics')
+def print_institutional_students(request):
+    """Renders a printer-friendly HTML list of students for a specific institution."""
+    school = request.GET.get('school')
+    college = request.GET.get('college')
+    year = request.GET.get('year')
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    queryset = Student.objects.all()
+    if batch:
+        queryset = queryset.filter(batch=batch)
+    elif year:
+        queryset = queryset.filter(admission_year=year)
+    if program:
+        queryset = queryset.filter(program=program)
+        
+    if school:
+        queryset = queryset.filter(ssc_school=school)
+    elif college:
+        queryset = queryset.filter(hsc_college=college)
+        
+    queryset = queryset.order_by('student_id')
+    
+    return render(request, 'students/reports/print_institution_students.html', {
+        'students': queryset,
+        'school': school,
+        'college': college,
+        'year': year,
+        'program': program,
+        'batch': batch,
+        'print_time': timezone.now(),
+    })
+
+@require_access('reports', 'view_analytics')
 def geographic_report(request):
     """Geographic outreach and student distribution dashboard."""
     years = Student.objects.values_list('admission_year', flat=True).distinct().exclude(admission_year=None).order_by('-admission_year')
@@ -2162,6 +2448,62 @@ def geographic_report(request):
         'selected_year': str(year) if year else None,
         'selected_batch': batch,
         'selected_program': program
+    })
+
+@require_access('reports', 'view_analytics')
+def api_geographic_students(request):
+    """Returns a list of students for geographic drill-down and correction."""
+    division = request.GET.get('division')
+    district = request.GET.get('district')
+    upazila = request.GET.get('upazila')
+    year = request.GET.get('year')
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    
+    queryset = Student.objects.all()
+    
+    # Apply standard report filters
+    if batch:
+        queryset = queryset.filter(batch=batch)
+    elif year:
+        queryset = queryset.filter(admission_year=year)
+    if program:
+        queryset = queryset.filter(program=program)
+        
+    # Division drill-down
+    if division is not None:
+        if division == 'Unspecified' or division == '' or division.lower() == 'unknown':
+            queryset = queryset.filter(Q(present_division__isnull=True) | Q(present_division=''))
+            division = 'Unspecified'
+        else:
+            queryset = queryset.filter(present_division=division)
+            
+    # District drill-down
+    if district is not None:
+        if district == 'Unspecified' or district == '' or district.lower() == 'unknown':
+            queryset = queryset.filter(Q(present_district__isnull=True) | Q(present_district=''))
+            district = 'Unspecified'
+        else:
+            queryset = queryset.filter(present_district=district)
+
+    # Upazila drill-down
+    if upazila is not None:
+        if upazila == 'Unspecified' or upazila == '' or upazila.lower() == 'unknown':
+            queryset = queryset.filter(Q(present_upazila__isnull=True) | Q(present_upazila=''))
+            upazila = 'Unspecified'
+        else:
+            queryset = queryset.filter(present_upazila=upazila)
+            
+    # Order by ID
+    queryset = queryset.order_by('student_id')
+    count = queryset.count()
+    
+    return render(request, 'students/partials/geo_student_list.html', {
+        'students': queryset[:200],  # limit to 200 for performance
+        'count': count,
+        'division': division,
+        'district': district,
+        'upazila': upazila,
     })
 
 @require_access('reports', 'view_analytics')
@@ -3031,3 +3373,88 @@ def api_bulk_verify_init(request):
         'total_tasks': len(tasks),
         'tasks': tasks
     })
+
+@login_required
+def revert_field_change(request, history_id):
+    """Secure API view for superadmins to revert specific student field modifications."""
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'Permission Denied. Only superadministrators can revert changes.'}, status=403)
+        
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method. POST required.'}, status=405)
+        
+    from .models import StudentFieldHistory
+    from core.utils import log_activity
+    from django.utils.dateparse import parse_date
+    from django.db import models
+    from django.utils import timezone
+    
+    history_entry = get_object_or_404(StudentFieldHistory, id=history_id)
+    if history_entry.reverted:
+        return JsonResponse({'success': False, 'error': 'This change has already been reverted.'})
+        
+    student = history_entry.student
+    field_name = history_entry.field_name
+    old_value_str = history_entry.old_value
+    
+    try:
+        # Get field class and inspect it
+        field = Student._meta.get_field(field_name)
+        
+        # Determine value to set
+        target_value = None
+        
+        if old_value_str is None or old_value_str == 'None' or old_value_str == '':
+            if field.null:
+                target_value = None
+            elif isinstance(field, (models.CharField, models.TextField)):
+                target_value = ""
+            elif isinstance(field, (models.IntegerField, models.SmallIntegerField, models.PositiveIntegerField)):
+                target_value = 0
+            elif isinstance(field, models.BooleanField):
+                target_value = False
+        else:
+            if isinstance(field, models.BooleanField):
+                target_value = old_value_str.lower() in ('true', '1', 'yes')
+            elif isinstance(field, (models.IntegerField, models.SmallIntegerField, models.PositiveIntegerField)):
+                try:
+                    target_value = int(float(old_value_str))
+                except ValueError:
+                    target_value = 0
+            elif isinstance(field, (models.FloatField, models.DecimalField)):
+                try:
+                    target_value = float(old_value_str)
+                except ValueError:
+                    target_value = 0.0
+            elif isinstance(field, models.DateField):
+                target_value = parse_date(old_value_str)
+            else:
+                target_value = old_value_str
+                
+        # Set field value
+        setattr(student, field_name, target_value)
+        student.changed_by_user = request.user
+        student.save()
+        
+        # Mark history as reverted
+        history_entry.reverted = True
+        history_entry.reverted_by = request.user
+        history_entry.reverted_at = timezone.now()
+        history_entry.save()
+        
+        # Log this rollback to ActivityLog
+        log_activity(
+            request, 
+            'UPDATE', 
+            'students', 
+            f"Reverted field '{field_name}' on student {student.student_name} back to '{old_value_str or 'None'}'",
+            object_id=student.student_id
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f"Successfully reverted field '{field_name}' to '{old_value_str or 'None'}'."
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f"Failed to revert field: {str(e)}"}, status=500)

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 1cm;
+            margin-bottom: 2cm;
+            @frame footer {
+                -pdf-frame-content: footerContent;
+                bottom: 0.5cm;
+                margin-left: 1cm;
+                margin-right: 1cm;
+                height: 1cm;
+            }
+        }
+        #footerContent {
+            color: #495057;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.3;
+            color: #000;
+        }
+        .header-table, .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin: 0;
+            padding: 0;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #dee2e6;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .data-table th {
+            background-color: #f1f3f5;
+            font-weight: bold;
+            font-size: 10pt;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .title {
+            text-align: center;
+            font-size: 15pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            color: #000;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+        }
+        .text-center { text-align: center; }
+        .badge {
+            background-color: #e9ecef;
+            border: 0.5px solid #6c757d;
+            padding: 2px 5px;
+            font-size: 8pt;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        code {
+            font-family: 'Courier', monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="footerContent">
+        <div style="border-top: 1px solid #dee2e6; padding-top: 5px; text-align: right; font-size: 8pt; color: #6c757d;">
+            BAUST Academic Programs Registry | Printed on: {{ current_time|date:"d M Y H:i" }} | Page <pdf:pagenumber> of <pdf:pagecount>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <table class="header-table" style="border: none;">
+            <tr>
+                <td style="width: 15%; border: none; vertical-align: middle; text-align: left;">
+                    {% if sys_settings.logo_url %}
+                        <img src="{{ sys_settings.logo_url }}" style="height: 70px; width: 70px;">
+                    {% endif %}
+                </td>
+                <td style="width: 85%; border: none; text-align: center; vertical-align: middle;">
+                    <h1 style="color: #000; font-size: 15pt; margin: 0; font-weight: bold;">BANGLADESH ARMY UNIVERSITY OF SCIENCE & TECHNOLOGY, (BAUST)</h1>
+                    <p style="margin: 2px 0; font-size: 11pt; color: #333; font-weight: bold;">SAIDPUR CANTONMENT</p>
+                    <p style="margin: 3px 0; font-size: 10pt; color: #555;">Office of the Registrar (Academic Section)</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="title">Official Academic Programs Registry</div>
+
+    <!-- Data Table -->
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 6%; text-align: center;">SL</th>
+                <th style="width: 32%;">Program Name</th>
+                <th style="width: 12%; text-align: center;">Short Name</th>
+                <th style="width: 12%; text-align: center;">UGC Code</th>
+                <th style="width: 13%; text-align: center;">Full UGC Code</th>
+                <th style="width: 15%;">Cluster</th>
+                <th style="width: 10%; text-align: center;">Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in programs %}
+            <tr>
+                <td style="text-align: center;">{{ forloop.counter }}</td>
+                <td><strong>{{ item.name }}</strong></td>
+                <td style="text-align: center;">{{ item.short_name|default:"-" }}</td>
+                <td style="text-align: center;"><code>{{ item.ugc_code }}</code></td>
+                <td style="text-align: center;"><code>{{ item.full_ugc_code }}</code></td>
+                <td>{{ item.cluster.name }}</td>
+                <td style="text-align: center;"><span class="badge">{{ item.get_level_code_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: #6c757d; font-style: italic;">No programs found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

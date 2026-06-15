@@ -4,39 +4,70 @@
 {% block page_title %}Academic Master Data{% endblock %}
 
 {% block content %}
+<style>
+    /* Premium segmented tab look */
+    #settings-tabs .nav-link {
+        color: #495057;
+        background: transparent;
+        border: none;
+        font-weight: 600;
+        font-size: 10.5pt;
+        letter-spacing: 0.3px;
+    }
+    #settings-tabs .nav-link:hover {
+        color: #007bff;
+        background: rgba(0, 123, 255, 0.05);
+    }
+    #settings-tabs .nav-link.active {
+        color: #fff !important;
+        background: #007bff !important;
+        box-shadow: 0 4px 10px rgba(0, 123, 255, 0.15);
+    }
+</style>
+
 <div class="row">
-    <div class="col-md-3">
-        <div class="card card-primary card-outline">
-            <div class="card-body box-profile">
-                <h3 class="profile-username text-center">Settings Menu</h3>
-                <p class="text-muted text-center">Academic Configuration</p>
-                <ul class="nav nav-pills flex-column" id="settings-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="clusters-tab" data-toggle="pill" href="#clusters" role="tab"><i class="fas fa-layer-group mr-2"></i> Clusters</a>
+    <div class="col-md-12">
+        <!-- Modern Segmented Navigation Bar -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; background: #fff;">
+            <div class="card-body p-2">
+                <ul class="nav nav-pills nav-fill flex-column flex-sm-row" id="settings-tabs" role="tablist" style="background: #f8f9fa; border-radius: 8px; padding: 4px; border: none; margin: 0;">
+                    <li class="nav-item m-1">
+                        <a class="nav-link active py-2 font-weight-bold" id="clusters-tab" data-toggle="pill" href="#clusters" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
+                            <i class="fas fa-layer-group mr-2"></i> Clusters
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="programs-tab" data-toggle="pill" href="#programs" role="tab"><i class="fas fa-graduation-cap mr-2"></i> Programs</a>
+                    <li class="nav-item m-1">
+                        <a class="nav-link py-2 font-weight-bold" id="programs-tab" data-toggle="pill" href="#programs" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
+                            <i class="fas fa-graduation-cap mr-2"></i> Programs
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="halls-tab" data-toggle="pill" href="#halls" role="tab"><i class="fas fa-hotel mr-2"></i> Halls</a>
+                    <li class="nav-item m-1">
+                        <a class="nav-link py-2 font-weight-bold" id="halls-tab" data-toggle="pill" href="#halls" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
+                            <i class="fas fa-hotel mr-2"></i> Halls
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="years-tab" data-toggle="pill" href="#years" role="tab"><i class="fas fa-calendar-alt mr-2"></i> Admission Years</a>
+                    <li class="nav-item m-1">
+                        <a class="nav-link py-2 font-weight-bold" id="years-tab" data-toggle="pill" href="#years" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
+                            <i class="fas fa-calendar-alt mr-2"></i> Admission Years
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="semesters-tab" data-toggle="pill" href="#semesters" role="tab"><i class="fas fa-clock mr-2"></i> Semesters</a>
+                    <li class="nav-item m-1">
+                        <a class="nav-link py-2 font-weight-bold" id="semesters-tab" data-toggle="pill" href="#semesters" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
+                            <i class="fas fa-clock mr-2"></i> Semesters
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="batches-tab" data-toggle="pill" href="#batches" role="tab"><i class="fas fa-users mr-2"></i> Batches</a>
+                    <li class="nav-item m-1">
+                        <a class="nav-link py-2 font-weight-bold" id="batches-tab" data-toggle="pill" href="#batches" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
+                            <i class="fas fa-users mr-2"></i> Batches
+                        </a>
                     </li>
                 </ul>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-9">
-        <div class="card">
-            <div class="card-body">
+        <!-- Content Card -->
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-body p-4">
                 <div class="tab-content">
                     <!-- Clusters -->
                     <div class="tab-pane fade show active" id="clusters" role="tabpanel">
@@ -71,7 +102,12 @@
                     <div class="tab-pane fade" id="programs" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h4 class="m-0 font-weight-bold">Programs</h4>
-                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addProgramModal"><i class="fas fa-plus mr-1"></i> Add Program</button>
+                            <div>
+                                <a href="{% url 'generate_programs_pdf' %}" class="btn btn-outline-danger btn-sm mr-2" target="_blank">
+                                    <i class="fas fa-file-pdf mr-1"></i> Export PDF
+                                </a>
+                                <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addProgramModal"><i class="fas fa-plus mr-1"></i> Add Program</button>
+                            </div>
                         </div>
                         <table class="table table-bordered table-striped">
                             <thead>
@@ -79,6 +115,7 @@
                                     <th>Program Name</th>
                                     <th>Short Name</th>
                                     <th>UGC Code</th>
+                                    <th>Full 5-Digit UGC Code</th>
                                     <th>Cluster</th>
                                     <th>Program Type</th>
                                     <th>Sort Order</th>
@@ -91,6 +128,7 @@
                                     <td><span data-toggle="tooltip" title="Code: {{ item.full_ugc_code }}">{{ item.name }}</span></td>
                                     <td><strong>{{ item.short_name|default:"-" }}</strong></td>
                                     <td><code>{{ item.ugc_code }}</code></td>
+                                    <td><code>{{ item.full_ugc_code }}</code></td>
                                     <td><span data-toggle="tooltip" title="Cluster: {{ item.cluster.name }}">{{ item.cluster.name }}</span></td>
                                     <td><span class="badge badge-secondary">{{ item.get_level_code_display }}</span></td>
                                     <td><span class="badge badge-info">{{ item.sort_order }}</span></td>
@@ -288,10 +326,14 @@
                     <input type="text" name="ugc_code" class="form-control" required placeholder="e.g. 01">
                 </div>
                 <div class="form-group">
+                    <label>Full 5-Digit UGC Code (Auto-generated)</label>
+                    <input type="text" class="form-control" readonly id="add_full_ugc_code" value="">
+                </div>
+                <div class="form-group">
                     <label>Cluster</label>
                     <select name="cluster" class="form-control" required>
                         {% for c in clusters %}
-                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        <option value="{{ c.id }}" data-code="{{ c.code }}">{{ c.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -478,10 +520,14 @@
                     <input type="text" name="ugc_code" class="form-control" required value="{{ item.ugc_code }}">
                 </div>
                 <div class="form-group">
+                    <label>Full 5-Digit UGC Code (Auto-generated)</label>
+                    <input type="text" class="form-control" readonly id="fullUgcCodeEdit{{ item.id }}" value="{{ item.full_ugc_code }}">
+                </div>
+                <div class="form-group">
                     <label>Cluster</label>
                     <select name="cluster" class="form-control" required>
                         {% for c in clusters %}
-                        <option value="{{ c.id }}" {% if item.cluster.id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                        <option value="{{ c.id }}" data-code="{{ c.code }}" {% if item.cluster.id == c.id %}selected{% endif %}>{{ c.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -717,6 +763,52 @@ $(document).ready(function() {
 
     // Initialize Tooltips
     $('[data-toggle="tooltip"]').tooltip();
+
+    // Function to calculate and update full 5-digit UGC Code
+    function updateFullUgcCode(modalId, isEdit) {
+        var modal = $(modalId);
+        var clusterSelect = modal.find('select[name="cluster"]');
+        var ugcInput = modal.find('input[name="ugc_code"]');
+        var levelSelect = modal.find('select[name="level_code"]');
+        var outputField = isEdit ? modal.find('input[id^="fullUgcCodeEdit"]') : modal.find('#add_full_ugc_code');
+        
+        var selectedClusterOption = clusterSelect.find('option:selected');
+        var clusterCode = selectedClusterOption.data('code') || '';
+        if (clusterCode === undefined) {
+            clusterCode = '';
+        }
+        
+        // Clean and ensure ugc code contains only digits
+        var cleanUgc = (ugcInput.val() || '').replace(/\D/g, '');
+        
+        var levelCode = levelSelect.val() || '';
+        
+        var fullCode = '';
+        if (clusterCode || cleanUgc || levelCode) {
+            fullCode = clusterCode + cleanUgc + levelCode;
+        }
+        outputField.val(fullCode);
+    }
+
+    // Attach listeners for Edit Program modals
+    $('div[id^="editProgramModal"]').each(function() {
+        var modal = $(this);
+        var modalId = '#' + modal.attr('id');
+        
+        // Update initially when modal is shown or loaded
+        updateFullUgcCode(modalId, true);
+        
+        modal.find('select[name="cluster"], input[name="ugc_code"], select[name="level_code"]').on('input change', function() {
+            updateFullUgcCode(modalId, true);
+        });
+    });
+
+    // Attach listeners for Add Program modal
+    var addModalId = '#addProgramModal';
+    updateFullUgcCode(addModalId, false);
+    $(addModalId).find('select[name="cluster"], input[name="ugc_code"], select[name="level_code"]').on('input change', function() {
+        updateFullUgcCode(addModalId, false);
+    });
 });
 </script>
 {% endblock %}

@@ -382,3 +382,208 @@ class StudentDirectoryTests(TestCase):
         self.assertNotContains(response, self.inactive_student.father_name)
         self.assertNotContains(response, self.inactive_student.program)
         self.assertNotContains(response, 'Open Profile')
+
+    def test_institutional_report_access_and_rendering(self):
+        # Update some students to have ssc_school and hsc_college
+        student1 = Student.objects.get(student_id='CSE001')
+        student1.ssc_school = 'Lions School'
+        student1.hsc_college = 'Lions College'
+        student1.save()
+
+        student2 = Student.objects.get(student_id='CSE002')
+        student2.ssc_school = 'Lions School'
+        student2.hsc_college = 'Blue College'
+        student2.save()
+
+        # Check access for superuser
+        response = self.client.get(reverse('institutional_report'), {'year': '2025'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Lions School')
+        self.assertContains(response, 'Lions College')
+        self.assertContains(response, 'Blue College')
+
+        # Check access denied for scoped_user (no view_analytics under reports)
+        self.client.force_login(self.scoped_user)
+        response = self.client.get(reverse('institutional_report'))
+        self.assertRedirects(response, reverse('user_profile'))
+
+    def test_api_institutional_students_modal_data(self):
+        student1 = Student.objects.get(student_id='CSE001')
+        student1.ssc_school = 'Lions School'
+        student1.save()
+
+        # Query API for students from Lions School
+        response = self.client.get(reverse('api_institutional_students'), {'school': 'Lions School', 'year': '2025'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'CSE001')
+        self.assertContains(response, 'Lions School')
+        # Print URL should be formatted in response
+        self.assertContains(response, reverse('print_institutional_students'))
+
+    def test_print_institutional_students_view(self):
+        student1 = Student.objects.get(student_id='CSE001')
+        student1.ssc_school = 'Lions School'
+        student1.save()
+
+        response = self.client.get(reverse('print_institutional_students'), {'school': 'Lions School'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'CSE001')
+        self.assertContains(response, 'Lions School')
+        self.assertContains(response, 'window.print()')
+
+    def test_dashboard_reference_nodes(self):
+        # Update some students to have references
+        student1 = Student.objects.get(student_id='CSE001')
+        student1.reference = 'Facebook Ad'
+        student1.batch = '26th'
+        student1.save()
+
+        student2 = Student.objects.get(student_id='CSE002')
+        student2.reference = 'Alumni Network'
+        student2.batch = '26th'
+        student2.save()
+
+        student3 = Student.objects.get(student_id='CSE003')
+        student3.reference = 'Facebook Ad'
+        student3.batch = '26th'
+        student3.save()
+
+        # Query the dashboard
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+        # Assert top_references is in context
+        stats = response.context['stats']
+        self.assertIn('top_references', stats)
+        
+        # Verify Facebook Ad is ranked #1 (since it has 2 count, Alumni has 1)
+        top_refs = stats['top_references']
+        self.assertEqual(top_refs[0]['reference'], 'Facebook Ad')
+        self.assertEqual(top_refs[0]['count'], 2)
+        self.assertEqual(top_refs[1]['reference'], 'Alumni Network')
+        self.assertEqual(top_refs[1]['count'], 1)
+
+        # Assert page rendering has the reference text
+        self.assertContains(response, 'Admission Reference')
+        self.assertContains(response, 'Facebook Ad')
+        self.assertContains(response, 'Alumni Network')
+
+    def test_student_field_audit_and_revert(self):
+        from students.models import StudentFieldHistory
+        
+        # 1. Edit a student's profile and confirm changes are logged
+        student = Student.objects.get(student_id='CSE001')
+        self.assertEqual(student.student_name, 'CSE Student 01')
+        
+        student.student_name = 'Updated Name'
+        student.changed_by_user = self.superuser
+        student.save()
+        
+        # Verify history entry was created
+        history = StudentFieldHistory.objects.filter(student=student, field_name='student_name')
+        self.assertEqual(history.count(), 1)
+        entry = history.first()
+        self.assertEqual(entry.old_value, 'CSE Student 01')
+        self.assertEqual(entry.new_value, 'Updated Name')
+        self.assertEqual(entry.changed_by, self.superuser)
+        self.assertFalse(entry.reverted)
+        
+        # 2. Test permission checks on the revert API
+        revert_url = reverse('revert_field_change', args=[entry.id])
+        
+        # Non-superuser should be denied (returns 403)
+        self.client.force_login(self.scoped_user)
+        resp_scoped = self.client.post(revert_url)
+        self.assertEqual(resp_scoped.status_code, 403)
+        
+        # Superuser should succeed (returns 200 JSON with success: True)
+        self.client.force_login(self.superuser)
+        resp_super = self.client.post(revert_url)
+        self.assertEqual(resp_super.status_code, 200)
+        self.assertTrue(resp_super.json()['success'])
+        
+        # Verify database reverted to old value
+        student.refresh_from_db()
+        self.assertEqual(student.student_name, 'CSE Student 01')
+        
+        # Verify history entry state updated
+        entry.refresh_from_db()
+        self.assertTrue(entry.reverted)
+        self.assertEqual(entry.reverted_by, self.superuser)
+        self.assertIsNotNone(entry.reverted_at)
+
+    def test_dashboard_batch_department_matrix(self):
+        # Request the dashboard page
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+        # Assert context variables are present
+        self.assertIn('matrix_cols', response.context)
+        self.assertIn('matrix_rows', response.context)
+        self.assertIn('column_totals', response.context)
+        self.assertIn('grand_total', response.context)
+
+        cols = response.context['matrix_cols']
+        rows = response.context['matrix_rows']
+
+        # Assert column headers (programs) are sorted alphabetically
+        self.assertEqual(cols, sorted(cols))
+
+        # Assert rows (batches) are sorted descending by batch_number
+        prev_num = float('inf')
+        for r in rows:
+            batch_num = r['batch_number'] or 0
+            self.assertTrue(batch_num <= prev_num, f"Batch {r['batch_name']} with number {batch_num} is out of order (previous was {prev_num})")
+            prev_num = batch_num
+
+        # Assert grand total sums up all students in database
+        self.assertEqual(response.context['grand_total'], Student.objects.count())
+
+    def test_ugc_id_generation_program_lookup_exact(self):
+        from students.utils import generate_next_ugc_id, generate_ugc_prefix
+        from master_data.models import Cluster, Program
+
+        # 1. Create a dummy Arts cluster and English program
+        arts_cluster = Cluster.objects.create(name='Arts', code='02')
+        english_program = Program.objects.create(
+            name='English',
+            short_name='ENG',
+            ugc_code='09',
+            cluster=arts_cluster,
+            level_code='1'
+        )
+
+        # 2. Create a dummy Civil Engineering program that could clash if contains matches
+        civil_program = Program.objects.create(
+            name='Civil Engineering',
+            short_name='CE',
+            ugc_code='04',
+            cluster=self.cse_program.cluster,  # Engineering cluster code '05'
+            level_code='1'
+        )
+
+        # Test generate_next_ugc_id for program_name='ENG'
+        # Arts code = 02, English ugc_code = 09, Level code = 1. Part CcssP should be 02091
+        next_id = generate_next_ugc_id(
+            admission_year=2026,
+            semester_name='Spring',
+            hall_name='Non-Residential',
+            program_name='ENG',
+            cluster_name='Arts'
+        )
+        # UGC ID prefix: UUU(080) YY(26) S(1) HH(00) CcssP(02091)
+        expected_prefix = "0802610002091"
+        self.assertTrue(next_id.startswith(expected_prefix), f"Expected ID to start with {expected_prefix}, got {next_id}")
+
+        # Test generate_ugc_prefix for program_name='ENG'
+        prefix = generate_ugc_prefix(
+            admission_year=2026,
+            semester_name='Spring',
+            hall_name='Non-Residential',
+            program_name='ENG',
+            cluster_name='Arts'
+        )
+        self.assertEqual(prefix, expected_prefix)
+
+
+

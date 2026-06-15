@@ -193,3 +193,36 @@ def harmonize_batch_assignment(request):
             messages.error(request, f"Harmonization failed: {str(e)}")
     
     return redirect(f"{reverse('academic_settings')}#batches")
+
+@login_required
+@require_access('security', 'manage_academic_settings')
+def generate_programs_pdf(request):
+    """Generates a PDF document for all academic programs."""
+    from core.models import SystemSettings
+    from django.utils import timezone
+    from django.conf import settings
+    import os
+    from students.views import render_to_pdf
+    
+    sys_settings = SystemSettings.objects.get_or_create(id=1)[0]
+    logo = None
+    if sys_settings.institution_logo:
+        logo = os.path.join(settings.MEDIA_ROOT, str(sys_settings.institution_logo))
+        if not os.path.exists(logo):
+            logo = None
+            
+    programs = Program.objects.all().order_by('-sort_order', 'name')
+    
+    context = {
+        'programs': programs,
+        'sys_settings': {
+            'logo_url': logo,
+        },
+        'current_time': timezone.now()
+    }
+    
+    pdf_response = render_to_pdf('master_data/pdf/programs_pdf.html', context)
+    if pdf_response:
+        pdf_response['Content-Disposition'] = 'inline; filename="BAUST_Academic_Programs_Registry.pdf"'
+        return pdf_response
+    return HttpResponse("Error generating programs PDF.", status=500)

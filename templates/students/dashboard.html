@@ -40,6 +40,34 @@
     body.dark-mode .border-top { border-top: 1px solid rgba(255,255,255,0.1) !important; }
     body.dark-mode .border-right { border-right: 1px solid rgba(255,255,255,0.1) !important; }
     body.dark-mode .form-control-sm { background: #0f172a; color: #f8fafc; border-color: #334155; }
+
+    /* Tab Styling for demographic card */
+    .card-outline-tabs .nav-tabs .nav-link {
+        border-top: 3px solid transparent;
+        margin-top: -3px;
+        border-bottom: 0;
+        color: #495057;
+    }
+    .card-outline-tabs .nav-tabs .nav-link.active {
+        border-top: 3px solid #ffc107;
+        border-right: 1px solid #dee2e6;
+        border-left: 1px solid #dee2e6;
+        color: #495057 !important;
+        background-color: #fff;
+    }
+    body.dark-mode .card-outline-tabs .nav-tabs .nav-link {
+        color: #94a3b8;
+    }
+    body.dark-mode .card-outline-tabs .nav-tabs .nav-link.active {
+        border-top: 3px solid #ffc107;
+        border-right: 1px solid #334155;
+        border-left: 1px solid #334155;
+        color: #f8fafc !important;
+        background-color: #1e293b;
+    }
+    body.dark-mode .card-outline-tabs .nav-tabs {
+        border-bottom: 1px solid #334155;
+    }
 </style>
 {% endblock %}
 
@@ -68,10 +96,11 @@
 </div>
 {% endif %}
 
+
 <!-- Top Stats Row -->
 <div class="row">
     <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box mb-3">
+        <div class="info-box mb-3 clickable-card" data-toggle="modal" data-target="#studentsMatrixModal">
             <span class="info-box-icon bg-info elevation-1"><i class="fas fa-users"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Total Students</span>
@@ -290,46 +319,99 @@
         </div>
 
         <!-- Recent Admissions Table -->
-        <div class="card">
-            <div class="card-header border-transparent">
-                <h3 class="card-title">Recent Admissions</h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </div>
+        <div class="card card-outline card-secondary shadow-sm" style="border-radius: 12px;">
+            <div class="card-header border-0 bg-transparent py-3">
+                <h3 class="card-title font-weight-bold text-dark mb-0">
+                    <i class="fas fa-history mr-2 text-secondary"></i> Recent Admissions
+                </h3>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table m-0">
-                        <thead>
+                    <table class="table table-sm table-hover mb-0 text-nowrap">
+                        <thead class="bg-light text-muted text-uppercase font-weight-bold" style="font-size: 0.75rem;">
                             <tr>
-                                <th>Student ID</th>
+                                <th class="pl-3">Student ID</th>
                                 <th>Name</th>
                                 <th>Program</th>
-                                <th>Batch</th>
-                                <th>Timestamp</th>
+                                <th class="d-none d-md-table-cell">Batch</th>
+                                <th class="d-none d-md-table-cell">Timestamp</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for student in stats.recent_students %}
                             <tr>
-                                <td><a href="{% url 'student_profile' student.student_id %}">{{ student.student_id }}</a></td>
-                                <td>{{ student.student_name }}</td>
-                                <td><span class="badge badge-info" title="{{ student.program }}" style="cursor: help;">{{ student.short_name }}</span></td>
-                                <td class="text-muted small">{{ student.batch }}</td>
-                                <td class="small font-weight-bold">{{ student.created_at|date:"d M, H:i" }}</td>
-                                <td><span class="badge badge-success">{{ student.admission_status }}</span></td>
+                                <td class="pl-3 py-1 font-weight-bold"><a href="{% url 'student_profile' student.student_id %}">{{ student.student_id }}</a></td>
+                                <td class="py-1">{{ student.student_name }}</td>
+                                <td class="py-1"><span class="badge badge-info" title="{{ student.program }}" style="cursor: help;">{{ student.short_name }}</span></td>
+                                <td class="text-muted small d-none d-md-table-cell py-1">{{ student.batch }}</td>
+                                <td class="small font-weight-bold d-none d-md-table-cell py-1">{{ student.created_at|date:"d M, H:i" }}</td>
+                                <td class="py-1"><span class="badge badge-success">{{ student.admission_status }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted italic">No recent admissions.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
-            <div class="card-footer clearfix">
-                <a href="{% url 'add_student' %}" class="btn btn-sm btn-info float-left">New Admission</a>
-                <a href="{% url 'student_list' %}" class="btn btn-sm btn-secondary float-right">View All Students</a>
+            <div class="card-footer bg-light border-0 py-3" style="border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                <a href="{% url 'add_student' %}" class="btn btn-sm btn-info float-left rounded-pill px-3 font-weight-bold">New Admission</a>
+                <a href="{% url 'student_list' %}" class="btn btn-sm btn-secondary float-right rounded-pill px-3 font-weight-bold">View All Students</a>
+            </div>
+        </div>
+
+        <!-- Admission Reference & Influence Nodes Card -->
+        <div class="card card-outline card-indigo shadow-sm mt-3" style="border-radius: 12px; border-top: 4px solid #6610f2;">
+            <div class="card-header border-0 bg-transparent py-3 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold text-dark mb-0">
+                    <i class="fas fa-bullhorn mr-2 text-indigo"></i> Admission Reference & Influence Nodes ({% if stats.latest_batch_name %}{{ stats.latest_batch_name }}{% else %}Overall{% endif %})
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'reference_report' %}" class="small text-indigo font-weight-bold">Full Report &rarr;</a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted text-uppercase font-weight-bold" style="font-size: 0.75rem;">
+                            <tr>
+                                <th class="pl-3" style="width: 10%;">Rank</th>
+                                <th style="width: 65%;">Reference / Source</th>
+                                <th class="text-center" style="width: 15%;">Count</th>
+                                <th class="text-right pr-3" style="width: 10%;">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in stats.top_references %}
+                            <tr>
+                                <td class="pl-3 py-2">
+                                    <span class="badge {% if forloop.counter == 1 %}badge-primary{% elif forloop.counter == 2 %}badge-info{% else %}badge-light border{% endif %} badge-pill px-2">
+                                        #{{ forloop.counter }}
+                                    </span>
+                                </td>
+                                <td class="font-weight-bold text-dark">{{ item.reference }}</td>
+                                <td class="text-center">
+                                    <span class="badge badge-light border">{{ item.count }}</span>
+                                </td>
+                                <td class="text-right pr-3 text-muted small font-weight-bold">
+                                    {% if stats.total_batch_students > 0 %}
+                                        {{ item.count|multiply:100|divide:stats.total_batch_students|floatformat:1 }}%
+                                    {% else %}
+                                        0.0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted italic">No reference data recorded.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -337,13 +419,20 @@
     <div class="col-md-4">
         <!-- Program Distribution Donut Chart -->
         <div class="card card-info shadow-sm" style="border-radius: 12px;">
-            <div class="card-header border-0 bg-transparent pt-3 d-flex justify-content-between align-items-center">
-                <h3 class="card-title font-weight-bold mb-0 text-dark"><i class="fas fa-chart-pie mr-2 text-info"></i> Program Distribution</h3>
-                <div class="card-tools">
-                    <select id="batchFilter" class="form-control form-control-sm" style="width: auto; display: inline-block; border-radius: 6px;">
+            <div class="card-header border-0 bg-transparent pt-3 pb-0 d-flex align-items-center justify-content-between flex-wrap">
+                <h3 class="card-title font-weight-bold mb-2 mb-sm-0 text-dark">
+                    <i class="fas fa-chart-pie mr-2 text-info"></i> Program Distribution
+                </h3>
+                <div style="min-width: 160px; max-width: 220px;" class="mb-2 mb-sm-0">
+                    <select id="unifiedBatchFilter" class="form-control form-control-sm font-weight-bold" style="border-radius: 8px; height: auto; padding: 4px 8px;">
+                        {% if stats.latest_batch_name %}
+                        <option value="{{ stats.latest_batch_name }}" selected>{{ stats.latest_batch_name }} (Latest)</option>
+                        {% endif %}
                         <option value="all">Overall System</option>
                         {% for batch in stats.all_batches %}
-                        <option value="{{ batch }}">{{ batch }}</option>
+                            {% if batch != stats.latest_batch_name %}
+                            <option value="{{ batch }}">{{ batch }}</option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                 </div>
@@ -353,69 +442,97 @@
             </div>
         </div>
 
-        <!-- Gender Distribution -->
-        <div class="card card-warning card-outline shadow-sm mt-3" style="border-radius: 12px; border-top: 3px solid #ffc107;">
-            <div class="card-header border-0 bg-transparent pt-3 d-flex justify-content-between align-items-center">
-                <h3 class="card-title font-weight-bold mb-0 text-dark"><i class="fas fa-venus-mars mr-2 text-warning"></i> Gender Distribution</h3>
-                <div class="card-tools">
-                    <select id="genderBatchFilter" class="form-control form-control-sm" style="width: auto; display: inline-block; border-radius: 6px;">
-                        <option value="all">Overall System</option>
-                        {% for batch in stats.all_batches %}
-                        <option value="{{ batch }}">{{ batch }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+        <!-- Demographic Distribution Card -->
+        <div class="card card-warning card-outline card-outline-tabs shadow-sm mt-3" style="border-radius: 12px; border-top: 3px solid #ffc107;">
+            <div class="card-header p-0 border-bottom-0">
+                <ul class="nav nav-tabs" id="demographicTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold" id="gender-tab" data-toggle="tab" href="#gender-tab-pane" role="tab" aria-controls="gender-tab-pane" aria-selected="true" style="border-top-left-radius: 12px;">
+                            <i class="fas fa-venus-mars mr-1 text-warning"></i> Gender Parity
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="religion-tab" data-toggle="tab" href="#religion-tab-pane" role="tab" aria-controls="religion-tab-pane" aria-selected="false">
+                            <i class="fas fa-hands mr-1 text-primary"></i> Religious Diversity
+                        </a>
+                    </li>
+                    <li class="ml-auto p-2 pr-3 d-flex align-items-center">
+                        <span class="badge badge-light border active-batch-label" style="font-size: 0.8rem;">...</span>
+                    </li>
+                </ul>
             </div>
             <div class="card-body">
-                <div class="position-relative mb-4">
-                    <canvas id="genderDistributionChart" style="min-height: 200px; height: 200px; max-height: 200px; max-width: 100%;"></canvas>
-                </div>
-                
-                <!-- Numeric Summary Table -->
-                <div class="mt-3">
-                    <table class="table table-sm table-borderless" id="genderTable">
-                        <thead class="text-muted small text-uppercase">
-                            <tr>
-                                <th>Gender</th>
-                                <th class="text-right">Count</th>
-                                <th class="text-right">Ratio</th>
-                            </tr>
-                        </thead>
-                        <tbody id="genderTableBody">
-                            {% for item in stats.gender_chart %}
-                            <tr>
-                                <td class="font-weight-bold">
-                                    <i class="fas fa-circle mr-1 gender-color-dot" data-gender="{{ item.gender }}" style="color: {% if item.gender == 'Male' %}#007bff{% elif item.gender == 'Female' %}#e83e8c{% else %}#6c757d{% endif %}; font-size: 0.7rem;"></i>
-                                    {{ item.gender }}
-                                </td>
-                                <td class="text-right font-weight-bold">{{ item.count }}</td>
-                                <td class="text-right text-muted small">
-                                    {{ item.count|multiply:100|divide:stats.total_students|floatformat:1 }}%
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="tab-content" id="demographicTabsContent">
+                    <!-- Gender Tab -->
+                    <div class="tab-pane fade show active" id="gender-tab-pane" role="tabpanel" aria-labelledby="gender-tab">
+                        <div class="position-relative mb-4">
+                            <canvas id="genderDistributionChart" style="min-height: 200px; height: 200px; max-height: 200px; max-width: 100%;"></canvas>
+                        </div>
+                        
+                        <!-- Numeric Summary Table -->
+                        <div class="mt-3">
+                            <table class="table table-sm table-borderless" id="genderTable">
+                                <thead class="text-muted small text-uppercase">
+                                    <tr>
+                                        <th>Gender</th>
+                                        <th class="text-right">Count</th>
+                                        <th class="text-right">Ratio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="genderTableBody">
+                                    {% for item in stats.gender_chart %}
+                                    <tr class="clickable-row-demographic" data-type="gender" data-value="{{ item.gender }}" style="cursor: pointer;">
+                                        <td class="font-weight-bold">
+                                            <i class="fas fa-circle mr-1 gender-color-dot" data-gender="{{ item.gender }}" style="color: {% if item.gender == 'Male' %}#007bff{% elif item.gender == 'Female' %}#e83e8c{% else %}#6c757d{% endif %}; font-size: 0.7rem;"></i>
+                                            {{ item.gender }}
+                                        </td>
+                                        <td class="text-right font-weight-bold">{{ item.count }}</td>
+                                        <td class="text-right text-muted small">
+                                            {{ item.count|multiply:100|divide:stats.total_students|floatformat:1 }}%
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Religion Tab -->
+                    <div class="tab-pane fade" id="religion-tab-pane" role="tabpanel" aria-labelledby="religion-tab">
+                        <div class="position-relative mb-4">
+                            <canvas id="religionDistributionChart" style="min-height: 200px; height: 200px; max-height: 200px; max-width: 100%;"></canvas>
+                        </div>
+                        
+                        <!-- Numeric Summary Table -->
+                        <div class="mt-3">
+                            <table class="table table-sm table-borderless" id="religionTable">
+                                <thead class="text-muted small text-uppercase">
+                                    <tr>
+                                        <th>Religion</th>
+                                        <th class="text-right">Count</th>
+                                        <th class="text-right">Ratio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="religionTableBody">
+                                    <!-- Loaded dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Special Designations Card -->
         <div class="card card-dark card-outline shadow-sm mt-3" style="border-radius: 12px; border-top: 3px solid #343a40;">
-            <div class="card-header border-0 bg-transparent pt-3 d-flex justify-content-between align-items-center">
-                <h3 class="card-title font-weight-bold mb-0 text-dark"><i class="fas fa-id-badge mr-2 text-dark"></i> Special Designations</h3>
-                <div class="card-tools">
-                    <select id="specialBatchFilter" class="form-control form-control-sm" style="width: auto; display: inline-block; border-radius: 6px;">
-                        <option value="all">Overall System</option>
-                        {% for batch in stats.all_batches %}
-                        <option value="{{ batch }}">{{ batch }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div class="card-header border-0 bg-transparent pt-3">
+                <h3 class="card-title font-weight-bold mb-0 text-dark">
+                    <i class="fas fa-id-badge mr-2 text-dark"></i> Special Designations
+                    <span class="badge badge-light border ml-2 active-batch-label">...</span>
+                </h3>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush mt-2">
-                    <a href="{% url 'student_list' %}?special_category=freedom_fighter" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <a href="{% url 'student_list' %}?special_category=freedom_fighter" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
                         <div class="d-flex align-items-center">
                             <div class="bg-soft-warning p-2 rounded mr-3 text-warning" style="background: rgba(255, 193, 7, 0.1); width: 34px; text-align: center;">
                                 <i class="fas fa-medal"></i>
@@ -424,7 +541,7 @@
                         </div>
                         <span class="badge badge-warning badge-pill px-3 special-badge" data-category="freedom_fighter">{{ stats.special.freedom_fighter }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=july_joddha" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <a href="{% url 'student_list' %}?special_category=july_joddha" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
                         <div class="d-flex align-items-center">
                             <div class="bg-soft-danger p-2 rounded mr-3 text-danger" style="background: rgba(220, 53, 69, 0.1); width: 34px; text-align: center;">
                                 <i class="fas fa-fire"></i>
@@ -433,7 +550,7 @@
                         </div>
                         <span class="badge badge-danger badge-pill px-3 special-badge" data-category="july_joddha">{{ stats.special.july_joddha }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=credit_transfer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <a href="{% url 'student_list' %}?special_category=credit_transfer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
                         <div class="d-flex align-items-center">
                             <div class="bg-soft-primary p-2 rounded mr-3 text-primary" style="background: rgba(0, 123, 255, 0.1); width: 34px; text-align: center;">
                                 <i class="fas fa-right-left"></i>
@@ -442,7 +559,7 @@
                         </div>
                         <span class="badge badge-primary badge-pill px-3 special-badge" data-category="credit_transfer">{{ stats.special.credit_transfer }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=armed_forces" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <a href="{% url 'student_list' %}?special_category=armed_forces" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
                         <div class="d-flex align-items-center">
                             <div class="bg-soft-secondary p-2 rounded mr-3 text-secondary" style="background: rgba(108, 117, 125, 0.1); width: 34px; text-align: center;">
                                 <i class="fas fa-shield-halved"></i>
@@ -451,7 +568,7 @@
                         </div>
                         <span class="badge badge-secondary badge-pill px-3 special-badge" data-category="armed_forces">{{ stats.special.armed_forces }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=non_residential" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <a href="{% url 'student_list' %}?special_category=non_residential" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
                         <div class="d-flex align-items-center">
                             <div class="bg-soft-info p-2 rounded mr-3 text-info" style="background: rgba(23, 162, 184, 0.1); width: 34px; text-align: center;">
                                 <i class="fas fa-house-circle-xmark"></i>
@@ -460,7 +577,7 @@
                         </div>
                         <span class="badge badge-info badge-pill px-3 special-badge" data-category="non_residential">{{ stats.special.non_residential }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=residential" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <a href="{% url 'student_list' %}?special_category=residential" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
                         <div class="d-flex align-items-center">
                             <div class="bg-soft-success p-2 rounded mr-3 text-success" style="background: rgba(40, 167, 69, 0.1); width: 34px; text-align: center;">
                                 <i class="fas fa-hotel"></i>
@@ -469,7 +586,7 @@
                         </div>
                         <span class="badge badge-success badge-pill px-3 special-badge" data-category="residential">{{ stats.special.residential }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=unspecified" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 border-bottom-0">
+                    <a href="{% url 'student_list' %}?special_category=unspecified" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5 border-bottom-0">
                         <div class="d-flex align-items-center">
                             <div class="bg-soft-secondary p-2 rounded mr-3 text-secondary" style="background: rgba(108, 117, 125, 0.1); width: 34px; text-align: center;">
                                 <i class="fas fa-question-circle"></i>
@@ -484,16 +601,11 @@
 
         <!-- Hallwise Distribution Card -->
         <div class="card card-indigo card-outline shadow-sm mt-3" style="border-radius: 12px; border-top: 3px solid #6610f2;">
-            <div class="card-header border-0 bg-transparent pt-3 d-flex justify-content-between align-items-center">
-                <h3 class="card-title font-weight-bold mb-0 text-dark"><i class="fas fa-hotel mr-2 text-indigo"></i> Hallwise Distribution</h3>
-                <div class="card-tools">
-                    <select id="hallBatchFilter" class="form-control form-control-sm" style="width: auto; display: inline-block; border-radius: 6px;">
-                        <option value="all">Overall System</option>
-                        {% for batch in stats.all_batches %}
-                        <option value="{{ batch }}">{{ batch }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div class="card-header border-0 bg-transparent pt-3">
+                <h3 class="card-title font-weight-bold mb-0 text-dark">
+                    <i class="fas fa-hotel mr-2 text-indigo"></i> Hallwise Distribution
+                    <span class="badge badge-light border ml-2 active-batch-label">...</span>
+                </h3>
             </div>
             <div class="card-body">
                 <div class="position-relative mb-4">
@@ -517,6 +629,8 @@
                 </div>
             </div>
         </div>
+
+
     </div>
 </div>
 
@@ -598,6 +712,14 @@
 <style>
     .text-pink { color: #e83e8c; }
     tr:hover { background: rgba(0,0,0,0.02) !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
+    .clickable-card {
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .clickable-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+    }
 </style>
 
 <!-- Periodic Students Drill-down Modal -->
@@ -613,6 +735,101 @@
             <div class="modal-body p-0" id="periodicModalBody">
                 <div class="text-center py-5">
                     <div class="spinner-border text-info" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Fetching student records...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Students Batch-Department Matrix Modal -->
+<div class="modal fade" id="studentsMatrixModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header bg-info text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-th mr-2"></i> Student Distribution Matrix
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-3">
+                    Cross-tabulation showing the count of students grouped by **Batch (vertically)** and **Department (horizontally)**.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0 text-center align-middle">
+                        <thead class="bg-light text-muted small text-uppercase font-weight-bold">
+                            <tr>
+                                <th class="text-left py-3" style="min-width: 120px;">Batch</th>
+                                {% for col in matrix_cols %}
+                                    <th>{{ col }}</th>
+                                {% endfor %}
+                                <th class="bg-light font-weight-bold text-dark">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in matrix_rows %}
+                                <tr>
+                                    <td class="text-left font-weight-bold text-dark py-3">
+                                        <span class="badge badge-info px-2 py-1">{{ row.batch_name }}</span>
+                                    </td>
+                                    {% for count in row.prog_counts %}
+                                        <td class="py-3">
+                                            {% if count > 0 %}
+                                                <span class="font-weight-bold text-primary">{{ count }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                    <td class="font-weight-bold bg-light py-3">{{ row.row_total }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="{{ matrix_cols|length|add:2 }}" class="text-center py-5 text-muted">
+                                        No student records found in the system.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if matrix_rows %}
+                            <tfoot class="bg-light font-weight-bold">
+                                <tr>
+                                    <td class="text-left py-3">Total</td>
+                                    {% for col_total in column_totals %}
+                                        <td class="py-3 text-info font-weight-bold">{{ col_total }}</td>
+                                    {% endfor %}
+                                    <td class="text-info font-weight-bold py-3">{{ grand_total }}</td>
+                                </tr>
+                            </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Demographic Students Drill-down Modal -->
+<div class="modal fade" id="demographicStudentsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header bg-primary text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-users mr-2"></i> Student Breakdown</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" id="demographicModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
                         <span class="sr-only">Loading...</span>
                     </div>
                     <p class="text-muted mt-2">Fetching student records...</p>
@@ -721,20 +938,6 @@
         // Initialize with global data
         initProgramChart({{ stats.program_chart|safe }});
 
-        // Batch Filter Event
-        $('#batchFilter').on('change', function() {
-            const batch = $(this).val();
-            const card = $(this).closest('.card');
-            
-            // Add loading overlay if possible, or just fade
-            card.css('opacity', '0.6');
-            
-            $.get("{% url 'api_program_distribution' %}", { batch: batch }, function(res) {
-                initProgramChart(res.distribution);
-                card.css('opacity', '1');
-            });
-        });
-
         // --- Gender Distribution (Pie Chart) ---
         const genderColors = { 'Male': '#007bff', 'Female': '#e83e8c', 'Unknown': '#6c757d', 'Other': '#6c757d' };
         let genderChart;
@@ -774,7 +977,7 @@
             data.forEach(item => {
                 const color = genderColors[item.gender] || '#6c757d';
                 tbody.append(`
-                    <tr>
+                    <tr class="clickable-row-demographic" data-type="gender" data-value="${item.gender}" style="cursor: pointer;">
                         <td class="font-weight-bold">
                             <i class="fas fa-circle mr-1" style="color: ${color}; font-size: 0.7rem;"></i>
                             ${item.gender}
@@ -794,49 +997,6 @@
             d.percentage = totalStudents > 0 ? (d.count / totalStudents * 100).toFixed(1) : 0;
         });
         initGenderChart(initialGenderData);
-
-        // Gender Batch Filter Event
-        $('#genderBatchFilter').on('change', function() {
-            const batch = $(this).val();
-            const card = $(this).closest('.card');
-            card.css('opacity', '0.6');
-            
-            $.get("{% url 'api_gender_distribution' %}", { batch: batch }, function(res) {
-                initGenderChart(res.distribution);
-                card.css('opacity', '1');
-            });
-        });
-
-        // Special Designations Batch Filter Event
-        $('#specialBatchFilter').on('change', function() {
-            const batch = $(this).val();
-            const card = $(this).closest('.card');
-            card.css('opacity', '0.6');
-            
-            $.get("{% url 'api_special_distribution' %}", { batch: batch }, function(res) {
-                // Update badge text for each category
-                for (const [key, value] of Object.entries(res)) {
-                    card.find(`.special-badge[data-category="${key}"]`).text(value);
-                }
-                
-                // Update URLs for the list links
-                card.find('.list-group-item').each(function() {
-                    const link = $(this);
-                    const originalHref = link.attr('href').split('?')[0];
-                    const urlParams = new URLSearchParams(link.attr('href').split('?')[1] || '');
-                    
-                    if (batch && batch !== 'all') {
-                        urlParams.set('batch', batch);
-                    } else {
-                        urlParams.delete('batch');
-                    }
-                    
-                    link.attr('href', `${originalHref}?${urlParams.toString()}`);
-                });
-                
-                card.css('opacity', '1');
-            });
-        });
 
         // --- Hallwise Distribution (Doughnut Chart) ---
         const hallColors = {
@@ -894,21 +1054,168 @@
             });
         }
 
-        // Initialize with default global data
-        $.get("{% url 'api_hall_distribution' %}", { batch: 'all' }, function(res) {
-            initHallChart(res.distribution);
-        });
+        // --- Religion Distribution (Doughnut Chart) ---
+        const religionColors = {
+            'Islam': '#17a2b8',       // Teal / Cyan
+            'Hinduism': '#fd7e14',    // Orange
+            'Christianity': '#007bff', // Blue
+            'Buddhism': '#ffc107',     // Yellow
+            'Unknown': '#6c757d',      // Gray
+            'Unspecified': '#6c757d',
+            'Other': '#6c757d'
+        };
+        let religionChart;
 
-        // Hall Batch Filter Event
-        $('#hallBatchFilter').on('change', function() {
-            const batch = $(this).val();
-            const card = $(this).closest('.card');
-            card.css('opacity', '0.6');
+        function initReligionChart(data) {
+            const ctx = document.getElementById('religionDistributionChart').getContext('2d');
+            if (religionChart) religionChart.destroy();
             
-            $.get("{% url 'api_hall_distribution' %}", { batch: batch }, function(res) {
-                initHallChart(res.distribution);
+            religionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(d => d.religion),
+                    datasets: [{
+                        data: data.map(d => d.count),
+                        backgroundColor: data.map(d => religionColors[d.religion] || '#6c757d'),
+                        hoverOffset: 4,
+                        borderWidth: 2,
+                        borderColor: isDarkMode ? '#1e293b' : '#ffffff'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            display: false
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // Update details table
+            const tbody = $('#religionTableBody');
+            tbody.empty();
+            data.forEach(item => {
+                const color = religionColors[item.religion] || '#6c757d';
+                tbody.append(`
+                    <tr class="clickable-row-demographic" data-type="religion" data-value="${item.religion}" style="cursor: pointer;">
+                        <td class="font-weight-bold">
+                            <i class="fas fa-circle mr-1" style="color: ${color}; font-size: 0.7rem;"></i>
+                            ${item.religion}
+                        </td>
+                        <td class="text-right font-weight-bold">${item.count}</td>
+                        <td class="text-right text-muted small">${item.percentage}%</td>
+                    </tr>
+                `);
+            });
+        }
+
+        // Helper to update active batch labels on headers
+        function updateActiveBatchLabels(batch) {
+            const label = (batch === 'all' || !batch) ? 'Overall System' : `${batch}`;
+            $('.active-batch-label').text(label);
+        }
+
+        // Unified Batch Filter Console Event
+        $('#unifiedBatchFilter').on('change', function() {
+            const batch = $(this).val();
+            
+            // Apply loading visual states
+            $('.card-outline, .card-info').css('opacity', '0.6');
+            
+            // Update the header badges immediately
+            updateActiveBatchLabels(batch);
+            
+            // 1. Program Distribution Donut Chart
+            $.get("{% url 'api_program_distribution' %}", { batch: batch }, function(res) {
+                initProgramChart(res.distribution);
+                $('#programDistributionChart').closest('.card').css('opacity', '1');
+            });
+
+            // 2. Gender Distribution Pie Chart
+            $.get("{% url 'api_gender_distribution' %}", { batch: batch }, function(res) {
+                initGenderChart(res.distribution);
+                $('#genderDistributionChart').closest('.card').css('opacity', '1');
+            });
+
+            // 3. Special Designations Badges & Links
+            $.get("{% url 'api_special_distribution' %}", { batch: batch }, function(res) {
+                const card = $('.special-badge').closest('.card');
+                for (const [key, value] of Object.entries(res)) {
+                    card.find(`.special-badge[data-category="${key}"]`).text(value);
+                }
+                card.find('.list-group-item').each(function() {
+                    const link = $(this);
+                    const originalHref = link.attr('href').split('?')[0];
+                    const urlParams = new URLSearchParams(link.attr('href').split('?')[1] || '');
+                    if (batch && batch !== 'all') {
+                        urlParams.set('batch', batch);
+                    } else {
+                        urlParams.delete('batch');
+                    }
+                    link.attr('href', `${originalHref}?${urlParams.toString()}`);
+                });
                 card.css('opacity', '1');
             });
+
+            // 4. Hallwise Distribution Doughnut Chart
+            $.get("{% url 'api_hall_distribution' %}", { batch: batch }, function(res) {
+                initHallChart(res.distribution);
+                $('#hallDistributionChart').closest('.card').css('opacity', '1');
+            });
+
+            // 5. Intake Program Distribution Table
+            $.get("{% url 'api_intake_distribution' %}", { batch: batch }, function(res) {
+                const card = $('#intakeTable').closest('.card');
+                card.find('.card-header h3').html(`
+                    <i class="fas fa-university mr-2 text-success"></i> 
+                    Intake: <span class="text-success">${res.batch_name}</span> (Total = ${res.total_students})
+                `);
+                
+                const tbody = $('#intakeTable tbody');
+                tbody.empty();
+                
+                if (res.intake.length === 0) {
+                    tbody.append(`<tr><td colspan="5" class="text-center py-4 text-muted italic">No data</td></tr>`);
+                } else {
+                    res.intake.forEach(item => {
+                        const percentage = res.total_students > 0 ? (item.count * 100 / res.total_students).toFixed(1) : '0.0';
+                        const rowHtml = `
+                            <tr onclick="showProgramDetail('${item.program.replace(/'/g, "\\'")}', '${item.short_name.replace(/'/g, "\\'")}', ${item.count}, ${item.male}, ${item.female}, ${item.active}, ${item.cancelled}, ${item.non_residential}, ${item.quota}, ${item.hall_auah}, ${item.hall_btbh}, ${item.hall_zh}, ${item.unspecified})">
+                                <td class="pl-3 py-2 font-weight-bold text-dark">${item.short_name}</td>
+                                <td class="text-center"><span class="badge badge-light border">${item.count}</span></td>
+                                <td class="text-center text-primary small">${item.male}</td>
+                                <td class="text-center text-pink small">${item.female}</td>
+                                <td class="text-right pr-3 text-muted small font-weight-bold">${percentage}%</td>
+                            </tr>
+                        `;
+                        tbody.append(rowHtml);
+                    });
+                }
+                card.css('opacity', '1');
+            });
+
+            // 6. Religion Distribution Doughnut Chart
+            $.get("{% url 'api_religion_distribution' %}", { batch: batch }, function(res) {
+                initReligionChart(res.distribution);
+                $('#religionDistributionChart').closest('.card').css('opacity', '1');
+            });
+        });
+
+        // Initialize active batch labels & trigger batch filter loading
+        const initialBatch = $('#unifiedBatchFilter').val();
+        updateActiveBatchLabels(initialBatch);
+        $('#unifiedBatchFilter').trigger('change');
+
+        // Trigger resize on tab switch to prevent chart squishing
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            if (e.target.id === 'religion-tab') {
+                if (religionChart) religionChart.resize();
+            } else if (e.target.id === 'gender-tab') {
+                if (genderChart) genderChart.resize();
+            }
         });
     });
 
@@ -930,26 +1237,56 @@
         
         // Build the URL for the Student Directory with filters
         const baseUrl = "{% url 'student_list' %}";
-        const batch = "{{ stats.latest_batch_name|escapejs }}";
-        const filterUrl = `${baseUrl}?batch=${encodeURIComponent(batch)}&program=${encodeURIComponent(program)}`;
+        const batch = $('#unifiedBatchFilter').val();
+        const filterUrl = `${baseUrl}?batch=${encodeURIComponent(batch === 'all' ? '' : batch)}&program=${encodeURIComponent(program)}`;
         $('#modalViewListBtn').attr('href', filterUrl);
         
         $('#programDetailModal').modal('show');
     }
 
+    const hallShortNames = {
+        'Abbas Uddin Ahmed Hall': 'AUAH',
+        'Taramon Bibi Hall': 'TBH',
+        'Zikrul Hoque Hall': 'ZH',
+        'Non-Residential': 'Non-Res',
+        'Unspecified': 'Unspecified'
+    };
+
     function copyIntakeToClipboard() {
-        let text = "Latest Intake Report: {{ stats.latest_batch_name }} (Total = {{ stats.total_batch_students }})\n";
-        text += "Dept\tTotal\tMale\tFemale\t%\n";
+        const headerText = $('#intakeTable').closest('.card').find('.card-header h3').text().trim();
+        let text = `${headerText}\n\nDepartment Distribution:\n`;
         
         $('#intakeTable tbody tr').each(function() {
             const cols = $(this).find('td');
-            if (cols.length >= 5) {
+            if (cols.length >= 4) {
                 const dept = $(cols[0]).text().trim();
                 const total = $(cols[1]).text().trim();
                 const male = $(cols[2]).text().trim();
                 const female = $(cols[3]).text().trim();
-                const share = $(cols[4]).text().trim();
-                text += `${dept}\t${total}\t${male}\t${female}\t${share}\n`;
+                if (dept && dept !== "No data") {
+                    text += `• ${dept}: ${total} (Male: ${male}, Female: ${female})\n`;
+                }
+            }
+        });
+
+        text += "\nReligion Distribution:\n";
+        $('#religionTable tbody tr').each(function() {
+            const cols = $(this).find('td');
+            if (cols.length >= 2) {
+                const religion = $(cols[0]).text().trim();
+                const count = $(cols[1]).text().trim();
+                text += `• ${religion}: ${count}\n`;
+            }
+        });
+
+        text += "\nHall Allocation:\n";
+        $('#hallTable tbody tr').each(function() {
+            const cols = $(this).find('td');
+            if (cols.length >= 2) {
+                const rawHall = $(cols[0]).text().trim();
+                const count = $(cols[1]).text().trim();
+                const shortHall = hallShortNames[rawHall] || rawHall;
+                text += `• ${shortHall}: ${count}\n`;
             }
         });
 
@@ -960,7 +1297,46 @@
         document.execCommand("copy");
         document.body.removeChild(tempInput);
         
-        alert("Intake data copied to clipboard!");
+        alert("Intake, Religion & Hall distribution statistics copied to clipboard!");
     }
+
+    // Modal click handler for demographic row clicks (Gender and Religion)
+    $(document).on('click', '.clickable-row-demographic', function() {
+        const type = $(this).data('type'); // 'gender' or 'religion'
+        const value = $(this).data('value');
+        const batch = $('#unifiedBatchFilter').val();
+        
+        // Show loading spinner in modal
+        $('#demographicModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <p class="text-muted mt-2">Fetching student records...</p>
+            </div>
+        `);
+        
+        // Show modal
+        $('#demographicStudentsModal').modal('show');
+        
+        // Fetch data
+        const params = { batch: batch };
+        if (type === 'gender') {
+            params.gender = value;
+        } else if (type === 'religion') {
+            params.religion = value;
+        }
+        
+        $.get("{% url 'api_demographic_students' %}", params, function(html) {
+            $('#demographicModalBody').html(html);
+        }).fail(function(xhr) {
+            $('#demographicModalBody').html(`
+                <div class="alert alert-danger m-3">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Failed to load records. ${xhr.status === 403 ? 'Access Denied.' : 'Please try again later.'}
+                </div>
+            `);
+        });
+    });
 </script>
 {% endblock %}

@@ -406,8 +406,9 @@ def user_profile(request):
 
 @require_access('security', 'manage_roles') # Use same permission as roles for now
 def audit_logs(request):
-    """View to browse and filter system-wide activity logs."""
+    """View to browse and filter system-wide activity logs and detailed edits."""
     from .models import ActivityLog
+    from students.models import StudentFieldHistory
     
     query = request.GET.get('q', '').strip()
     action_filter = request.GET.get('action', '')
@@ -415,9 +416,10 @@ def audit_logs(request):
     user_filter = request.GET.get('user', '')
     start_date = request.GET.get('start_date', '')
     end_date = request.GET.get('end_date', '')
+    active_tab = request.GET.get('tab', 'activity')
     
+    # 1. Activity Logs
     logs = ActivityLog.objects.select_related('user').all()
-    
     if query:
         logs = logs.filter(description__icontains=query)
     if action_filter:
@@ -426,17 +428,38 @@ def audit_logs(request):
         logs = logs.filter(module=module_filter)
     if user_filter:
         logs = logs.filter(user_id=user_filter)
-    
     if start_date:
         logs = logs.filter(timestamp__date__gte=start_date)
     if end_date:
         logs = logs.filter(timestamp__date__lte=end_date)
         
-    # Pagination
+    # 2. Detailed Field Edits History
+    field_logs = StudentFieldHistory.objects.select_related('student', 'changed_by', 'reverted_by').all()
+    if query:
+        field_logs = field_logs.filter(
+            Q(field_name__icontains=query) |
+            Q(old_value__icontains=query) |
+            Q(new_value__icontains=query) |
+            Q(student__student_name__icontains=query) |
+            Q(student__student_id__icontains=query)
+        )
+    if user_filter:
+        field_logs = field_logs.filter(changed_by_id=user_filter)
+    if start_date:
+        field_logs = field_logs.filter(changed_at__date__gte=start_date)
+    if end_date:
+        field_logs = field_logs.filter(changed_at__date__lte=end_date)
+        
+    # Pagination based on active tab
     from django.core.paginator import Paginator
-    paginator = Paginator(logs, 50)
     page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    
+    if active_tab == 'fields':
+        paginator = Paginator(field_logs, 50)
+        page_obj = paginator.get_page(page_number)
+    else:
+        paginator = Paginator(logs, 50)
+        page_obj = paginator.get_page(page_number)
     
     # Context data for filters
     users = User.objects.filter(is_staff=True).order_by('username')
@@ -454,6 +477,7 @@ def audit_logs(request):
         'user_filter': user_filter,
         'start_date': start_date,
         'end_date': end_date,
+        'active_tab': active_tab,
     })
 
 @require_access('security', 'manage_settings')

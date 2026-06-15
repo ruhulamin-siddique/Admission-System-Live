@@ -80,7 +80,7 @@ def generate_ugc_prefix(admission_year, semester_name, hall_name, program_name, 
     hall_code = str(hall.code if hall else "00").zfill(2)
 
     prog = Program.objects.filter(
-        Q(name__icontains=program_name) | Q(short_name__icontains=program_name)
+        Q(name__iexact=program_name) | Q(short_name__iexact=program_name)
     ).first()
     if prog:
         cluster_code = str(prog.cluster.code).zfill(2)
@@ -116,8 +116,8 @@ def generate_next_ugc_id(admission_year, semester_name, hall_name, program_name,
     # 3. Get Cluster & Subject Codes from DB
     # We look for the Program specifically to get its UGC code and Cluster code
     prog = Program.objects.filter(
-        Q(name__icontains=program_name) | 
-        Q(short_name__icontains=program_name)
+        Q(name__iexact=program_name) | 
+        Q(short_name__iexact=program_name)
     ).first()
     if prog:
         cluster_code = prog.cluster.code

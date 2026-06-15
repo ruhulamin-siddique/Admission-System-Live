@@ -7,4 +7,5 @@ urlpatterns = [
     path('academic/delete/<str:model_name>/<int:pk>/', views.delete_master_data, name='delete_master_data'),
     path('academic/edit/<str:model_name>/<int:pk>/', views.edit_master_data, name='edit_master_data'),
     path('academic/harmonize-batches/', views.harmonize_batch_assignment, name='harmonize_batch_assignment'),
+    path('academic/programs/pdf/', views.generate_programs_pdf, name='generate_programs_pdf'),
 ]

@@ -251,8 +251,61 @@
     body.dark-mode .status-badge-container { background: #0f172a; border-color: #334155; }
     body.dark-mode .photo-upload-card { background: #0f172a; border-color: #334155; }
     body.dark-mode .text-dark { color: #f8fafc !important; }
-    body.dark-mode .readonly-field { background: #1e293b !important; color: #94a3b8 !important; border-color: #334155 !important; }
     body.dark-mode .nav-tabs-custom .nav-link:hover { background: #334155; color: #f8fafc; }
+
+    /* Validation & Form Enhancement Styles */
+    .field-outline-group.has-error label {
+        color: #dc3545 !important;
+    }
+    .field-outline-group.has-error .form-control,
+    .field-outline-group.has-error select,
+    .field-outline-group.has-error textarea {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15) !important;
+    }
+    .field-error-message {
+        color: #dc3545;
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-top: 4px;
+        display: block;
+    }
+    .tab-status-badge {
+        font-size: 0.75rem;
+        margin-left: 6px;
+        padding: 2px 6px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    .tab-status-badge.badge-success-soft {
+        background-color: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.2);
+    }
+    .tab-status-badge.badge-danger-soft {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.2);
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.08); box-shadow: 0 0 6px rgba(220, 53, 69, 0.2); }
+        100% { transform: scale(1); }
+    }
+    .tab-nav-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1.5px solid #f1f5f9;
+    }
+    body.dark-mode .tab-nav-buttons {
+        border-top-color: #334155;
+    }
 </style>
 {% endblock %}
 
@@ -518,6 +571,11 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <div class="tab-nav-buttons mt-4">
+                                <div></div>
+                                <button type="button" class="btn btn-dark btn-next px-4 rounded-pill font-weight-bold" data-target-tab="identity">Next Section <i class="fas fa-arrow-right ml-1"></i></button>
+                            </div>
                         </div>
 
                         <!-- TAB 2: PROFILE -->
@@ -531,6 +589,11 @@
                                 <div class="col-md-4"><div class="field-outline-group"><label>National ID</label>{{ form.national_id }}</div></div>
                                 <div class="col-md-6"><div class="field-outline-group"><label>Mobile No <span class="text-danger">*</span></label>{{ form.student_mobile }}</div></div>
                                 <div class="col-md-6"><div class="field-outline-group"><label>Email Address</label>{{ form.student_email }}</div></div>
+                            </div>
+                            
+                            <div class="tab-nav-buttons mt-4">
+                                <button type="button" class="btn btn-outline-secondary btn-prev px-4 rounded-pill font-weight-bold" data-target-tab="init"><i class="fas fa-arrow-left mr-1"></i> Previous Section</button>
+                                <button type="button" class="btn btn-dark btn-next px-4 rounded-pill font-weight-bold" data-target-tab="family">Next Section <i class="fas fa-arrow-right ml-1"></i></button>
                             </div>
                         </div>
 
@@ -573,6 +636,11 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <div class="tab-nav-buttons mt-4">
+                                <button type="button" class="btn btn-outline-secondary btn-prev px-4 rounded-pill font-weight-bold" data-target-tab="identity"><i class="fas fa-arrow-left mr-1"></i> Previous Section</button>
+                                <button type="button" class="btn btn-dark btn-next px-4 rounded-pill font-weight-bold" data-target-tab="academic">Next Section <i class="fas fa-arrow-right ml-1"></i></button>
+                            </div>
                         </div>
 
                         <!-- TAB 4: ACADEMIC HISTORY -->
@@ -612,6 +680,11 @@
                                 <div class="col-md-4"><div class="field-outline-group"><label>Chemistry</label>{{ form.hsc_chemistry }}</div></div>
                                 <div class="col-md-4"><div class="field-outline-group"><label>Math</label>{{ form.hsc_math }}</div></div>
                             </div>
+                            
+                            <div class="tab-nav-buttons mt-4">
+                                <button type="button" class="btn btn-outline-secondary btn-prev px-4 rounded-pill font-weight-bold" data-target-tab="family"><i class="fas fa-arrow-left mr-1"></i> Previous Section</button>
+                                <div></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -634,6 +707,29 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Viewfinder Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header bg-dark text-white border-0 py-3">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-camera mr-2"></i>Live Capture</h5>
+                <button type="button" class="close text-white" onclick="closeCameraModal()">&times;</button>
+            </div>
+            <div class="modal-body p-0 bg-black position-relative" style="min-height: 300px; background: #000;">
+                <video id="camera-video" autoplay playsinline class="w-100 h-100" style="object-fit: cover;"></video>
+                <!-- Face Guide Overlay -->
+                <div class="position-absolute" style="top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 280px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 50%; pointer-events: none;"></div>
+            </div>
+            <div class="modal-footer border-0 bg-dark py-3 justify-content-center">
+                <button type="button" class="btn btn-light rounded-pill px-4" onclick="closeCameraModal()">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill px-5 font-weight-bold" onclick="capturePhoto()">
+                    <i class="fas fa-circle mr-2"></i> CAPTURE
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -887,6 +983,397 @@
         
         // Wait a small bit for geoData parsing just in case
         setTimeout(initAddressDropdowns, 100);
+
+        // =========================================================
+        // ADVANCED FORM VALIDATION, TAB NAVIGATION & AUTOSAVE LOGIC
+        // =========================================================
+
+        function isFieldRequired($el) {
+            if ($el.prop('required')) return true;
+            const group = $el.closest('.field-outline-group');
+            if (group.length > 0) {
+                const label = group.find('label');
+                if (label.find('.text-danger').length > 0 || label.text().indexOf('*') !== -1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function isFieldInvalid($el) {
+            const val = $el.val();
+            const isRequired = isFieldRequired($el);
+            
+            if (isRequired) {
+                if (val === null || val === undefined || $.trim(val) === '') {
+                    return true;
+                }
+            }
+            
+            if (val && $.trim(val) !== '') {
+                const name = $el.attr('name');
+                if (name && name.includes('mobile')) {
+                    const cleanVal = val.replace(/\D/g, '');
+                    if (cleanVal.length !== 11 || !cleanVal.startsWith('01')) {
+                        return true;
+                    }
+                }
+                if (name === 'student_email') {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(val)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function markFieldError($el, errorMsg) {
+            const group = $el.closest('.field-outline-group');
+            group.addClass('has-error');
+            group.find('.field-error-message').remove();
+            if (errorMsg) {
+                group.append(`<span class="field-error-message"><i class="fas fa-exclamation-circle mr-1"></i> ${errorMsg}</span>`);
+            }
+        }
+
+        function clearFieldError($el) {
+            const group = $el.closest('.field-outline-group');
+            group.removeClass('has-error');
+            group.find('.field-error-message').remove();
+        }
+
+        function initTabBadges() {
+            $('#admissionTabs .nav-link, #editTabs .nav-link').each(function() {
+                if ($(this).find('.tab-status-badge').length === 0) {
+                    $(this).append('<span class="tab-status-badge"></span>');
+                }
+            });
+        }
+
+        function updateTabBadges() {
+            const tabs = ['init', 'identity', 'family', 'academic'];
+            tabs.forEach(tabId => {
+                const pane = $('#' + tabId);
+                let totalRequired = 0;
+                let totalInvalid = 0;
+                
+                pane.find('input, select, textarea').not(':disabled, [readonly], [type="hidden"]').each(function() {
+                    const $el = $(this);
+                    if (isFieldRequired($el)) {
+                        totalRequired++;
+                        if (isFieldInvalid($el)) {
+                            totalInvalid++;
+                        }
+                    }
+                });
+                
+                const badge = $(`#admissionTabs a[href="#${tabId}"], #admissionTabs a[data-target="#${tabId}"], #editTabs a[href="#${tabId}"], #editTabs a[data-target="#${tabId}"]`).find('.tab-status-badge');
+                
+                if (totalRequired > 0) {
+                    if (totalInvalid > 0) {
+                        badge.html('<i class="fas fa-exclamation-triangle"></i>')
+                             .removeClass('badge-success-soft')
+                             .addClass('badge-danger-soft')
+                             .show();
+                    } else {
+                        badge.html('<i class="fas fa-check"></i>')
+                             .removeClass('badge-danger-soft')
+                             .addClass('badge-success-soft')
+                             .show();
+                    }
+                } else {
+                    badge.hide();
+                }
+            });
+        }
+
+        // Validate a specific tab pane
+        function validateTabPane(paneId) {
+            const pane = $('#' + paneId);
+            let invalidCount = 0;
+            let firstInvalidEl = null;
+
+            pane.find('input, select, textarea').not(':disabled, [readonly], [type="hidden"]').each(function() {
+                const $el = $(this);
+                clearFieldError($el);
+                
+                if (isFieldRequired($el)) {
+                    const val = $el.val();
+                    let errorMsg = '';
+                    
+                    if (val === null || val === undefined || $.trim(val) === '') {
+                        errorMsg = 'This field is required';
+                    } else {
+                        const name = $el.attr('name');
+                        if (name && name.includes('mobile')) {
+                            const cleanVal = val.replace(/\D/g, '');
+                            if (cleanVal.length !== 11 || !cleanVal.startsWith('01')) {
+                                errorMsg = 'Mobile number must be 11 digits starting with 01';
+                            }
+                        }
+                        if (name === 'student_email') {
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(val)) {
+                                errorMsg = 'Please enter a valid email address';
+                            }
+                        }
+                    }
+                    
+                    if (errorMsg) {
+                        markFieldError($el, errorMsg);
+                        invalidCount++;
+                        if (!firstInvalidEl) {
+                            firstInvalidEl = $el;
+                        }
+                    }
+                } else {
+                    const val = $el.val();
+                    if (val && $.trim(val) !== '') {
+                        const name = $el.attr('name');
+                        let errorMsg = '';
+                        if (name && name.includes('mobile')) {
+                            const cleanVal = val.replace(/\D/g, '');
+                            if (cleanVal.length !== 11 || !cleanVal.startsWith('01')) {
+                                errorMsg = 'Mobile number must be 11 digits starting with 01';
+                            }
+                        }
+                        if (name === 'student_email') {
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(val)) {
+                                errorMsg = 'Please enter a valid email address';
+                            }
+                        }
+                        if (errorMsg) {
+                            markFieldError($el, errorMsg);
+                            invalidCount++;
+                            if (!firstInvalidEl) {
+                                firstInvalidEl = $el;
+                            }
+                        }
+                    }
+                }
+            });
+
+            updateTabBadges();
+
+            if (invalidCount > 0) {
+                if (firstInvalidEl) {
+                    firstInvalidEl.focus();
+                }
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Incomplete Section',
+                    text: 'Please fill out all required fields in this section correctly before moving next.',
+                    confirmButtonColor: '#004085'
+                });
+                return false;
+            }
+            return true;
+        }
+
+        // Autosave Logic
+        function saveFormDraft() {
+            const form = $('form#admissionForm, form#studentEditForm');
+            if (form.length === 0) return;
+            
+            const pageKey = window.location.pathname;
+            const formData = {};
+            
+            form.find('input, select, textarea').not('[type="password"], [type="file"], [name="csrfmiddlewaretoken"]').each(function() {
+                const name = $(this).attr('name');
+                if (name) {
+                    if ($(this).attr('type') === 'checkbox') {
+                        formData[name] = $(this).is(':checked');
+                    } else {
+                        formData[name] = $(this).val();
+                    }
+                }
+            });
+            
+            sessionStorage.setItem('admission_draft_' + pageKey, JSON.stringify(formData));
+        }
+        
+        function loadFormDraft() {
+            const form = $('form#admissionForm, form#studentEditForm');
+            if (form.length === 0) return;
+            
+            const pageKey = window.location.pathname;
+            const rawData = sessionStorage.getItem('admission_draft_' + pageKey);
+            if (!rawData) return;
+            
+            try {
+                const formData = JSON.parse(rawData);
+                if (Object.keys(formData).length === 0) return;
+                
+                Swal.fire({
+                    title: 'Restore Draft?',
+                    text: 'We found an unsaved draft from your previous session. Do you want to restore it?',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Restore Draft',
+                    cancelButtonText: 'Discard',
+                    confirmButtonColor: '#004085',
+                    cancelButtonColor: '#6c757d'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Object.keys(formData).forEach(name => {
+                            const val = formData[name];
+                            const field = form.find(`[name="${name}"]`);
+                            if (field.length > 0) {
+                                if (field.attr('type') === 'checkbox') {
+                                    field.prop('checked', val).trigger('change');
+                                } else {
+                                    field.val(val).trigger('change');
+                                }
+                            }
+                        });
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Draft restored successfully',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                        updateTabBadges();
+                    } else {
+                        sessionStorage.removeItem('admission_draft_' + pageKey);
+                    }
+                });
+            } catch (e) {
+                console.error("Error parsing form draft: ", e);
+            }
+        }
+
+        // Initialize features
+        initTabBadges();
+        updateTabBadges();
+        setTimeout(loadFormDraft, 1000); // Small delay to let other initializations complete
+
+        // Tab Navigation Button Actions
+        $('.btn-next').on('click', function(e) {
+            const currentPane = $(this).closest('.tab-pane');
+            const currentPaneId = currentPane.attr('id');
+            
+            if (validateTabPane(currentPaneId)) {
+                const targetTabId = $(this).attr('data-target-tab');
+                $(`#admissionTabs a[href="#${targetTabId}"], #admissionTabs a[data-target="#${targetTabId}"], #editTabs a[href="#${targetTabId}"], #editTabs a[data-target="#${targetTabId}"]`).tab('show');
+            }
+        });
+
+        $('.btn-prev').on('click', function(e) {
+            const targetTabId = $(this).attr('data-target-tab');
+            $(`#admissionTabs a[href="#${targetTabId}"], #admissionTabs a[data-target="#${targetTabId}"], #editTabs a[href="#${targetTabId}"], #editTabs a[data-target="#${targetTabId}"]`).tab('show');
+        });
+
+        // Real-time error clearing and autosave on input
+        $('form#admissionForm, form#studentEditForm').on('input change', 'input, select, textarea', function() {
+            const $el = $(this);
+            if (!isFieldInvalid($el)) {
+                clearFieldError($el);
+            }
+            updateTabBadges();
+            saveFormDraft();
+        });
+
+        // Full Form Validation on Submit
+        $('form#admissionForm, form#studentEditForm').on('submit', function(e) {
+            let firstInvalidEl = null;
+            let firstInvalidTabId = null;
+            let invalidCount = 0;
+            
+            $(this).find('input, select, textarea').not(':disabled, [readonly], [type="hidden"]').each(function() {
+                const $el = $(this);
+                clearFieldError($el);
+                
+                if (isFieldRequired($el)) {
+                    const val = $el.val();
+                    let errorMsg = '';
+                    
+                    if (val === null || val === undefined || $.trim(val) === '') {
+                        errorMsg = 'This field is required';
+                    } else {
+                        const name = $el.attr('name');
+                        if (name && name.includes('mobile')) {
+                            const cleanVal = val.replace(/\D/g, '');
+                            if (cleanVal.length !== 11 || !cleanVal.startsWith('01')) {
+                                errorMsg = 'Mobile number must be 11 digits starting with 01';
+                            }
+                        }
+                        if (name === 'student_email') {
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(val)) {
+                                errorMsg = 'Please enter a valid email address';
+                            }
+                        }
+                    }
+                    
+                    if (errorMsg) {
+                        markFieldError($el, errorMsg);
+                        invalidCount++;
+                        if (!firstInvalidEl) {
+                            firstInvalidEl = $el;
+                            firstInvalidTabId = $el.closest('.tab-pane').attr('id');
+                        }
+                    }
+                } else {
+                    const val = $el.val();
+                    if (val && $.trim(val) !== '') {
+                        const name = $el.attr('name');
+                        let errorMsg = '';
+                        if (name && name.includes('mobile')) {
+                            const cleanVal = val.replace(/\D/g, '');
+                            if (cleanVal.length !== 11 || !cleanVal.startsWith('01')) {
+                                errorMsg = 'Mobile number must be 11 digits starting with 01';
+                            }
+                        }
+                        if (name === 'student_email') {
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(val)) {
+                                errorMsg = 'Please enter a valid email address';
+                            }
+                        }
+                        if (errorMsg) {
+                            markFieldError($el, errorMsg);
+                            invalidCount++;
+                            if (!firstInvalidEl) {
+                                firstInvalidEl = $el;
+                                firstInvalidTabId = $el.closest('.tab-pane').attr('id');
+                            }
+                        }
+                    }
+                }
+            });
+            
+            updateTabBadges();
+            
+            if (invalidCount > 0) {
+                e.preventDefault();
+                
+                // Show tab containing first error
+                const tabContainer = $('#admissionTabs, #editTabs');
+                tabContainer.find(`a[href="#${firstInvalidTabId}"], a[data-target="#${firstInvalidTabId}"]`).tab('show');
+                
+                // Focus element
+                setTimeout(function() {
+                    firstInvalidEl.focus();
+                }, 200);
+                
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Validation Failed',
+                    text: 'Required information is missing or formatted incorrectly. We have redirected you to the first error.',
+                    confirmButtonColor: '#004085'
+                });
+                
+                return false;
+            }
+            
+            // Clear draft on successful submission
+            const pageKey = window.location.pathname;
+            sessionStorage.removeItem('admission_draft_' + pageKey);
+        });
     });
 
     // Photo Validation & Preview Logic
@@ -1425,90 +1912,63 @@
             alert('Could not copy to clipboard automatically. Please copy the details manually.');
         });
     }
-</script>
-{% endblock %}
 
-{% block extra_js_end %}
-<!-- Camera Viewfinder Modal -->
-<div class="modal fade" id="cameraModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
-            <div class="modal-header bg-dark text-white border-0 py-3">
-                <h5 class="modal-title font-weight-bold"><i class="fas fa-camera mr-2"></i>Live Capture</h5>
-                <button type="button" class="close text-white" onclick="closeCameraModal()">&times;</button>
-            </div>
-            <div class="modal-body p-0 bg-black position-relative" style="min-height: 300px; background: #000;">
-                <video id="camera-video" autoplay playsinline class="w-100 h-100" style="object-fit: cover;"></video>
-                <!-- Face Guide Overlay -->
-                <div class="position-absolute" style="top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 280px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 50%; pointer-events: none;"></div>
-            </div>
-            <div class="modal-footer border-0 bg-dark py-3 justify-content-center">
-                <button type="button" class="btn btn-light rounded-pill px-4" onclick="closeCameraModal()">Cancel</button>
-                <button type="button" class="btn btn-primary rounded-pill px-5 font-weight-bold" onclick="capturePhoto()">
-                    <i class="fas fa-circle mr-2"></i> CAPTURE
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+    let cameraStream = null;
 
-<script>
-let cameraStream = null;
-
-function openCameraModal() {
-    const video = document.getElementById('camera-video');
-    $('#cameraModal').modal('show');
-    
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-        .then(function(stream) {
-            cameraStream = stream;
-            video.srcObject = stream;
-            video.play();
-        })
-        .catch(function(err) {
-            console.error("Camera access error: ", err);
-            alert("Unable to access camera. Please check permissions.");
-            $('#cameraModal').modal('hide');
-        });
+    function openCameraModal() {
+        const video = document.getElementById('camera-video');
+        $('#cameraModal').modal('show');
+        
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+            .then(function(stream) {
+                cameraStream = stream;
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(function(err) {
+                console.error("Camera access error: ", err);
+                alert("Unable to access camera. Please check permissions.");
+                $('#cameraModal').modal('hide');
+            });
+        }
     }
-}
 
-function closeCameraModal() {
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
+    function closeCameraModal() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        $('#cameraModal').modal('hide');
     }
-    $('#cameraModal').modal('hide');
-}
 
-function capturePhoto() {
-    const video = document.getElementById('camera-video');
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    
-    // Set canvas dimensions to 1:1 ratio for passport style
-    const size = Math.min(video.videoWidth, video.videoHeight);
-    canvas.width = size;
-    canvas.height = size;
-    
-    // Center crop
-    const startX = (video.videoWidth - size) / 2;
-    const startY = (video.videoHeight - size) / 2;
-    
-    context.drawImage(video, startX, startY, size, size, 0, 0, size, size);
-    
-    const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-    
-    // Update Hidden Input & Preview
-    document.getElementById('camera_photo_data').value = dataURL;
-    
-    const previewBox = document.getElementById('photo-preview-box');
-    previewBox.innerHTML = `<img src="${dataURL}" class="img-fluid" style="width:100%; height:100%; object-fit:cover;">`;
-    
-    document.getElementById('photo-status-text').innerHTML = '<span class="text-success font-weight-bold"><i class="fas fa-check-circle"></i> Camera Snap Ready</span>';
-    
-    closeCameraModal();
-}
+    function capturePhoto() {
+        const video = document.getElementById('camera-video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        // Set canvas dimensions to 1:1 ratio for passport style
+        const size = Math.min(video.videoWidth, video.videoHeight);
+        canvas.width = size;
+        canvas.height = size;
+        
+        // Center crop
+        const startX = (video.videoWidth - size) / 2;
+        const startY = (video.videoHeight - size) / 2;
+        
+        context.drawImage(video, startX, startY, size, size, 0, 0, size, size);
+        
+        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+        
+        // Update Hidden Input & Preview
+        document.getElementById('camera_photo_data').value = dataURL;
+        
+        const previewBox = document.getElementById('photo-preview-box');
+        previewBox.innerHTML = `<img src="${dataURL}" class="img-fluid" style="width:100%; height:100%; object-fit:cover;">`;
+        
+        document.getElementById('photo-status-text').innerHTML = '<span class="text-success font-weight-bold"><i class="fas fa-check-circle"></i> Camera Snap Ready</span>';
+        
+        closeCameraModal();
+    }
 </script>
 {% endblock %}

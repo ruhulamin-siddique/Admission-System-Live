@@ -30,6 +30,68 @@
         color: white;
         border-radius: 15px 15px 0 0;
     }
+    .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    /* Printer Friendly Stylesheet overrides */
+    @media print {
+        .main-sidebar, 
+        .main-header, 
+        .main-footer, 
+        .content-header,
+        .no-print, 
+        form, 
+        .btn, 
+        .ml-auto,
+        .card-header .btn, 
+        canvas, 
+        [class*="card-tools"] {
+            display: none !important;
+        }
+        @page {
+            margin: 1.5cm;
+        }
+        body, .content-wrapper, .container-fluid, .content {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            background: #fff !important;
+            color: #000 !important;
+        }
+        .content-wrapper {
+            margin-left: 0 !important;
+        }
+        .col-lg-6 {
+            width: 50% !important;
+            float: left !important;
+            padding: 0 10px !important;
+        }
+        .card {
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
+            margin-bottom: 20px !important;
+            page-break-inside: avoid !important;
+            border-radius: 8px !important;
+        }
+        .gradient-header, .card-header {
+            background: #f5f5f5 !important;
+            color: #000 !important;
+            border-bottom: 2px solid #333 !important;
+            border-radius: 8px 8px 0 0 !important;
+        }
+        .rank-badge {
+            border: 1px solid #000 !important;
+            background: none !important;
+            color: #000 !important;
+        }
+        .badge {
+            border: 1px solid #000 !important;
+            background: none !important;
+            color: #000 !important;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -113,6 +175,9 @@
                     <a href="{% url 'reports_center' %}" class="btn btn-sm btn-outline-secondary ml-auto">
                         <i class="fas fa-arrow-left mr-1"></i> Back to Center
                     </a>
+                    <button type="button" class="btn btn-sm btn-outline-primary ml-2 rounded-pill" onclick="window.print()">
+                        <i class="fas fa-print mr-1"></i> Print Report
+                    </button>
                 </form>
             </div>
         </div>
@@ -141,9 +206,12 @@
                         </thead>
                         <tbody>
                             {% for school in data.top_schools %}
-                            <tr>
+                            <tr class="clickable-row"
+                                hx-get="{% url 'api_institutional_students' %}?school={{ school.ssc_school|urlencode }}&year={{ selected_year|default:'' }}&program={{ selected_program|default:'' }}&batch={{ selected_batch|default:'' }}"
+                                hx-target="#institutionModalBody"
+                                data-toggle="modal" data-target="#institutionStudentsModal">
                                 <td><span class="rank-badge {% if forloop.counter <= 3 %}bg-primary{% else %}bg-light{% endif %}">{{ forloop.counter }}</span></td>
-                                <td class="font-weight-bold text-sm">{{ school.ssc_school }}</td>
+                                <td class="font-weight-bold text-sm text-primary">{{ school.ssc_school }}</td>
                                 <td class="text-right"><span class="badge badge-primary">{{ school.count }}</span></td>
                             </tr>
                             {% endfor %}
@@ -175,14 +243,39 @@
                         </thead>
                         <tbody>
                             {% for college in data.top_colleges %}
-                            <tr>
+                            <tr class="clickable-row"
+                                hx-get="{% url 'api_institutional_students' %}?college={{ college.hsc_college|urlencode }}&year={{ selected_year|default:'' }}&program={{ selected_program|default:'' }}&batch={{ selected_batch|default:'' }}"
+                                hx-target="#institutionModalBody"
+                                data-toggle="modal" data-target="#institutionStudentsModal">
                                 <td><span class="rank-badge {% if forloop.counter <= 3 %}bg-success text-white{% else %}bg-light{% endif %}">{{ forloop.counter }}</span></td>
-                                <td class="font-weight-bold text-sm">{{ college.hsc_college }}</td>
+                                <td class="font-weight-bold text-sm text-success">{{ college.hsc_college }}</td>
                                 <td class="text-right"><span class="badge badge-success">{{ college.count }}</span></td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Institution Students Modal -->
+<div class="modal fade" id="institutionStudentsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header bg-success text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-university mr-2"></i> Feeder Student List</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" id="institutionModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Loading student list...</p>
                 </div>
             </div>
         </div>

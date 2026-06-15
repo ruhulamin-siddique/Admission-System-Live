@@ -5,14 +5,14 @@ def zipdir(path, ziph):
     # Directories to exclude from production zip
     exclude_dirs = {'.git', '__pycache__', 'media', 'brain', 'venv', 'env', '.idea', '.vscode', '.gemini'}
     # Files to exclude from production zip
-    exclude_files = {'db.sqlite3', '.env', 'Admission_System_Production.zip', 'zip_project.py', 'board_response_debug.html'}
+    exclude_files = {'db.sqlite3', '.env', 'zip_project.py', 'board_response_debug.html'}
     
     for root, dirs, files in os.walk(path):
         # Filter directories in-place to prevent os.walk from entering them
         dirs[:] = [d for d in dirs if d not in exclude_dirs and not d.startswith('.')]
         
         for file in files:
-            if file in exclude_files or file.startswith('.'):
+            if file in exclude_files or file.startswith('.') or file.endswith('.zip'):
                 continue
             file_path = os.path.join(root, file)
             # Calculate path relative to target folder for zip entries
@@ -22,7 +22,9 @@ def zipdir(path, ziph):
 
 if __name__ == '__main__':
     print("--- Packaging admission system for production deploy ---")
-    zip_filename = 'Admission_System_Production.zip'
+    import datetime
+    timestamp_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    zip_filename = f'Admission_System_Production_{timestamp_str}.zip'
     
     # Overwrite if exists
     if os.path.exists(zip_filename):

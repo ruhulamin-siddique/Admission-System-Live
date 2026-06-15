@@ -104,6 +104,11 @@ class Student(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # Auto-normalize program to canonical short name if available
+        if self.program:
+            from .utils import get_canonical_program_name
+            self.program = get_canonical_program_name(self.program)
+
         # Auto-extract numeric batch number for sorting
         if self.batch:
             import re
@@ -145,7 +150,54 @@ class Student(models.Model):
         self.hsc_reg = _clean_val(self.hsc_reg)
         self.hsc_year = _clean_val(self.hsc_year)
 
+        # Capture and log detailed changes (if update)
+        is_update = False
+        field_changes = []
+        if self.pk:
+            try:
+                orig = Student.objects.get(pk=self.pk)
+                is_update = True
+                
+                # Exclude field list
+                exclude_fields = ['last_updated', 'created_at', 'academic_verification_logs']
+                
+                for field in self._meta.fields:
+                    if field.name in exclude_fields:
+                        continue
+                    
+                    old_val = getattr(orig, field.name)
+                    new_val = getattr(self, field.name)
+                    
+                    # Normalize comparison (None vs. empty string, string vs float representation)
+                    def normalize_val(val):
+                        if val is None:
+                            return ""
+                        return str(val).strip()
+                        
+                    if normalize_val(old_val) != normalize_val(new_val):
+                        # Save string representations of values
+                        field_changes.append({
+                            'field_name': field.name,
+                            'old_value': str(old_val) if old_val is not None else None,
+                            'new_value': str(new_val) if new_val is not None else None,
+                        })
+            except Student.DoesNotExist:
+                pass
+
         super().save(*args, **kwargs)
+
+        if is_update and field_changes:
+            changed_by_user = getattr(self, 'changed_by_user', None)
+            history_objs = [
+                StudentFieldHistory(
+                    student=self,
+                    field_name=change['field_name'],
+                    old_value=change['old_value'],
+                    new_value=change['new_value'],
+                    changed_by=changed_by_user
+                ) for change in field_changes
+            ]
+            StudentFieldHistory.objects.bulk_create(history_objs)
 
     def __str__(self):
         return f"{self.student_name} ({self.student_id})"
@@ -221,3 +273,22 @@ class AdmissionStatusHistory(models.Model):
 
     def __str__(self):
         return f"{self.student.student_id} changed to {self.new_status} on {self.change_date}"
+
+class StudentFieldHistory(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='field_history')
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+    changed_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='student_field_changes')
+    changed_at = models.DateTimeField(auto_now_add=True)
+    
+    # Revert Fields
+    reverted = models.BooleanField(default=False)
+    reverted_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='reverted_student_changes')
+    reverted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-changed_at']
+
+    def __str__(self):
+        return f"{self.student.student_id} - {self.field_name} by {self.changed_by.username if self.changed_by else 'System'}"
