@@ -140,6 +140,28 @@
     </div>
 </div>
 <div class="row">
+    {% if student.is_legacy_student %}
+    <div class="col-12 mb-3">
+        <div class="alert alert-warning py-2 px-3 mb-0" style="border-radius: 12px; border-left: 5px solid #ffc107;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-archive fa-2x mr-3 text-warning"></i>
+                <div>
+                    <h6 class="mb-1 font-weight-bold text-dark">Legacy Student Record</h6>
+                    <div class="text-dark">
+                        {% if student.old_student_id %}
+                            Known ID: <strong>{{ student.old_student_id }}</strong> 
+                            <span class="mx-2 text-muted">|</span> 
+                            System ID: <code>{{ student.student_id }}</code>
+                        {% else %}
+                            Legacy ID: <strong>{{ student.student_id }}</strong>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="col-md-3">
         <!-- Profile Image -->
         <div class="card card-primary card-outline">
@@ -160,6 +182,12 @@
                             <i class="fas fa-history mr-1"></i> FORMERLY: {{ student.old_student_id }}
                         </span>
                     </div>
+                {% elif student.is_legacy_student %}
+                    <div class="text-center mt-1">
+                        <span class="badge badge-warning py-1 px-2 rounded-sm" style="font-size: 0.65rem; opacity: 0.8;">
+                            <i class="fas fa-archive mr-1"></i> LEGACY RECORD
+                        </span>
+                    </div>
                 {% endif %}
 
                 <ul class="list-group list-group-unbordered mb-3">
@@ -167,7 +195,16 @@
                         <b>Program</b> <a class="float-right text-dark font-weight-bold">{{ student.program }}</a>
                     </li>
                     <li class="list-group-item">
-                        <b>Batch</b> <a class="float-right text-dark font-weight-bold">{{ student.batch }}</a>
+                        <b>Admission Batch</b> <a class="float-right text-dark font-weight-bold">{{ student.batch }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Current Batch</b> <a class="float-right text-dark font-weight-bold">{{ student.current_batch|default:student.batch }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Admitted Semester</b> <a class="float-right text-dark font-weight-bold">{{ student.semester_name }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Current Semester</b> <a class="float-right text-dark font-weight-bold">{{ student.current_semester|default:"Level 1 Term I" }}</a>
                     </li>
                     <li class="list-group-item">
                         <b>Status</b> 
@@ -184,45 +221,70 @@
         <!-- /.card -->
 
         <!-- Administrative Toolkit -->
-        <div class="card card-dark shadow-sm" style="border-radius: 12px; border-top: 5px solid #343a40;">
-            <div class="card-header border-0 bg-transparent">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-tools mr-2"></i> Admin Toolkit</h3>
+        <div class="card shadow-sm border-0" style="border-radius: 12px; border-top: 5px solid #343a40;">
+            <div class="card-header border-0 bg-transparent py-2 pt-3">
+                <h5 class="text-dark font-weight-bold mb-0"><i class="fas fa-tools mr-2"></i> Admin Toolkit</h5>
             </div>
-            <div class="card-body p-2">
-                <a href="{% url 'download_master_sheet' student.student_id %}" class="btn btn-block btn-outline-danger font-weight-bold mb-2 py-2">
-                    <i class="fas fa-file-pdf mr-2"></i> Save Master PDF
-                </a>
-                <a href="{% url 'change_program' student.student_id %}" class="btn btn-block btn-outline-warning text-dark font-weight-bold mb-2 py-2">
-                    <i class="fas fa-exchange-alt mr-2"></i> Migration Center
-                </a>
-                <a href="{% url 'cancellation_hub' %}?search={{ student.student_id }}" class="btn btn-block btn-outline-dark font-weight-bold mb-2 py-2">
-                    <i class="fas fa-user-slash mr-2"></i> Initiate Cancel
-                </a>
-                {% if user.is_superuser %}
-                <button type="button" class="btn btn-block btn-outline-primary font-weight-bold mb-2 py-2" data-toggle="modal" data-target="#rectifyIdModal">
-                    <i class="fas fa-fingerprint mr-2"></i> Change ID
-                </button>
-                {% endif %}
-                <button type="button" class="btn btn-block btn-danger font-weight-bold mt-4 mb-2 py-2" data-toggle="modal" data-target="#deleteStudentModal">
-                    <i class="fas fa-trash-alt mr-2"></i> Delete Admission
-                </button>
-            </div>
-        </div>
-
-        <!-- Quick Contacts -->
-        <div class="card card-outline card-primary shadow-sm" style="border-radius: 12px;">
-            <div class="card-header border-0">
-                <h3 class="card-title font-weight-bold text-muted small">Quick Contacts</h3>
-            </div>
-            <div class="card-body py-2">
-                <div class="d-flex justify-content-between">
-                    <span class="text-muted small">Student</span>
-                    <span class="font-weight-bold small">{{ student.student_mobile|default:"N/A" }}</span>
+            <div class="card-body p-3">
+                <div class="row no-gutters mb-2" style="margin-left: -4px; margin-right: -4px; gap: 8px 0;">
+                    <!-- Col 1: PDF and Migration -->
+                    <div class="col-6" style="padding-left: 4px; padding-right: 4px;">
+                        <a href="{% url 'download_master_sheet' student.student_id %}" class="btn btn-block btn-outline-danger font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" title="Save Master PDF">
+                            <i class="fas fa-file-pdf mb-1" style="font-size: 16px;"></i>
+                            <span>Save PDF</span>
+                        </a>
+                    </div>
+                    <div class="col-6" style="padding-left: 4px; padding-right: 4px;">
+                        <a href="{% url 'change_program' student.student_id %}" class="btn btn-block btn-outline-warning text-dark font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" title="Migration Center">
+                            <i class="fas fa-exchange-alt mb-1" style="font-size: 16px;"></i>
+                            <span>Migration</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Col 2: Cancel and ID Change -->
+                    <div class="col-6" style="padding-left: 4px; padding-right: 4px; margin-top: 8px;">
+                        <a href="{% url 'cancellation_hub' %}?search={{ student.student_id }}" class="btn btn-block btn-outline-dark font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" title="Initiate Cancel">
+                            <i class="fas fa-user-slash mb-1" style="font-size: 16px;"></i>
+                            <span>Cancel</span>
+                        </a>
+                    </div>
+                    <div class="col-6" style="padding-left: 4px; padding-right: 4px; margin-top: 8px;">
+                        {% if user.is_superuser %}
+                        <button type="button" class="btn btn-block btn-outline-primary font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" data-toggle="modal" data-target="#rectifyIdModal" title="Change ID">
+                            <i class="fas fa-fingerprint mb-1" style="font-size: 16px;"></i>
+                            <span>Change ID</span>
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-block btn-outline-secondary font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center disabled" style="font-size: 12px; min-height: 58px; opacity: 0.5;" disabled title="Access Restricted">
+                            <i class="fas fa-lock mb-1" style="font-size: 16px;"></i>
+                            <span>Locked</span>
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
-                <hr class="my-2">
-                <div class="d-flex justify-content-between">
-                    <span class="text-muted small">Father</span>
-                    <span class="font-weight-bold small">{{ student.father_mobile|default:"N/A" }}</span>
+                
+                <hr class="my-3 opacity-50">
+                
+                <div class="row no-gutters" style="margin-left: -4px; margin-right: -4px;">
+                    <div class="col-6" style="padding-left: 4px; padding-right: 4px;">
+                        <button type="button" class="btn btn-block btn-danger font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" data-toggle="modal" data-target="#deleteStudentModal" title="Delete Admission">
+                            <i class="fas fa-trash-alt mb-1" style="font-size: 16px;"></i>
+                            <span>Delete</span>
+                        </button>
+                    </div>
+                    <div class="col-6" style="padding-left: 4px; padding-right: 4px;">
+                        {% if user.is_superuser %}
+                        <button type="button" class="btn btn-block btn-success font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" onclick="openUgcMigrationModal()" title="Migrate to 16-Digit UGC ID">
+                            <i class="fas fa-arrows-spin mb-1" style="font-size: 16px;"></i>
+                            <span>UGC Migrate</span>
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-block btn-outline-secondary font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center disabled" style="font-size: 12px; min-height: 58px; opacity: 0.5;" disabled title="Access Restricted">
+                            <i class="fas fa-lock mb-1" style="font-size: 16px;"></i>
+                            <span>Locked</span>
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -284,8 +346,54 @@
                                     <tr><td><strong>Father's Name:</strong></td><td>{{ student.father_name }} {% if student.ssc_verified or student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td></tr>
                                     <tr><td><strong>Mother's Name:</strong></td><td>{{ student.mother_name }} {% if student.ssc_verified or student.hsc_verified %}<i class="fas fa-check-circle text-success ml-1" title="Verified from Board"></i>{% endif %}</td></tr>
                                     <tr><td><strong>Father's Occ:</strong></td><td>{{ student.father_occupation }}</td></tr>
-                                    <tr><td><strong>Guardian Contact:</strong></td><td>{{ student.emergency_contact }}</td></tr>
                                 </table>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h5 class="text-primary border-bottom pb-2">Contact Information</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Student Contact</strong>
+                                    <p class="text-muted mb-1">
+                                        Mobile: {{ student.student_mobile|default:"-" }}
+                                        {% if student.student_mobile and student.student_mobile != "-" %}
+                                        <a href="javascript:void(0)" class="text-success ml-1" onclick="openWhatsAppAndCopy('{{ student.student_mobile|escapejs }}')" title="WhatsApp student (copies details)">
+                                            <i class="fab fa-whatsapp text-success" style="font-size: 1.1rem; vertical-align: middle;"></i>
+                                        </a>
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-muted mb-0">Email: {{ student.student_email|default:"-" }}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Parents Contact</strong>
+                                    <p class="text-muted mb-1">
+                                        Father's Mobile: {{ student.father_mobile|default:"-" }}
+                                        {% if student.father_mobile and student.father_mobile != "-" %}
+                                        <a href="javascript:void(0)" class="text-success ml-1" onclick="openWhatsAppAndCopy('{{ student.father_mobile|escapejs }}')" title="WhatsApp father (copies details)">
+                                            <i class="fab fa-whatsapp text-success" style="font-size: 1.1rem; vertical-align: middle;"></i>
+                                        </a>
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-muted mb-0">
+                                        Mother's Mobile: {{ student.mother_mobile|default:"-" }}
+                                        {% if student.mother_mobile and student.mother_mobile != "-" %}
+                                        <a href="javascript:void(0)" class="text-success ml-1" onclick="openWhatsAppAndCopy('{{ student.mother_mobile|escapejs }}')" title="WhatsApp mother (copies details)">
+                                            <i class="fab fa-whatsapp text-success" style="font-size: 1.1rem; vertical-align: middle;"></i>
+                                        </a>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Emergency Contact</strong>
+                                    <p class="text-muted mb-0">
+                                        {{ student.emergency_contact|default:"-" }}
+                                        {% if student.emergency_contact and student.emergency_contact != "-" %}
+                                        <a href="javascript:void(0)" class="text-success ml-1" onclick="openWhatsAppAndCopy('{{ student.emergency_contact|escapejs }}')" title="WhatsApp emergency contact (copies details)">
+                                            <i class="fab fa-whatsapp text-success" style="font-size: 1.1rem; vertical-align: middle;"></i>
+                                        </a>
+                                        {% endif %}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                         <div class="mt-4">
@@ -543,6 +651,129 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if user.is_superuser %}
+<!-- UGC ID Migration Modal -->
+<div class="modal fade" id="ugcMigrationModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header bg-success text-white py-4 border-0">
+                <h5 class="modal-title font-weight-black">
+                    <i class="fas fa-arrows-spin mr-2"></i> UGC 16-Digit Migration
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Loading State -->
+                <div id="ugcMigrationLoader" class="text-center py-4">
+                    <div class="spinner-border text-success" role="status"></div>
+                    <p class="mt-2 text-muted small">Generating UGC compliant ID prefix and serial...</p>
+                </div>
+
+                <!-- Missing Fields Warning -->
+                <div id="ugcMigrationWarning" class="alert alert-warning border-0 shadow-sm d-none mb-0">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-exclamation-triangle mr-2 text-warning fa-lg"></i>
+                        <h6 class="mb-0 font-weight-bold">Missing Parameters</h6>
+                    </div>
+                    <p class="small mb-3" id="ugcMigrationWarningText"></p>
+                    <a href="{% url 'edit_student' student.student_id %}" class="btn btn-sm btn-warning font-weight-bold btn-block rounded-pill">
+                        <i class="fas fa-user-edit mr-1"></i> Edit Profile & Complete Setup
+                    </a>
+                </div>
+
+                <!-- Suggested ID Display -->
+                <div id="ugcMigrationFormContent" class="d-none">
+                    <div class="alert alert-info border-0 small mb-4">
+                        <i class="fas fa-info-circle mr-2"></i> This will assign a system-generated 16-digit UGC ID and archive the current ID in the previous ID field.
+                    </div>
+                    
+                    <form action="{% url 'rectify_student_id' student.student_id %}" method="POST">
+                        {% csrf_token %}
+                        <div class="form-group mb-4">
+                            <label class="small font-weight-bold text-uppercase text-muted">Current Student ID</label>
+                            <input type="text" class="form-control bg-light border-0" value="{{ student.student_id }}" readonly>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="small font-weight-bold text-uppercase text-success">Generated 16-Digit UGC ID</label>
+                            <input type="text" name="new_id" id="ugcMigrationSuggestedId" class="form-control form-control-lg border-success font-weight-bold" style="letter-spacing: 0.5px;" required>
+                            <small class="form-text text-muted mt-1">Live database verified for uniqueness. You can modify if needed.</small>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="small font-weight-bold text-uppercase text-muted">Academic Signature Attributes</label>
+                            <div class="card bg-light border-0 p-3">
+                                <div class="form-group mb-2">
+                                    <label class="small font-weight-bold mb-1 text-muted"><i class="fas fa-graduation-cap mr-1"></i> Program</label>
+                                    <select name="program" id="ugcMigrationProgram" class="form-control form-control-sm" required>
+                                        <option value="">Select Program</option>
+                                        {% for p in migration_programs %}
+                                            <option value="{{ p.short_name|default:p.name }}" {% if student.program == p.short_name or student.program == p.name %}selected{% endif %}>{{ p.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-row mb-2">
+                                    <div class="form-group col-md-6 mb-0">
+                                        <label class="small font-weight-bold mb-1 text-muted"><i class="fas fa-calendar mr-1"></i> Admission Year</label>
+                                        <select name="admission_year" id="ugcMigrationYear" class="form-control form-control-sm" required>
+                                            <option value="">Select Year</option>
+                                            {% for y in migration_years %}
+                                                <option value="{{ y }}" {% if student.admission_year == y %}selected{% endif %}>{{ y }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-6 mb-0">
+                                        <label class="small font-weight-bold mb-1 text-muted"><i class="fas fa-clock mr-1"></i> Semester</label>
+                                        <select name="semester_name" id="ugcMigrationSemester" class="form-control form-control-sm" required>
+                                            <option value="">Select Semester</option>
+                                            {% for s in migration_semesters %}
+                                                <option value="{{ s.name }}" {% if student.semester_name == s.name %}selected{% endif %}>{{ s.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col-md-6 mb-0">
+                                        <label class="small font-weight-bold mb-1 text-muted"><i class="fas fa-hotel mr-1"></i> Hall Attachment</label>
+                                        <select name="hall_attached" id="ugcMigrationHall" class="form-control form-control-sm" required>
+                                            <option value="">Select Hall</option>
+                                            {% for h in migration_halls %}
+                                                <option value="{{ h.short_name }}" {% if student.hall_attached == h.short_name %}selected{% endif %}>{{ h.full_name|default:h.short_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-6 mb-0">
+                                        <label class="small font-weight-bold mb-1 text-muted"><i class="fas fa-award mr-1"></i> Program Type</label>
+                                        <select name="program_type" id="ugcMigrationProgramType" class="form-control form-control-sm" required>
+                                            <option value="Bachelor" {% if student.program_type == 'Bachelor' or not student.program_type %}selected{% endif %}>Bachelor</option>
+                                            <option value="Masters" {% if student.program_type == 'Masters' %}selected{% endif %}>Masters</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label class="small font-weight-bold text-uppercase text-muted">Reason for Migration</label>
+                            <textarea name="reason" class="form-control" rows="2" required>Automatic 16-Digit UGC Protocol Migration</textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4 border-top pt-3">
+                            <button type="button" class="btn btn-link text-muted font-weight-bold p-0" data-dismiss="modal">Discard</button>
+                            <button type="submit" id="ugcMigrationSubmitBtn" class="btn btn-success px-4 rounded-pill font-weight-black shadow-sm">
+                                Migrate to UGC ID <i class="fas fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -872,6 +1103,54 @@
         });
     }
 
+    function openWhatsAppAndCopy(phone) {
+        if (!phone || phone === '-') {
+            if (typeof toastr !== 'undefined') {
+                toastr.warning("No valid phone number available.");
+            }
+            return;
+        }
+
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length === 11 && cleaned.startsWith('01')) {
+            cleaned = '88' + cleaned;
+        }
+
+        let text = "Student Information:\n";
+        text += "Name: " + "{{ student.student_name|escapejs }}" + "\n";
+        text += "ID: " + "{{ student.student_id|escapejs }}" + "\n";
+        text += "Program: " + "{{ student.program|escapejs }}" + "\n";
+        text += "Current Batch: " + "{{ student.current_batch|default:student.batch|escapejs }}" + "\n";
+        text += "Current Semester: " + "{{ student.current_semester|default:'Level 1 Term I'|escapejs }}" + "\n";
+        text += "Blood Group: " + "{{ student.blood_group|default:'-'|escapejs }}" + "\n";
+        text += "Mobile: " + "{{ student.student_mobile|default:'-'|escapejs }}" + "\n";
+        text += "Email: " + "{{ student.student_email|default:'-'|escapejs }}";
+
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        
+        let copySuccess = false;
+        try {
+            copySuccess = document.execCommand('copy');
+        } catch (err) {
+            console.error('Copy failed: ', err);
+        }
+        document.body.removeChild(textArea);
+
+        if (copySuccess) {
+            if (typeof toastr !== 'undefined') {
+                toastr.success("Student details copied to clipboard!");
+            }
+        }
+
+        const waUrl = "https://wa.me/" + cleaned;
+        window.open(waUrl, '_blank');
+    }
+
     // --- Tab Persistence & Real-time Search Logic ---
     $(document).ready(function() {
         // 1. Tab Persistence (URL & Storage)
@@ -964,7 +1243,74 @@
                 return;
             }
         });
+
+        // 4. UGC Migration Modal live update bindings
+        $('#ugcMigrationProgram, #ugcMigrationYear, #ugcMigrationSemester, #ugcMigrationHall, #ugcMigrationProgramType').on('change', function() {
+            updateUgcMigrationPreview();
+        });
     });
+
+    function updateUgcMigrationPreview() {
+        $('#ugcMigrationLoader').removeClass('d-none');
+        $('#ugcMigrationWarning').addClass('d-none');
+        
+        // Gather selected parameters
+        const program = $('#ugcMigrationProgram').val();
+        const admission_year = $('#ugcMigrationYear').val();
+        const semester_name = $('#ugcMigrationSemester').val();
+        const hall_attached = $('#ugcMigrationHall').val();
+        const program_type = $('#ugcMigrationProgramType').val();
+        
+        console.log("Requesting UGC ID preview with params:", {
+            program: program,
+            admission_year: admission_year,
+            semester_name: semester_name,
+            hall_attached: hall_attached,
+            program_type: program_type
+        });
+
+        $.ajax({
+            url: "{% url 'api_student_ugc_id_preview' student.student_id %}",
+            method: 'GET',
+            data: {
+                program: program,
+                admission_year: admission_year,
+                semester_name: semester_name,
+                hall_attached: hall_attached,
+                program_type: program_type
+            },
+            dataType: 'json',
+            success: function(data) {
+                console.log("UGC ID preview response:", data);
+                $('#ugcMigrationLoader').addClass('d-none');
+                $('#ugcMigrationFormContent').removeClass('d-none');
+                if (data.success) {
+                    $('#ugcMigrationSuggestedId').val(data.suggested_id);
+                    $('#ugcMigrationWarning').addClass('d-none');
+                    $('#ugcMigrationSubmitBtn').prop('disabled', false);
+                } else {
+                    $('#ugcMigrationSuggestedId').val('');
+                    $('#ugcMigrationWarningText').text(data.error);
+                    $('#ugcMigrationWarning').removeClass('d-none');
+                    $('#ugcMigrationSubmitBtn').prop('disabled', true);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("UGC ID preview AJAX error. Status:", status, "Error:", error, "Response:", xhr.responseText);
+                $('#ugcMigrationLoader').addClass('d-none');
+                $('#ugcMigrationWarningText').text("Network error trying to contact preview server. Please check your connection.");
+                $('#ugcMigrationWarning').removeClass('d-none');
+                $('#ugcMigrationSuggestedId').val('');
+                $('#ugcMigrationSubmitBtn').prop('disabled', true);
+            }
+        });
+    }
+
+    function openUgcMigrationModal() {
+        const modal = $('#ugcMigrationModal');
+        modal.modal('show');
+        updateUgcMigrationPreview();
+    }
 </script>
 
 <style>

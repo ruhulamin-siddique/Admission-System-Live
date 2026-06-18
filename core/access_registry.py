@@ -61,6 +61,8 @@ ACCESS_REGISTRY = {
             "manage_settings": ("Manage System Branding", "Update institutional name, logo, and theme colors."),
             "manage_academic_settings": ("Manage Academic Master Data", "Configure Programs, Halls, Batches, and Session settings."),
             "manage_api": ("Manage External API", "Issue API credentials and inspect external request audit logs."),
+            "download_backup_json": ("Download Database JSON Backup", "Allows downloading a JSON dump of all system data."),
+            "download_backup_sqlite": ("Download Database SQLite Backup", "Allows downloading a pre-compiled SQLite database binary."),
         }
     }
 }

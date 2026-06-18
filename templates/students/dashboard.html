@@ -14,14 +14,14 @@
     .text-navy { color: #001f3f; }
     
     /* Compact Periodic Analysis */
-    .periodic-card-title { font-size: 0.9rem; margin-bottom: 0.25rem; }
-    .periodic-count { font-size: 1.5rem !important; line-height: 1; }
-    .periodic-label { font-size: 0.7rem; color: #6c757d; }
-    .periodic-list-item { font-size: 0.75rem !important; padding: 0.4rem 0.5rem !important; }
-    .periodic-badge { font-size: 0.7rem !important; padding: 0.2rem 0.4rem !important; }
+    .periodic-card-title { font-size: 1rem; margin-bottom: 0.25rem; }
+    .periodic-count { font-size: 1.8rem !important; line-height: 1; }
+    .periodic-label { font-size: 0.85rem; color: #6c757d; }
+    .periodic-list-item { font-size: 0.95rem !important; padding: 0.5rem 0.6rem !important; }
+    .periodic-badge { font-size: 0.85rem !important; padding: 0.25rem 0.5rem !important; }
     @media (max-width: 768px) {
-        .periodic-count { font-size: 1.25rem !important; }
-        .periodic-card-title { font-size: 0.8rem; }
+        .periodic-count { font-size: 1.5rem !important; }
+        .periodic-card-title { font-size: 0.95rem; }
     }
 
     /* Dark Mode Overrides */
@@ -67,6 +67,13 @@
     }
     body.dark-mode .card-outline-tabs .nav-tabs {
         border-bottom: 1px solid #334155;
+    }
+    .periodic-card-tabs .nav-tabs .nav-link.active {
+        border-top: 3px solid #17a2b8 !important;
+    }
+    body.dark-mode .periodic-card-tabs .nav-tabs .nav-link.active {
+        border-top: 3px solid #17a2b8 !important;
+        background-color: #1e293b;
     }
 </style>
 {% endblock %}
@@ -138,118 +145,7 @@
 </div>
 
 
-<!-- Periodic Breakdown Card -->
-<div class="row">
-    <div class="col-12">
-        <div class="card card-outline card-info shadow-sm" style="border-radius: 12px;">
-            <div class="card-header border-0 bg-transparent py-3">
-                <h3 class="card-title font-weight-bold text-dark w-100 d-flex justify-content-between align-items-center mb-0">
-                    <span><i class="fas fa-chart-line mr-2 text-info"></i> Periodic Admission Analysis</span>
-                    <span class="text-info font-weight-bold" style="font-size: 0.95rem; letter-spacing: 0.5px;">
-                        <i class="fas fa-clock mr-1"></i> {{ stats.periodic.semester|upper }} | {{ stats.periodic.batch|upper }}
-                    </span>
-                </h3>
-                <div class="text-muted small mt-2">
-                    <i class="fas fa-info-circle mr-1"></i> Tracking real-time enrollment activity for the current intake cycle only.
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="row no-gutters border-top">
-                    <!-- Today Breakdown -->
-                    <div class="col-md-4 border-right">
-                        <div class="p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div>
-                                    <h6 class="text-indigo font-weight-bold periodic-card-title mb-0"><i class="fas fa-calendar-day mr-1"></i>Today</h6>
-                                    <div class="periodic-label">{{ stats.periodic.today.label }}</div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="periodic-count font-weight-black text-indigo">{{ stats.periodic.today.count }}</div>
-                                    <div class="text-muted text-uppercase font-weight-bold" style="font-size: 0.6rem;">Total</div>
-                                </div>
-                            </div>
-                            <div class="list-group list-group-flush" style="max-height: 160px; overflow-y: auto;">
-                                {% for item in stats.periodic.today.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item" 
-                                     hx-get="{% url 'api_periodic_students' %}?period=today&program={{ item.program|urlencode }}"
-                                     hx-target="#periodicModalBody"
-                                     data-toggle="modal" data-target="#periodicStudentsModal">
-                                    <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
-                                    <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
-                                </div>
-                                {% empty %}
-                                <div class="text-center py-3">
-                                    <p class="text-muted small mb-0 font-italic">Zero admissions today.</p>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Week Breakdown -->
-                    <div class="col-md-4 border-right">
-                        <div class="p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div>
-                                    <h6 class="text-purple font-weight-bold periodic-card-title mb-0"><i class="fas fa-calendar-week mr-1"></i>This Week</h6>
-                                    <div class="periodic-label">{{ stats.periodic.week.label }}</div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="periodic-count font-weight-black text-purple">{{ stats.periodic.week.count }}</div>
-                                    <div class="text-muted text-uppercase font-weight-bold" style="font-size: 0.6rem;">Total</div>
-                                </div>
-                            </div>
-                            <div class="list-group list-group-flush" style="max-height: 160px; overflow-y: auto;">
-                                {% for item in stats.periodic.week.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item"
-                                     hx-get="{% url 'api_periodic_students' %}?period=week&program={{ item.program|urlencode }}"
-                                     hx-target="#periodicModalBody"
-                                     data-toggle="modal" data-target="#periodicStudentsModal">
-                                    <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
-                                    <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
-                                </div>
-                                {% empty %}
-                                <div class="text-center py-3">
-                                    <p class="text-muted small mb-0">No records this week.</p>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Month Breakdown -->
-                    <div class="col-md-4">
-                        <div class="p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div>
-                                    <h6 class="text-navy font-weight-bold periodic-card-title mb-0"><i class="fas fa-calendar-alt mr-1"></i>This Month</h6>
-                                    <div class="periodic-label">{{ stats.periodic.month.label }}</div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="periodic-count font-weight-black text-navy">{{ stats.periodic.month.count }}</div>
-                                    <div class="text-muted text-uppercase font-weight-bold" style="font-size: 0.6rem;">Total</div>
-                                </div>
-                            </div>
-                            <div class="list-group list-group-flush" style="max-height: 160px; overflow-y: auto;">
-                                {% for item in stats.periodic.month.breakdown %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item"
-                                     hx-get="{% url 'api_periodic_students' %}?period=month&program={{ item.program|urlencode }}"
-                                     hx-target="#periodicModalBody"
-                                     data-toggle="modal" data-target="#periodicStudentsModal">
-                                    <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
-                                    <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
-                                </div>
-                                {% empty %}
-                                <div class="text-center py-3">
-                                    <p class="text-muted small mb-0">No records this month.</p>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Main Charts Row -->
 <div class="row">
@@ -417,8 +313,121 @@
     </div>
 
     <div class="col-md-4">
+        <!-- Periodic Admission Analysis (Tabbed) -->
+        <div class="card card-outline card-info periodic-card-tabs shadow-sm card-outline-tabs" style="border-radius: 12px; border-top: 3px solid #17a2b8;">
+            <div class="card-header p-0 border-bottom-0">
+                <ul class="nav nav-tabs" id="periodicTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold" id="periodic-today-tab" data-toggle="tab" href="#periodic-today-pane" role="tab" aria-controls="periodic-today-pane" aria-selected="true" style="border-top-left-radius: 12px; font-size: 0.85rem;">
+                            <i class="fas fa-calendar-day mr-1 text-indigo"></i> Today
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="periodic-week-tab" data-toggle="tab" href="#periodic-week-pane" role="tab" aria-controls="periodic-week-pane" aria-selected="false" style="font-size: 0.85rem;">
+                            <i class="fas fa-calendar-week mr-1 text-purple"></i> This Week
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="periodic-month-tab" data-toggle="tab" href="#periodic-month-pane" role="tab" aria-controls="periodic-month-pane" aria-selected="false" style="font-size: 0.85rem;">
+                            <i class="fas fa-calendar-alt mr-1 text-navy"></i> This Month
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="periodicTabsContent">
+                    <!-- Today Tab -->
+                    <div class="tab-pane fade show active" id="periodic-today-pane" role="tabpanel" aria-labelledby="periodic-today-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                            <div>
+                                <span class="text-muted small font-weight-bold d-block mb-1"><i class="fas fa-clock mr-1"></i> TIMEFRAME</span>
+                                <span class="font-weight-bold text-dark" style="font-size: 0.95rem;">{{ stats.periodic.today.label }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-muted small font-weight-bold d-block mb-1">TOTAL ADMITTED</span>
+                                <span class="periodic-count font-weight-black text-indigo">{{ stats.periodic.today.count }}</span>
+                            </div>
+                        </div>
+                        <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            {% for item in stats.periodic.today.breakdown %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item" 
+                                 hx-get="{% url 'api_periodic_students' %}?period=today&program={{ item.program|urlencode }}"
+                                 hx-target="#periodicModalBody"
+                                 data-toggle="modal" data-target="#periodicStudentsModal">
+                                <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
+                                <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-4">
+                                <p class="text-muted small mb-0 font-italic">Zero admissions today.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Week Tab -->
+                    <div class="tab-pane fade" id="periodic-week-pane" role="tabpanel" aria-labelledby="periodic-week-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                            <div>
+                                <span class="text-muted small font-weight-bold d-block mb-1"><i class="fas fa-clock mr-1"></i> TIMEFRAME</span>
+                                <span class="font-weight-bold text-dark" style="font-size: 0.95rem;">{{ stats.periodic.week.label }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-muted small font-weight-bold d-block mb-1">TOTAL ADMITTED</span>
+                                <span class="periodic-count font-weight-black text-purple">{{ stats.periodic.week.count }}</span>
+                            </div>
+                        </div>
+                        <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            {% for item in stats.periodic.week.breakdown %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item"
+                                 hx-get="{% url 'api_periodic_students' %}?period=week&program={{ item.program|urlencode }}"
+                                 hx-target="#periodicModalBody"
+                                 data-toggle="modal" data-target="#periodicStudentsModal">
+                                <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
+                                <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-4">
+                                <p class="text-muted small mb-0 font-italic">No records this week.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Month Tab -->
+                    <div class="tab-pane fade" id="periodic-month-pane" role="tabpanel" aria-labelledby="periodic-month-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                            <div>
+                                <span class="text-muted small font-weight-bold d-block mb-1"><i class="fas fa-clock mr-1"></i> TIMEFRAME</span>
+                                <span class="font-weight-bold text-dark" style="font-size: 0.95rem;">{{ stats.periodic.month.label }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-muted small font-weight-bold d-block mb-1">TOTAL ADMITTED</span>
+                                <span class="periodic-count font-weight-black text-navy">{{ stats.periodic.month.count }}</span>
+                            </div>
+                        </div>
+                        <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            {% for item in stats.periodic.month.breakdown %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center border-0 clickable-item periodic-list-item"
+                                 hx-get="{% url 'api_periodic_students' %}?period=month&program={{ item.program|urlencode }}"
+                                 hx-target="#periodicModalBody"
+                                 data-toggle="modal" data-target="#periodicStudentsModal">
+                                <span class="text-dark font-weight-bold">{{ item.short_name }}</span>
+                                <span class="badge badge-light border periodic-badge">{{ item.count }}</span>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-4">
+                                <p class="text-muted small mb-0 font-italic">No records this month.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Program Distribution Donut Chart -->
-        <div class="card card-info shadow-sm" style="border-radius: 12px;">
+        <div class="card card-info shadow-sm mt-3" style="border-radius: 12px;">
             <div class="card-header border-0 bg-transparent pt-3 pb-0 d-flex align-items-center justify-content-between flex-wrap">
                 <h3 class="card-title font-weight-bold mb-2 mb-sm-0 text-dark">
                     <i class="fas fa-chart-pie mr-2 text-info"></i> Program Distribution
@@ -530,73 +539,57 @@
                     <span class="badge badge-light border ml-2 active-batch-label">...</span>
                 </h3>
             </div>
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush mt-2">
-                    <a href="{% url 'student_list' %}?special_category=freedom_fighter" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'student_list' %}?special_category=freedom_fighter" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1">
                         <div class="d-flex align-items-center">
-                            <div class="bg-soft-warning p-2 rounded mr-3 text-warning" style="background: rgba(255, 193, 7, 0.1); width: 34px; text-align: center;">
-                                <i class="fas fa-medal"></i>
-                            </div>
-                            <span class="font-weight-bold text-dark">Freedom Fighter Child</span>
+                            <i class="fas fa-medal text-warning mr-3" style="width: 24px; text-align: center; font-size: 1.1rem;"></i>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.9rem;">Freedom Fighter Child</span>
                         </div>
-                        <span class="badge badge-warning badge-pill px-3 special-badge" data-category="freedom_fighter">{{ stats.special.freedom_fighter }}</span>
+                        <span class="font-weight-bold text-warning special-badge" data-category="freedom_fighter" style="font-size: 1.15rem;">{{ stats.special.freedom_fighter }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=july_joddha" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
+                    <a href="{% url 'student_list' %}?special_category=july_joddha" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1">
                         <div class="d-flex align-items-center">
-                            <div class="bg-soft-danger p-2 rounded mr-3 text-danger" style="background: rgba(220, 53, 69, 0.1); width: 34px; text-align: center;">
-                                <i class="fas fa-fire"></i>
-                            </div>
-                            <span class="font-weight-bold text-dark">July Joddha 2024</span>
+                            <i class="fas fa-fire text-danger mr-3" style="width: 24px; text-align: center; font-size: 1.1rem;"></i>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.9rem;">July Joddha 2024</span>
                         </div>
-                        <span class="badge badge-danger badge-pill px-3 special-badge" data-category="july_joddha">{{ stats.special.july_joddha }}</span>
+                        <span class="font-weight-bold text-danger special-badge" data-category="july_joddha" style="font-size: 1.15rem;">{{ stats.special.july_joddha }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=credit_transfer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
+                    <a href="{% url 'student_list' %}?special_category=credit_transfer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1">
                         <div class="d-flex align-items-center">
-                            <div class="bg-soft-primary p-2 rounded mr-3 text-primary" style="background: rgba(0, 123, 255, 0.1); width: 34px; text-align: center;">
-                                <i class="fas fa-right-left"></i>
-                            </div>
-                            <span class="font-weight-bold text-dark">Credit Transfer</span>
+                            <i class="fas fa-right-left text-primary mr-3" style="width: 24px; text-align: center; font-size: 1.1rem;"></i>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.9rem;">Credit Transfer</span>
                         </div>
-                        <span class="badge badge-primary badge-pill px-3 special-badge" data-category="credit_transfer">{{ stats.special.credit_transfer }}</span>
+                        <span class="font-weight-bold text-primary special-badge" data-category="credit_transfer" style="font-size: 1.15rem;">{{ stats.special.credit_transfer }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=armed_forces" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
+                    <a href="{% url 'student_list' %}?special_category=armed_forces" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1">
                         <div class="d-flex align-items-center">
-                            <div class="bg-soft-secondary p-2 rounded mr-3 text-secondary" style="background: rgba(108, 117, 125, 0.1); width: 34px; text-align: center;">
-                                <i class="fas fa-shield-halved"></i>
-                            </div>
-                            <span class="font-weight-bold text-dark">Armed Forces Quota</span>
+                            <i class="fas fa-shield-halved text-secondary mr-3" style="width: 24px; text-align: center; font-size: 1.1rem;"></i>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.9rem;">Armed Forces Quota</span>
                         </div>
-                        <span class="badge badge-secondary badge-pill px-3 special-badge" data-category="armed_forces">{{ stats.special.armed_forces }}</span>
+                        <span class="font-weight-bold text-secondary special-badge" data-category="armed_forces" style="font-size: 1.15rem;">{{ stats.special.armed_forces }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=non_residential" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
+                    <a href="{% url 'student_list' %}?special_category=non_residential" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1">
                         <div class="d-flex align-items-center">
-                            <div class="bg-soft-info p-2 rounded mr-3 text-info" style="background: rgba(23, 162, 184, 0.1); width: 34px; text-align: center;">
-                                <i class="fas fa-house-circle-xmark"></i>
-                            </div>
-                            <span class="font-weight-bold text-dark">Non-Residential</span>
+                            <i class="fas fa-house-circle-xmark text-info mr-3" style="width: 24px; text-align: center; font-size: 1.1rem;"></i>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.9rem;">Non-Residential</span>
                         </div>
-                        <span class="badge badge-info badge-pill px-3 special-badge" data-category="non_residential">{{ stats.special.non_residential }}</span>
+                        <span class="font-weight-bold text-info special-badge" data-category="non_residential" style="font-size: 1.15rem;">{{ stats.special.non_residential }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=residential" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5">
+                    <a href="{% url 'student_list' %}?special_category=residential" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1">
                         <div class="d-flex align-items-center">
-                            <div class="bg-soft-success p-2 rounded mr-3 text-success" style="background: rgba(40, 167, 69, 0.1); width: 34px; text-align: center;">
-                                <i class="fas fa-hotel"></i>
-                            </div>
-                            <span class="font-weight-bold text-dark">Residential</span>
+                            <i class="fas fa-hotel text-success mr-3" style="width: 24px; text-align: center; font-size: 1.1rem;"></i>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.9rem;">Residential</span>
                         </div>
-                        <span class="badge badge-success badge-pill px-3 special-badge" data-category="residential">{{ stats.special.residential }}</span>
+                        <span class="font-weight-bold text-success special-badge" data-category="residential" style="font-size: 1.15rem;">{{ stats.special.residential }}</span>
                     </a>
-                    <a href="{% url 'student_list' %}?special_category=unspecified" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1.5 border-bottom-0">
+                    <a href="{% url 'student_list' %}?special_category=unspecified" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-1 border-bottom-0">
                         <div class="d-flex align-items-center">
-                            <div class="bg-soft-secondary p-2 rounded mr-3 text-secondary" style="background: rgba(108, 117, 125, 0.1); width: 34px; text-align: center;">
-                                <i class="fas fa-question-circle"></i>
-                            </div>
-                            <span class="font-weight-bold text-dark">Unspecified</span>
+                            <i class="fas fa-question-circle text-secondary mr-3" style="width: 24px; text-align: center; font-size: 1.1rem;"></i>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.9rem;">Unspecified</span>
                         </div>
-                        <span class="badge badge-secondary badge-pill px-3 special-badge" data-category="unspecified">{{ stats.special.unspecified }}</span>
+                        <span class="font-weight-bold text-secondary special-badge" data-category="unspecified" style="font-size: 1.15rem;">{{ stats.special.unspecified }}</span>
                     </a>
                 </div>
-            </div>
         </div>
 
         <!-- Hallwise Distribution Card -->
@@ -720,6 +713,19 @@
         transform: translateY(-3px);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
     }
+    
+    /* Matrix Styling: Compact & Premium Clickable Numbers */
+    .matrix-cell-link {
+        display: inline-block;
+        min-width: 32px;
+        transition: all 0.15s ease-in-out;
+        text-align: center;
+        cursor: pointer;
+    }
+    .matrix-cell-link:hover {
+        text-decoration: underline !important;
+        transform: scale(1.1);
+    }
 </style>
 
 <!-- Periodic Students Drill-down Modal -->
@@ -749,69 +755,96 @@
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
             <div class="modal-header bg-info text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
-                <h5 class="modal-title font-weight-bold">
+                <h5 class="modal-title font-weight-bold" id="matrixModalTitle">
                     <i class="fas fa-th mr-2"></i> Student Distribution Matrix
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body p-4">
-                <p class="text-muted mb-3">
-                    Cross-tabulation showing the count of students grouped by **Batch (vertically)** and **Department (horizontally)**.
-                </p>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover mb-0 text-center align-middle">
-                        <thead class="bg-light text-muted small text-uppercase font-weight-bold">
-                            <tr>
-                                <th class="text-left py-3" style="min-width: 120px;">Batch</th>
-                                {% for col in matrix_cols %}
-                                    <th>{{ col }}</th>
-                                {% endfor %}
-                                <th class="bg-light font-weight-bold text-dark">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in matrix_rows %}
-                                <tr>
-                                    <td class="text-left font-weight-bold text-dark py-3">
-                                        <span class="badge badge-info px-2 py-1">{{ row.batch_name }}</span>
-                                    </td>
-                                    {% for count in row.prog_counts %}
-                                        <td class="py-3">
-                                            {% if count > 0 %}
-                                                <span class="font-weight-bold text-primary">{{ count }}</span>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                    {% endfor %}
-                                    <td class="font-weight-bold bg-light py-3">{{ row.row_total }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="{{ matrix_cols|length|add:2 }}" class="text-center py-5 text-muted">
-                                        No student records found in the system.
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                        {% if matrix_rows %}
-                            <tfoot class="bg-light font-weight-bold">
-                                <tr>
-                                    <td class="text-left py-3">Total</td>
-                                    {% for col_total in column_totals %}
-                                        <td class="py-3 text-info font-weight-bold">{{ col_total }}</td>
-                                    {% endfor %}
-                                    <td class="text-info font-weight-bold py-3">{{ grand_total }}</td>
-                                </tr>
-                            </tfoot>
-                        {% endif %}
-                    </table>
+                <div class="d-flex align-items-center">
+                    <button type="button" id="btn-copy-matrix" class="btn btn-sm btn-outline-light mr-2 rounded-pill px-2.5 py-1" style="font-size: 0.8rem; border-color: rgba(255,255,255,0.4);" title="Copy Matrix Data">
+                        <i class="fas fa-copy mr-1"></i> Copy Data
+                    </button>
+                    <button type="button" class="close text-white ml-2" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
             </div>
-            <div class="modal-footer bg-light border-0" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
-                <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Close</button>
+            <div class="modal-body p-4">
+                <div id="matrix-table-view">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover mb-0 text-center align-middle" style="font-size: 0.85rem;">
+                            <thead class="bg-light text-muted small text-uppercase font-weight-bold">
+                                <tr>
+                                    <th class="text-left p-2" style="min-width: 100px;">Batch</th>
+                                    {% for col in matrix_cols %}
+                                        <th class="p-2">{{ col }}</th>
+                                    {% endfor %}
+                                    <th class="bg-light font-weight-bold text-dark p-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in matrix_rows %}
+                                    <tr>
+                                        <td class="text-left font-weight-bold text-dark p-2">
+                                            <span class="badge badge-info px-2 py-0.5" style="font-size: 0.75rem;">{{ row.batch_name }}</span>
+                                        </td>
+                                        {% for count in row.prog_counts %}
+                                            <td class="p-1 align-middle">
+                                                {% if count > 0 %}
+                                                    <a href="#" class="matrix-cell-link text-primary font-weight-bold" style="text-decoration: none; font-size: 0.85rem; display: inline-block; min-width: 32px; transition: all 0.2s;" data-toggle="tooltip" title="Click to view student list">
+                                                        {{ count }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted small">-</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        <td class="font-weight-bold bg-light p-1 align-middle">
+                                            <a href="#" class="matrix-cell-link text-dark font-weight-bold" style="text-decoration: none; font-size: 0.85rem; display: inline-block; min-width: 32px; transition: all 0.2s;" data-toggle="tooltip" title="Click to view all students in this batch">
+                                                {{ row.row_total }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="{{ matrix_cols|length|add:2 }}" class="text-center py-5 text-muted">
+                                            No student records found in the system.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if matrix_rows %}
+                                <tfoot class="bg-light font-weight-bold">
+                                    <tr>
+                                        <td class="text-left p-2">Total</td>
+                                        {% for col_total in column_totals %}
+                                            <td class="p-1 align-middle text-info font-weight-bold">
+                                                {% if col_total > 0 %}
+                                                    <a href="#" class="matrix-cell-link text-info font-weight-bold" style="text-decoration: none; font-size: 0.85rem; display: inline-block; min-width: 32px; transition: all 0.2s;" data-toggle="tooltip" title="Click to view all students in this program">
+                                                        {{ col_total }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted small">0</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        <td class="text-success font-weight-bold p-1 align-middle">
+                                            <a href="#" class="matrix-cell-link text-success font-weight-bold" style="text-decoration: none; font-size: 0.85rem; display: inline-block; min-width: 32px; transition: all 0.2s;" data-toggle="tooltip" title="Click to view all students in system">
+                                                {{ grand_total }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                <div id="matrix-drilldown-view" style="display: none;">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Fetching student records...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1122,8 +1155,9 @@
         $('#unifiedBatchFilter').on('change', function() {
             const batch = $(this).val();
             
-            // Apply loading visual states
-            $('.card-outline, .card-info').css('opacity', '0.6');
+            // Apply loading visual states only to the cards being updated
+            $('#programDistributionChart, #genderDistributionChart, #hallDistributionChart, #intakeTable, #religionDistributionChart').closest('.card').css('opacity', '0.6');
+            $('.special-badge').closest('.card').css('opacity', '0.6');
             
             // Update the header badges immediately
             updateActiveBatchLabels(batch);
@@ -1337,6 +1371,174 @@
                 </div>
             `);
         });
+    });
+
+    // Modal click handler for student distribution matrix cells
+    $(document).on('click', '.matrix-cell-link', function(e) {
+        e.preventDefault();
+        const td = $(this).closest('td');
+        const colIndex = td.index();
+        
+        // Find batch name from the first cell of the row
+        let batch = td.closest('tr').find('td').first().text().trim();
+        // If we clicked a cell in tfoot, the batch label is "Total"
+        if (td.closest('tfoot').length > 0) {
+            batch = 'Total';
+        }
+        
+        // Find program code from corresponding header index
+        let program = $('#studentsMatrixModal thead th').eq(colIndex).text().trim();
+        if (colIndex === $('#studentsMatrixModal thead th').length - 1) {
+            program = 'Total';
+        }
+        
+        if (colIndex === 0) {
+            return;
+        }
+
+        // Show loading spinner in the drill-down view container
+        $('#matrix-drilldown-view').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-info" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <p class="text-muted mt-2">Fetching student records...</p>
+            </div>
+        `);
+        
+        // Swap views
+        $('#matrix-table-view').hide();
+        $('#matrix-drilldown-view').show();
+        
+        // Update modal title
+        let newTitle = `<i class="fas fa-users mr-2"></i> Students: `;
+        if (batch !== 'Total') newTitle += `Batch ${batch} `;
+        if (program !== 'Total') newTitle += `${program}`;
+        if (batch === 'Total' && program === 'Total') newTitle += `All Students`;
+        $('#matrixModalTitle').html(newTitle);
+        
+        // Fetch data
+        $.get("{% url 'api_matrix_students' %}", { batch: batch, program: program }, function(html) {
+            $('#matrix-drilldown-view').html(html);
+        }).fail(function(xhr) {
+            $('#matrix-drilldown-view').html(`
+                <div class="alert alert-danger m-3">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Failed to load records. ${xhr.status === 403 ? 'Access Denied.' : 'Please try again later.'}
+                </div>
+                <div class="text-center">
+                    <button id="btn-back-to-matrix" class="btn btn-sm btn-secondary rounded-pill px-4">Back to Matrix</button>
+                </div>
+            `);
+        });
+    });
+
+    // Back button handler inside the matrix drill-down view
+    $(document).on('click', '#btn-back-to-matrix', function(e) {
+        e.preventDefault();
+        $('#matrix-drilldown-view').hide();
+        $('#matrix-table-view').show();
+        $('#matrixModalTitle').html('<i class="fas fa-th mr-2"></i> Student Distribution Matrix');
+    });
+
+    // Copy matrix data clipboard handler
+    $(document).on('click', '#btn-copy-matrix', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        const icon = btn.find('i')[0];
+        
+        let text = "STUDENT DISTRIBUTION MATRIX REPORT\n";
+        text += "==================================\n\n";
+        
+        // Retrieve columns/headers
+        const headers = [];
+        $('#studentsMatrixModal thead th').each(function() {
+            headers.push($(this).text().trim());
+        });
+        
+        // Retrieve rows
+        const rows = [];
+        $('#studentsMatrixModal tbody tr').each(function() {
+            const rowCells = [];
+            $(this).find('td').each(function() {
+                rowCells.push($(this).text().trim());
+            });
+            if (rowCells.length > 0) {
+                rows.push(rowCells);
+            }
+        });
+        
+        // Retrieve totals (footer)
+        const footerCells = [];
+        $('#studentsMatrixModal tfoot td').each(function() {
+            footerCells.push($(this).text().trim());
+        });
+        
+        text += "Summary by Batch and Program:\n";
+        text += "-----------------------------\n";
+        
+        rows.forEach(row => {
+            const batchName = row[0];
+            const rowTotal = row[row.length - 1];
+            
+            // Collect all program counts for this batch in comma-separated list
+            const batchCounts = [];
+            for (let i = 1; i < row.length - 1; i++) {
+                const progName = headers[i];
+                const count = (row[i] === '-' || !row[i]) ? '0' : row[i];
+                batchCounts.push(`${progName}: ${count}`);
+            }
+            
+            text += `• Batch: ${batchName} (Total: ${rowTotal}) -> ${batchCounts.join(', ')}\n`;
+        });
+        text += "\n";
+        
+        if (footerCells.length > 0) {
+            text += "Overall Totals:\n";
+            text += "---------------\n";
+            for (let i = 1; i < footerCells.length - 1; i++) {
+                const progName = headers[i];
+                const count = footerCells[i];
+                text += `• ${progName}: ${count} students\n`;
+            }
+            const grandTotal = footerCells[footerCells.length - 1];
+            text += `• Grand Total: ${grandTotal} students\n`;
+        }
+        
+        function showSuccess() {
+            if (icon) {
+                icon.classList.replace('fa-copy', 'fa-check');
+                setTimeout(() => {
+                    icon.classList.replace('fa-check', 'fa-copy');
+                }, 1500);
+            }
+            toastr.success("Matrix data successfully copied to clipboard!");
+        }
+
+        function copyFallback() {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.top = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showSuccess();
+            } catch (err) {
+                toastr.error('Failed to copy matrix data.');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        if (!navigator.clipboard) {
+            copyFallback();
+            return;
+        }
+
+        navigator.clipboard.writeText(text)
+            .then(showSuccess)
+            .catch(copyFallback);
     });
 </script>
 {% endblock %}

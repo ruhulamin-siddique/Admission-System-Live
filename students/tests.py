@@ -14,6 +14,10 @@ from students.models import Student
 class StudentDirectoryTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        from students.utils import get_canonical_program_name
+        if hasattr(get_canonical_program_name, '_cache'):
+            delattr(get_canonical_program_name, '_cache')
+            
         engineering = Cluster.objects.create(name='Engineering & Technology', code='05')
         business = Cluster.objects.create(name='Business & Management', code='09')
 
@@ -226,7 +230,7 @@ class StudentDirectoryTests(TestCase):
             ({'search': 'Inactive CSE Student'}, lambda rows: rows == [self.inactive_student]),
             ({'year': '2024'}, lambda rows: all(student.admission_year == 2024 for student in rows)),
             ({'dept': 'Business & Management'}, lambda rows: rows == [self.mba_student]),
-            ({'program': self.cse_program.name}, lambda rows: all(student.program == self.cse_program.name for student in rows)),
+            ({'program': 'CSE'}, lambda rows: all(student.program == 'CSE' for student in rows)),
             ({'batch': 'MBA-1'}, lambda rows: rows == [self.mba_student]),
             ({'type': 'Masters'}, lambda rows: rows == [self.mba_student]),
             ({'gender': 'Female'}, lambda rows: rows and all(student.gender == 'Female' for student in rows)),
@@ -278,7 +282,7 @@ class StudentDirectoryTests(TestCase):
     def test_directory_pagination_and_page_size_preserve_filters(self):
         response = self.client.get(
             reverse('student_list'),
-            {'program': self.cse_program.name, 'page': 2, 'per_page': 10},
+            {'program': 'CSE', 'page': 2, 'per_page': 10},
             HTTP_HX_REQUEST='true',
         )
 
@@ -286,7 +290,7 @@ class StudentDirectoryTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(page_obj.number, 2)
         self.assertEqual(page_obj.paginator.per_page, 10)
-        self.assertTrue(all(student.program == self.cse_program.name for student in page_obj.object_list))
+        self.assertTrue(all(student.program == 'CSE' for student in page_obj.object_list))
         self.assertContains(response, 'directory-per-page-control')
         self.assertContains(response, 'hx-get="/students/?page=1"')
 
@@ -326,15 +330,15 @@ class StudentDirectoryTests(TestCase):
         visible_programs = {student.program for student in response.context['page_obj'].paginator.object_list}
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(visible_programs, {self.cse_program.name, 'CSE'})
+        self.assertEqual(visible_programs, {'CSE'})
 
         export_response = self.client.get(reverse('export_students'))
         export_df = self.read_excel(export_response)
-        self.assertEqual(set(export_df['program']), {self.cse_program.name, 'CSE'})
+        self.assertEqual(set(export_df['program']), {'CSE'})
         self.assertEqual(len(export_df), 17)
 
     def test_standard_export_matches_filtered_directory_dataset(self):
-        params = {'program': self.cse_program.name, 'status': 'Inactive'}
+        params = {'program': 'CSE', 'status': 'Inactive'}
         list_response = self.client.get(reverse('student_list'), params)
         export_response = self.client.get(reverse('export_students'), params)
 
@@ -380,7 +384,7 @@ class StudentDirectoryTests(TestCase):
         self.assertContains(response, self.inactive_student.blood_group)
         self.assertContains(response, self.inactive_student.religion)
         self.assertNotContains(response, self.inactive_student.father_name)
-        self.assertNotContains(response, self.inactive_student.program)
+        self.assertNotContains(response, self.cse_program.name)
         self.assertNotContains(response, 'Open Profile')
 
     def test_institutional_report_access_and_rendering(self):
@@ -584,6 +588,192 @@ class StudentDirectoryTests(TestCase):
             cluster_name='Arts'
         )
         self.assertEqual(prefix, expected_prefix)
+
+    def test_excel_import_logs_activity(self):
+        from core.models import ActivityLog
+        # Create Excel file in-memory
+        data = {
+            'student_id': ['0802510001011001'],
+            'student_name': ['IMPORT STUDENT ONE'],
+            'program': ['CSE'],
+            'admission_status': ['Active'],
+            'gender': ['Male']
+        }
+        df = pd.DataFrame(data)
+        excel_file = BytesIO()
+        df.to_excel(excel_file, index=False)
+        excel_file.seek(0)
+        excel_file.name = 'test_import.xlsx'
+
+        # Perform POST request to import_students
+        import_url = reverse('import_students')
+        response = self.client.post(import_url, {'excel_file': excel_file})
+        self.assertEqual(response.status_code, 200)
+
+        # Check that Student was created
+        student_exists = Student.objects.filter(student_id='0802510001011001').exists()
+        self.assertTrue(student_exists)
+
+        # Check ActivityLog entry
+        log_entry = ActivityLog.objects.filter(module='students', object_id='0802510001011001', action_type='CREATE').first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.user, self.superuser)
+        self.assertIn('Imported student record', log_entry.description)
+
+        # Now test the timeline rendering of the imported student profile view!
+        profile_url = reverse('student_profile', args=['0802510001011001'])
+        profile_response = self.client.get(profile_url)
+        self.assertEqual(profile_response.status_code, 200)
+        timeline = profile_response.context['timeline']
+        
+        # Verify timeline has correct import details
+        import_event = next((e for e in timeline if 'Imported' in e['title'] or 'Record Imported' in e['title']), None)
+        self.assertIsNotNone(import_event)
+        self.assertEqual(import_event['user'], self.superuser.username)
+        self.assertIn('imported into the system via Excel spreadsheet', import_event['description'])
+
+    def test_api_matrix_students_drilldown(self):
+        # We query the api_matrix_students endpoint for CSE and batch 25th
+        matrix_url = reverse('api_matrix_students')
+        
+        # Test specific batch and program filter
+        response = self.client.get(matrix_url, {'batch': '25th', 'program': 'CSE'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Showing')
+        self.assertContains(response, 'CSE Student')
+        
+        # Test total column drill-down (all programs in batch)
+        response_batch_total = self.client.get(matrix_url, {'batch': '25th', 'program': 'Total'})
+        self.assertEqual(response_batch_total.status_code, 200)
+        self.assertContains(response_batch_total, 'CSE Student')
+        self.assertContains(response_batch_total, 'EEE Student')
+        
+        # Test total row drill-down (all batches in program)
+        response_program_total = self.client.get(matrix_url, {'batch': 'Total', 'program': 'CSE'})
+        self.assertEqual(response_program_total.status_code, 200)
+        self.assertContains(response_program_total, 'CSE Student')
+        
+        # Test grand total drill-down
+        response_grand_total = self.client.get(matrix_url, {'batch': 'Total', 'program': 'Total'})
+        self.assertEqual(response_grand_total.status_code, 200)
+        self.assertContains(response_grand_total, 'CSE Student')
+        self.assertContains(response_grand_total, 'EEE Student')
+        self.assertContains(response_grand_total, 'MBA Student')
+
+    def test_legacy_student_form_validation(self):
+        from students.forms import StudentForm
+        form_data = {
+            'student_name': 'Legacy test student',
+            'is_legacy_student': 'on',
+            'old_student_id': '123456789',
+            'program': self.cse_program.name,
+            'admission_year': 2024,
+            'semester_name': 'Spring',
+            'program_type': 'Bachelor',
+            'batch': '24th',
+            'current_batch': '24th',
+            'current_semester': 'Level 1 Term I',
+            'student_mobile': '01700000000',
+            'father_mobile': '01700000001',
+            'mother_mobile': '01700000002',
+            'ssc_school': 'SSC School',
+            'ssc_year': '2022',
+            'ssc_board': 'Dhaka',
+            'ssc_roll': '123456',
+            'ssc_gpa': 5.00,
+            'hsc_college': 'HSC College',
+            'hsc_year': '2024',
+            'hsc_board': 'Dhaka',
+            'hsc_roll': '123456',
+            'hsc_gpa': 5.00,
+            'admission_payment': 10000,
+            'admission_status': 'Active',
+        }
+        form = StudentForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        self.assertIsNotNone(form.cleaned_data['student_id'])
+        self.assertTrue(form.cleaned_data['student_id'].startswith('080'))
+
+    def test_api_student_ugc_id_preview(self):
+        # Create a legacy student with missing academic parameters
+        legacy_student_missing = Student.objects.create(
+            student_id='999999',
+            student_name='Legacy Missing Fields',
+            is_legacy_student=True,
+            admission_year=None,
+            semester_name=None,
+            hall_attached=None,
+            program=None,
+            cluster=None
+        )
+        
+        url = reverse('api_student_ugc_id_preview', kwargs={'student_id': legacy_student_missing.student_id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data['success'])
+        self.assertIn('Required academic parameters are missing', data['error'])
+        
+        # Fill in the academic parameters and retry
+        legacy_student_missing.admission_year = 2025
+        legacy_student_missing.semester_name = 'Spring'
+        legacy_student_missing.hall_attached = 'Non-Residential'
+        legacy_student_missing.program = self.cse_program.name
+        legacy_student_missing.cluster = self.cse_program.cluster.name
+        legacy_student_missing.program_type = 'Bachelor'
+        legacy_student_missing.save()
+        
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertIsNotNone(data['suggested_id'])
+        self.assertEqual(len(data['suggested_id']), 16)
+        self.assertTrue(data['suggested_id'].startswith('0802510005011'))
+
+    def test_legacy_student_unlocked_fields(self):
+        # Create a standard student with a 16-digit ID
+        std_student = Student.objects.create(
+            student_id='0802510005011001',
+            student_name='Standard Student',
+            is_legacy_student=False,
+            admission_year=2025,
+            semester_name='Spring',
+            hall_attached='Non-Residential',
+            program=self.cse_program.name,
+            cluster=self.cse_program.cluster.name,
+            program_type='Bachelor'
+        )
+        
+        # Create a legacy student with a 9-digit ID
+        legacy_student = Student.objects.create(
+            student_id='190103024',
+            student_name='Legacy Student',
+            is_legacy_student=True,
+            admission_year=2019,
+            semester_name='Spring',
+            hall_attached='Non-Residential',
+            program=self.cse_program.name,
+            cluster=self.cse_program.cluster.name,
+            program_type='Bachelor'
+        )
+        
+        # Test GET on edit view for standard student (fields should be disabled)
+        url_std = reverse('edit_student', kwargs={'student_id': std_student.student_id})
+        res_std = self.client.get(url_std)
+        self.assertEqual(res_std.status_code, 200)
+        form_std = res_std.context['form']
+        self.assertEqual(form_std.fields['program'].widget.attrs.get('disabled'), 'disabled')
+        self.assertEqual(form_std.fields['admission_year'].widget.attrs.get('disabled'), 'disabled')
+        
+        # Test GET on edit view for legacy student (fields should NOT be disabled)
+        url_legacy = reverse('edit_student', kwargs={'student_id': legacy_student.student_id})
+        res_legacy = self.client.get(url_legacy)
+        self.assertEqual(res_legacy.status_code, 200)
+        form_legacy = res_legacy.context['form']
+        self.assertIsNone(form_legacy.fields['program'].widget.attrs.get('disabled'))
+        self.assertIsNone(form_legacy.fields['admission_year'].widget.attrs.get('disabled'))
+
 
 
 

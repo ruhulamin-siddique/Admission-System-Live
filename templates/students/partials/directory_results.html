@@ -6,7 +6,7 @@
         {% else %}
         Sorted by <strong>Department</strong>, then <strong>Latest Batch</strong>, then <strong>ID Serial</strong>.
         {% endif %}
-        <span class="ml-2">Total: <span id="total-count-display" class="total-badge">{{ total_count }}</span></span>
+        <span class="ml-2">Total: <strong id="total-count-display">{{ total_count }}</strong></span>
     </div>
     <div class="d-flex align-items-center" style="gap: 10px;">
         <a href="{% url 'export_students' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn directory-action-btn btn-download-main">

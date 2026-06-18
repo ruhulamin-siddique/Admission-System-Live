@@ -88,7 +88,7 @@ def print_blank_form(request):
 def dashboard(request):
     """Main dashboard view with summary statistics."""
     # Initialize all date variables at the very beginning
-    _now = timezone.now()
+    _now = timezone.localtime(timezone.now())
     _today = _now.date()
     _start_of_week = _today - timezone.timedelta(days=_today.weekday())
     _start_of_month = _today.replace(day=1)
@@ -234,8 +234,8 @@ def dashboard(request):
         latest_batch_intake = list(aggregated_intake.values())
         latest_batch_intake.sort(key=lambda x: x['count'], reverse=True)
 
-    # Periodic Admission Stats (Filtered by Latest Batch only)
-    periodic_qs = Student.objects.filter(batch=latest_batch) if latest_batch else Student.objects.all()
+    # Periodic Admission Stats (System-wide)
+    periodic_qs = Student.objects.all()
     today_qs = periodic_qs.filter(admission_date=_today)
     week_qs = periodic_qs.filter(admission_date__gte=_start_of_week)
     month_qs = periodic_qs.filter(admission_date__gte=_start_of_month)
@@ -411,6 +411,7 @@ DIRECTORY_FILTER_FIELDS = (
     'dept',
     'program',
     'batch',
+    'current_batch',
     'type',
     'gender',
     'status',
@@ -510,6 +511,8 @@ def _apply_directory_filters(queryset, params):
         queryset = queryset.filter(program=params['program'])
     if params['batch']:
         queryset = queryset.filter(batch=params['batch'])
+    if params['current_batch']:
+        queryset = queryset.filter(current_batch=params['current_batch'])
     if params['year']:
         queryset = queryset.filter(admission_year=params['year'])
     if params['dept']:
@@ -552,6 +555,10 @@ def _apply_directory_filters(queryset, params):
             queryset = queryset.filter(is_credit_transfer=True)
         elif cat == 'temp_cancel':
             queryset = queryset.filter(is_temp_admission_cancel=True)
+        elif cat == 'ugc_migrated':
+            queryset = queryset.exclude(old_student_id__isnull=True).exclude(old_student_id='')
+        elif cat == 'legacy_student':
+            queryset = queryset.filter(is_legacy_student=True)
 
     return queryset
 
@@ -598,12 +605,20 @@ def _get_batch_filter_values(base_queryset):
     )
 
 
+def _get_current_batch_filter_values(base_queryset):
+    from master_data.models import Batch
+    existing_batches = set(base_queryset.exclude(current_batch__isnull=True).exclude(current_batch='').values_list('current_batch', flat=True))
+    all_sorted_batches = Batch.objects.all().order_by('-sort_order', 'name').values_list('name', flat=True)
+    return [b for b in all_sorted_batches if b in existing_batches]
+
+
 def _build_directory_filter_metadata(base_queryset):
     return {
         'years': _get_non_empty_values(base_queryset, 'admission_year', '-admission_year'),
         'clusters': _get_non_empty_values(base_queryset, 'cluster', 'cluster'),
         'programs': _get_non_empty_values(base_queryset, 'program', 'program'),
         'batches': _get_batch_filter_values(base_queryset),
+        'current_batches': _get_current_batch_filter_values(base_queryset),
         'genders': ['Male', 'Female', 'Other'],
         'statuses': _get_non_empty_values(base_queryset, 'admission_status', 'admission_status'),
     }
@@ -649,6 +664,7 @@ def student_list(request):
         'total_count': directory_state['total_count'],
         'selected_program': params['program'],
         'selected_batch': params['batch'],
+        'selected_current_batch': params['current_batch'],
         'selected_year': params['year'],
         'selected_dept': params['dept'],
         'selected_gender': params['gender'],
@@ -684,31 +700,40 @@ def student_list(request):
     template = 'students/partials/directory_results.html' if request.headers.get('HX-Request') else 'students/list.html'
     return render(request, template, context)
 
+
+def _resolve_student(student_id):
+    """
+    Resolve a student by 16-digit system ID (primary key) OR by legacy 9-digit
+    old_student_id. Returns (student, canonical_student_id, was_legacy_lookup).
+    Raises Http404 if not found by either method.
+    """
+    try:
+        student = Student.objects.get(pk=student_id)
+        return student, student.student_id, False
+    except Student.DoesNotExist:
+        pass
+    # Fallback: try legacy old_student_id lookup
+    student = get_object_or_404(Student, old_student_id=student_id)
+    return student, student.student_id, True
+
+
+@require_access('students', 'view_directory')
 @require_access('students', 'view_directory')
 def student_short_info(request, student_id):
     """Returns a compact card with student info not visible in the main directory."""
-    student = get_object_or_404(
-        Student.objects.only(
-            'student_id',
-            'student_name',
-            'photo_path',
-            'student_email',
-            'blood_group',
-            'religion',
-            'father_mobile',
-            'mother_mobile',
-            'emergency_contact',
-            'present_address',
-            'permanent_address',
-        ),
-        student_id=student_id,
-    )
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        # short_info might be loaded via AJAX, just serve the content with canonical student object.
+        pass
+    # We could restrict .only() here but _resolve_student already loaded the full object.
     return render(request, 'students/partials/short_info_card.html', {'student': student})
 
 @require_access('students', 'delete_record')
 def delete_student(request, student_id):
     """Permanently delete a student record with audit logging."""
-    student = get_object_or_404(Student, student_id=student_id)
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        return redirect('delete_student', student_id=canonical_id)
     if request.method == 'POST':
         student_name = student.student_name
         student.delete()
@@ -733,6 +758,7 @@ def migration_center(request):
         students_queryset = Student.objects.filter(
             Q(student_name__icontains=query) | 
             Q(student_id__icontains=query) |
+            Q(old_student_id__icontains=query) |
             Q(student_mobile__icontains=query)
         ).order_by('student_id')
         
@@ -768,7 +794,8 @@ def cancellation_hub(request):
         # Search for students eligible for status change (Active/Inactive)
         students = Student.objects.filter(
             Q(student_name__icontains=query) | 
-            Q(student_id__icontains=query)
+            Q(student_id__icontains=query) |
+            Q(old_student_id__icontains=query)
         ).exclude(admission_status='Cancelled').order_by('student_id')[:20]
         context['students'] = students
     
@@ -784,7 +811,9 @@ def cancellation_list_modal(request):
 @require_access('students', 'cancel_admission')
 def cancel_admission(request, student_id):
     """View to handle the actual cancellation logic with history logging."""
-    student = get_object_or_404(Student, pk=student_id)
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        return redirect('cancel_admission', student_id=canonical_id)
     if request.method == "POST":
         data = request.POST
         reason_cat = data.get('reason_category')
@@ -895,24 +924,10 @@ def api_periodic_students(request):
     period = request.GET.get('period')
     program = request.GET.get('program')
     
-    _now = timezone.now()
+    _now = timezone.localtime(timezone.now())
     _today = _now.date()
     
-    # Identify Latest Batch
-    import re
-    all_batches = list(Student.objects.values_list('batch', flat=True).distinct())
-    latest_batch = None
-    max_num = -1
-    for b in all_batches:
-        if b:
-            nums = re.findall(r'\d+', b)
-            if nums:
-                n = int(nums[0])
-                if n > max_num:
-                    max_num = n
-                    latest_batch = b
-
-    qs = Student.objects.filter(batch=latest_batch) if latest_batch else Student.objects.all()
+    qs = Student.objects.all()
     
     if period == 'today':
         qs = qs.filter(admission_date=_today)
@@ -932,6 +947,44 @@ def api_periodic_students(request):
         'students': students,
         'period': period,
         'program': program,
+        'count': qs.count()
+    })
+
+@require_access('dashboard', 'view')
+def api_matrix_students(request):
+    """Returns a partial list of students for matrix drill-down selection."""
+    batch = request.GET.get('batch')
+    program_code = request.GET.get('program')
+    
+    qs = Student.objects.all()
+    
+    if batch and batch != 'all' and batch != 'Total':
+        if batch == 'Unknown':
+            qs = qs.filter(Q(batch__isnull=True) | Q(batch=''))
+        else:
+            qs = qs.filter(batch=batch)
+            
+    if program_code and program_code != 'all' and program_code != 'Total':
+        if program_code == 'Unknown':
+            qs = qs.filter(Q(program__isnull=True) | Q(program=''))
+        else:
+            from master_data.models import Program
+            # Find matching program names in master data (short name or full name match)
+            matching_programs = list(Program.objects.filter(
+                Q(name__iexact=program_code) | Q(short_name__iexact=program_code)
+            ).values_list('name', flat=True))
+            # Also include the program code itself
+            matching_programs.append(program_code)
+            
+            # Filter student records by matching programs
+            qs = qs.filter(program__in=matching_programs)
+            
+    students = qs.order_by('student_id')[:100] # Limit to 100 for quick view in modal
+    
+    return render(request, 'students/partials/matrix_student_list.html', {
+        'students': students,
+        'batch': batch,
+        'program': program_code,
         'count': qs.count()
     })
 
@@ -1366,74 +1419,116 @@ def add_student(request):
         if form.is_valid():
             student = form.save(commit=False)
 
-            # --- ID Assignment: branch on id_mode ---
-            from core.models import SystemSettings
-            sys = SystemSettings.objects.get_or_create(id=1)[0]
+            # --- Detect Legacy Student Mode ---
+            is_legacy = request.POST.get('is_legacy_student') in ('on', 'true', '1')
+            student.is_legacy_student = is_legacy
 
-            if not student.student_id:
-                if sys.id_mode == 'semi_auto':
-                    # JS writes assembled ID into hidden student_id field before submit
-                    # If still blank (JS disabled / edge case), fall through to auto
-                    serial_input = str(request.POST.get('student_id_serial', '')).strip()
-                    prefix = generate_ugc_prefix(
-                        admission_year=request.POST.get('admission_year'),
-                        semester_name=request.POST.get('semester_name'),
-                        hall_name=request.POST.get('hall_attached'),
-                        program_name=request.POST.get('program'),
-                        cluster_name=request.POST.get('cluster'),
-                        program_level=request.POST.get('program_type', 'Bachelor'),
-                    )
-                    if serial_input and serial_input.isdigit() and len(serial_input) == 3:
-                        student.student_id = prefix + serial_input
-                    else:
-                        student.student_id = generate_next_ugc_id(
-                            admission_year=request.POST.get('admission_year'),
-                            semester_name=request.POST.get('semester_name'),
-                            hall_name=request.POST.get('hall_attached'),
-                            program_name=request.POST.get('program'),
-                            cluster_name=request.POST.get('cluster'),
-                            program_level=request.POST.get('program_type', 'Bachelor'),
-                        )
-                elif sys.id_mode == 'auto':
-                    student.student_id = generate_next_ugc_id(
-                        admission_year=request.POST.get('admission_year'),
-                        semester_name=request.POST.get('semester_name'),
-                        hall_name=request.POST.get('hall_attached'),
-                        program_name=request.POST.get('program'),
-                        cluster_name=request.POST.get('cluster'),
-                        program_level=request.POST.get('program_type', 'Bachelor'),
-                    )
-                # manual mode: ID must have been submitted via form field (validated by clean_student_id)
-            
-            # Handle Photo Upload
-            photo_path = _handle_student_photo(request, student)
-            if photo_path:
-                student.photo_path = photo_path
-                
-            student.save()
-            from core.utils import log_activity
-            log_activity(request, 'CREATE', 'students', f'Admitted new student: {student.student_name}', object_id=student.student_id)
-            
-            # Automated Welcome SMS
-            if student.student_mobile:
-                msg_body = f"Welcome {student.student_name} to BAUST! Your Student ID is {student.student_id}. Please keep this for your records."
-                from core.utils import send_sms
-                from .models import SMSHistory
-                success, response_text = send_sms(student.student_mobile, msg_body)
-                SMSHistory.objects.create(
-                    recipient_name=student.student_name,
-                    student_id=student.student_id,
-                    recipient_contact=student.student_mobile,
-                    sms_delivery_type="Transaction",
-                    message_type="SMS",
-                    message_body=msg_body,
-                    status="Delivered" if success else "Failed",
-                    api_response=response_text,
-                    api_profile_name="AdmissionWelcomeSystem"
+            if is_legacy:
+                # Legacy student: always auto-generate a 16-digit system ID.
+                from core.models import SystemSettings
+                student.student_id = generate_next_ugc_id(
+                    admission_year=request.POST.get('admission_year'),
+                    semester_name=request.POST.get('semester_name'),
+                    hall_name=request.POST.get('hall_attached'),
+                    program_name=request.POST.get('program'),
+                    cluster_name=request.POST.get('cluster'),
+                    program_level=request.POST.get('program_type', 'Bachelor'),
                 )
 
-            messages.success(request, f"Student {student.student_name} admitted successfully with ID {student.student_id}")
-            return redirect('student_list')
+                # Validate mandatory old ID
+                old_id = (request.POST.get('old_student_id') or '').strip()
+                legacy_error = None
+                if not old_id:
+                    legacy_error = ('old_student_id', 'Legacy students must have their original ID entered here.')
+                elif Student.objects.filter(old_student_id=old_id).exists():
+                    legacy_error = ('old_student_id', f'Old ID "{old_id}" is already registered for another student.')
+
+                if legacy_error:
+                    form.add_error(*legacy_error)
+                    error_count = len(form.errors)
+                    messages.error(request, f"Admission failed. Please fix the {error_count} error(s) in the form.")
+                else:
+                    student.old_student_id = old_id
+
+            if not is_legacy or not form.errors:
+                if not is_legacy:
+                    # Standard ID Assignment: branch on id_mode
+                    from core.models import SystemSettings
+                    sys = SystemSettings.objects.get_or_create(id=1)[0]
+
+                    if not student.student_id:
+                        if sys.id_mode == 'semi_auto':
+                            serial_input = str(request.POST.get('student_id_serial', '')).strip()
+                            prefix = generate_ugc_prefix(
+                                admission_year=request.POST.get('admission_year'),
+                                semester_name=request.POST.get('semester_name'),
+                                hall_name=request.POST.get('hall_attached'),
+                                program_name=request.POST.get('program'),
+                                cluster_name=request.POST.get('cluster'),
+                                program_level=request.POST.get('program_type', 'Bachelor'),
+                            )
+                            if serial_input and serial_input.isdigit() and len(serial_input) == 3:
+                                student.student_id = prefix + serial_input
+                            else:
+                                student.student_id = generate_next_ugc_id(
+                                    admission_year=request.POST.get('admission_year'),
+                                    semester_name=request.POST.get('semester_name'),
+                                    hall_name=request.POST.get('hall_attached'),
+                                    program_name=request.POST.get('program'),
+                                    cluster_name=request.POST.get('cluster'),
+                                    program_level=request.POST.get('program_type', 'Bachelor'),
+                                )
+                        elif sys.id_mode == 'auto':
+                            student.student_id = generate_next_ugc_id(
+                                admission_year=request.POST.get('admission_year'),
+                                semester_name=request.POST.get('semester_name'),
+                                hall_name=request.POST.get('hall_attached'),
+                                program_name=request.POST.get('program'),
+                                cluster_name=request.POST.get('cluster'),
+                                program_level=request.POST.get('program_type', 'Bachelor'),
+                            )
+                        # manual mode: ID from form field (validated by clean_student_id)
+
+                # Handle Photo Upload
+                photo_path = _handle_student_photo(request, student)
+                if photo_path:
+                    student.photo_path = photo_path
+
+                student.save()
+                from core.utils import log_activity
+                if is_legacy:
+                    log_activity(
+                        request, 'CREATE', 'students',
+                        f'Added legacy student (Batch {student.batch}): {student.student_name} '
+                        f'[Old ID: {student.old_student_id}] [System ID: {student.student_id}]',
+                        object_id=student.student_id
+                    )
+                else:
+                    log_activity(request, 'CREATE', 'students', f'Admitted new student: {student.student_name}', object_id=student.student_id)
+
+                # Automated Welcome SMS — suppressed for legacy records (already graduated / not new admissions)
+                if student.student_mobile and not is_legacy:
+                    msg_body = f"Welcome {student.student_name} to BAUST! Your Student ID is {student.student_id}. Please keep this for your records."
+                    from core.utils import send_sms
+                    from .models import SMSHistory
+                    success, response_text = send_sms(student.student_mobile, msg_body)
+                    SMSHistory.objects.create(
+                        recipient_name=student.student_name,
+                        student_id=student.student_id,
+                        recipient_contact=student.student_mobile,
+                        sms_delivery_type="Transaction",
+                        message_type="SMS",
+                        message_body=msg_body,
+                        status="Delivered" if success else "Failed",
+                        api_response=response_text,
+                        api_profile_name="AdmissionWelcomeSystem"
+                    )
+
+                if is_legacy:
+                    messages.success(request, f"Legacy student {student.student_name} added. Old ID: {student.old_student_id} | System ID: {student.student_id}")
+                else:
+                    messages.success(request, f"Student {student.student_name} admitted successfully with ID {student.student_id}")
+                return redirect('student_list')
         else:
             error_count = len(form.errors)
             messages.error(request, f"Admission failed. Please fix the {error_count} error(s) in the form.")
@@ -1460,10 +1555,17 @@ def add_student(request):
 @require_access('students', 'edit_profile')
 def edit_student(request, student_id):
     """View to edit an existing student record with strict ID-field locking."""
-    student = get_object_or_404(Student, student_id=student_id)
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        return redirect('edit_student', student_id=canonical_id)
     
     # Identify fields that must remain constant to maintain ID and academic integrity
-    locked_fields = ['program', 'admission_year', 'cluster', 'hall_attached', 'semester_name', 'program_type', 'student_id']
+    # If the student is a legacy student with an ID < 16 digits, we unlock academic fields
+    # so the administrator can specify details and perform a UGC ID migration.
+    if len(student.student_id) < 16:
+        locked_fields = ['student_id']
+    else:
+        locked_fields = ['program', 'admission_year', 'cluster', 'hall_attached', 'semester_name', 'program_type', 'student_id']
     
     if request.method == "POST":
         # Capture original values for both injection and restoration
@@ -1553,7 +1655,9 @@ def rectify_student_id(request, student_id):
         messages.error(request, "Permission Denied: Only Super-Administrators can rectify Student IDs.")
         return redirect('student_profile', student_id=student_id)
 
-    student = get_object_or_404(Student, student_id=student_id)
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        return redirect('rectify_student_id', student_id=canonical_id)
     
     if request.method == 'POST':
         new_id = request.POST.get('new_id', '').strip()
@@ -1570,6 +1674,26 @@ def rectify_student_id(request, student_id):
         try:
             with transaction.atomic():
                 old_id = student.student_id
+                
+                # Update academic attributes if supplied in POST (e.g. from the migration tool)
+                for field in ['program', 'admission_year', 'semester_name', 'hall_attached', 'program_type', 'cluster']:
+                    if field in request.POST and request.POST.get(field):
+                        val = request.POST.get(field)
+                        # Set database correct type for admission_year
+                        if field == 'admission_year':
+                            val = int(val)
+                        setattr(student, field, val)
+                
+                # Normalize cluster if program changed
+                if 'program' in request.POST and request.POST.get('program'):
+                    from master_data.models import Program as MasterProgram
+                    prog_obj = MasterProgram.objects.filter(
+                        Q(name__iexact=student.program) | Q(short_name__iexact=student.program)
+                    ).first()
+                    if prog_obj:
+                        student.cluster = prog_obj.cluster.name
+                        if not student.program_type:
+                            student.program_type = prog_obj.get_level_code_display()
                 
                 # 1. Clone the record
                 # We do this by changing PK and saving as new
@@ -1618,6 +1742,73 @@ def rectify_student_id(request, student_id):
             return redirect('student_profile', student_id=student_id)
 
     return redirect('student_profile', student_id=student_id)
+
+
+@require_access('students', 'edit_profile')
+def api_student_ugc_id_preview(request, student_id):
+    """
+    Calculates and returns the suggested 16-digit UGC ID for an existing student,
+    allowing optional GET parameters to override the database fields.
+    """
+    student, _, _ = _resolve_student(student_id)
+    
+    # Use request params or fall back to student's DB fields
+    admission_year = request.GET.get('admission_year') or student.admission_year
+    semester_name = request.GET.get('semester_name') or student.semester_name
+    hall_attached = request.GET.get('hall_attached') or student.hall_attached
+    program = request.GET.get('program') or student.program
+    program_type = request.GET.get('program_type') or student.program_type
+    
+    # Resolve program level/type mapping if program changed
+    cluster = student.cluster
+    if program:
+        from master_data.models import Program as MasterProgram
+        prog_obj = MasterProgram.objects.filter(
+            Q(name__iexact=program) | Q(short_name__iexact=program)
+        ).first()
+        if prog_obj:
+            cluster = prog_obj.cluster.name
+            if not program_type:
+                program_type = prog_obj.get_level_code_display()
+                
+    missing = []
+    if not admission_year: missing.append("Admission Year")
+    if not semester_name: missing.append("Admitted Semester")
+    if not hall_attached: missing.append("Hall Attachment")
+    if not program: missing.append("Program")
+    
+    if missing:
+        return JsonResponse({
+            'success': False, 
+            'missing': missing,
+            'error': f"Required academic parameters are missing. Please select: {', '.join(missing)}"
+        })
+        
+    try:
+        from .utils import generate_next_ugc_id
+        suggested_id = generate_next_ugc_id(
+            admission_year=admission_year,
+            semester_name=semester_name,
+            hall_name=hall_attached,
+            program_name=program,
+            cluster_name=cluster,
+            program_level=program_type or "Bachelor",
+            mba_credits=student.mba_credits
+        )
+        return JsonResponse({
+            'success': True,
+            'suggested_id': suggested_id,
+            'details': {
+                'admission_year': admission_year,
+                'semester_name': semester_name,
+                'hall_attached': hall_attached,
+                'program': program,
+                'program_type': program_type or "Bachelor",
+                'current_id': student.student_id
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @require_access('students', 'add_student')
@@ -1669,11 +1860,49 @@ def import_students(request):
             messages.success(request, f"Successfully {action} {result['count']} students.")
             if result['total_errors'] > 0:
                 messages.warning(request, f"Skipped {result['total_errors']} records due to errors.")
+            
+            # Log bulk activity
+            from core.models import ActivityLog
+            meta = getattr(request, 'META', {})
+            x_forwarded_for = meta.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip = x_forwarded_for.split(',')[0]
+            else:
+                ip = meta.get('REMOTE_ADDR', None)
+            
+            logs_to_create = []
+            for s_id in result.get('inserted_list', []):
+                logs_to_create.append(ActivityLog(
+                    user=request.user,
+                    action_type='CREATE',
+                    module='students',
+                    object_id=s_id,
+                    description=f"Imported student record {s_id} via Excel sheet",
+                    ip_address=ip
+                ))
+            for s_id in result.get('updated_list', []):
+                logs_to_create.append(ActivityLog(
+                    user=request.user,
+                    action_type='UPDATE',
+                    module='students',
+                    object_id=s_id,
+                    description=f"Updated student record {s_id} via Excel sheet import",
+                    ip_address=ip
+                ))
+            if logs_to_create:
+                ActivityLog.objects.bulk_create(logs_to_create)
+                
+            # Create a shallow copy with sliced lists for the template report
+            template_result = result.copy()
+            template_result['inserted_list'] = result['inserted_list'][:50]
+            template_result['updated_list'] = result['updated_list'][:50]
+            template_result['errors'] = result['errors'][:50]
         else:
             messages.error(request, f"Import failed: {result['error']}")
+            template_result = result
             
         # Return the partial view instead of redirecting
-        return render(request, 'students/partials/import_report.html', {'result': result, 'update_existing': update_existing})
+        return render(request, 'students/partials/import_report.html', {'result': template_result, 'update_existing': update_existing})
     return render(request, 'students/import.html', {'active_tab': 'excel'})
 
 @require_access('students', 'bulk_import')
@@ -1950,21 +2179,12 @@ def student_profile(request, student_id):
     from core.models import ActivityLog
     from django.utils.dateparse import parse_datetime
     
-    student = get_object_or_404(Student, pk=student_id)
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        return redirect('student_profile', student_id=canonical_id)
     timeline = []
 
-    # 1. Admission Event
-    timeline.append({
-        'timestamp': student.created_at,
-        'icon': 'fas fa-user-plus',
-        'badge_class': 'bg-success',
-        'title': 'Initial Admission',
-        'description': f'Student record created in the system for {student.program}.',
-        'user': 'Admission Office'
-    })
-
-    # 2. Program/ID Change Events
-    # We look for any history tied to the CURRENT ID or the OLD ID recorded in the student model
+    # Gather all linked IDs (including old rectified IDs) for full history lookup
     id_list = [student_id]
     if student.old_student_id:
         id_list.append(student.old_student_id)
@@ -1978,6 +2198,48 @@ def student_profile(request, student_id):
         if entry.old_student_id not in id_list: id_list.append(entry.old_student_id)
         if entry.new_student_id not in id_list: id_list.append(entry.new_student_id)
 
+    # 1. Admission Event (dynamically determined who, when, and how)
+    create_log = ActivityLog.objects.filter(
+        module='students',
+        object_id__in=id_list,
+        action_type='CREATE'
+    ).select_related('user').first()
+
+    creator_user = 'System / Importer'
+    creation_timestamp = student.created_at
+    creation_title = 'Initial Admission'
+    creation_desc = f'Student record created in the system for {student.program}.'
+    
+    if create_log:
+        creation_timestamp = create_log.timestamp
+        if create_log.user:
+            creator_user = create_log.user.username
+        else:
+            creator_user = 'System'
+            
+        desc_lower = create_log.description.lower()
+        if 'excel' in desc_lower or 'import' in desc_lower:
+            creation_desc = f"Student record imported into the system via Excel spreadsheet for {student.program}."
+            creation_title = "Record Imported (Excel)"
+        else:
+            creation_desc = f"Student record created via New Admission for {student.program}."
+            creation_title = "Manual Admission"
+    else:
+        # Fallback for legacy records or older imports
+        creation_desc = f"Student record registered in the system for {student.program} (Legacy/Import)."
+        creation_title = "Initial Admission"
+
+    timeline.append({
+        'timestamp': creation_timestamp,
+        'icon': 'fas fa-user-plus',
+        'badge_class': 'bg-success',
+        'title': creation_title,
+        'description': creation_desc,
+        'user': creator_user
+    })
+
+    # 2. Program/ID Change Events
+    for entry in program_history:
         if entry.old_student_id != entry.new_student_id:
             timeline.append({
                 'timestamp': entry.change_date,
@@ -2026,9 +2288,9 @@ def student_profile(request, student_id):
     # 5. Activity Logs (General Updates)
     logs = ActivityLog.objects.filter(module='students', object_id__in=id_list).order_by('timestamp')
     for log in logs:
-        # Skip migration/status logs if they contain redundant text already covered by specialized histories
+        # Skip migration/status/creation logs if they contain redundant text already covered by specialized histories
         desc = log.description.lower()
-        if 'migrated' in desc or 'status change' in desc or 'rectified' in desc:
+        if log.action_type == 'CREATE' or 'migrated' in desc or 'status change' in desc or 'rectified' in desc:
             continue
             
         icon = 'fas fa-edit'
@@ -2052,10 +2314,21 @@ def student_profile(request, student_id):
     # Final Sort: Newest First
     timeline.sort(key=lambda x: x['timestamp'], reverse=True)
 
+    # Master Data for UGC Migration
+    from master_data.models import Program, Semester, Hall
+    programs = Program.objects.all().order_by('name')
+    semesters = Semester.objects.all().order_by('name')
+    halls = Hall.objects.all().order_by('full_name', 'short_name')
+    years_range = list(range(2015, timezone.localtime(timezone.now()).year + 2))
+
     return render(request, 'students/profile.html', {
         'student': student,
         'program_history': program_history,
-        'timeline': timeline
+        'timeline': timeline,
+        'migration_programs': programs,
+        'migration_semesters': semesters,
+        'migration_halls': halls,
+        'migration_years': years_range,
     })
 
 @require_access('reports', 'view_analytics')
@@ -2121,7 +2394,8 @@ def export_students(request):
     for i, s in enumerate(students, start=1):
         data.append({
             'SL': i, 'student_id': s.student_id, 'student_name': s.student_name,
-            'program': s.program, 'batch': s.batch, 'semester_name': s.semester_name,
+            'program': s.program, 'batch': s.batch, 'current_batch': s.current_batch,
+            'semester_name': s.semester_name, 'current_semester': s.current_semester,
             'admission_status': s.admission_status, 'student_mobile': s.student_mobile,
             'father_name': s.father_name, 'father_mobile': s.father_mobile,
             'mother_name': s.mother_name, 'gender': s.gender, 'blood_group': s.blood_group,
@@ -2177,7 +2451,9 @@ def export_students_all(request):
 def download_master_sheet(request, student_id):
     """Generates a high-impact PDF Master Sheet for a student."""
     from core.models import SystemSettings
-    student = get_object_or_404(Student, pk=student_id)
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        return redirect('download_master_sheet', student_id=canonical_id)
     sys_settings = SystemSettings.objects.first()
     context = {
         'student': student, 
@@ -2200,7 +2476,7 @@ def export_center(request):
         'Family': ['father_name', 'mother_name', 'father_mobile', 'mother_mobile', 'father_occupation'],
         'Academic': ['ssc_school', 'ssc_year', 'ssc_board', 'ssc_roll', 'ssc_reg', 'ssc_gpa', 'hsc_college', 'hsc_year', 'hsc_board', 'hsc_roll', 'hsc_reg', 'hsc_gpa'],
         'Financial': ['admission_payment', 'second_installment', 'waiver', 'others'],
-        'Institutional': ['program', 'cluster', 'batch', 'semester_name', 'hall_attached', 'reference', 'remarks', 'admission_status', 'admission_date']
+        'Institutional': ['program', 'cluster', 'batch', 'current_batch', 'semester_name', 'current_semester', 'hall_attached', 'reference', 'remarks', 'admission_status', 'admission_date']
     }
     return render(request, 'students/reports/export_center.html', {'field_groups': field_groups})
 
@@ -3023,7 +3299,9 @@ def api_bulk_update_modal(request):
             {'name': 'gender', 'label': 'Gender'},
             {'name': 'religion', 'label': 'Religion'},
             {'name': 'blood_group', 'label': 'Blood Group'},
-            {'name': 'batch', 'label': 'Batch'},
+            {'name': 'batch', 'label': 'Admission Batch'},
+            {'name': 'current_batch', 'label': 'Current Academic Batch'},
+            {'name': 'current_semester', 'label': 'Current Semester'},
             {'name': 'is_non_residential', 'label': 'Non-Residential'},
             {'name': 'is_freedom_fighter_child', 'label': 'Freedom Fighter Child'},
             {'name': 'is_july_joddha_2024', 'label': 'July Joddha 2024'},
@@ -3042,7 +3320,7 @@ def api_bulk_update_field_input(request):
     field_name = request.GET.get('field_name')
     context = {'field_name': field_name}
     
-    if field_name == 'batch':
+    if field_name in ['batch', 'current_batch']:
         from master_data.models import Batch
         context['batches'] = Batch.objects.all()
         
@@ -3060,6 +3338,8 @@ def api_bulk_update_execute(request):
             'religion',
             'blood_group',
             'batch',
+            'current_batch',
+            'current_semester',
             'is_non_residential',
             'is_freedom_fighter_child',
             'is_july_joddha_2024',
@@ -3075,25 +3355,37 @@ def api_bulk_update_execute(request):
         if field_name in ['is_non_residential', 'is_freedom_fighter_child', 'is_july_joddha_2024']:
             new_value = True if new_value == 'True' else False
             
-        if field_name == 'batch' and new_value:
+        if field_name in ['batch', 'current_batch'] and new_value:
             from master_data.models import Batch
             import re
             try:
                 batch_obj = Batch.objects.get(id=new_value)
                 new_value = batch_obj.name
-                # Calculate batch_number for sorting
-                nums = re.findall(r'\d+', new_value)
-                batch_number = int(nums[0]) if nums else 0
                 
-                try:
-                    with transaction.atomic():
-                        updated_count = Student.objects.filter(student_id__in=student_ids).update(
-                            batch=new_value, 
-                            batch_number=batch_number
-                        )
-                    return HttpResponse(f"<script>Swal.fire('Success', '{updated_count} students updated successfully!', 'success').then(() => location.reload());</script>")
-                except Exception as e:
-                    return HttpResponse(f"<div class='alert alert-danger'>Update failed: {escape(str(e))}</div>")
+                if field_name == 'batch':
+                    # Calculate batch_number for sorting
+                    nums = re.findall(r'\d+', new_value)
+                    batch_number = int(nums[0]) if nums else 0
+                    
+                    try:
+                        with transaction.atomic():
+                            updated_count = Student.objects.filter(student_id__in=student_ids).update(
+                                batch=new_value, 
+                                batch_number=batch_number
+                            )
+                        return HttpResponse(f"<script>Swal.fire('Success', '{updated_count} students updated successfully!', 'success').then(() => location.reload());</script>")
+                    except Exception as e:
+                        return HttpResponse(f"<div class='alert alert-danger'>Update failed: {escape(str(e))}</div>")
+                else:
+                    # current_batch
+                    try:
+                        with transaction.atomic():
+                            updated_count = Student.objects.filter(student_id__in=student_ids).update(
+                                current_batch=new_value
+                            )
+                        return HttpResponse(f"<script>Swal.fire('Success', '{updated_count} students updated successfully!', 'success').then(() => location.reload());</script>")
+                    except Exception as e:
+                        return HttpResponse(f"<div class='alert alert-danger'>Update failed: {escape(str(e))}</div>")
             except Exception:
                 return HttpResponse("<div class='alert alert-danger'>Invalid Batch Selected.</div>")
                 

@@ -835,7 +835,7 @@
                 </div>
                 <div class="col-md-2">
                     <div class="filter-group">
-                        <label>Batch</label>
+                        <label>Admission Batch</label>
                         <select name="batch">
                             <option value="">All</option>
                             {% for b in filter_metadata.batches %}
@@ -846,6 +846,17 @@
                 </div>
 
                 <!-- Row 2: Status, Category, Sort & Actions -->
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Current Batch</label>
+                        <select name="current_batch">
+                            <option value="">All</option>
+                            {% for b in filter_metadata.current_batches %}
+                            <option value="{{ b }}" {% if b == selected_current_batch %}selected{% endif %}>{{ b }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
                 <div class="col-md-1">
                     <div class="filter-group">
                         <label>Gender</label>
@@ -857,7 +868,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div class="filter-group">
                         <label>Status</label>
                         <select name="status">
@@ -878,6 +889,8 @@
                             <option value="armed_forces" {% if selected_special_category == 'armed_forces' %}selected{% endif %}>Armed Forces</option>
                             <option value="july_joddha" {% if selected_special_category == 'july_joddha' %}selected{% endif %}>July Joddha</option>
                             <option value="credit_transfer" {% if selected_special_category == 'credit_transfer' %}selected{% endif %}>Credit Transfer</option>
+                            <option value="ugc_migrated" {% if selected_special_category == 'ugc_migrated' %}selected{% endif %}>UGC Migrated (Has Old ID)</option>
+                            <option value="legacy_student" {% if selected_special_category == 'legacy_student' %}selected{% endif %}>Legacy / Old Student</option>
                         </select>
                     </div>
                 </div>
@@ -903,7 +916,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="filter-action-group mt-auto mb-2" style="gap: 5px;">
                         <button type="submit" class="btn btn-filter directory-action-btn flex-fill py-1" style="font-size: 13px;">
                             <i class="fas fa-filter mr-1"></i> Filter
@@ -1076,19 +1089,112 @@ function positionOverlay(btn) {
 
 function copyStudentData(name, id, program, batch) {
     const text = `Student: ${name}\nID: ${id}\nProgram: ${program}\nBatch: ${batch}`;
-    navigator.clipboard.writeText(text).then(() => {
-        const toast = document.createElement('div');
-        toast.className = 'bg-dark text-white px-4 py-2 rounded shadow-lg';
-        toast.style.cssText = 'position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:10000; font-weight:700; font-size:13px;';
-        toast.innerHTML = '<i class="fas fa-check-circle text-success mr-2"></i> DATA COPIED TO CLIPBOARD';
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.5s';
-        setTimeout(() => toast.remove(), 500);
-        }, 2000);
-    });
+    
+    // Fallback for non-secure contexts (HTTP)
+    const copyFallback = () => {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            return true;
+        } catch (err) {
+            return false;
+        } finally {
+            document.body.removeChild(textArea);
+        }
+    };
+
+    let success = false;
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Data Copied!',
+                text: 'Student data copied to clipboard.',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'bottom-end'
+            });
+        }).catch(() => {
+            if (copyFallback()) {
+                Swal.fire({icon: 'success', title: 'Data Copied!', timer: 1500, showConfirmButton: false, toast: true, position: 'bottom-end'});
+            }
+        });
+    } else {
+        success = copyFallback();
+        if (success) {
+            Swal.fire({icon: 'success', title: 'Data Copied!', timer: 1500, showConfirmButton: false, toast: true, position: 'bottom-end'});
+        } else {
+            Swal.fire({icon: 'error', title: 'Copy Failed', text: 'Please copy the data manually.'});
+        }
+    }
 }
+
+function openWhatsAppAndCopy(phone, name, id, program, batch, currentBatch, currentSemester, bloodGroup) {
+    if (!phone || phone === '-') {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({icon: 'warning', title: 'Invalid Phone', text: 'No valid phone number available.'});
+        } else if (typeof toastr !== 'undefined') {
+            toastr.warning("No valid phone number available.");
+        }
+        return;
+    }
+
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11 && cleaned.startsWith('01')) {
+        cleaned = '88' + cleaned;
+    }
+
+    let text = `Student Information:\n`;
+    text += `Name: ${name}\n`;
+    text += `ID: ${id}\n`;
+    text += `Program: ${program}\n`;
+    text += `Current Batch: ${currentBatch || batch}\n`;
+    text += `Current Semester: ${currentSemester || "Level 1 Term I"}\n`;
+    text += `Blood Group: ${bloodGroup || "-"}\n`;
+    text += `Mobile: ${phone}\n`;
+    text += `Email: -`;
+
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.top = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    let copySuccess = false;
+    try {
+        copySuccess = document.execCommand('copy');
+    } catch (err) {
+        console.error('Copy failed: ', err);
+    }
+    document.body.removeChild(textArea);
+
+    if (copySuccess) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Info Copied!',
+                text: 'Student data copied. Opening WhatsApp...',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'bottom-end'
+            });
+        } else if (typeof toastr !== 'undefined') {
+            toastr.success("Student details copied to clipboard!");
+        }
+    }
+
+    const waUrl = `https://wa.me/${cleaned}`;
+    window.open(waUrl, '_blank');
+}
+
 
 document.addEventListener('change', (e) => {
     if (e.target.classList.contains('directory-per-page-control')) {
@@ -1258,14 +1364,26 @@ window.copyToClipboard = function(text, btn) {
             // BUG-07 FIX: Icon feedback in both paths
             icon.classList.replace('far', 'fas');
             icon.classList.replace('fa-copy', 'fa-check');
+            icon.classList.add('text-success');
             setTimeout(() => {
                 icon.classList.replace('fas', 'far');
                 icon.classList.replace('fa-check', 'fa-copy');
+                icon.classList.remove('text-success');
             }, 1200);
         }
-        toastr.success(`ID ${text} copied!`);
+        Swal.fire({
+            icon: 'success',
+            title: 'ID Copied!',
+            text: `ID ${text} copied to clipboard.`,
+            timer: 1500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'bottom-end'
+        });
     }
-    if (!navigator.clipboard) {
+    
+    // Fallback logic
+    const copyFallback = () => {
         const textArea = document.createElement("textarea");
         textArea.value = text;
         textArea.style.position = 'fixed';
@@ -1274,18 +1392,25 @@ window.copyToClipboard = function(text, btn) {
         textArea.select();
         try {
             document.execCommand('copy');
-            showSuccess();
+            return true;
         } catch (err) {
-            toastr.error('Failed to copy');
+            return false;
+        } finally {
+            document.body.removeChild(textArea);
         }
-        document.body.removeChild(textArea);
-        return;
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            showSuccess();
+        }).catch(() => {
+            if (copyFallback()) showSuccess();
+            else Swal.fire({icon: 'error', title: 'Copy Failed', text: 'Please copy manually.', toast: true, position: 'bottom-end'});
+        });
+    } else {
+        if (copyFallback()) showSuccess();
+        else Swal.fire({icon: 'error', title: 'Copy Failed', text: 'Please copy manually.', toast: true, position: 'bottom-end'});
     }
-    navigator.clipboard.writeText(text).then(() => {
-        showSuccess();
-    }).catch(() => {
-        toastr.error('Failed to copy');
-    });
 };
 
 // --- Bulk Board Audit Manager ---

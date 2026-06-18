@@ -528,6 +528,124 @@ def system_settings(request):
     return render(request, 'core/system_settings.html', {'settings': settings})
 
 
+@login_required
+def download_db_backup(request):
+    """Generates a JSON dump or an SQLite DB and triggers a browser download."""
+    from django.core.management import call_command
+    from django.http import HttpResponse, Http404
+    from django.core.exceptions import PermissionDenied
+    from django.utils import timezone
+    import io
+    import os
+    import tempfile
+    
+    fmt = request.GET.get('format', 'json')
+    if fmt not in ['json', 'sqlite']:
+        raise Http404("Invalid backup format requested.")
+        
+    # Check granular permissions dynamically based on the requested format
+    if fmt == 'json':
+        if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'download_backup_json'))):
+            raise PermissionDenied("You do not have permission to download JSON backups.")
+            
+        out = io.StringIO()
+        call_command(
+            'dumpdata',
+            natural_foreign=True,
+            natural_primary=True,
+            exclude=['contenttypes', 'auth.Permission'],
+            stdout=out
+        )
+        timestamp = timezone.localtime(timezone.now()).strftime('%Y-%m-%d_%H-%M-%S')
+        filename = f"db_backup_{timestamp}.json"
+        response = HttpResponse(out.getvalue(), content_type='application/json')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+        
+    elif fmt == 'sqlite':
+        if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'download_backup_sqlite'))):
+            raise PermissionDenied("You do not have permission to download SQLite backups.")
+        
+        from django.db import connections
+        import uuid
+        
+        # 1. Create temporary JSON dump of default database
+        out = io.StringIO()
+        call_command(
+            'dumpdata',
+            natural_foreign=True,
+            natural_primary=True,
+            exclude=['contenttypes', 'auth.Permission'],
+            stdout=out
+        )
+        json_data = out.getvalue()
+        
+        # Write to temporary JSON file
+        temp_json = tempfile.NamedTemporaryFile(suffix='.json', delete=False, mode='w', encoding='utf-8')
+        temp_json.write(json_data)
+        temp_json_path = temp_json.name
+        temp_json.close()
+        
+        # 2. Create temporary SQLite database file
+        temp_db = tempfile.NamedTemporaryFile(suffix='.sqlite3', delete=False)
+        temp_db_path = temp_db.name
+        temp_db.close()
+        
+        conn_label = f"temp_sqlite_{uuid.uuid4().hex}"
+        
+        try:
+            # 3. Configure temporary database connection
+            temp_config = connections.databases['default'].copy()
+            temp_config.update({
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': temp_db_path,
+                'USER': '',
+                'PASSWORD': '',
+                'HOST': '',
+                'PORT': '',
+                'OPTIONS': {},
+            })
+            connections.databases[conn_label] = temp_config
+            
+            # 4. Run migrations on the temporary database
+            call_command('migrate', database=conn_label, interactive=False, verbosity=0)
+            
+            # 5. Load JSON dump into the temporary database
+            call_command('loaddata', temp_json_path, database=conn_label, verbosity=0)
+            
+            # Close connection to release file lock on Windows/Linux
+            connections[conn_label].close()
+            
+            # Read compiled db file bytes
+            with open(temp_db_path, 'rb') as f:
+                db_data = f.read()
+                
+            filename = f"db_backup_{timestamp}.sqlite3"
+            response = HttpResponse(db_data, content_type='application/x-sqlite3')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+            
+        finally:
+            # Cleanup dynamic connection configurations and files
+            if conn_label in connections.databases:
+                try:
+                    connections[conn_label].close()
+                except Exception:
+                    pass
+                del connections.databases[conn_label]
+                
+            if os.path.exists(temp_json_path):
+                try:
+                    os.remove(temp_json_path)
+                except Exception:
+                    pass
+            if os.path.exists(temp_db_path):
+                try:
+                    os.remove(temp_db_path)
+                except Exception:
+                    pass
+
+
 def register(request):
     """Public registration view for new suite users."""
     if request.user.is_authenticated:

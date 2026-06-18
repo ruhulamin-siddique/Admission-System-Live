@@ -27,6 +27,8 @@ class StudentForm(forms.ModelForm):
             'admission_year': 'Admission Year',
             'semester_name': 'Admitted Semester',
             'hall_attached': 'Hall Attachment',
+            'current_batch': 'Current Academic Batch',
+            'current_semester': 'Current Semester',
         }
         widgets = {
             'student_id': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly', 'placeholder': 'Generated upon selection...'}),
@@ -35,6 +37,18 @@ class StudentForm(forms.ModelForm):
             'program': forms.Select(attrs={'class': 'form-control select2'}),
             'cluster': forms.Select(attrs={'class': 'form-control'}),
             'batch': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 25th'}),
+            'current_batch': forms.Select(attrs={'class': 'form-control'}),
+            'current_semester': forms.Select(attrs={'class': 'form-control'}, choices=[
+                ('', 'Select Current Semester'),
+                ('Level 1 Term I', 'Level 1 Term I'),
+                ('Level 1 Term II', 'Level 1 Term II'),
+                ('Level 2 Term I', 'Level 2 Term I'),
+                ('Level 2 Term II', 'Level 2 Term II'),
+                ('Level 3 Term I', 'Level 3 Term I'),
+                ('Level 3 Term II', 'Level 3 Term II'),
+                ('Level 4 Term I', 'Level 4 Term I'),
+                ('Level 4 Term II', 'Level 4 Term II'),
+            ]),
             'semester_name': forms.Select(attrs={'class': 'form-control'}),
             'program_type': forms.Select(attrs={'class': 'form-control'}, choices=[
                 ('Bachelor', 'Bachelor'),
@@ -101,6 +115,7 @@ class StudentForm(forms.ModelForm):
             'is_july_joddha_2024': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
             'is_credit_transfer': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
             'is_temp_admission_cancel': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+            'is_legacy_student': forms.CheckboxInput(attrs={'class': 'custom-control-input', 'id': 'id_is_legacy_student'}),
             
             # Structured Addresses
             'present_division': forms.Select(attrs={'class': 'form-control'}),
@@ -147,6 +162,11 @@ class StudentForm(forms.ModelForm):
             (b.name, b.name) for b in Batch.objects.all().order_by('-sort_order', 'name')
         ]
         
+        self.fields['current_batch'].widget = forms.Select(attrs={'class': 'form-control'})
+        self.fields['current_batch'].widget.choices = [('', 'Select Current Batch')] + [
+            (b.name, b.name) for b in Batch.objects.all().order_by('-sort_order', 'name')
+        ]
+        
         active_years = AdmissionYear.objects.filter(is_active=True).order_by('-year')
         if active_years.exists():
             self.fields['admission_year'].widget = forms.Select(
@@ -165,6 +185,7 @@ class StudentForm(forms.ModelForm):
         # Handle Manual ID vs Auto ID Mode
         from core.models import SystemSettings
         sys_settings, _ = SystemSettings.objects.get_or_create(id=1)
+        self.fields['student_id'].required = False  # Enforced programmatically in clean_student_id
         if not sys_settings.auto_id_generation:
             # Unlock ID field for manual entry
             self.fields['student_id'].widget.attrs.pop('readonly', None)
@@ -181,6 +202,25 @@ class StudentForm(forms.ModelForm):
         from core.models import SystemSettings
         sys_settings = SystemSettings.objects.get_or_create(id=1)[0]
         id_mode = sys_settings.id_mode  # 'auto' | 'semi_auto' | 'manual'
+
+        # Legacy students always get an auto-generated system ID; generate it here so form validation passes.
+        is_legacy = self.data.get('is_legacy_student') in ('on', 'true', '1')
+        if is_legacy:
+            admission_year = self.data.get('admission_year')
+            semester_name = self.data.get('semester_name')
+            program = self.data.get('program')
+            if not (admission_year and semester_name and program):
+                return "0800000000000000"
+            from students.utils import generate_next_ugc_id
+            generated_id = generate_next_ugc_id(
+                admission_year=admission_year,
+                semester_name=semester_name,
+                hall_name=self.data.get('hall_attached'),
+                program_name=program,
+                cluster_name=self.data.get('cluster'),
+                program_level=self.data.get('program_type', 'Bachelor'),
+            )
+            return generated_id
 
         if id_mode == 'manual':
             # Full manual: must have a valid 16-digit ID supplied

@@ -103,22 +103,28 @@ def generate_next_ugc_id(admission_year, semester_name, hall_name, program_name,
     year_code = str(admission_year)[-2:]
     
     # 1. Get Semester Code from DB
-    sem = Semester.objects.filter(Q(name__icontains=semester_name)).first()
+    sem = None
+    if semester_name:
+        sem = Semester.objects.filter(Q(name__icontains=semester_name)).first()
     semester_code = sem.code if sem else "1"
             
     # 2. Get Hall Code from DB
-    hall = Hall.objects.filter(
-        Q(short_name__icontains=hall_name) | 
-        Q(full_name__icontains=hall_name)
-    ).first()
+    hall = None
+    if hall_name:
+        hall = Hall.objects.filter(
+            Q(short_name__icontains=hall_name) | 
+            Q(full_name__icontains=hall_name)
+        ).first()
     hall_code = hall.code if hall else "00"
     
     # 3. Get Cluster & Subject Codes from DB
     # We look for the Program specifically to get its UGC code and Cluster code
-    prog = Program.objects.filter(
-        Q(name__iexact=program_name) | 
-        Q(short_name__iexact=program_name)
-    ).first()
+    prog = None
+    if program_name:
+        prog = Program.objects.filter(
+            Q(name__iexact=program_name) | 
+            Q(short_name__iexact=program_name)
+        ).first()
     if prog:
         cluster_code = prog.cluster.code
         s_code = prog.ugc_code
@@ -257,11 +263,28 @@ def import_students_from_excel(file_obj, update_existing=False):
                 s_id = '0' + s_id
             student_data['student_id'] = s_id
             
+            # Automatically detect legacy student status (batch 1-12 or short ID)
+            is_legacy = False
+            if student_data.get('is_legacy_student'):
+                is_legacy = True
+            if s_id and len(s_id) < 16:
+                is_legacy = True
+            if student_data.get('batch'):
+                import re
+                nums = re.findall(r'\d+', str(student_data['batch']))
+                if nums:
+                    batch_num = int(nums[0])
+                    if 1 <= batch_num <= 12:
+                        is_legacy = True
+            if is_legacy:
+                student_data['is_legacy_student'] = True
+            
             # 2. UGC Validation
-            is_valid, v_msg = validate_ugc_id(s_id)
-            if not is_valid:
-                errors.append(f"Row {index+2}: {v_msg} ({s_id})")
-                continue
+            if not student_data.get('is_legacy_student', False):
+                is_valid, v_msg = validate_ugc_id(s_id)
+                if not is_valid:
+                    errors.append(f"Row {index+2}: {v_msg} ({s_id})")
+                    continue
 
             # 3. Duplicate checks
             if s_id in processed_ids:
@@ -306,6 +329,12 @@ def import_students_from_excel(file_obj, update_existing=False):
             if not student_data.get('admission_date'):
                 student_data['admission_date'] = timezone.now().date()
 
+            # Default Current Batch / Current Semester if missing (essential since bulk_create bypasses save())
+            if not student_data.get('current_batch') and student_data.get('batch'):
+                student_data['current_batch'] = student_data['batch']
+            if not student_data.get('current_semester'):
+                student_data['current_semester'] = 'Level 1 Term I'
+
             records_to_process.append(Student(**student_data))
             processed_ids.add(s_id)
             
@@ -331,9 +360,9 @@ def import_students_from_excel(file_obj, update_existing=False):
             'count': len(records_to_process),
             'inserted_count': len(inserted_list),
             'updated_count': len(updated_list),
-            'inserted_list': inserted_list[:50], # Sample for report
-            'updated_list': updated_list[:50],   # Sample for report
-            'errors': errors[:50],               # Show more errors for report
+            'inserted_list': inserted_list,      # Full list
+            'updated_list': updated_list,        # Full list
+            'errors': errors,                    # Full list
             'total_errors': len(errors)
         }
     except Exception as e:

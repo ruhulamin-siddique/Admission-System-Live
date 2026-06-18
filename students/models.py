@@ -7,6 +7,10 @@ class Student(models.Model):
     student_id = models.CharField(max_length=50, primary_key=True, help_text="UGC Compliant ID")
     student_name = models.CharField(max_length=255)
     old_student_id = models.CharField(max_length=50, null=True, blank=True)
+    is_legacy_student = models.BooleanField(
+        default=False,
+        help_text="True for pre-digital-era students (Batch 1–12) added retrospectively with their original 9-digit ID."
+    )
     
     # Academic Info
     program = models.CharField(max_length=100, null=True, blank=True, db_index=True)
@@ -14,7 +18,9 @@ class Student(models.Model):
     cluster = models.CharField(max_length=50, null=True, blank=True)
     batch = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     batch_number = models.IntegerField(null=True, blank=True, help_text="Auto-extracted for numeric sorting")
+    current_batch = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     semester_name = models.CharField(max_length=50, null=True, blank=True)
+    current_semester = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     program_type = models.CharField(max_length=50, null=True, blank=True)
     admission_date = models.DateField(null=True, blank=True, db_index=True)
     admission_status = models.CharField(max_length=50, default="Active", db_index=True)
@@ -104,10 +110,34 @@ class Student(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # Auto-detect legacy student status (batch 1-12 or short ID)
+        is_legacy = False
+        if self.is_legacy_student:
+            is_legacy = True
+        if self.student_id and len(str(self.student_id).strip()) < 16:
+            is_legacy = True
+        if self.batch:
+            import re
+            nums = re.findall(r'\d+', self.batch)
+            if nums:
+                batch_num = int(nums[0])
+                if 1 <= batch_num <= 12:
+                    is_legacy = True
+        if is_legacy:
+            self.is_legacy_student = True
+
         # Auto-normalize program to canonical short name if available
         if self.program:
             from .utils import get_canonical_program_name
             self.program = get_canonical_program_name(self.program)
+
+        # Auto-populate current_batch if null/blank
+        if not self.current_batch:
+            self.current_batch = self.batch
+
+        # Auto-populate current_semester if null/blank
+        if not self.current_semester:
+            self.current_semester = 'Level 1 Term I'
 
         # Auto-extract numeric batch number for sorting
         if self.batch:
@@ -133,7 +163,7 @@ class Student(models.Model):
 
         # Auto-populate admission_date if null
         if not self.admission_date:
-            self.admission_date = timezone.now().date()
+            self.admission_date = timezone.localdate()
 
         # Auto-clean Roll, Reg, Year (remove .0 from floats)
         def _clean_val(v):

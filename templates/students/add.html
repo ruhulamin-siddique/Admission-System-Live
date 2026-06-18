@@ -446,18 +446,60 @@
     body.dark-mode .tab-nav-buttons {
         border-top-color: #334155;
     }
+    
+    /* Remove content-header space on this page to fit to window */
+    .content-header {
+        display: none !important;
+    }
+    .content {
+        padding-top: 0.5rem !important;
+    }
+    .admission-card {
+        margin-top: 0.5rem;
+    }
+    .cursor-pointer {
+        cursor: pointer !important;
+    }
+    
+    /* Header Legacy Switch styling */
+    .card-header-gradient .custom-switch .custom-control-input:checked ~ .custom-control-label::before {
+        background-color: #ffc107 !important;
+        border-color: #ffc107 !important;
+    }
+    .card-header-gradient .custom-switch .custom-control-label::before {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+    .card-header-gradient .custom-switch .custom-control-input:checked ~ .custom-control-label::after {
+        background-color: #fff !important;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center pt-4">
+<form method="POST" id="admissionForm" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.ssc_verified.as_hidden }}
+    {{ form.hsc_verified.as_hidden }}
+
+<div class="row justify-content-center pt-2">
     <div class="col-xl-11">
         <div class="card admission-card overflow-hidden">
             <div class="card-header-gradient d-flex justify-content-between align-items-center">
                 <h3 class="card-title mb-0 font-weight-black text-uppercase" style="letter-spacing: 1px;">
                     <i class="fas fa-id-card-clip mr-2"></i> Student Enrollment Portal
                 </h3>
-                <a href="{% url 'student_list' %}" class="btn btn-sm btn-outline-light rounded-pill"><i class="fas fa-arrow-left"></i> Directory</a>
+                <div class="d-flex align-items-center" style="gap: 20px;">
+                    <!-- Legacy Student Checkbox/Toggle -->
+                    <div class="custom-control custom-switch custom-control-lg" data-toggle="tooltip" data-placement="bottom" title="Check this for legacy students from before the 16-digit UGC system. Their old 9-digit ID will be stored separately; a new system ID is auto-generated.">
+                        <input type="checkbox" class="custom-control-input" id="id_is_legacy_student"
+                               name="is_legacy_student" {% if form.is_legacy_student.value %}checked{% endif %}>
+                        <label class="custom-control-label font-weight-bold text-white cursor-pointer" for="id_is_legacy_student" style="font-size: 0.9rem;">
+                            <i class="fas fa-archive text-warning mr-1"></i> Legacy Student (Batch 1–12)
+                        </label>
+                    </div>
+                    <a href="{% url 'student_list' %}" class="btn btn-sm btn-outline-light rounded-pill"><i class="fas fa-arrow-left"></i> Directory</a>
+                </div>
             </div>
             
             <!-- Error Summary Alert -->
@@ -481,11 +523,6 @@
         </ul>
     </div>
     {% endif %}
-
-    <form method="POST" id="admissionForm" enctype="multipart/form-data">
-                {% csrf_token %}
-                {{ form.ssc_verified.as_hidden }}
-                {{ form.hsc_verified.as_hidden }}
                 
                 <ul class="nav nav-tabs nav-tabs-custom" id="admissionTabs" role="tablist">
                     <li class="nav-item">
@@ -586,9 +623,20 @@
                                  </div>
                                  <div class="hidden-field" style="display: none;">{{ form.student_id }}</div>
                                  {% endif %}
-                            </div>
-
-                            <div class="row">
+                             </div>
+                             
+                             <!-- Legacy ID Section (toggled from header) -->
+                              <div id="legacy-id-section" style="display:none;" class="card mb-4 border-warning shadow-sm" style="background-color: #fffaf0;">
+                                  <div class="card-body">
+                                      <div class="field-outline-group mb-2">
+                                          <label class="font-weight-bold text-dark">Old 9-Digit Student ID <span class="text-danger">*</span></label>
+                                          {{ form.old_student_id }}
+                                      </div>
+                                      <small class="text-muted"><i class="fas fa-info-circle mr-1"></i> Enter the student's original 9-digit ID exactly.</small>
+                                  </div>
+                              </div>
+                             
+                             <div class="row">
                                 <!-- Left Column: Academic Info -->
                                 <div class="col-lg-7">
                                     <div class="form-section-title"><i class="fas fa-graduation-cap mr-2"></i>Academic Assignment</div>
@@ -605,6 +653,10 @@
                                         <div class="col-md-4"><div class="field-outline-group"><label>Hall Attachment <span class="text-danger">*</span></label>{{ form.hall_attached }}</div></div>
                                         <div class="col-md-4"><div class="field-outline-group"><label>Batch <span class="text-danger">*</span></label>{{ form.batch }}</div></div>
                                         <div class="col-md-4"><div class="field-outline-group"><label>Date</label>{{ form.admission_date }}</div></div>
+
+                                        <!-- Line 3: Current Batch, Current Semester -->
+                                        <div class="col-md-6"><div class="field-outline-group"><label>Current Academic Batch</label>{{ form.current_batch }}</div></div>
+                                        <div class="col-md-6"><div class="field-outline-group"><label>Current Semester</label>{{ form.current_semester }}</div></div>
                                         
                                         <!-- Financial & Remarks (Restructured) -->
                                         <div class="col-md-12">
@@ -862,10 +914,10 @@
                         <i class="fas fa-save mr-2"></i> Confirm Enrollment
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
-</div>
+</form>
 
 <!-- Camera Viewfinder Modal -->
 <div class="modal fade" id="cameraModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
@@ -894,6 +946,9 @@
 {% block extra_js %}
 <script>
     $(document).ready(function() {
+        // Initialize tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+
         const programMapping = JSON.parse('{{ program_mapping_json|safe }}');
         const idMode = '{{ sys_settings.id_mode|default:"semi_auto" }}';
         let currentPrefix = '';
@@ -1383,7 +1438,25 @@
         // ADVANCED FORM VALIDATION, TAB NAVIGATION & AUTOSAVE LOGIC
         // =========================================================
 
+        function isFieldHidden($el) {
+            let hidden = false;
+            $el.parents().each(function() {
+                if ($(this).hasClass('tab-pane')) {
+                    return;
+                }
+                if ($(this).css('display') === 'none') {
+                    hidden = true;
+                    return false;
+                }
+            });
+            if ($el.css('display') === 'none') {
+                hidden = true;
+            }
+            return hidden;
+        }
+
         function isFieldRequired($el) {
+            if (isFieldHidden($el)) return false;
             if ($el.prop('required')) return true;
             const group = $el.closest('.field-outline-group');
             if (group.length > 0) {
@@ -2349,5 +2422,42 @@
         
         closeCameraModal();
     }
+
+    // Legacy Student Toggle Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const legacySwitch = document.getElementById('id_is_legacy_student');
+        const legacySection = document.getElementById('legacy-id-section');
+        const oldIdInput = document.getElementById('id_old_student_id');
+        
+        function toggleLegacyMode() {
+            if (legacySwitch.checked) {
+                legacySection.style.display = 'block';
+                oldIdInput.setAttribute('required', 'required');
+                
+                // Hide/disable the 16-digit ID generation UI as it's auto-handled for legacy
+                const premiumDisplay = document.getElementById('premium-id-display');
+                if (premiumDisplay) premiumDisplay.style.opacity = '0.5';
+                
+                const serialInputArea = document.getElementById('serial-input-area');
+                if (serialInputArea) serialInputArea.style.display = 'none';
+            } else {
+                legacySection.style.display = 'none';
+                oldIdInput.removeAttribute('required');
+                
+                const premiumDisplay = document.getElementById('premium-id-display');
+                if (premiumDisplay) premiumDisplay.style.opacity = '1';
+                
+                // restore serial area based on ID mode 
+                // (it relies on updateUgcIdDisplay which happens on field changes anyway)
+                updateUgcIdDisplay();
+            }
+        }
+        
+        if (legacySwitch) {
+            legacySwitch.addEventListener('change', toggleLegacyMode);
+            // Run on initial load in case it's checked (e.g. form validation failure)
+            toggleLegacyMode();
+        }
+    });
 </script>
 {% endblock %}

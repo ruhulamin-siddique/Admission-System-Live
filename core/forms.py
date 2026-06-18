@@ -162,6 +162,7 @@ class UserSelfProfileForm(forms.Form):
     first_name = forms.CharField(max_length=150, required=False)
     last_name = forms.CharField(max_length=150, required=False)
     email = forms.EmailField(required=False)
+    designation = forms.CharField(max_length=100, required=False)
     photo = forms.ImageField(required=False)
 
     def __init__(self, *args, user=None, **kwargs):
@@ -171,6 +172,7 @@ class UserSelfProfileForm(forms.Form):
             self.fields['first_name'].initial = user.first_name
             self.fields['last_name'].initial = user.last_name
             self.fields['email'].initial = user.email
+            self.fields['designation'].initial = getattr(user.profile, 'designation', '')
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()
@@ -185,9 +187,12 @@ class UserSelfProfileForm(forms.Form):
         self.user.save(update_fields=['first_name', 'last_name', 'email'])
         
         profile = self.user.profile
+        profile.designation = self.cleaned_data['designation'].strip()
         if self.cleaned_data.get('photo'):
             profile.photo = self.cleaned_data['photo']
-            profile.save(update_fields=['photo'])
+            profile.save(update_fields=['photo', 'designation'])
+        else:
+            profile.save(update_fields=['designation'])
         return self.user
 
 

@@ -417,13 +417,19 @@
                             <div class="row">
                                 <!-- Left Column: Academic Info -->
                                 <div class="col-lg-7">
-                                    <div class="form-section-title text-danger"><i class="fas fa-lock mr-2"></i> Primary Academic Assignment</div>
-                                    <div class="alert alert-warning border-0 shadow-sm small py-2 mb-4">
-                                        <i class="fas fa-info-circle mr-2"></i> Program and Cluster are <strong>LOCKED</strong>. Use the <strong>Migration Center</strong> for department changes.
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6"><div class="field-outline-group"><label>Program (Locked) <span class="text-danger">*</span></label>{{ form.program }}</div></div>
-                                        <div class="col-md-6"><div class="field-outline-group"><label>Cluster (Locked) <span class="text-danger">*</span></label>{{ form.cluster }}</div></div>
+                                     <div class="form-section-title text-danger"><i class="fas fa-lock mr-2"></i> Primary Academic Assignment</div>
+                                     {% if student.student_id|length < 16 %}
+                                     <div class="alert alert-warning border-0 shadow-sm small py-2 mb-4" style="border-left: 5px solid #ffc107;">
+                                         <i class="fas fa-info-circle mr-2"></i> <strong>Legacy Student Edit Mode:</strong> Academic fields are unlocked so you can input required parameters for UGC 16-Digit ID generation.
+                                     </div>
+                                     {% else %}
+                                     <div class="alert alert-warning border-0 shadow-sm small py-2 mb-4">
+                                         <i class="fas fa-info-circle mr-2"></i> Program and Cluster are <strong>LOCKED</strong>. Use the <strong>Migration Center</strong> for department changes.
+                                     </div>
+                                     {% endif %}
+                                     <div class="row">
+                                         <div class="col-md-6"><div class="field-outline-group"><label>{% if student.student_id|length < 16 %}Program{% else %}Program (Locked){% endif %} <span class="text-danger">*</span></label>{{ form.program }}</div></div>
+                                         <div class="col-md-6"><div class="field-outline-group"><label>{% if student.student_id|length < 16 %}Cluster{% else %}Cluster (Locked){% endif %} <span class="text-danger">*</span></label>{{ form.cluster }}</div></div>
                                         
                                         <!-- Line 1: Type, Semester, Year -->
                                         <div class="col-md-4"><div class="field-outline-group"><label>Program Type <span class="text-danger">*</span></label>{{ form.program_type }}</div></div>
@@ -434,7 +440,19 @@
                                         <div class="col-md-4"><div class="field-outline-group"><label>Hall Attachment <span class="text-danger">*</span></label>{{ form.hall_attached }}</div></div>
                                         <div class="col-md-4"><div class="field-outline-group"><label>Batch <span class="text-danger">*</span></label>{{ form.batch }}</div></div>
                                         <div class="col-md-4"><div class="field-outline-group"><label>Admission Date</label>{{ form.admission_date }}</div></div>
+
+                                        <!-- Line 3: Current Batch, Current Semester -->
+                                        <div class="col-md-6"><div class="field-outline-group"><label>Current Academic Batch</label>{{ form.current_batch }}</div></div>
+                                        <div class="col-md-6"><div class="field-outline-group"><label>Current Semester</label>{{ form.current_semester }}</div></div>
                                         
+                                        <!-- Legacy ID Field -->
+                                        <div class="col-md-12" id="legacy-id-section" style="display: {% if student.is_legacy_student %}block{% else %}none{% endif %};">
+                                            <div class="field-outline-group" style="border: 1.5px dashed #ffc107; border-radius: 8px; padding: 4px;">
+                                                <label class="font-weight-bold text-dark"><i class="fas fa-history text-warning mr-1"></i> Previous/Old Student ID</label>
+                                                {{ form.old_student_id }}
+                                            </div>
+                                        </div>
+
                                         <!-- Financial & Remarks (Restructured) -->
                                         <div class="col-md-12">
                                             <div class="form-section-title mt-4 mb-3"><i class="fas fa-money-bill-transfer mr-2"></i> Financial & Remarks</div>
@@ -507,6 +525,18 @@
                                                             <span class="category-name">Temp. Cancel</span>
                                                         </div>
                                                         <div class="custom-control custom-switch">{{ form.is_temp_admission_cancel }}<label class="custom-control-label" for="{{ form.is_temp_admission_cancel.id_for_label }}"></label></div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="category-row">
+                                                        <div class="category-info">
+                                                            <div class="category-icon bg-soft-gold"><i class="fas fa-history"></i></div>
+                                                            <span class="category-name">Old Student</span>
+                                                        </div>
+                                                        <div class="custom-control custom-switch">
+                                                            {{ form.is_legacy_student }}
+                                                            <label class="custom-control-label" for="id_is_legacy_student"></label>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -763,6 +793,27 @@
             }
         });
 
+        // Legacy Student Toggle Logic in Edit Mode
+        const legacySwitch = document.getElementById('id_is_legacy_student');
+        const legacySection = document.getElementById('legacy-id-section');
+        const oldIdInput = document.getElementById('id_old_student_id');
+        
+        function toggleLegacyMode() {
+            if (legacySwitch && legacySwitch.checked) {
+                if (legacySection) legacySection.style.display = 'block';
+                if (oldIdInput) oldIdInput.setAttribute('required', 'required');
+            } else {
+                if (legacySection) legacySection.style.display = 'none';
+                if (oldIdInput) oldIdInput.removeAttribute('required');
+            }
+        }
+        
+        if (legacySwitch) {
+            legacySwitch.addEventListener('change', toggleLegacyMode);
+            // Run on load to set initial state
+            toggleLegacyMode();
+        }
+
         // Toggle All Checkboxes
         window.toggleAllCheckboxes = function(state) {
             $('.custom-switch input[type="checkbox"]').prop('checked', state).trigger('change');
@@ -988,7 +1039,25 @@
         // ADVANCED FORM VALIDATION, TAB NAVIGATION & AUTOSAVE LOGIC
         // =========================================================
 
+        function isFieldHidden($el) {
+            let hidden = false;
+            $el.parents().each(function() {
+                if ($(this).hasClass('tab-pane')) {
+                    return;
+                }
+                if ($(this).css('display') === 'none') {
+                    hidden = true;
+                    return false;
+                }
+            });
+            if ($el.css('display') === 'none') {
+                hidden = true;
+            }
+            return hidden;
+        }
+
         function isFieldRequired($el) {
+            if (isFieldHidden($el)) return false;
             if ($el.prop('required')) return true;
             const group = $el.closest('.field-outline-group');
             if (group.length > 0) {

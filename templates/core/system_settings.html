@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load core_tags %}
 
 {% block title %}System Settings | Bangladesh Army University of Science and Technology{% endblock %}
 {% block page_title %}Institutional Branding & Settings{% endblock %}
@@ -168,6 +169,45 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- 5. Database Backup & Maintenance -->
+        <div class="card card-outline card-warning shadow-lg border-0 mt-4" style="border-radius: 12px;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-database mr-2 text-warning"></i> Database Backup
+                </h3>
+            </div>
+            <div class="card-body">
+                {% has_access 'security' 'download_backup_json' as can_download_json %}
+                {% has_access 'security' 'download_backup_sqlite' as can_download_sqlite %}
+                
+                {% if can_download_json or can_download_sqlite %}
+                <p class="small text-muted mb-3">
+                    Download a snapshot of the live database. You can choose either the cross-platform JSON data dump or a pre-migrated, ready-to-use SQLite database.
+                </p>
+                <div class="row">
+                    {% if can_download_json %}
+                    <div class="col-sm-6 mb-2">
+                        <a href="{% url 'download_db_backup' %}?format=json" class="btn btn-warning btn-block shadow-sm font-weight-bold text-dark btn-sm">
+                            <i class="fas fa-file-code mr-2"></i> Download JSON Backup
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if can_download_sqlite %}
+                    <div class="col-sm-6 mb-2">
+                        <a href="{% url 'download_db_backup' %}?format=sqlite" class="btn btn-warning btn-block shadow-sm font-weight-bold text-dark btn-sm">
+                            <i class="fas fa-database mr-2"></i> Download SQLite DB (.sqlite3)
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-danger small mb-0 font-weight-bold">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> You do not have permission to download database backups.
+                </p>
+                {% endif %}
             </div>
         </div>
     </div>

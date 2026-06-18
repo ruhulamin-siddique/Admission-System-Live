@@ -31,12 +31,25 @@
         <option value="O-">O-</option>
     </select>
 
-{% elif field_name == 'batch' %}
+{% elif field_name == 'batch' or field_name == 'current_batch' %}
     <select class="form-control custom-select bg-white shadow-sm" name="new_value" required>
         <option value="">-- Choose Batch --</option>
         {% for batch in batches %}
         <option value="{{ batch.id }}">{{ batch.name }} ({{ batch.admission_year.year }})</option>
         {% endfor %}
+    </select>
+
+{% elif field_name == 'current_semester' %}
+    <select class="form-control custom-select bg-white shadow-sm" name="new_value" required>
+        <option value="">-- Choose Current Semester --</option>
+        <option value="Level 1 Term I">Level 1 Term I</option>
+        <option value="Level 1 Term II">Level 1 Term II</option>
+        <option value="Level 2 Term I">Level 2 Term I</option>
+        <option value="Level 2 Term II">Level 2 Term II</option>
+        <option value="Level 3 Term I">Level 3 Term I</option>
+        <option value="Level 3 Term II">Level 3 Term II</option>
+        <option value="Level 4 Term I">Level 4 Term I</option>
+        <option value="Level 4 Term II">Level 4 Term II</option>
     </select>
 
 {% elif field_name == 'is_non_residential' or field_name == 'is_freedom_fighter_child' or field_name == 'is_july_joddha_2024' %}

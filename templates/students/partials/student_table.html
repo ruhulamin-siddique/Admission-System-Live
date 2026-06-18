@@ -29,7 +29,14 @@
     <td class="td-name">
         <div class="d-flex flex-column">
             <div class="td-id-container d-flex align-items-center" style="gap: 6px;">
-                <div class="text-dark mb-0 text-monospace" style="font-size: 15px; letter-spacing: 0.5px; font-weight: 800;">{{ student.student_id }}</div>
+                <div class="text-dark mb-0 text-monospace" style="font-size: 15px; letter-spacing: 0.5px; font-weight: 800;">
+                    {{ student.student_id }}
+                    {% if student.old_student_id %}
+                    <span class="badge badge-warning text-dark font-weight-bold" style="font-size: 10px; border-radius: 4px; padding: 2px 6px;" title="Former/Old Student ID">Old ID: {{ student.old_student_id }}</span>
+                    {% elif student.is_legacy_student %}
+                    <span class="badge badge-warning" style="font-size: 10px;">Legacy</span>
+                    {% endif %}
+                </div>
                 <button type="button" class="btn-copy-id" onclick="copyToClipboard('{{ student.student_id }}', this)" title="Copy ID">
                     <i class="far fa-copy"></i>
                 </button>
@@ -71,7 +78,16 @@
 
     <!-- 7. Mobile & Gender -->
     <td class="td-mobile text-center">
-        <div class="font-weight-bold text-dark" style="font-size: 13px;">{{ student.student_mobile|default:"-" }}</div>
+        <div class="font-weight-bold text-dark" style="font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+            <span>{{ student.student_mobile|default:"-" }}</span>
+            {% if student.student_mobile and student.student_mobile != "-" %}
+            <a href="javascript:void(0)" class="text-success font-weight-bold ml-1" 
+               onclick="openWhatsAppAndCopy('{{ student.student_mobile|escapejs }}', '{{ student.student_name|escapejs }}', '{{ student.student_id|escapejs }}', '{{ student.program|escapejs }}', '{{ student.batch|escapejs }}', '{{ student.current_batch|default:student.batch|escapejs }}', '{{ student.current_semester|default:'Level 1 Term I'|escapejs }}', '{{ student.blood_group|default:'-'|escapejs }}')" 
+               title="WhatsApp student (copies details)">
+                <i class="fab fa-whatsapp text-success" style="font-size: 1.15rem; vertical-align: middle;"></i>
+            </a>
+            {% endif %}
+        </div>
         <div class="mt-1" style="font-size: 12px; font-weight: 700;">
             {% if student.gender == 'Male' %}
             <span class="text-primary">MALE</span>
