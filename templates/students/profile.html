@@ -131,7 +131,10 @@
                 </div>
             </div>
             
-            <div class="edit-btn-wrapper">
+            <div class="edit-btn-wrapper d-flex align-items-center">
+                <button type="button" hx-get="{% url 'studentship_preview' student.student_id %}" hx-target="#modals-here" class="btn btn-info font-weight-bold px-4 shadow-sm mr-2" style="border-radius: 10px; white-space: nowrap;">
+                    <i class="fas fa-certificate mr-2 text-warning"></i> Studentship
+                </button>
                 <a href="{% url 'edit_student' student.student_id %}" class="btn btn-primary font-weight-bold px-4 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
                     <i class="fas fa-edit mr-2"></i> Edit Profile
                 </a>

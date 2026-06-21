@@ -223,7 +223,7 @@ class StudentDirectoryTests(TestCase):
         self.assertContains(response, 'btn-clear-filters')
         self.assertContains(response, 'name="sort"')
         self.assertContains(response, '?per_page=25')
-        self.assertContains(response, 'sort=dept_batch_serial')
+        self.assertContains(response, 'sort=batch_dept_serial')
 
     def test_directory_filters_work_for_visible_fields(self):
         cases = (
@@ -247,8 +247,17 @@ class StudentDirectoryTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue(assertion(rows))
 
-    def test_default_directory_sort_is_department_then_latest_batch_then_serial(self):
+    def test_default_directory_sort_is_batch_then_department_then_serial(self):
         response = self.client.get(reverse('student_list'))
+
+        ordered_ids = [student.student_id for student in response.context['page_obj'].paginator.object_list]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(ordered_ids[0], self.latest_eee_student.student_id)
+        self.assertLess(ordered_ids.index('CSE001'), ordered_ids.index('EEE001'))
+
+    def test_department_sort_prioritizes_department_before_batch(self):
+        response = self.client.get(reverse('student_list'), {'sort': 'dept_batch_serial'})
 
         ordered_ids = [student.student_id for student in response.context['page_obj'].paginator.object_list]
 
@@ -256,15 +265,6 @@ class StudentDirectoryTests(TestCase):
         self.assertEqual(ordered_ids[:3], ['CSE001', 'CSE002', 'CSE003'])
         self.assertLess(ordered_ids.index('CSE010'), ordered_ids.index('CSE011'))
         self.assertLess(ordered_ids.index('CSE900'), ordered_ids.index('EEE900'))
-
-    def test_batchwise_sort_prioritizes_latest_batch_before_department(self):
-        response = self.client.get(reverse('student_list'), {'sort': 'batch_dept_serial'})
-
-        ordered_ids = [student.student_id for student in response.context['page_obj'].paginator.object_list]
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(ordered_ids[0], self.latest_eee_student.student_id)
-        self.assertLess(ordered_ids.index('CSE001'), ordered_ids.index('EEE001'))
 
     def test_htmx_directory_results_include_synced_controls(self):
         response = self.client.get(
@@ -890,6 +890,106 @@ class StudentDirectoryTests(TestCase):
 
         # 3. Verify ZIP download URL is in context
         self.assertEqual(response.context['zip_download_url'], reverse('export_students_smart_campus_dept'))
+
+    def test_studentship_preview_view(self):
+        student = Student.objects.get(student_id='CSE001')
+        response = self.client.get(reverse('studentship_preview', kwargs={'student_id': student.student_id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Studentship Certificate Generator')
+        self.assertContains(response, 'BAUST/Admin-132/2015/')
+        self.assertContains(response, student.student_name.upper())
+        self.assertContains(response, student.father_name.upper())
+        self.assertContains(response, student.mother_name.upper())
+
+    def test_download_studentship_certificate_pdf_get(self):
+        student = Student.objects.get(student_id='CSE001')
+        response = self.client.get(reverse('download_studentship', kwargs={'student_id': student.student_id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('inline; filename=Studentship_Certificate_CSE001.pdf', response['Content-Disposition'])
+
+    def test_download_studentship_certificate_pdf_post(self):
+        student = Student.objects.get(student_id='CSE001')
+        data = {
+            'ref_no': 'BAUST/Admin-132/2015/CUSTOM-999',
+            'date': 'October 31, 2026',
+            'heading': 'TO WHOM IT MAY CONCERN (CUSTOM)',
+            'body_text': 'This is a custom body text for testing.',
+            'signatory_name': 'TEST SIGNATORY',
+            'signatory_title': 'Test Title',
+            'signatory_contact': 'Mobile: 01999999999'
+        }
+        response = self.client.post(reverse('download_studentship', kwargs={'student_id': student.student_id}), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('inline; filename=Studentship_Certificate_CSE001.pdf', response['Content-Disposition'])
+
+    def test_unspecified_gender_filtering(self):
+        unspecified_student = Student.objects.create(
+            student_id='CSE999',
+            student_name='Unspecified Gender Student',
+            program=self.cse_program.name,
+            admission_year=2025,
+            cluster='Engineering & Technology',
+            batch='25th',
+            semester_name='Spring',
+            program_type='Bachelor',
+            admission_status='Active',
+            gender=None,
+            father_name='Unspecified Father',
+            mother_name='Unspecified Mother',
+            student_mobile='01799999999',
+        )
+        response = self.client.get(reverse('student_list') + '?gender=Unspecified')
+        self.assertEqual(response.status_code, 200)
+        page_students = response.context['page_obj'].paginator.object_list
+        self.assertIn(unspecified_student, page_students)
+        standard_student = Student.objects.get(student_id='CSE001')
+        self.assertNotIn(standard_student, page_students)
+
+    def test_additional_page_size_options(self):
+        response = self.client.get(reverse('student_list') + '?per_page=150')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['per_page'], 150)
+        self.assertEqual(response.context['page_obj'].paginator.per_page, 150)
+
+    def test_same_program_migration_is_blocked(self):
+        student = Student.objects.get(student_id='CSE001')
+        
+        # 1. Test utilities/execute_program_change_web blocks same program
+        from students.utils import execute_program_change_web
+        result = execute_program_change_web(
+            student=student,
+            new_program='CSE',
+            new_cluster='Engineering & Technology',
+            new_year=2026,
+            new_semester='Spring',
+            hall_name='Non-Residential'
+        )
+        self.assertFalse(result['success'])
+        self.assertEqual(result['error'], 'Target program must be different from the current program.')
+        
+        # 2. Test view change_program blocks and redirects with message
+        url = reverse('change_program', kwargs={'student_id': student.student_id})
+        data = {
+            'new_program': 'CSE',
+            'new_cluster': 'Engineering & Technology',
+            'new_year': '2026',
+            'new_semester': 'Spring',
+            'hall_name': 'Non-Residential',
+            'notes': 'Test same program'
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        # Check redirect is back to the change_program page
+        self.assertRedirects(response, url)
+        
+        # Check message is set
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Illogical Migration: Student is already in program 'CSE'.")
+
+
 
 
 

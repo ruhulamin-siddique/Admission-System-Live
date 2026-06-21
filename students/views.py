@@ -42,23 +42,29 @@ def link_callback(uri, rel):
     from django.conf import settings
     from django.contrib.staticfiles import finders
 
-    # Handle media files
-    if settings.MEDIA_URL and uri.startswith(settings.MEDIA_URL):
-        path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
-    # Handle static files
-    elif settings.STATIC_URL and uri.startswith(settings.STATIC_URL):
-        path = os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
-    else:
+    media_url_clean = settings.MEDIA_URL.strip('/')
+    static_url_clean = settings.STATIC_URL.strip('/')
+    uri_clean = uri.lstrip('/')
+
+    # Check for media files
+    if media_url_clean and uri_clean.startswith(media_url_clean + '/'):
+        path = os.path.normpath(os.path.join(settings.MEDIA_ROOT, uri_clean[len(media_url_clean)+1:]))
+        if os.path.isfile(path):
+            return path
         return uri
 
-    # make sure that file exists
-    if not os.path.isfile(path):
+    # Check for static files
+    if static_url_clean and uri_clean.startswith(static_url_clean + '/'):
+        path = os.path.normpath(os.path.join(settings.STATIC_ROOT, uri_clean[len(static_url_clean)+1:]))
+        if os.path.isfile(path):
+            return path
         # Fallback to staticfiles finders if not in STATIC_ROOT (useful during dev)
-        found_path = finders.find(uri.replace(settings.STATIC_URL, "")) if settings.STATIC_URL else None
+        rel_static_path = uri_clean[len(static_url_clean)+1:]
+        found_path = finders.find(rel_static_path)
         if found_path:
-            return found_path
-        return uri
-    return path
+            return os.path.normpath(found_path)
+
+    return uri
 
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
@@ -404,7 +410,7 @@ def dashboard(request):
 from django.core.paginator import Paginator
 
 DIRECTORY_DEFAULT_PER_PAGE = 25
-DIRECTORY_DEFAULT_SORT = 'dept_batch_serial'
+DIRECTORY_DEFAULT_SORT = 'batch_dept_serial'
 DIRECTORY_FILTER_FIELDS = (
     'search',
     'year',
@@ -518,7 +524,10 @@ def _apply_directory_filters(queryset, params, include_cancelled=False):
     if params['dept']:
         queryset = queryset.filter(cluster=params['dept'])
     if params['gender']:
-        queryset = queryset.filter(gender=params['gender'])
+        if params['gender'] == 'Unspecified':
+            queryset = queryset.filter(Q(gender__isnull=True) | Q(gender='') | Q(gender='Unknown') | Q(gender='Unspecified'))
+        else:
+            queryset = queryset.filter(gender=params['gender'])
     if params['status']:
         queryset = queryset.filter(admission_status=params['status'])
     elif not include_cancelled:
@@ -619,7 +628,7 @@ def _build_directory_filter_metadata(base_queryset):
         'programs': _get_non_empty_values(base_queryset, 'program', 'program'),
         'batches': _get_batch_filter_values(base_queryset),
         'current_batches': _get_current_batch_filter_values(base_queryset),
-        'genders': ['Male', 'Female', 'Other'],
+        'genders': ['Male', 'Female', 'Other', 'Unspecified'],
         'statuses': _get_non_empty_values(base_queryset, 'admission_status', 'admission_status'),
     }
 
@@ -2135,9 +2144,17 @@ def change_program(request, student_id):
     student = Student.objects.get(pk=student_id)
     if request.method == "POST":
         data = request.POST
+        new_program = data.get('new_program')
+        
+        # Prevent same-program change
+        from .utils import get_canonical_program_name
+        if get_canonical_program_name(student.program) == get_canonical_program_name(new_program):
+            messages.error(request, f"Illogical Migration: Student is already in program '{student.program}'.")
+            return redirect('change_program', student_id=student_id)
+
         result = execute_program_change_web(
             student=student,
-            new_program=data.get('new_program'),
+            new_program=new_program,
             new_cluster=data.get('new_cluster'),
             new_year=data.get('new_year'),
             new_semester=data.get('new_semester'),
@@ -3581,6 +3598,13 @@ def api_bulk_update_execute(request):
 def api_get_board_captcha(request):
     """Fetches captcha from education board and saves session (BUG-02/03 fixed)."""
     engine = BoardVerificationEngine()
+    
+    # Load previously saved cookies if available to speed up captcha loading (fast path)
+    saved_cookies = request.session.get('board_session_cookies')
+    if saved_cookies:
+        import requests.utils
+        engine.session.cookies.update(saved_cookies)
+        
     captcha_b64 = engine.get_captcha()
 
     if captcha_b64:
@@ -3930,3 +3954,177 @@ def revert_field_change(request, history_id):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': f"Failed to revert field: {str(e)}"}, status=500)
+
+
+@require_access('students', 'view_directory')
+def api_studentship_preview(request, student_id):
+    """
+    Renders the studentship certificate preview modal with pre-populated, gender-aware values.
+    """
+    from master_data.models import Program
+    from core.models import SystemSettings
+    
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        # Avoid redirecting AJAX requests, just use canonical ID internally
+        pass
+        
+    sys_settings = SystemSettings.objects.first()
+    
+    # 1. Resolve full program name
+    program_obj = Program.objects.filter(
+        Q(short_name=student.program) | Q(name=student.program)
+    ).first()
+    if program_obj:
+        program_full = f"{program_obj.name} ({program_obj.short_name})" if program_obj.short_name else program_obj.name
+    else:
+        program_full = student.program or ""
+
+    # 2. Parse Level and Term
+    current_semester = student.current_semester or 'Level 1 Term I'
+    parts = current_semester.split(' ')
+    if len(parts) >= 4:
+        level = parts[1]
+        term = parts[3]
+    else:
+        level = '1'
+        term = 'I'
+
+    # 3. Dynamic formatting of semester name to fit BAUST standards (e.g. "Winter Semester- 2026")
+    semester_name = student.semester_name or ""
+    sem_display = semester_name
+    if sem_display:
+        if "semester" not in sem_display.lower():
+            words = sem_display.split()
+            if len(words) == 2 and words[1].isdigit():
+                sem_display = f"{words[0]} Semester- {words[1]}"
+            elif student.admission_year:
+                sem_display = f"{sem_display} Semester- {student.admission_year}"
+        else:
+            if "-" not in sem_display:
+                sem_display = sem_display.replace("Semester ", "Semester- ")
+                if student.admission_year and str(student.admission_year) not in sem_display:
+                    sem_display = f"{sem_display}- {student.admission_year}"
+    else:
+        # Fallback to admission_year
+        sem_display = f"Winter Semester- {student.admission_year or timezone.now().year}"
+
+    # 4. Resolve pronouns based on gender
+    is_female = student.gender and student.gender.lower() == 'female'
+    relation = "daughter" if is_female else "son"
+    pronoun = "her" if is_female else "him"
+
+    # 5. Parents names
+    parents = ""
+    f_name = student.father_name or ""
+    m_name = student.mother_name or ""
+    if f_name and m_name:
+        parents = f"{f_name} & {m_name}"
+    elif f_name:
+        parents = f_name
+    elif m_name:
+        parents = m_name
+
+    # 6. Build default body text
+    body_text = (
+        f"This is to certify that <strong>{student.student_name.upper()}</strong>, {relation} of {parents.upper()}, "
+        f"bearing ID No: {student.student_id} is a student of {program_full} Department, "
+        f"Level-{level}, Term-{term} of {sem_display} at Bangladesh Army University "
+        f"of Science & Technology (BAUST), Saidpur.\n\n"
+        f"I wish {pronoun} every success in life."
+    )
+    
+    # 7. Formulate default reference number and date
+    ref_no = f"BAUST/Admin-132/2015/"
+    default_date = timezone.localdate().strftime("%B %d, %Y")
+    
+    context = {
+        'student': student,
+        'ref_no': ref_no,
+        'default_date': default_date,
+        'body_text': body_text,
+        'sys_settings': sys_settings,
+    }
+    
+    return render(request, 'students/partials/studentship_preview_modal.html', context)
+
+
+@require_access('students', 'view_directory')
+def download_studentship_certificate(request, student_id):
+    """
+    Generates and downloads the customized Studentship Certificate PDF.
+    """
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if was_legacy:
+        return redirect('download_studentship', student_id=canonical_id)
+        
+    if request.method == 'POST':
+        ref_no = request.POST.get('ref_no', '')
+        cert_date = request.POST.get('date', '')
+        heading = request.POST.get('heading', 'TO WHOM IT MAY CONCERN')
+        body_text = request.POST.get('body_text', '')
+        signatory_name = request.POST.get('signatory_name', 'MD. KAZI NAZMUL HAQUE')
+        signatory_title = request.POST.get('signatory_title', 'Deputy Registrar (Academic), BAUST')
+        signatory_contact = request.POST.get('signatory_contact', 'Mobile: 01769675554')
+    else:
+        # Fallback values for GET request
+        ref_no = f"BAUST/Admin-132/2015/"
+        cert_date = timezone.localdate().strftime("%B %d, %Y")
+        heading = 'TO WHOM IT MAY CONCERN'
+        
+        from master_data.models import Program
+        program_obj = Program.objects.filter(
+            Q(short_name=student.program) | Q(name=student.program)
+        ).first()
+        program_full = f"{program_obj.name} ({program_obj.short_name})" if (program_obj and program_obj.short_name) else (student.program or "")
+        
+        current_semester = student.current_semester or 'Level 1 Term I'
+        parts = current_semester.split(' ')
+        level = parts[1] if len(parts) >= 4 else '1'
+        term = parts[3] if len(parts) >= 4 else 'I'
+        
+        sem_display = student.semester_name or f"Winter Semester- {student.admission_year or timezone.now().year}"
+        is_female = student.gender and student.gender.lower() == 'female'
+        relation = "daughter" if is_female else "son"
+        pronoun = "her" if is_female else "him"
+        
+        parents = ""
+        if student.father_name and student.mother_name:
+            parents = f"{student.father_name} & {student.mother_name}"
+        elif student.father_name:
+            parents = student.father_name
+        elif student.mother_name:
+            parents = student.mother_name
+            
+        body_text = (
+            f"This is to certify that <strong>{student.student_name.upper()}</strong>, {relation} of {parents.upper()}, "
+            f"bearing ID No: {student.student_id} is a student of {program_full} Department, "
+            f"Level-{level}, Term-{term} of {sem_display} at Bangladesh Army University "
+            f"of Science & Technology (BAUST), Saidpur.\n\n"
+            f"I wish {pronoun} every success in life."
+        )
+        signatory_name = 'MD. KAZI NAZMUL HAQUE'
+        signatory_title = 'Deputy Registrar (Academic), BAUST'
+        signatory_contact = 'Mobile: 01769675554'
+
+    body_html = body_text.replace('\n', '<br>')
+    
+    context = {
+        'student': student,
+        'ref_no': ref_no,
+        'cert_date': cert_date,
+        'heading': heading,
+        'body_html': body_html,
+        'signatory_name': signatory_name,
+        'signatory_title': signatory_title,
+        'signatory_contact': signatory_contact,
+        'today': timezone.now(),
+    }
+    
+    pdf_response = render_to_pdf('students/reports/pdf/studentship_certificate.html', context)
+    if pdf_response:
+        filename = f"Studentship_Certificate_{student_id}.pdf"
+        pdf_response['Content-Disposition'] = f"inline; filename={filename}"
+        return pdf_response
+        
+    return HttpResponse("Error generating Studentship Certificate PDF", status=400)

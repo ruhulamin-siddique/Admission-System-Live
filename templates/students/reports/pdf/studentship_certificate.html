@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: a4 portrait;
+            /* Substantial margins representing formal academic certificate spacing */
+            margin-top: 4.8cm; /* Leave space for official pre-printed letterhead header */
+            margin-bottom: 3.5cm;
+            margin-left: 2.8cm;
+            margin-right: 2.8cm;
+        }
+        
+        body {
+            font-family: 'Times-Roman', 'Times New Roman', serif;
+            font-size: 13.5pt;
+            line-height: 1.6;
+            color: #000000;
+        }
+        
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2.2cm;
+        }
+        
+        .header-table td {
+            padding: 0;
+            border: none;
+            font-size: 13.5pt;
+            vertical-align: top;
+        }
+        
+        .ref-col {
+            text-align: left;
+            width: 60%;
+        }
+        
+        .date-col {
+            text-align: right;
+            width: 40%;
+        }
+        
+        .title-container {
+            text-align: center;
+            margin-bottom: 1.8cm;
+        }
+        
+        .title-text {
+            font-size: 16pt;
+            font-weight: bold;
+            text-decoration: underline;
+            letter-spacing: 0.5px;
+        }
+        
+        .body-text {
+            text-align: justify;
+            margin-bottom: 3.5cm;
+            font-size: 13.5pt;
+        }
+        
+        .signatory-container {
+            width: 100%;
+            text-align: left;
+            font-size: 13pt;
+            line-height: 1.4;
+        }
+        
+        .sig-name {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Reference and Date Header -->
+    <table class="header-table">
+        <tr>
+            <td class="ref-col">{{ ref_no }}</td>
+            <td class="date-col">Date: {{ cert_date }}</td>
+        </tr>
+    </table>
+
+    <!-- Certificate Title Heading -->
+    <div class="title-container">
+        <span class="title-text">{{ heading }}</span>
+    </div>
+
+    <!-- Main Certificate Text -->
+    <div class="body-text">
+        {{ body_html|safe }}
+    </div>
+
+    <!-- Signatory Footnote -->
+    <div class="signatory-container">
+        <div class="sig-name">{{ signatory_name }}</div>
+        <div>{{ signatory_title }}</div>
+        <div>{{ signatory_contact }}</div>
+    </div>
+
+</body>
+</html>

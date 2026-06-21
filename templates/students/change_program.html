@@ -110,9 +110,9 @@
                                             <div class="form-group">
                                                 <label class="small font-weight-bold text-uppercase">New Program</label>
                                                 <select name="new_program" class="form-control form-control-lg border-2" required>
-                                                     <option value="">Select Target Program</option>
+                                                     <option value="" selected>Select Target Program</option>
                                                      {% for p in programs %}
-                                                         <option value="{% if p.short_name %}{{ p.short_name }}{% else %}{{ p.name }}{% endif %}" {% if student.program == p.name or student.program == p.short_name %}selected{% endif %}>{{ p.name }}</option>
+                                                         <option value="{% if p.short_name %}{{ p.short_name }}{% else %}{{ p.name }}{% endif %}">{{ p.name }}</option>
                                                      {% endfor %}
                                                  </select>
                                             </div>
@@ -162,13 +162,24 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-12">
-                                            <div class="form-group mb-0">
-                                                <label class="small font-weight-bold text-uppercase">Change Reason (Notes)</label>
-                                                <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Student preferred CSE based on merit list"></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
+                                         <div class="col-12">
+                                             <div class="form-group mb-0">
+                                                 <label class="small font-weight-bold text-uppercase">Change Reason (Notes)</label>
+                                                 <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Student preferred CSE based on merit list"></textarea>
+                                             </div>
+                                         </div>
+                                         <div class="col-12 mt-3" id="same-program-warning" style="display: none;">
+                                             <div class="alert alert-warning border-0 shadow-sm" style="background: #fff3cd; color: #856404; border-radius: 12px;">
+                                                 <div class="d-flex">
+                                                     <i class="fas fa-exclamation-triangle mt-1 mr-3 fa-lg"></i>
+                                                     <div>
+                                                         <h6 class="font-weight-bold mb-1">Illogical Migration Target</h6>
+                                                         <p class="mb-0 small">The selected target program is the same as the student's current program. Migration is not allowed.</p>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     </div>
                                 </div>
                             </div>
                         </div>
@@ -259,6 +270,21 @@
             });
         }
 
+        const currentProgram = "{{ student.program|escapejs }}".toUpperCase();
+
+        function checkSameProgram() {
+            const selectedProg = $('[name="new_program"]').val();
+            const selectedText = $('[name="new_program"] option:selected').text();
+            
+            if (selectedProg && (selectedProg.toUpperCase() === currentProgram || selectedText.toUpperCase() === currentProgram)) {
+                $('#same-program-warning').slideDown();
+                $('[type="submit"]').prop('disabled', true).addClass('opacity-50');
+            } else {
+                $('#same-program-warning').slideUp();
+                $('[type="submit"]').prop('disabled', false).removeClass('opacity-50');
+            }
+        }
+
         // Auto-select Cluster and Trigger Preview
         $('[name="new_program"]').on('change', function() {
             const selectedProg = $(this).val();
@@ -267,6 +293,7 @@
                 // Auto-select Cluster
                 $('[name="new_cluster"]').val(data.cluster).trigger('change');
             }
+            checkSameProgram();
         });
 
         // Trigger updates on other fields
@@ -274,6 +301,7 @@
         
         // Initial load
         updateIDPreview();
+        checkSameProgram();
     });
 </script>
 {% endblock %}

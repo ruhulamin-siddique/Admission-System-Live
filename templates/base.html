@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Bangladesh Army University of Science and Technology | AdminLTE 3{% endblock %}</title>
+  <title>Campus Connect | {% block title %}{{ sys_settings.institution_name|default:"Bangladesh Army University of Science and Technology" }}{% endblock %}</title>
 
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700,900&display=fallback">
@@ -363,15 +363,15 @@
       {% endif %}
       <span class="brand-text font-weight-bold ml-2 text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px; color: white;">
         {% if 'exam-billing' in request.path %}
-            Exam Billing
+            Campus Connect: Billing
         {% elif 'external-api' in request.path %}
-            API Gateway
+            Campus Connect: API
         {% elif 'settings' in request.path %}
-            Master Data
+            Campus Connect: Master
         {% elif 'core' in request.path and 'staff' in request.path %}
-            Staff & Security
+            Campus Connect: Staff
         {% else %}
-            Admission
+            Campus Connect
         {% endif %}
       </span>
     </a>

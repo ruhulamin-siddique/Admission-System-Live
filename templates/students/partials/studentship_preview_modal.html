@@ -1,0 +1,193 @@
+<div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 95%;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+        <!-- Header -->
+        <div class="modal-header bg-dark text-white border-bottom-0 py-3 px-4 d-flex align-items-center justify-content-between">
+            <h5 class="modal-title font-weight-bold mb-0">
+                <i class="fas fa-certificate mr-2 text-warning"></i> Studentship Certificate Generator
+            </h5>
+            <div class="d-flex align-items-center">
+                <!-- Toggle Panel Button -->
+                <button type="button" id="btn-toggle-edit" class="btn btn-outline-light btn-sm mr-3 px-3 py-1.5 font-weight-bold" style="border-radius: 20px; font-size: 12px; transition: all 0.2s; border-color: rgba(255,255,255,0.4);">
+                    <i class="fas fa-cog mr-1"></i> Edit Certificate Fields
+                </button>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="outline: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body p-4 bg-light">
+            <div class="row">
+                <!-- Left: Form Controls (Initially Hidden) -->
+                <div class="col-lg-5 col-md-12 mb-4 mb-lg-0" id="edit-panel" style="display: none;">
+                    <form id="studentship-form" method="POST" action="{% url 'download_studentship' student.student_id %}" target="_blank" class="h-100">
+                        {% csrf_token %}
+                        <div class="card h-100 border-0 shadow-sm" style="border-radius: 12px;">
+                            <div class="card-body p-4">
+                                <h6 class="font-weight-bold text-secondary mb-3 border-bottom pb-2">
+                                    <i class="fas fa-edit mr-1"></i> Edit Certificate Fields
+                                </h6>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 form-group">
+                                        <label for="input-ref-no" class="small font-weight-bold text-dark text-uppercase">Reference No.</label>
+                                        <input type="text" id="input-ref-no" name="ref_no" class="form-control form-control-sm" value="{{ ref_no }}" placeholder="Reference Number" required>
+                                    </div>
+                                    
+                                    <div class="col-md-6 form-group">
+                                        <label for="input-date" class="small font-weight-bold text-dark text-uppercase">Certificate Date</label>
+                                        <input type="text" id="input-date" name="date" class="form-control form-control-sm" value="{{ default_date }}" placeholder="Date (e.g. June 21, 2026)" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="input-heading" class="small font-weight-bold text-dark text-uppercase">Title Heading</label>
+                                    <input type="text" id="input-heading" name="heading" class="form-control form-control-sm text-center font-weight-bold" value="TO WHOM IT MAY CONCERN" placeholder="Heading Text" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="input-body-text" class="small font-weight-bold text-dark text-uppercase">Certificate Body Text</label>
+                                    <textarea id="input-body-text" name="body_text" class="form-control form-control-sm" rows="8" style="line-height: 1.4; font-size: 13px;" required>{{ body_text }}</textarea>
+                                    <small class="text-muted">Use standard HTML tags like <code>&lt;strong&gt;</code> for bold styling.</small>
+                                </div>
+                                
+                                <h6 class="font-weight-bold text-secondary mt-4 mb-3 border-bottom pb-2">
+                                    <i class="fas fa-signature mr-1"></i> Academic Signatory
+                                </h6>
+                                
+                                <div class="form-group">
+                                    <label for="input-sig-name" class="small font-weight-bold text-dark text-uppercase">Signatory Name</label>
+                                    <input type="text" id="input-sig-name" name="signatory_name" class="form-control form-control-sm" value="MD. KAZI NAZMUL HAQUE" required>
+                                </div>
+                                
+                                <div class="form-group mb-0">
+                                    <label for="input-sig-title" class="small font-weight-bold text-dark text-uppercase">Signatory Title</label>
+                                    <input type="text" id="input-sig-title" name="signatory_title" class="form-control form-control-sm" value="Deputy Registrar (Academic), BAUST" required>
+                                </div>
+                                
+                                <div class="form-group mt-3 mb-0">
+                                    <label for="input-sig-contact" class="small font-weight-bold text-dark text-uppercase">Signatory Contact</label>
+                                    <input type="text" id="input-sig-contact" name="signatory_contact" class="form-control form-control-sm" value="Mobile: 01769675554" required>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Right: Live Print Mockup Sheet (Initially col-12) -->
+                <div class="col-12" id="preview-panel" style="transition: all 0.3s ease;">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                        <div class="card-header bg-white border-bottom-0 py-2.5 px-4 d-flex justify-content-between align-items-center">
+                            <span class="font-weight-bold text-secondary small text-uppercase">
+                                <i class="fas fa-eye mr-1 text-primary"></i> Real-time Document Preview
+                            </span>
+                            <span class="badge badge-info px-2.5 py-1 text-uppercase font-weight-bold" style="font-size: 10px;">Letterhead Mockup</span>
+                        </div>
+                        <div class="card-body bg-secondary p-4 d-flex justify-content-center align-items-start overflow-auto" style="min-height: 520px; max-height: 580px;">
+                            
+                            <!-- A4 Mockup Sheet (Full page look) -->
+                            <div id="mockup-sheet" class="bg-white shadow p-5" style="width: 100%; max-width: 650px; min-height: 800px; box-sizing: border-box; font-family: 'Times New Roman', Times, serif; color: #000; font-size: 15px; line-height: 1.6; border: 1px solid #ddd; position: relative; transition: all 0.3s ease;">
+                                
+                                <!-- Top Spacing representing Official Letterhead Header area -->
+                                <div style="height: 110px; border-bottom: 1px dashed #ccc; margin-bottom: 30px; text-align: center; color: #aaa; font-style: italic; font-family: sans-serif; font-size: 12px; display: flex; align-items: center; justify-content: center;">
+                                    [ BAUST Official Letterhead Space ]
+                                </div>
+
+                                <!-- Header: Ref No and Date -->
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 50px;">
+                                    <div id="preview-ref-no" style="font-weight: normal;">BAUST/Admin-132/2015/</div>
+                                    <div id="preview-date" style="font-weight: normal;">Date: June 21, 2026</div>
+                                </div>
+
+                                <!-- Title Heading -->
+                                <div style="text-align: center; margin-bottom: 40px;">
+                                    <h4 id="preview-heading" style="font-weight: bold; text-decoration: underline; letter-spacing: 0.5px; font-family: 'Times New Roman', Times, serif; margin: 0; font-size: 18px;">TO WHOM IT MAY CONCERN</h4>
+                                </div>
+
+                                <!-- Body Paragraph -->
+                                <div id="preview-body" style="text-align: justify; margin-bottom: 80px; white-space: normal; padding-left: 5px; padding-right: 5px;">
+                                    This is to certify that <strong>ABDULLAH-AL-MAHFUZ SHADAB</strong>, son of MD. SHAHIDUL ISLAM & HELENA AKTER, bearing ID No: 0802610205101016 is a student of Computer Science and Engineering (CSE) Department, Level-1, Term-I of Winter Semester- 2026 at Bangladesh Army University of Science & Technology (BAUST), Saidpur.
+                                    <br><br>
+                                    I wish him every success in life.
+                                </div>
+
+                                <!-- Signatory details -->
+                                <div style="margin-top: auto; padding-left: 5px;">
+                                    <div id="preview-sig-name" style="font-weight: bold; font-size: 14px;">MD. KAZI NAZMUL HAQUE</div>
+                                    <div id="preview-sig-title" style="font-style: normal; font-size: 13px;">Deputy Registrar (Academic), BAUST</div>
+                                    <div id="preview-sig-contact" style="font-size: 13px;">Mobile: 01769675554</div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer bg-white py-3 px-4 border-top-0 d-flex justify-content-between" style="border-radius: 0 0 16px 16px;">
+            <button type="button" class="btn btn-light font-weight-bold px-4 py-2" data-dismiss="modal" style="border-radius: 10px;">
+                Cancel
+            </button>
+            <button type="button" id="btn-submit-studentship" class="btn btn-primary font-weight-bold px-4 py-2" style="border-radius: 10px; background: #28a745; border-color: #28a745; box-shadow: 0 4px 6px rgba(40,167,69,0.2);">
+                <i class="fas fa-file-pdf mr-2"></i> Generate PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    function syncPreview() {
+        $('#preview-ref-no').text($('#input-ref-no').val());
+        
+        var dateVal = $('#input-date').val() || '';
+        $('#preview-date').text(dateVal ? 'Date: ' + dateVal : 'Date:');
+        
+        $('#preview-heading').text($('#input-heading').val());
+        
+        var bodyVal = $('#input-body-text').val() || '';
+        var formattedBody = bodyVal.replace(/\n/g, '<br>');
+        $('#preview-body').html(formattedBody);
+        
+        $('#preview-sig-name').text($('#input-sig-name').val());
+        $('#preview-sig-title').text($('#input-sig-title').val());
+        $('#preview-sig-contact').text($('#input-sig-contact').val());
+    }
+
+    // Initialize on load
+    syncPreview();
+
+    // Bind event listeners to input fields
+    $('#input-ref-no, #input-date, #input-heading, #input-body-text, #input-sig-name, #input-sig-title, #input-sig-contact').on('input change keyup', function() {
+        syncPreview();
+    });
+
+    // Handle Edit Panel Toggle
+    $('#btn-toggle-edit').on('click', function() {
+        var isHidden = $('#edit-panel').is(':hidden');
+        if (isHidden) {
+            // Show edit panel, adjust preview panel sizes
+            $('#edit-panel').fadeIn(200);
+            $('#preview-panel').removeClass('col-12').addClass('col-lg-7 col-md-12');
+            $('#mockup-sheet').css('max-width', '600px');
+            $(this).html('<i class="fas fa-eye mr-1"></i> Hide Edit Panel').removeClass('btn-outline-light').addClass('btn-info');
+        } else {
+            // Hide edit panel, make preview panel full width
+            $('#edit-panel').fadeOut(200, function() {
+                $('#preview-panel').removeClass('col-lg-7 col-md-12').addClass('col-12');
+                $('#mockup-sheet').css('max-width', '650px');
+            });
+            $(this).html('<i class="fas fa-cog mr-1"></i> Edit Certificate Fields').removeClass('btn-info').addClass('btn-outline-light');
+        }
+    });
+
+    // Handle PDF Generation Submission
+    $('#btn-submit-studentship').on('click', function() {
+        $('#studentship-form').submit();
+    });
+});
+</script>

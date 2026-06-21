@@ -65,7 +65,21 @@ class BoardVerificationEngine:
         target_captcha = self.CAPTCHA_URL_ALT if use_fallback else self.CAPTCHA_URL
         
         try:
-            # Step 1: Visit home page to get session cookie
+            headers = {
+                'Referer': target_base,
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+            url = f"{target_captcha}?t={int(time.time() * 1000)}"
+            
+            # Step 1: Check if we already have the human_session cookie.
+            # If so, attempt direct captcha retrieval to bypass homepage visits entirely.
+            has_cookie = any(cookie.name == 'human_session' for cookie in self.session.cookies)
+            if has_cookie:
+                response = self.session.get(url, headers=headers, timeout=5)
+                if response.status_code == 200 and 'image' in response.headers.get('Content-Type', '').lower():
+                    return base64.b64encode(response.content).decode('utf-8')
+            
+            # Step 2: No valid session cookie found or it has expired. Perform the homepage challenge flow.
             r = self.session.get(target_base, timeout=10)
             
             # Check for JS cookie validation challenge (e.g. DDOS protection)
@@ -76,18 +90,8 @@ class BoardVerificationEngine:
                 cookie_value = cookie_match.group(1)
                 domain = urlparse(target_base).netloc
                 self.session.cookies.set('human_session', cookie_value, domain=domain)
-                # Visit the page again to register the cookie session
-                self.session.get(target_base, timeout=10)
             
-            # Step 2: Artificial delay
-            time.sleep(1)
-            
-            # Step 3: Fetch captcha with timestamp as seen in portal
-            headers = {
-                'Referer': target_base,
-                'X-Requested-With': 'XMLHttpRequest',
-            }
-            url = f"{target_captcha}?t={int(time.time() * 1000)}"
+            # Step 3: Fetch captcha
             response = self.session.get(url, headers=headers, timeout=10)
             
             # Check if captcha request itself got challenged
@@ -96,7 +100,6 @@ class BoardVerificationEngine:
                 cookie_value = cookie_match.group(1)
                 domain = urlparse(target_base).netloc
                 self.session.cookies.set('human_session', cookie_value, domain=domain)
-                # Re-fetch captcha
                 response = self.session.get(url, headers=headers, timeout=10)
             
             if response.status_code == 200 and ('image' in response.headers.get('Content-Type', '').lower() or len(response.content) > 500):

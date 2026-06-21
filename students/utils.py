@@ -382,6 +382,9 @@ def execute_program_change_web(student, new_program, new_cluster, new_year, new_
             old_id = student.student_id
             old_program = student.program
             
+            if get_canonical_program_name(old_program) == get_canonical_program_name(new_program):
+                return {'success': False, 'error': "Target program must be different from the current program."}
+            
             # 1. Generate new ID using the automated logic
             new_id = generate_next_ugc_id(
                 admission_year=new_year,

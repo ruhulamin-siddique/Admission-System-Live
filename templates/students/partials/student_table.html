@@ -48,7 +48,14 @@
                     <i class="fas fa-info-circle" style="font-size: 14px;"></i>
                 </button>
             </div>
-            <a href="{% url 'student_profile' student.student_id %}" class="font-weight-bold text-dark text-uppercase mt-1 student-name-link d-block" style="font-size: 13px; line-height: 1.2;">{{ student.student_name }}</a>
+            <a href="{% url 'student_profile' student.student_id %}" class="font-weight-bold text-dark text-uppercase mt-1 student-name-link d-block" style="font-size: 13px; line-height: 1.2;">
+                {{ student.student_name }}
+                {% if student.ssc_verified and student.hsc_verified %}
+                    <span class="text-success ml-1" title="SSC & HSC Board Verified" style="display: inline-flex; align-items: center;"><i class="fas fa-check-double" style="font-size: 11px;"></i></span>
+                {% elif student.ssc_verified or student.hsc_verified %}
+                    <span class="text-info ml-1" title="{% if student.ssc_verified %}SSC{% else %}HSC{% endif %} Board Verified" style="display: inline-flex; align-items: center;"><i class="fas fa-check" style="font-size: 11px;"></i></span>
+                {% endif %}
+            </a>
         </div>
     </td>
 
@@ -113,22 +120,61 @@
 
     <!-- 9. Action -->
     <td class="td-action text-right">
-        <div class="d-flex justify-content-end align-items-center" style="gap: 6px;">
-            <button type="button" 
-                    class="row-action-link row-action-link--success" 
-                    onclick="copyStudentData('{{ student.student_name|escapejs }}', '{{ student.student_id|escapejs }}', '{{ student.program|escapejs }}', '{{ student.batch|escapejs }}')"
-                    title="Quick Copy Data">
-                <i class="fas fa-clone" style="font-size: 13px;"></i>
+        <style>
+            .action-3-dot-btn {
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+                transition: all 0.2s;
+            }
+            .action-3-dot-btn:hover {
+                background: rgba(0, 0, 0, 0.05);
+                color: #3b82f6 !important;
+            }
+            body.dark-mode .action-3-dot-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: #38bdf8 !important;
+            }
+            @media (max-width: 767.98px) {
+                .action-3-dot-btn {
+                    width: auto !important;
+                    height: auto !important;
+                    border-radius: 20px !important;
+                    padding: 5px 15px !important;
+                    border: 1px solid #dee2e6 !important;
+                    background: #fff !important;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                }
+                body.dark-mode .action-3-dot-btn {
+                    border-color: #334155 !important;
+                    background: #1e293b !important;
+                }
+            }
+        </style>
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-link btn-sm text-muted p-0 action-3-dot-btn" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-ellipsis-v" style="font-size: 14px;"></i>
+                <span class="d-inline d-md-none ml-2 font-weight-bold" style="font-size: 13px;">Actions</span>
             </button>
-            <a href="{% url 'download_master_sheet' student.student_id %}" class="row-action-link" style="background: rgba(209, 73, 91, 0.1); color: var(--danger-red);" title="Download Master Sheet (PDF)">
-                <i class="fas fa-file-pdf" style="font-size: 13px;"></i>
-            </a>
-            <a href="{% url 'student_profile' student.student_id %}" class="row-action-link row-action-link--primary" title="View Full Profile">
-                <i class="fas fa-address-card" style="font-size: 13px;"></i>
-            </a>
-            <a href="{% url 'edit_student' student.student_id %}" class="row-action-link row-action-link--warning" title="Edit Records">
-                <i class="fas fa-user-pen" style="font-size: 13px;"></i>
-            </a>
+            <div class="dropdown-menu dropdown-menu-right shadow-lg border-0" style="border-radius: 10px; min-width: 160px; padding: 5px 0; z-index: 1040;">
+                <a class="dropdown-item py-2 d-flex align-items-center text-left" href="{% url 'student_profile' student.student_id %}" style="font-size: 13px; font-weight: 600;">
+                    <i class="fas fa-address-card text-primary mr-2" style="width: 20px; font-size: 14px;"></i> View Profile
+                </a>
+                <a class="dropdown-item py-2 d-flex align-items-center text-left" href="{% url 'edit_student' student.student_id %}" style="font-size: 13px; font-weight: 600;">
+                    <i class="fas fa-user-pen text-warning mr-2" style="width: 20px; font-size: 14px;"></i> Edit Records
+                </a>
+                <a class="dropdown-item py-2 d-flex align-items-center text-left" href="{% url 'download_master_sheet' student.student_id %}" style="font-size: 13px; font-weight: 600;">
+                    <i class="fas fa-file-pdf text-danger mr-2" style="width: 20px; font-size: 14px;"></i> Master Sheet
+                </a>
+                <div class="dropdown-divider" style="margin: 4px 0;"></div>
+                <button type="button" class="dropdown-item py-2 d-flex align-items-center text-left border-0 bg-transparent" onclick="copyStudentData('{{ student.student_name|escapejs }}', '{{ student.student_id|escapejs }}', '{{ student.program|escapejs }}', '{{ student.batch|escapejs }}')" style="font-size: 13px; font-weight: 600; width: 100%;">
+                    <i class="fas fa-clone text-success mr-2" style="width: 20px; font-size: 14px;"></i> Copy Data
+                </button>
+            </div>
         </div>
     </td>
 </tr>
