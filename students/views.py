@@ -496,7 +496,7 @@ def _get_directory_base_queryset(user):
     return queryset
 
 
-def _apply_directory_filters(queryset, params):
+def _apply_directory_filters(queryset, params, include_cancelled=False):
     query = params['search']
     if query:
         queryset = queryset.filter(
@@ -521,7 +521,7 @@ def _apply_directory_filters(queryset, params):
         queryset = queryset.filter(gender=params['gender'])
     if params['status']:
         queryset = queryset.filter(admission_status=params['status'])
-    else:
+    elif not include_cancelled:
         queryset = queryset.exclude(admission_status='Cancelled')
     if params['type']:
         queryset = queryset.filter(program_type=params['type'])
@@ -2418,6 +2418,186 @@ def export_students(request):
     response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="students_export_{timezone.now().strftime("%Y%m%d_%H%M")}.xlsx"'
     return response
+
+
+@require_access('students', 'export_excel')
+def export_students_smart_campus(request):
+    """Generates the SMART CAMPUS Excel export without current_batch/semester, and highlighting cancelled rows."""
+    from openpyxl.styles import PatternFill
+    import re
+
+    params = _get_directory_params(request)
+    base_queryset = _get_directory_base_queryset(request.user)
+    # Get filtered queryset, allowing cancelled students to be included
+    students = _apply_directory_sorting(_apply_directory_filters(base_queryset, params, include_cancelled=True), params)
+
+    data = []
+    for i, s in enumerate(students, start=1):
+        # Format semester name (e.g., "Summer 2026")
+        sem_name = (s.semester_name or "").strip()
+        if sem_name and not re.search(r'\b\d{4}\b', sem_name) and s.admission_year:
+            formatted_semester = f"{sem_name} {s.admission_year}"
+        else:
+            formatted_semester = sem_name
+
+        data.append({
+            'SL': i, 'student_id': s.student_id, 'student_name': s.student_name,
+            'program': s.program, 'batch': s.batch,
+            'semester_name': formatted_semester,
+            'admission_status': s.admission_status, 'student_mobile': s.student_mobile,
+            'father_name': s.father_name, 'father_mobile': s.father_mobile,
+            'mother_name': s.mother_name, 'gender': s.gender, 'blood_group': s.blood_group,
+            'religion': s.religion, 'dob': s.dob, 'national_id': s.national_id,
+            'present_address': s.present_address, 'permanent_address': s.permanent_address,
+            'ssc_gpa': s.ssc_gpa, 'hsc_gpa': s.hsc_gpa, 'hall_attached': s.hall_attached,
+            'cluster': s.cluster, 'program_type': s.program_type, 'emergency_contact': s.emergency_contact,
+            'mother_mobile': s.mother_mobile, 'father_occupation': s.father_occupation,
+            'ssc_school': s.ssc_school, 'ssc_year': s.ssc_year, 'ssc_board': s.ssc_board,
+            'ssc_roll': s.ssc_roll, 'ssc_reg': s.ssc_reg, 'hsc_college': s.hsc_college,
+            'hsc_year': s.hsc_year, 'hsc_board': s.hsc_board, 'hsc_roll': s.hsc_roll,
+            'hsc_reg': s.hsc_reg, 'admission_date': s.admission_date, 'is_non_residential': s.is_non_residential,
+            'admission_payment': s.admission_payment, 'second_installment': s.second_installment,
+            'waiver': s.waiver, 'others': s.others, 'reference': s.reference, 'remarks': s.remarks,
+        })
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Students')
+        workbook = writer.book
+        worksheet = writer.sheets['Students']
+        
+        # Soft pastel yellow color (hex FFF2CC) for cancelled student rows
+        yellow_fill = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')
+        
+        # openpyxl uses 1-based indexing. Row 1 is header, so data starts at row 2
+        for row_idx, s in enumerate(students, start=2):
+            if s.admission_status == 'Cancelled':
+                for col_idx in range(1, len(df.columns) + 1):
+                    worksheet.cell(row=row_idx, column=col_idx).fill = yellow_fill
+
+    response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="smart_campus_export_{timezone.now().strftime("%Y%m%d_%H%M")}.xlsx"'
+    return response
+
+
+@require_access('students', 'export_excel')
+def export_students_smart_campus_dept(request):
+    """Generates a ZIP file containing separate Excel exports by department (program) in SMART CAMPUS format."""
+    from openpyxl.styles import PatternFill
+    from collections import defaultdict
+    import zipfile
+    import re
+
+    params = _get_directory_params(request)
+    base_queryset = _get_directory_base_queryset(request.user)
+    # Get filtered queryset, allowing cancelled students to be included
+    students = _apply_directory_sorting(_apply_directory_filters(base_queryset, params, include_cancelled=True), params)
+
+    # Group students by program
+    grouped_students = defaultdict(list)
+    for s in students:
+        prog = (s.program or "Unspecified").strip()
+        grouped_students[prog].append(s)
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for program_name, dept_students in grouped_students.items():
+            data = []
+            for i, s in enumerate(dept_students, start=1):
+                # Format semester name (e.g., "Summer 2026")
+                sem_name = (s.semester_name or "").strip()
+                if sem_name and not re.search(r'\b\d{4}\b', sem_name) and s.admission_year:
+                    formatted_semester = f"{sem_name} {s.admission_year}"
+                else:
+                    formatted_semester = sem_name
+
+                data.append({
+                    'SL': i, 'student_id': s.student_id, 'student_name': s.student_name,
+                    'program': s.program, 'batch': s.batch,
+                    'semester_name': formatted_semester,
+                    'admission_status': s.admission_status, 'student_mobile': s.student_mobile,
+                    'father_name': s.father_name, 'father_mobile': s.father_mobile,
+                    'mother_name': s.mother_name, 'gender': s.gender, 'blood_group': s.blood_group,
+                    'religion': s.religion, 'dob': s.dob, 'national_id': s.national_id,
+                    'present_address': s.present_address, 'permanent_address': s.permanent_address,
+                    'ssc_gpa': s.ssc_gpa, 'hsc_gpa': s.hsc_gpa, 'hall_attached': s.hall_attached,
+                    'cluster': s.cluster, 'program_type': s.program_type, 'emergency_contact': s.emergency_contact,
+                    'mother_mobile': s.mother_mobile, 'father_occupation': s.father_occupation,
+                    'ssc_school': s.ssc_school, 'ssc_year': s.ssc_year, 'ssc_board': s.ssc_board,
+                    'ssc_roll': s.ssc_roll, 'ssc_reg': s.ssc_reg, 'hsc_college': s.hsc_college,
+                    'hsc_year': s.hsc_year, 'hsc_board': s.hsc_board, 'hsc_roll': s.hsc_roll,
+                    'hsc_reg': s.hsc_reg, 'admission_date': s.admission_date, 'is_non_residential': s.is_non_residential,
+                    'admission_payment': s.admission_payment, 'second_installment': s.second_installment,
+                    'waiver': s.waiver, 'others': s.others, 'reference': s.reference, 'remarks': s.remarks,
+                })
+            
+            df = pd.DataFrame(data)
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='Students')
+                workbook = writer.book
+                worksheet = writer.sheets['Students']
+                
+                # Soft pastel yellow color (hex FFF2CC) for cancelled student rows
+                yellow_fill = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')
+                
+                for row_idx, s in enumerate(dept_students, start=2):
+                    if s.admission_status == 'Cancelled':
+                        for col_idx in range(1, len(df.columns) + 1):
+                            worksheet.cell(row=row_idx, column=col_idx).fill = yellow_fill
+
+            # Clean program name for filename (remove invalid filesystem chars)
+            clean_program_name = re.sub(r'[\\/*?:"<>|]', "", program_name).replace(" ", "_")
+            filename = f"{clean_program_name}_smart_campus_export.xlsx"
+            zip_file.writestr(filename, excel_buffer.getvalue())
+
+    response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="dept_smart_campus_exports_{timezone.now().strftime("%Y%m%d_%H%M")}.zip"'
+    return response
+
+
+@require_access('students', 'export_excel')
+def export_students_smart_campus_dept_modal(request):
+    """Returns the HTML for the department-wise export modal enlisting programs and student counts."""
+    from django.urls import reverse
+
+    params = _get_directory_params(request)
+    base_queryset = _get_directory_base_queryset(request.user)
+    # Get filtered queryset, allowing cancelled students to be included
+    students = _apply_directory_sorting(_apply_directory_filters(base_queryset, params, include_cancelled=True), params)
+
+    # Group students by program and count
+    from collections import defaultdict
+    grouped_counts = defaultdict(int)
+    for s in students:
+        prog = (s.program or "Unspecified").strip()
+        grouped_counts[prog] += 1
+
+    # Sort departments alphabetically
+    sorted_depts = sorted(grouped_counts.items())
+
+    # Build the list of departments with counts and download URLs
+    departments_data = []
+    base_get = request.GET.copy()
+    for name, count in sorted_depts:
+        get_params = base_get.copy()
+        get_params['program'] = name
+        download_url = reverse('export_students_smart_campus') + '?' + get_params.urlencode()
+        departments_data.append({
+            'name': name,
+            'count': count,
+            'download_url': download_url
+        })
+
+    # ZIP download URL keeps all current filters
+    zip_download_url = reverse('export_students_smart_campus_dept')
+    if request.GET:
+        zip_download_url += '?' + request.GET.urlencode()
+
+    return render(request, 'students/partials/dept_export_modal.html', {
+        'departments': departments_data,
+        'zip_download_url': zip_download_url
+    })
 
 
 @require_access('students', 'export_excel')

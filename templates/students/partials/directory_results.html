@@ -1,4 +1,27 @@
 {% load core_tags %}
+<style>
+    .btn-download-smart-campus {
+        background: #6366f1 !important;
+        border-color: #6366f1 !important;
+        color: #fff !important;
+    }
+    .btn-download-smart-campus:hover {
+        background: #4f46e5 !important;
+        border-color: #4f46e5 !important;
+        color: #fff !important;
+        box-shadow: 0 8px 15px rgba(99, 102, 241, 0.25) !important;
+    }
+    body.dark-mode .btn-download-smart-campus {
+        background: #4f46e5 !important;
+        border-color: #4f46e5 !important;
+        color: #fff !important;
+    }
+    body.dark-mode .btn-download-smart-campus:hover {
+        background: #6366f1 !important;
+        border-color: #6366f1 !important;
+        color: #fff !important;
+    }
+</style>
 <div class="d-flex justify-content-between align-items-center px-4 py-2 bg-white flex-wrap" style="gap: 10px;">
     <div class="small text-muted">
         {% if selected_sort == 'batch_dept_serial' %}
@@ -9,14 +32,20 @@
         <span class="ml-2">Total: <strong id="total-count-display">{{ total_count }}</strong></span>
     </div>
     <div class="d-flex align-items-center" style="gap: 10px;">
-        <a href="{% url 'export_students' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn directory-action-btn btn-download-main">
-            <i class="fas fa-file-excel"></i> Download Excel
+        <a href="{% url 'export_students_smart_campus' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn directory-action-btn btn-download-smart-campus">
+            <i class="fas fa-university"></i> SMART CAMPUS Export
         </a>
         <div class="dropdown">
             <button class="btn directory-action-btn dropdown-toggle" type="button" id="downloadToolsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <i class="fas fa-tools"></i> Export Tools
             </button>
             <div class="dropdown-menu dropdown-menu-right shadow-lg border-0" aria-labelledby="downloadToolsDropdown" style="border-radius: 10px; padding: 5px;">
+                <a class="dropdown-item py-2" href="{% url 'export_students' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
+                    <i class="fas fa-file-excel mr-2 text-success"></i> Standard Excel Export
+                </a>
+                <a class="dropdown-item py-2" href="javascript:void(0)" hx-get="{% url 'export_students_smart_campus_dept_modal' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" hx-target="#modals-here" style="font-size: 13px; font-weight: 600;">
+                    <i class="fas fa-file-archive mr-2 text-warning"></i> Dept-wise Smart Campus
+                </a>
                 <a class="dropdown-item py-2" href="{% url 'export_students_all' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
                     <i class="fas fa-database mr-2 text-primary"></i> Full Database Dump
                 </a>

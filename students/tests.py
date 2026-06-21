@@ -774,6 +774,123 @@ class StudentDirectoryTests(TestCase):
         self.assertIsNone(form_legacy.fields['program'].widget.attrs.get('disabled'))
         self.assertIsNone(form_legacy.fields['admission_year'].widget.attrs.get('disabled'))
 
+    def test_smart_campus_excel_export(self):
+        # Trigger the SMART CAMPUS export URL
+        response = self.client.get(reverse('export_students_smart_campus'))
+        self.assertEqual(response.status_code, 200)
+
+        # Parse the downloaded Excel content
+        df = self.read_excel(response)
+
+        # 1. Verify that 'current_batch' and 'current_semester' fields are removed
+        self.assertNotIn('current_batch', df.columns)
+        self.assertNotIn('current_semester', df.columns)
+
+        # 2. Verify that 'batch' and 'semester_name' are still present
+        self.assertIn('batch', df.columns)
+        self.assertIn('semester_name', df.columns)
+
+        # 3. Verify that the cancelled student (CSE901) is included in the exported students list
+        student_ids = df['student_id'].astype(str).tolist()
+        self.assertIn('CSE901', student_ids)
+
+        # 4. Verify that semester_name is formatted correctly (e.g. combined with year, like "Spring 2025")
+        # For CSE Student 01, it was 'Spring' and '2025' admission_year
+        cse001_row = df[df['student_id'] == 'CSE001'].iloc[0]
+        self.assertEqual(cse001_row['semester_name'], 'Spring 2025')
+
+        # 5. Verify row styling for the cancelled student (CSE901) using openpyxl
+        # Reading using openpyxl directly to verify colors
+        from openpyxl import load_workbook
+        wb = load_workbook(BytesIO(response.content))
+        ws = wb['Students']
+        
+        # Row 1 is header, find the row index for CSE901
+        cse901_row_idx = None
+        for r in range(2, ws.max_row + 1):
+            if ws.cell(row=r, column=2).value == 'CSE901':  # student_id column is 2nd column (SL is 1st)
+                cse901_row_idx = r
+                break
+        
+        self.assertIsNotNone(cse901_row_idx)
+        # Check that the cells in that row have the yellow fill (hex FFF2CC)
+        cell_fill = ws.cell(row=cse901_row_idx, column=2).fill
+        self.assertIn(cell_fill.start_color.rgb, ['00FFF2CC', 'FFFFF2CC', 'FFF2CC'])
+
+    def test_smart_campus_dept_wise_zip_export(self):
+        import zipfile
+        # Trigger the department-wise SMART CAMPUS export URL
+        response = self.client.get(reverse('export_students_smart_campus_dept'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/zip')
+
+        # Load the ZIP file
+        zip_file = zipfile.ZipFile(BytesIO(response.content))
+        file_list = zip_file.namelist()
+
+        # 1. Verify that files are generated for each program in the dataset (CSE, EEE, MBA)
+        self.assertIn('CSE_smart_campus_export.xlsx', file_list)
+        self.assertIn('EEE_smart_campus_export.xlsx', file_list)
+        self.assertIn('MBA_smart_campus_export.xlsx', file_list)
+
+        # 2. Extract and inspect one of the Excel sheets (CSE)
+        cse_excel_data = zip_file.read('CSE_smart_campus_export.xlsx')
+        df = pd.read_excel(BytesIO(cse_excel_data))
+
+        # Verify columns are correct (no current_batch, current_semester)
+        self.assertNotIn('current_batch', df.columns)
+        self.assertNotIn('current_semester', df.columns)
+        self.assertIn('batch', df.columns)
+        self.assertIn('semester_name', df.columns)
+
+        # Verify that the cancelled CSE student is included in the CSE export
+        student_ids = df['student_id'].astype(str).tolist()
+        self.assertIn('CSE901', student_ids)
+
+        # Verify row styling for the cancelled student inside the zipped Excel
+        from openpyxl import load_workbook
+        wb = load_workbook(BytesIO(cse_excel_data))
+        ws = wb['Students']
+        
+        cse901_row_idx = None
+        for r in range(2, ws.max_row + 1):
+            if ws.cell(row=r, column=2).value == 'CSE901':
+                cse901_row_idx = r
+                break
+        
+        self.assertIsNotNone(cse901_row_idx)
+        cell_fill = ws.cell(row=cse901_row_idx, column=2).fill
+        self.assertIn(cell_fill.start_color.rgb, ['00FFF2CC', 'FFFFF2CC', 'FFF2CC'])
+
+    def test_smart_campus_dept_wise_modal_view(self):
+        # Trigger the modal endpoint
+        response = self.client.get(reverse('export_students_smart_campus_dept_modal'))
+        self.assertEqual(response.status_code, 200)
+
+        # 1. Verify that the modal lists the correct departments and counts in context
+        departments = response.context['departments']
+        self.assertEqual(len(departments), 3)  # CSE, EEE, MBA
+
+        # CSE has 15 standard + 1 inactive + 1 cancelled + 1 legacy scope = 18 students
+        cse_dept = next(d for d in departments if d['name'] == 'CSE')
+        self.assertEqual(cse_dept['count'], 18)
+
+        # EEE has 4 standard + 1 latest = 5 students
+        eee_dept = next(d for d in departments if d['name'] == 'EEE')
+        self.assertEqual(eee_dept['count'], 5)
+
+        # MBA has 1 student
+        mba_dept = next(d for d in departments if d['name'] == 'MBA')
+        self.assertEqual(mba_dept['count'], 1)
+
+        # 2. Verify download links are set up and override program filter
+        self.assertIn('program=CSE', cse_dept['download_url'])
+        self.assertIn('program=EEE', eee_dept['download_url'])
+        self.assertIn('program=MBA', mba_dept['download_url'])
+
+        # 3. Verify ZIP download URL is in context
+        self.assertEqual(response.context['zip_download_url'], reverse('export_students_smart_campus_dept'))
+
 
 
 

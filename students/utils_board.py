@@ -66,7 +66,18 @@ class BoardVerificationEngine:
         
         try:
             # Step 1: Visit home page to get session cookie
-            self.session.get(target_base, timeout=10)
+            r = self.session.get(target_base, timeout=10)
+            
+            # Check for JS cookie validation challenge (e.g. DDOS protection)
+            import re
+            from urllib.parse import urlparse
+            cookie_match = re.search(r'human_session=([^;\"`\']+)', r.text)
+            if cookie_match:
+                cookie_value = cookie_match.group(1)
+                domain = urlparse(target_base).netloc
+                self.session.cookies.set('human_session', cookie_value, domain=domain)
+                # Visit the page again to register the cookie session
+                self.session.get(target_base, timeout=10)
             
             # Step 2: Artificial delay
             time.sleep(1)
@@ -78,6 +89,15 @@ class BoardVerificationEngine:
             }
             url = f"{target_captcha}?t={int(time.time() * 1000)}"
             response = self.session.get(url, headers=headers, timeout=10)
+            
+            # Check if captcha request itself got challenged
+            cookie_match = re.search(r'human_session=([^;\"`\']+)', response.text)
+            if cookie_match:
+                cookie_value = cookie_match.group(1)
+                domain = urlparse(target_base).netloc
+                self.session.cookies.set('human_session', cookie_value, domain=domain)
+                # Re-fetch captcha
+                response = self.session.get(url, headers=headers, timeout=10)
             
             if response.status_code == 200 and ('image' in response.headers.get('Content-Type', '').lower() or len(response.content) > 500):
                 return base64.b64encode(response.content).decode('utf-8')
