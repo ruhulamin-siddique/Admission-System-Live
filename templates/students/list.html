@@ -80,8 +80,10 @@
         margin-bottom: 0;
         display: flex;
         align-items: center;
+        justify-content: space-between;
         border-radius: 0;
     }
+
 
     .total-badge {
         background: #fff;
@@ -755,6 +757,26 @@
         body.dark-mode .table tbody td.td-parents, 
         body.dark-mode .table tbody td.td-mobile { border-top-color: rgba(255,255,255,0.05) !important; }
     }
+    
+    body.dark-mode .analytics-bar .search-container input {
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+        border-color: #475569 !important;
+    }
+    body.dark-mode .analytics-bar .search-container input::placeholder {
+        color: #94a3b8;
+    }
+    @media (max-width: 575.98px) {
+        .analytics-bar {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .analytics-bar .search-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -762,9 +784,22 @@
 {% load core_tags %}
 
 <!-- Analytics Bar matching Image -->
-<div class="analytics-bar">
-    <span>Total:</span>
-    <span id="total-count-display" class="total-badge">{{ total_count }}</span>
+<div class="analytics-bar d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+        <span>Total:</span>
+        <span id="total-count-display" class="total-badge">{{ total_count }}</span>
+    </div>
+    <div class="search-container position-relative" style="width: 250px;">
+        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search Name/Roll..." value="{{ query }}" form="directory-filter-form"
+               hx-get="{% url 'student_list' %}"
+               hx-target="#directory-results"
+               hx-trigger="keyup changed delay:500ms, search"
+               hx-include="#directory-filter-form"
+               hx-indicator="#table-loader"
+               hx-push-url="true"
+               style="border-radius: 20px; padding-left: 30px; border: 1px solid #ced4da; height: 30px; font-size: 13px; background-color: #fff; color: var(--text-dark);">
+        <i class="fas fa-search position-absolute" style="left: 10px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 12px;"></i>
+    </div>
 </div>
 <div class="card premium-card mb-4">
     <div class="filter-section">
@@ -778,18 +813,13 @@
         <form id="directory-filter-form" class="collapse d-md-block"
               hx-get="{% url 'student_list' %}" 
               hx-target="#directory-results" 
-              hx-trigger="submit, change from:select, keyup changed delay:500ms from:input"
+              hx-trigger="submit, change from:select"
+              hx-include="[name='search']"
               hx-indicator="#table-loader"
               hx-push-url="true">
             
             <div class="row compact-filters">
                 <!-- Row 1: Primary Selection -->
-                <div class="col-md-3">
-                    <div class="filter-group">
-                        <label>Search Name/Roll</label>
-                        <input type="text" name="search" placeholder="Enter search..." value="{{ query }}">
-                    </div>
-                </div>
                 <div class="col-md-1">
                     <div class="filter-group">
                         <label>Year</label>
@@ -801,7 +831,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div class="filter-group">
                         <label>Cluster</label>
                         <select name="dept">
@@ -812,7 +842,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="filter-group">
                         <label>Program</label>
                         <select name="program">
@@ -823,7 +853,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div class="filter-group">
                         <label>Type</label>
                         <select name="type">
@@ -833,26 +863,13 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div class="filter-group">
-                        <label>Admission Batch</label>
+                        <label>Batch</label>
                         <select name="batch">
                             <option value="">All</option>
                             {% for b in filter_metadata.batches %}
                             <option value="{{ b }}" {% if b == selected_batch %}selected{% endif %}>{{ b }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Row 2: Status, Category, Sort & Actions -->
-                <div class="col-md-2">
-                    <div class="filter-group">
-                        <label>Current Batch</label>
-                        <select name="current_batch">
-                            <option value="">All</option>
-                            {% for b in filter_metadata.current_batches %}
-                            <option value="{{ b }}" {% if b == selected_current_batch %}selected{% endif %}>{{ b }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -870,16 +887,18 @@
                 </div>
                 <div class="col-md-1">
                     <div class="filter-group">
-                        <label>Status</label>
-                        <select name="status">
+                        <label>Hall</label>
+                        <select name="hall">
                             <option value="">All</option>
-                            {% for s in filter_metadata.statuses %}
-                            <option value="{{ s }}" {% if s == selected_status %}selected{% endif %}>{{ s }}</option>
+                            <option value="non_residential" {% if selected_hall == 'non_residential' %}selected{% endif %}>Non-Residential</option>
+                            <option value="unspecified" {% if selected_hall == 'unspecified' %}selected{% endif %}>Unspecified</option>
+                            {% for h in filter_metadata.halls %}
+                            <option value="{{ h }}" {% if h == selected_hall %}selected{% endif %}>{{ hall_map|get_item:h|default:h }}</option>
                             {% endfor %}
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="filter-group">
                         <label>Special Category</label>
                         <select name="special_category">
@@ -894,9 +913,33 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Row 2: Status, Category, Sort & Actions -->
                 <div class="col-md-2">
                     <div class="filter-group">
-                        <label>Board Verification</label>
+                        <label>Current Batch</label>
+                        <select name="current_batch">
+                            <option value="">All</option>
+                            {% for b in filter_metadata.current_batches %}
+                            <option value="{{ b }}" {% if b == selected_current_batch %}selected{% endif %}>{{ b }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-group">
+                        <label>Status</label>
+                        <select name="status">
+                            <option value="">All</option>
+                            {% for s in filter_metadata.statuses %}
+                            <option value="{{ s }}" {% if s == selected_status %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-group">
+                        <label>Verification</label>
                         <select name="verification">
                             <option value="">All Statuses</option>
                             <option value="unverified" {% if selected_verification == 'unverified' %}selected{% endif %}>Pending Audit</option>
@@ -916,7 +959,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="filter-action-group mt-auto mb-2" style="gap: 5px;">
                         <button type="submit" class="btn btn-filter directory-action-btn flex-fill py-1" style="font-size: 13px;">
                             <i class="fas fa-filter mr-1"></i> Filter
@@ -1049,6 +1092,12 @@ function clearDirectoryFilters() {
     form.querySelectorAll('input[type="text"]').forEach(input => {
         input.value = "";
     });
+
+    // Clear search input outside the form
+    const searchInput = document.querySelector('.analytics-bar input[name="search"]');
+    if (searchInput) {
+        searchInput.value = "";
+    }
 }
 
 function positionOverlay(btn) {

@@ -15,7 +15,7 @@ import zipfile
 from io import BytesIO
 from django.template.loader import get_template
 from urllib.parse import urlencode
-from master_data.models import Program
+from master_data.models import Program, Hall
 from .models import Student, ProgramChangeHistory, SMSHistory, AdmissionStatusHistory
 from .geo_data import BANGLADESH_GEO
 from .utils import (
@@ -424,6 +424,7 @@ DIRECTORY_FILTER_FIELDS = (
     'verification',
     'special_category',
     'sort',
+    'hall',
 )
 DIRECTORY_SORT_OPTIONS = (
     ('dept_batch_serial', 'Dept > Batch > Serial'),
@@ -534,6 +535,14 @@ def _apply_directory_filters(queryset, params, include_cancelled=False):
         queryset = queryset.exclude(admission_status='Cancelled')
     if params['type']:
         queryset = queryset.filter(program_type=params['type'])
+    if params.get('hall'):
+        hall_val = params['hall']
+        if hall_val in ['Non-Residential', 'non_residential']:
+            queryset = queryset.filter(is_non_residential=True)
+        elif hall_val in ['Unspecified', 'unspecified']:
+            queryset = queryset.filter(is_non_residential=False).filter(Q(hall_attached__isnull=True) | Q(hall_attached=''))
+        else:
+            queryset = queryset.filter(hall_attached=hall_val)
 
     if params.get('verification'):
         v_status = params['verification']
@@ -630,6 +639,7 @@ def _build_directory_filter_metadata(base_queryset):
         'current_batches': _get_current_batch_filter_values(base_queryset),
         'genders': ['Male', 'Female', 'Other', 'Unspecified'],
         'statuses': _get_non_empty_values(base_queryset, 'admission_status', 'admission_status'),
+        'halls': _get_non_empty_values(base_queryset, 'hall_attached', 'hall_attached'),
     }
 
 
@@ -682,9 +692,11 @@ def student_list(request):
         'selected_verification': params['verification'],
         'selected_special_category': params['special_category'],
         'selected_sort': params['sort'],
+        'selected_hall': params['hall'],
         'sort_options': _get_directory_sort_choices(),
         'filter_metadata': directory_state['filter_metadata'],
         'export_querystring': directory_state['export_querystring'],
+        'hall_map': {h.short_name: h.full_name or h.short_name for h in Hall.objects.all()},
         'program_map': {
             **{p.name.lower(): p.short_name or p.name for p in Program.objects.all()},
             **{p.name: p.short_name or p.name for p in Program.objects.all()},
@@ -1104,14 +1116,15 @@ def api_hall_distribution(request):
         count = item['count']
         name = hall_map.get(hall_code, hall_code)
         if name not in agg_dist:
-            agg_dist[name] = {'hall': name, 'count': 0}
+            agg_dist[name] = {'hall': name, 'count': 0, 'code': hall_code}
         agg_dist[name]['count'] += count
         
     data = [
         {
             'hall': name,
             'count': info['count'],
-            'percentage': round((info['count'] / total * 100), 1) if total > 0 else 0
+            'percentage': round((info['count'] / total * 100), 1) if total > 0 else 0,
+            'code': info.get('code')
         }
         for name, info in agg_dist.items()
     ]
@@ -1120,14 +1133,16 @@ def api_hall_distribution(request):
         data.append({
             'hall': 'Unspecified',
             'count': unspec_count,
-            'percentage': round((unspec_count / total * 100), 1) if total > 0 else 0
+            'percentage': round((unspec_count / total * 100), 1) if total > 0 else 0,
+            'code': 'unspecified'
         })
         
     if non_res_count > 0:
         data.append({
             'hall': 'Non-Residential',
             'count': non_res_count,
-            'percentage': round((non_res_count / total * 100), 1) if total > 0 else 0
+            'percentage': round((non_res_count / total * 100), 1) if total > 0 else 0,
+            'code': 'non_residential'
         })
         
     data.sort(key=lambda x: x['count'], reverse=True)
@@ -1820,33 +1835,86 @@ def api_student_ugc_id_preview(request, student_id):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
-@require_access('students', 'add_student')
 def api_preview_id(request):
     """
-    Returns the 13-char UGC prefix for the semi-auto ID form.
-    The user will supply the remaining 3 serial digits manually.
+    Returns the 13-char UGC prefix and 16-char suggested ID for the ID forms.
     """
-    try:
-        prefix = generate_ugc_prefix(
-            admission_year=request.GET.get('admission_year', 2026),
-            semester_name=request.GET.get('semester_name', 'Spring'),
-            hall_name=request.GET.get('hall_name', 'Non-Residential'),
-            program_name=request.GET.get('program', 'CSE'),
-            cluster_name=request.GET.get('cluster', 'Engineering & Technology'),
-            program_level=request.GET.get('program_type', 'Bachelor'),
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    has_perm = request.user.is_superuser
+    if not has_perm and hasattr(request.user, 'profile'):
+        has_perm = (
+            request.user.profile.has_access('students', 'add_student') or
+            request.user.profile.has_access('students', 'edit_profile') or
+            request.user.profile.has_access('students', 'manage_migrations')
         )
-        return JsonResponse({'prefix': prefix})
+    if not has_perm:
+        from django.contrib import messages
+        messages.error(request, "Access Denied: You do not have permission for 'students.add_student'")
+        return redirect('user_profile')
+
+    try:
+        admission_year = request.GET.get('admission_year', 2026)
+        semester_name = request.GET.get('semester_name', 'Spring')
+        hall_name = request.GET.get('hall_name', 'Non-Residential')
+        program_name = request.GET.get('program', 'CSE')
+        cluster_name = request.GET.get('cluster', 'Engineering & Technology')
+        program_level = request.GET.get('program_type', 'Bachelor')
+        mba_credits = request.GET.get('mba_credits')
+        if mba_credits:
+            try:
+                mba_credits = int(mba_credits)
+            except ValueError:
+                mba_credits = None
+
+        from .utils import generate_ugc_prefix, generate_next_ugc_id, decompose_ugc_id
+
+        prefix = generate_ugc_prefix(
+            admission_year=admission_year,
+            semester_name=semester_name,
+            hall_name=hall_name,
+            program_name=program_name,
+            cluster_name=cluster_name,
+            program_level=program_level,
+        )
+        
+        suggested_id = generate_next_ugc_id(
+            admission_year=admission_year,
+            semester_name=semester_name,
+            hall_name=hall_name,
+            program_name=program_name,
+            cluster_name=cluster_name,
+            program_level=program_level,
+            mba_credits=mba_credits,
+        )
+        
+        components = decompose_ugc_id(suggested_id)
+
+        return JsonResponse({
+            'prefix': prefix,
+            'suggested_id': suggested_id,
+            'components': components
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
 
-@require_access('students', 'add_student')
 def api_check_id_duplicate(request):
     """
     Checks whether a fully assembled 16-digit student ID already exists.
-    Called by JS on the admission form after the user enters their serial digits.
-    Returns: {"exists": bool, "name": <student name if found>}
     """
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    has_perm = request.user.is_superuser
+    if not has_perm and hasattr(request.user, 'profile'):
+        has_perm = (
+            request.user.profile.has_access('students', 'add_student') or
+            request.user.profile.has_access('students', 'edit_profile') or
+            request.user.profile.has_access('students', 'manage_migrations')
+        )
+    if not has_perm:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
     student_id = request.GET.get('student_id', '').strip()
     if not student_id or len(student_id) != 16:
         return JsonResponse({'exists': False, 'error': 'Invalid ID length'}, status=400)
@@ -2142,6 +2210,11 @@ def download_import_template(request):
 def change_program(request, student_id):
     """View to handle program change for a student with full master data support."""
     student = Student.objects.get(pk=student_id)
+    
+    from core.models import SystemSettings
+    sys_settings = SystemSettings.objects.get_or_create(id=1)[0]
+    id_mode = sys_settings.id_mode  # 'auto' | 'semi_auto' | 'manual'
+    
     if request.method == "POST":
         data = request.POST
         new_program = data.get('new_program')
@@ -2151,6 +2224,44 @@ def change_program(request, student_id):
         if get_canonical_program_name(student.program) == get_canonical_program_name(new_program):
             messages.error(request, f"Illogical Migration: Student is already in program '{student.program}'.")
             return redirect('change_program', student_id=student_id)
+            
+        custom_id = None
+        if id_mode == 'semi_auto':
+            serial_input = str(data.get('student_id_serial', '')).strip()
+            if not serial_input or not serial_input.isdigit() or len(serial_input) != 3:
+                messages.error(request, "Error: In semi-auto mode, a 3-digit numeric serial must be provided.")
+                return redirect('change_program', student_id=student_id)
+            
+            from .utils import generate_ugc_prefix
+            try:
+                prefix = generate_ugc_prefix(
+                    admission_year=data.get('new_year'),
+                    semester_name=data.get('new_semester'),
+                    hall_name=data.get('hall_name'),
+                    program_name=new_program,
+                    cluster_name=data.get('new_cluster'),
+                    program_level=student.program_type,
+                )
+                custom_id = prefix + serial_input
+            except Exception as e:
+                messages.error(request, f"Error generating prefix: {str(e)}")
+                return redirect('change_program', student_id=student_id)
+                
+            if Student.objects.filter(student_id=custom_id).exists():
+                messages.error(request, f"Error: Student ID {custom_id} is already in use. Please select a different serial.")
+                return redirect('change_program', student_id=student_id)
+                
+        elif id_mode == 'manual':
+            custom_id = str(data.get('manual_student_id', '')).strip()
+            if not custom_id or len(custom_id) != 16 or not custom_id.isdigit():
+                messages.error(request, "Error: In manual mode, a valid 16-digit numeric student ID must be provided.")
+                return redirect('change_program', student_id=student_id)
+            if not custom_id.startswith('080'):
+                messages.error(request, "Error: ID must start with university code '080'.")
+                return redirect('change_program', student_id=student_id)
+            if Student.objects.filter(student_id=custom_id).exists():
+                messages.error(request, f"Error: Student ID {custom_id} is already in use.")
+                return redirect('change_program', student_id=student_id)
 
         result = execute_program_change_web(
             student=student,
@@ -2159,7 +2270,8 @@ def change_program(request, student_id):
             new_year=data.get('new_year'),
             new_semester=data.get('new_semester'),
             hall_name=data.get('hall_name'),
-            notes=data.get('notes', 'Web migration')
+            notes=data.get('notes', 'Web migration'),
+            custom_id=custom_id
         )
         if result['success']:
             messages.success(request, f"Program changed successfully! New ID: {result['new_id']}")
@@ -2187,7 +2299,8 @@ def change_program(request, student_id):
         'clusters': clusters,
         'semesters': semesters,
         'halls': halls,
-        'program_mapping_json': json.dumps(program_mapping)
+        'program_mapping_json': json.dumps(program_mapping),
+        'sys_settings': sys_settings,
     })
 
 @require_access('students', 'view_directory')

@@ -7,41 +7,95 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800;900&display=swap');
     
-    .migration-card { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; }
-    .migration-header { background: #6610f2; color: white; padding: 1.5rem; }
+    .migration-card { border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.12); overflow: hidden; }
+    .migration-header { background: linear-gradient(135deg, #6610f2, #4f46e5); color: white; padding: 1.75rem 2rem; }
     
-    .context-box { background: #f8f9fa; border-radius: 12px; padding: 1.25rem; border-left: 5px solid #6c757d; height: 100%; }
-    .target-box { background: #ffffff; border-radius: 12px; padding: 1.25rem; border: 2px solid #e7f1ff; height: 100%; transition: all 0.3s; }
-    .target-box:focus-within { border-color: #6610f2; box-shadow: 0 0 0 4px rgba(102, 16, 242, 0.1); }
+    /* Passport Card Styling */
+    .passport-card { background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; height: 100%; transition: all 0.3s; }
+    .passport-card:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(0,0,0,0.05); }
+    .student-avatar-frame { transition: transform 0.3s ease, border-color 0.3s ease; }
+    .passport-card:hover .student-avatar-frame { transform: scale(1.05); border-color: #6610f2 !important; }
     
-    .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #6c757d; font-weight: 800; margin-bottom: 2px; }
-    .stat-value { font-size: 1.1rem; font-weight: 700; color: #343a40; }
+    .target-box { background: #ffffff; border-radius: 16px; padding: 1.5rem; border: 2px solid #e0e7ff; height: 100%; transition: all 0.3s; }
+    .target-box:focus-within { border-color: #6610f2; box-shadow: 0 0 0 5px rgba(102, 16, 242, 0.15); }
+    
+    .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; font-weight: 800; margin-bottom: 4px; }
+    .stat-value { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
     
     /* ID Preview Engine Styling */
-    .id-preview-container { background: #1a1e21; border-radius: 16px; padding: 2rem; position: relative; margin-top: 1.5rem; }
-    .id-display { display: flex; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; font-weight: 900; justify-content: center; }
-    .id-segment { padding: 4px 10px; border-radius: 8px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .id-preview-container { background: #0f172a; border-radius: 20px; padding: 2.25rem; position: relative; margin-top: 2rem; border: 1px solid rgba(255,255,255,0.05); }
+    .id-display { display: flex; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: clamp(1.1rem, 3.5vw, 2.2rem); font-weight: 900; justify-content: center; flex-wrap: wrap; }
+    
+    .id-segment { padding: 4px 10px; border-radius: 8px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 2px solid transparent; }
+    .id-segment.focused-segment {
+        transform: scale(1.15);
+        box-shadow: 0 0 18px currentColor;
+        font-weight: 900;
+        z-index: 10;
+        border-color: currentColor;
+    }
     
     /* Segment Colors */
-    .seg-uni { color: #0d6efd; background: rgba(13, 110, 253, 0.1); }
-    .seg-year { color: #198754; background: rgba(25, 135, 84, 0.1); }
-    .seg-sem { color: #fd7e14; background: rgba(253, 126, 20, 0.1); }
-    .seg-hall { color: #6f42c1; background: rgba(111, 66, 193, 0.1); }
-    .seg-prog { color: #d63384; background: rgba(214, 51, 132, 0.1); }
-    .seg-serial { color: #adb5bd; background: rgba(173, 181, 189, 0.1); }
+    .seg-uni { color: #3b82f6; background: rgba(59, 130, 246, 0.12); }
+    .seg-year { color: #10b981; background: rgba(16, 185, 129, 0.12); }
+    .seg-sem { color: #f97316; background: rgba(249, 115, 22, 0.12); }
+    .seg-hall { color: #8b5cf6; background: rgba(139, 92, 246, 0.12); }
+    .seg-prog { color: #ec4899; background: rgba(236, 72, 153, 0.12); }
+    .seg-serial { color: #94a3b8; background: rgba(148, 163, 184, 0.12); }
 
     .migration-divider { display: flex; align-items: center; justify-content: center; padding: 2rem 0; }
-    .arrow-icon { width: 50px; height: 50px; border-radius: 50%; background: #6610f2; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 10px rgba(102, 16, 242, 0.3); }
+    .arrow-icon { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #6610f2, #4f46e5); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 8px 20px rgba(102, 16, 242, 0.35); transition: transform 0.3s ease; }
+
+    /* Custom Form elements styling */
+    .form-group label { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.8px; color: #475569; margin-bottom: 6px; }
+    .target-box .form-control { border-radius: 10px; border: 2px solid #cbd5e1; font-size: 0.95rem; height: auto; padding: 10px 14px; transition: border-color 0.25s, box-shadow 0.25s; }
+    .target-box .form-control:focus { border-color: #6610f2; box-shadow: 0 0 0 3px rgba(102, 16, 242, 0.12); outline: none; }
+    
+    /* Notification styling */
+    .sms-notice-card { background: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.12); border-radius: 16px; padding: 1.25rem; transition: background 0.3s; }
+    
+    /* Keyframe Animations */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        15%, 45%, 75% { transform: translateX(-5px); }
+        30%, 60%, 90% { transform: translateX(5px); }
+    }
+    .shake-animation { animation: shake 0.5s ease-in-out; }
+    
+    .text-success.pulse-green-msg {
+        background: rgba(16, 185, 129, 0.1);
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        display: inline-block;
+        animation: pulse-border 1.5s infinite;
+    }
+    @keyframes pulse-border {
+        0% { border-color: rgba(16, 185, 129, 0.3); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
+        70% { border-color: rgba(16, 185, 129, 0.8); box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.4); }
+        100% { border-color: rgba(16, 185, 129, 0.3); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2); }
+    }
+
+    @media (max-width: 991.98px) {
+        .migration-divider { padding: 1.5rem 0; }
+        .arrow-icon { transform: rotate(90deg); }
+    }
+    
+    @media (max-width: 575.98px) {
+        .id-display { gap: 4px; }
+        .id-segment { padding: 2px 6px; border-radius: 4px; }
+    }
 
     /* Dark Mode Overrides */
     body.dark-mode .migration-card { background: #1e293b; border-color: #334155; }
-    body.dark-mode .context-box { background: #0f172a; border-left-color: #334155; color: #f8fafc; }
+    body.dark-mode .passport-card { background: #0f172a; border-color: #334155; }
     body.dark-mode .target-box { background: #1e293b; border-color: #334155; color: #f8fafc; }
     body.dark-mode .stat-value { color: #f8fafc; }
-    body.dark-mode .form-control { background: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+    body.dark-mode .form-group label { color: #94a3b8; }
+    body.dark-mode .target-box .form-control { background: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
     body.dark-mode .card-footer { background: #0f172a !important; border-top-color: #334155 !important; }
     body.dark-mode .text-muted { color: #94a3b8 !important; }
-    body.dark-mode .alert-info { background: #0f172a !important; color: #38bdf8 !important; }
+    body.dark-mode .sms-notice-card { background: rgba(99, 102, 241, 0.08); border-color: rgba(99, 102, 241, 0.18); color: #818cf8; }
     body.dark-mode .id-preview-container { background: #0f172a; border: 1px solid #334155; }
 </style>
 {% endblock %}
@@ -65,38 +119,55 @@
                     {% csrf_token %}
                     <div class="card-body p-4 p-lg-5">
                         <div class="row items-stretch">
-                            <!-- CURRENT STATE -->
+                            <!-- CURRENT STATE (Student Passport Card) -->
                             <div class="col-lg-5">
-                                <div class="context-box">
-                                    <h5 class="font-weight-bold mb-4 text-muted"><i class="fas fa-history mr-2"></i> Current Identity</h5>
+                                <div class="passport-card text-center p-4">
+                                    <!-- Student Avatar/Photo Frame -->
+                                    <div class="student-avatar-container mb-3 position-relative d-inline-block">
+                                        <div class="student-avatar-frame rounded-circle bg-white border border-primary p-1 shadow-md" style="width: 110px; height: 110px; overflow: hidden; border-width: 3px !important;">
+                                            {% if student.photo_url %}
+                                            <img src="{{ student.photo_url }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% else %}
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-primary font-weight-bold" style="width: 100%; height: 100%; font-size: 2.2rem;">
+                                                {{ student.student_name|slice:":1"|upper }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <span class="badge badge-success position-absolute font-weight-bold" style="bottom: 0; left: 50%; transform: translateX(-50%); border: 2px solid #fff; border-radius: 20px; font-size: 0.75rem; padding: 4px 10px;">ACTIVE</span>
+                                    </div>
                                     
-                                    <div class="row gy-4">
-                                        <div class="col-12 mb-3">
-                                            <div class="stat-label">Official Student ID</div>
-                                            <div class="stat-value text-primary" style="font-family: 'JetBrains Mono'; font-size: 1.5rem;">{{ student.student_id }}</div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="stat-label">Name</div>
-                                            <div class="stat-value">{{ student.student_name }}</div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="stat-label">Program</div>
-                                            <div class="stat-value">{{ student.program }}</div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="stat-label">Batch</div>
-                                            <div class="stat-value">{{ student.batch|default:"N/A" }}</div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="stat-label">Level</div>
-                                            <div class="stat-value">{{ student.program_type }}</div>
+                                    <h4 class="font-weight-black text-dark mb-1">{{ student.student_name }}</h4>
+                                    <p class="text-muted small mb-4">UGC Registered Student</p>
+                                    
+                                    <div class="passport-details text-left border-top pt-3">
+                                        <div class="row">
+                                            <div class="col-12 mb-3">
+                                                <div class="stat-label"><i class="fas fa-id-card mr-1 text-primary"></i> Current Student ID</div>
+                                                <div class="stat-value text-primary font-weight-bold text-monospace" style="font-size: 1.25rem; letter-spacing: 0.5px;">{{ student.student_id }}</div>
+                                            </div>
+                                            <div class="col-6 mb-3">
+                                                <div class="stat-label"><i class="fas fa-graduation-cap mr-1 text-muted"></i> Program</div>
+                                                <div class="stat-value" style="font-size: 0.95rem;">{{ student.program }}</div>
+                                            </div>
+                                            <div class="col-6 mb-3">
+                                                <div class="stat-label"><i class="fas fa-layer-group mr-1 text-muted"></i> Batch</div>
+                                                <div class="stat-value" style="font-size: 0.95rem;">{{ student.batch|default:"N/A" }}</div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="stat-label"><i class="fas fa-hotel mr-1 text-muted"></i> Attached Hall</div>
+                                                <div class="stat-value" style="font-size: 0.95rem;">{{ student.hall_attached|default:"Non-Residential" }}</div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="stat-label"><i class="fas fa-award mr-1 text-muted"></i> Level</div>
+                                                <div class="stat-value" style="font-size: 0.95rem;">{{ student.program_type }}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- DIVIDER -->
-                            <div class="col-lg-2 migration-divider d-none d-lg-flex">
+                            <div class="col-lg-2 migration-divider">
                                 <div class="arrow-icon"><i class="fas fa-long-arrow-alt-right"></i></div>
                             </div>
 
@@ -108,7 +179,7 @@
                                     <div class="row">
                                         <div class="col-12 mb-3">
                                             <div class="form-group">
-                                                <label class="small font-weight-bold text-uppercase">New Program</label>
+                                                <label class="small font-weight-bold text-uppercase"><i class="fas fa-bookmark mr-1 text-muted"></i> New Program</label>
                                                 <select name="new_program" class="form-control form-control-lg border-2" required>
                                                      <option value="" selected>Select Target Program</option>
                                                      {% for p in programs %}
@@ -120,7 +191,7 @@
                                         
                                         <div class="col-12 mb-3">
                                             <div class="form-group">
-                                                <label class="small font-weight-bold text-uppercase">Target Cluster</label>
+                                                <label class="small font-weight-bold text-uppercase"><i class="fas fa-folder-open mr-1 text-muted"></i> Target Cluster</label>
                                                 <select name="new_cluster" class="form-control" required>
                                                      <option value="">Select Cluster</option>
                                                      {% for c in clusters %}
@@ -132,14 +203,14 @@
 
                                         <div class="col-md-6 mb-3">
                                             <div class="form-group">
-                                                <label class="small font-weight-bold text-uppercase">Effective Year</label>
+                                                <label class="small font-weight-bold text-uppercase"><i class="fas fa-calendar-alt mr-1 text-muted"></i> Effective Year</label>
                                                 <input type="number" name="new_year" class="form-control" value="2026" required>
                                             </div>
                                         </div>
                                         
                                         <div class="col-md-6 mb-3">
                                             <div class="form-group">
-                                                <label class="small font-weight-bold text-uppercase">Semester</label>
+                                                <label class="small font-weight-bold text-uppercase"><i class="fas fa-hourglass-half mr-1 text-muted"></i> Semester</label>
                                                 <select name="new_semester" class="form-control" required>
                                                      <option value="">Select Semester</option>
                                                      {% for s in semesters %}
@@ -151,12 +222,11 @@
 
                                         <div class="col-12 mb-3">
                                             <div class="form-group">
-                                                <label class="small font-weight-bold text-uppercase">Hall Assignment</label>
+                                                <label class="small font-weight-bold text-uppercase"><i class="fas fa-hotel mr-1 text-muted"></i> Hall Assignment</label>
                                                 <select name="hall_name" class="form-control" required>
                                                      <option value="">Select Hall</option>
-                                                     <option value="Non-Residential" {% if student.hall_attached == 'Non-Residential' %}selected{% endif %}>Non-Residential</option>
                                                      {% for h in halls %}
-                                                         <option value="{{ h.name }}" {% if student.hall_attached == h.name %}selected{% endif %}>{{ h.name }}</option>
+                                                         <option value="{{ h.short_name }}" {% if student.hall_attached == h.short_name %}selected{% endif %}>{% if h.full_name %}{{ h.full_name }}{% else %}{{ h.short_name }}{% endif %}</option>
                                                      {% endfor %}
                                                  </select>
                                             </div>
@@ -164,7 +234,7 @@
 
                                          <div class="col-12">
                                              <div class="form-group mb-0">
-                                                 <label class="small font-weight-bold text-uppercase">Change Reason (Notes)</label>
+                                                 <label class="small font-weight-bold text-uppercase"><i class="fas fa-file-alt mr-1 text-muted"></i> Change Reason (Notes)</label>
                                                  <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Student preferred CSE based on merit list"></textarea>
                                              </div>
                                          </div>
@@ -190,17 +260,54 @@
                             <div id="id-display" class="id-display">
                                 <span class="id-segment text-muted">GENERATING...</span>
                             </div>
+                            
+                            {% if sys_settings.id_mode == 'semi_auto' or not sys_settings %}
+                            <!-- SEMI-AUTO: user types last 3 serial digits -->
+                            <div class="d-flex justify-content-center align-items-center mt-3 flex-wrap" style="gap: 15px;">
+                                <div>
+                                    <div class="text-white-50 small mb-1"><i class="fas fa-lock-open mr-1"></i>PREFIX</div>
+                                    <span id="id-prefix-display" class="font-weight-bold text-white px-3 py-2" style="background: rgba(255,255,255,0.1); border-radius: 8px; font-family: 'JetBrains Mono'; letter-spacing: 2px;">-------------</span>
+                                </div>
+                                <div class="text-white font-weight-bold" style="font-size: 1.5rem;">-</div>
+                                <div>
+                                    <div class="text-white-50 small mb-1"><i class="fas fa-pencil-alt mr-1"></i>3-DIGIT SERIAL <span class="text-danger">*</span></div>
+                                    <input type="text" id="id_serial_input" name="student_id_serial"
+                                           maxlength="3" inputmode="numeric" pattern="[0-9]{3}"
+                                           placeholder="---" class="form-control text-center text-white" 
+                                           style="width: 100px; font-family: 'JetBrains Mono'; font-size: 1.2rem; font-weight: bold; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px;"
+                                           required autocomplete="off">
+                                </div>
+                            </div>
+                            <div id="serial-validation-msg" class="mt-2 small text-warning" style="display: none;"></div>
+                            {% elif sys_settings.id_mode == 'manual' %}
+                            <!-- MANUAL: user types full 16-digit ID -->
+                            <div class="d-flex justify-content-center align-items-center mt-3">
+                                <div style="max-width: 300px; width: 100%;">
+                                    <div class="text-white-50 small mb-1"><i class="fas fa-keyboard mr-1"></i>ENTER 16-DIGIT STUDENT ID <span class="text-danger">*</span></div>
+                                    <input type="text" id="manual_student_id" name="manual_student_id"
+                                           maxlength="16" inputmode="numeric" pattern="[0-9]{16}"
+                                           placeholder="080----------------" class="form-control text-center text-white" 
+                                           style="font-family: 'JetBrains Mono'; font-size: 1.2rem; font-weight: bold; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px;"
+                                           required autocomplete="off">
+                                </div>
+                            </div>
+                            <div id="manual-validation-msg" class="mt-2 small text-warning" style="display: none;"></div>
+                            {% else %}
                             <div class="mt-3 text-white-50 small">
                                 <i class="fas fa-info-circle mr-1"></i> This ID is predicted based on the current department registration sequence.
                             </div>
+                            {% endif %}
                         </div>
                         
-                        <div class="alert alert-info mt-4 mb-0 border-0 shadow-sm" style="background: #e7f1ff; color: #004085; border-radius: 12px;">
-                            <div class="d-flex">
-                                <i class="fas fa-bell mt-1 mr-3 fa-lg"></i>
+                        <!-- SMS Notice Card -->
+                        <div class="sms-notice-card mt-4">
+                            <div class="d-flex align-items-center">
+                                <div class="mr-3 p-3 rounded-circle d-flex align-items-center justify-content-center" style="background: rgba(79, 70, 229, 0.1); width: 48px; height: 48px; min-width: 48px;">
+                                    <i class="fas fa-paper-plane text-primary" style="font-size: 18px;"></i>
+                                </div>
                                 <div>
-                                    <h6 class="font-weight-bold mb-1">Automated Notification Status: ACTIVE</h6>
-                                    <p class="mb-0 small">An automated SMS with the new ID will be sent to <strong>{{ student.student_mobile|default:"[No Mobile Registered]" }}</strong> upon confirmation.</p>
+                                    <h6 class="font-weight-bold mb-1" style="color: #4f46e5;">Automated Welcome Notification (Active)</h6>
+                                    <p class="mb-0 text-muted small">An automated SMS with the new ID details will be sent to <strong>{{ student.student_mobile|default:"[No Mobile Registered]" }}</strong> upon migration confirmation.</p>
                                 </div>
                             </div>
                         </div>
@@ -209,7 +316,7 @@
                     <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center">
                         <button type="reset" class="btn btn-link text-muted font-weight-bold text-decoration-none">Reset Configuration</button>
                         <button type="submit" class="btn btn-lg btn-indigo px-5 rounded-pill font-weight-black shadow-lg" 
-                                style="background: #6610f2; color: white;" 
+                                style="background: linear-gradient(135deg, #6610f2, #4f46e5); color: white; border: none; font-size: 1rem; padding-top: 10px; padding-bottom: 10px;" 
                                 onclick="return confirm('CRITICAL ACTION: This will permanently migrate the student to a new ID. Proceed?')">
                             <i class="fas fa-check-circle mr-2"></i> Confirm Migration
                         </button>
@@ -226,6 +333,22 @@
     $(document).ready(function() {
         // Mapping Logic for Program -> Cluster & Level
         const programMapping = JSON.parse('{{ program_mapping_json|safe }}');
+        let currentPrefix = '';
+        const idMode = '{{ sys_settings.id_mode|default:"semi_auto" }}';
+
+        // Update preview dynamically for manual mode
+        function updateManualPreview(val) {
+            const padded = val.padEnd(16, '-');
+            const html = `
+                <span class="id-segment seg-uni">${padded.slice(0, 3)}</span>
+                <span class="id-segment seg-year">${padded.slice(3, 5)}</span>
+                <span class="id-segment seg-sem">${padded.slice(5, 6)}</span>
+                <span class="id-segment seg-hall">${padded.slice(6, 8)}</span>
+                <span class="id-segment seg-prog">${padded.slice(8, 13)}</span>
+                <span class="id-segment seg-serial">${padded.slice(13, 16)}</span>
+            `;
+            $('#id-display').html(html);
+        }
 
         // ID Prediction Engine
         function updateIDPreview() {
@@ -247,19 +370,49 @@
                 mba_credits: '{{ student.mba_credits|default:0 }}'
             };
 
+            // If not all fields selected, clear preview
+            if (!formData.admission_year || !formData.program || !formData.semester_name || !formData.hall_name) {
+                $('#id-display').html('<span class="id-segment text-muted" style="font-size: 1.25rem;">SELECT ALL PARAMETERS</span>');
+                if (idMode === 'semi_auto') {
+                    $('#id-prefix-display').text('-------------');
+                }
+                return;
+            }
+
             $.ajax({
                 url: "{% url 'api_preview_id' %}",
                 data: formData,
                 success: function(response) {
+                    if (response.prefix) {
+                        currentPrefix = response.prefix;
+                        if (idMode === 'semi_auto') {
+                            $('#id-prefix-display').text(currentPrefix);
+                            onSerialChange(); // validate current serial if any
+                        }
+                    }
                     if (response.suggested_id && response.components) {
                         const comps = response.components;
+                        let displaySerial = comps.serial;
+                        
+                        if (idMode === 'semi_auto') {
+                            const val = $('#id_serial_input').val().trim();
+                            displaySerial = val.padEnd(3, '-');
+                        } else if (idMode === 'manual') {
+                            const val = $('#manual_student_id').val().trim();
+                            if (val.length === 16) {
+                                displaySerial = val.slice(13);
+                            } else {
+                                displaySerial = '---';
+                            }
+                        }
+                        
                         const html = `
                             <span class="id-segment seg-uni">${comps.university}</span>
                             <span class="id-segment seg-year">${comps.year}</span>
                             <span class="id-segment seg-sem">${comps.semester}</span>
                             <span class="id-segment seg-hall">${comps.hall}</span>
                             <span class="id-segment seg-prog">${comps.cluster}${comps.subject}${comps.level}</span>
-                            <span class="id-segment seg-serial">${comps.serial}</span>
+                            <span class="id-segment seg-serial">${displaySerial}</span>
                         `;
                         $('#id-display').html(html);
                     }
@@ -281,8 +434,128 @@
                 $('[type="submit"]').prop('disabled', true).addClass('opacity-50');
             } else {
                 $('#same-program-warning').slideUp();
-                $('[type="submit"]').prop('disabled', false).removeClass('opacity-50');
+                
+                // Check ID validation constraints based on Mode
+                if (idMode === 'semi_auto') {
+                    const serial = $('#id_serial_input').val().trim();
+                    const isInvalid = $('#id_serial_input').hasClass('is-invalid') || serial.length !== 3;
+                    if (isInvalid) {
+                        $('[type="submit"]').prop('disabled', true).addClass('opacity-50');
+                    } else {
+                        $('[type="submit"]').prop('disabled', false).removeClass('opacity-50');
+                    }
+                } else if (idMode === 'manual') {
+                    const manualId = $('#manual_student_id').val().trim();
+                    const isInvalid = $('#manual_student_id').hasClass('is-invalid') || manualId.length !== 16;
+                    if (isInvalid) {
+                        $('[type="submit"]').prop('disabled', true).addClass('opacity-50');
+                    } else {
+                        $('[type="submit"]').prop('disabled', false).removeClass('opacity-50');
+                    }
+                } else {
+                    $('[type="submit"]').prop('disabled', false).removeClass('opacity-50');
+                }
             }
+        }
+
+        function onSerialChange() {
+            const serial = $('#id_serial_input').val().trim();
+            const cleaned = serial.replace(/[^0-9]/g, '');
+            if (cleaned !== serial) {
+                $('#id_serial_input').val(cleaned);
+                return;
+            }
+
+            const $msg = $('#serial-validation-msg');
+            const $submit = $('[type="submit"]');
+
+            if (serial.length < 3) {
+                $msg.hide().text('').removeClass('shake-animation pulse-green-msg');
+                $submit.prop('disabled', true).addClass('opacity-50');
+                // Update the serial segment in preview
+                const currentHtml = $('#id-display').html();
+                if (currentHtml && currentHtml.includes('seg-serial')) {
+                    $('.seg-serial').text(serial.padEnd(3, '-'));
+                }
+                return;
+            }
+
+            if (currentPrefix.length === 13) {
+                const fullId = currentPrefix + serial;
+                $('.seg-serial').text(serial);
+
+                $.ajax({
+                    url: "{% url 'api_check_id_duplicate' %}",
+                    data: { student_id: fullId },
+                    success: function(response) {
+                        $msg.removeClass('shake-animation pulse-green-msg text-success text-danger');
+                        if (response.exists) {
+                            $msg.html(`<i class="fas fa-exclamation-circle mr-1"></i> ID ${fullId} is already in use by ${response.name}!`).addClass('text-danger shake-animation').show();
+                            $('#id_serial_input').addClass('is-invalid');
+                            $submit.prop('disabled', true).addClass('opacity-50');
+                        } else {
+                            $msg.html(`<i class="fas fa-check-circle mr-1"></i> ID ${fullId} is available.`).addClass('text-success pulse-green-msg').show();
+                            $('#id_serial_input').removeClass('is-invalid');
+                            checkSameProgram();
+                        }
+                    },
+                    error: function() {
+                        $msg.text('Error checking ID availability.').show();
+                    }
+                });
+            }
+        }
+
+        function onManualIdChange() {
+            const fullId = $('#manual_student_id').val().trim();
+            const cleaned = fullId.replace(/[^0-9]/g, '');
+            if (cleaned !== fullId) {
+                $('#manual_student_id').val(cleaned);
+                return;
+            }
+
+            const $msg = $('#manual-validation-msg');
+            const $submit = $('[type="submit"]');
+
+            updateManualPreview(fullId);
+
+            if (fullId.length < 16) {
+                $msg.html('<i class="fas fa-info-circle mr-1"></i> Enter a 16-digit student ID.').removeClass('text-danger text-success shake-animation pulse-green-msg').addClass('text-warning').show();
+                $submit.prop('disabled', true).addClass('opacity-50');
+                return;
+            }
+
+            if (!fullId.startsWith('080')) {
+                $msg.html('<i class="fas fa-exclamation-circle mr-1"></i> ID must start with university code "080".').removeClass('text-success text-warning shake-animation pulse-green-msg').addClass('text-danger shake-animation').show();
+                $submit.prop('disabled', true).addClass('opacity-50');
+                return;
+            }
+
+            $.ajax({
+                url: "{% url 'api_check_id_duplicate' %}",
+                data: { student_id: fullId },
+                success: function(response) {
+                    $msg.removeClass('shake-animation pulse-green-msg text-success text-danger text-warning');
+                    if (response.exists) {
+                        $msg.html(`<i class="fas fa-exclamation-circle mr-1"></i> ID ${fullId} is already in use by ${response.name}!`).addClass('text-danger shake-animation').show();
+                        $('#manual_student_id').addClass('is-invalid');
+                        $submit.prop('disabled', true).addClass('opacity-50');
+                    } else {
+                        $msg.html(`<i class="fas fa-check-circle mr-1"></i> ID ${fullId} is available.`).addClass('text-success pulse-green-msg').show();
+                        $('#manual_student_id').removeClass('is-invalid');
+                        checkSameProgram();
+                    }
+                },
+                error: function() {
+                    $msg.text('Error checking ID availability.').show();
+                }
+            });
+        }
+
+        if (idMode === 'semi_auto') {
+            $('#id_serial_input').on('input', onSerialChange);
+        } else if (idMode === 'manual') {
+            $('#manual_student_id').on('input', onManualIdChange);
         }
 
         // Auto-select Cluster and Trigger Preview
@@ -290,7 +563,6 @@
             const selectedProg = $(this).val();
             if (selectedProg && programMapping[selectedProg]) {
                 const data = programMapping[selectedProg];
-                // Auto-select Cluster
                 $('[name="new_cluster"]').val(data.cluster).trigger('change');
             }
             checkSameProgram();
@@ -299,6 +571,55 @@
         // Trigger updates on other fields
         $('[name="new_cluster"], [name="new_year"], [name="new_semester"], [name="hall_name"]').on('change', updateIDPreview);
         
+        // Highlight active ID preview segments based on focus/blur
+        $('[name="new_program"], [name="new_cluster"]').on('focus', function() {
+            $('.id-segment').removeClass('focused-segment');
+            $('.seg-prog').addClass('focused-segment');
+        }).on('blur', function() {
+            $('.seg-prog').removeClass('focused-segment');
+        });
+
+        $('[name="new_year"]').on('focus', function() {
+            $('.id-segment').removeClass('focused-segment');
+            $('.seg-year').addClass('focused-segment');
+        }).on('blur', function() {
+            $('.seg-year').removeClass('focused-segment');
+        });
+
+        $('[name="new_semester"]').on('focus', function() {
+            $('.id-segment').removeClass('focused-segment');
+            $('.seg-sem').addClass('focused-segment');
+        }).on('blur', function() {
+            $('.seg-sem').removeClass('focused-segment');
+        });
+
+        $('[name="hall_name"]').on('focus', function() {
+            $('.id-segment').removeClass('focused-segment');
+            $('.seg-hall').addClass('focused-segment');
+        }).on('blur', function() {
+            $('.seg-hall').removeClass('focused-segment');
+        });
+
+        $('#id_serial_input, #manual_student_id').on('focus', function() {
+            $('.id-segment').removeClass('focused-segment');
+            $('.seg-serial').addClass('focused-segment');
+        }).on('blur', function() {
+            $('.seg-serial').removeClass('focused-segment');
+        });
+        
+        // Form Reset Event Synchronization
+        $('#migrationForm').on('reset', function() {
+            setTimeout(function() {
+                updateIDPreview();
+                checkSameProgram();
+                // Clear validation warning/success states
+                $('#serial-validation-msg').hide().text('').removeClass('shake-animation pulse-green-msg text-success text-danger');
+                $('#manual-validation-msg').hide().text('').removeClass('shake-animation pulse-green-msg text-success text-danger text-warning');
+                $('#id_serial_input').removeClass('is-invalid');
+                $('#manual_student_id').removeClass('is-invalid');
+            }, 50);
+        });
+
         // Initial load
         updateIDPreview();
         checkSameProgram();

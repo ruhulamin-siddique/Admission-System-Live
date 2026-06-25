@@ -372,7 +372,7 @@ def bulk_import_program_change(records):
     """Specialized bulk logic for program changes if ever needed."""
     pass
 
-def execute_program_change_web(student, new_program, new_cluster, new_year, new_semester, hall_name, notes="Web-based program change"):
+def execute_program_change_web(student, new_program, new_cluster, new_year, new_semester, hall_name, notes="Web-based program change", custom_id=None):
     """
     Handles the complexity of changing a student's program and generating a new ID.
     Now includes automated SMS notifications and persistent history tracking.
@@ -386,15 +386,21 @@ def execute_program_change_web(student, new_program, new_cluster, new_year, new_
                 return {'success': False, 'error': "Target program must be different from the current program."}
             
             # 1. Generate new ID using the automated logic
-            new_id = generate_next_ugc_id(
-                admission_year=new_year,
-                semester_name=new_semester,
-                hall_name=hall_name,
-                program_name=new_program,
-                cluster_name=new_cluster,
-                program_level=student.program_type,
-                mba_credits=student.mba_credits
-            )
+            if custom_id:
+                new_id = custom_id
+            else:
+                new_id = generate_next_ugc_id(
+                    admission_year=new_year,
+                    semester_name=new_semester,
+                    hall_name=hall_name,
+                    program_name=new_program,
+                    cluster_name=new_cluster,
+                    program_level=student.program_type,
+                    mba_credits=student.mba_credits
+                )
+            
+            if not new_id or len(new_id) != 16 or not new_id.isdigit():
+                return {'success': False, 'error': "Invalid student ID format. Must be exactly 16 digits."}
             
             # 2. Record history in the dedicated audit table
             ProgramChangeHistory.objects.create(

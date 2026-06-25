@@ -989,6 +989,148 @@ class StudentDirectoryTests(TestCase):
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), "Illogical Migration: Student is already in program 'CSE'.")
 
+    def test_program_migration_respects_id_mode_auto(self):
+        from core.models import SystemSettings
+        sys_settings = SystemSettings.objects.get_or_create(id=1)[0]
+        sys_settings.id_mode = 'auto'
+        sys_settings.save()
+        
+        student = Student.objects.get(student_id='CSE001')
+        url = reverse('change_program', kwargs={'student_id': student.student_id})
+        data = {
+            'new_program': 'EEE',
+            'new_cluster': 'Engineering & Technology',
+            'new_year': '2026',
+            'new_semester': 'Spring',
+            'hall_name': 'Non-Residential',
+            'notes': 'Auto migration test'
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        
+        # Check that a new ID was generated automatically and the student was migrated
+        migrated_student = Student.objects.filter(old_student_id='CSE001').first()
+        self.assertIsNotNone(migrated_student)
+        self.assertTrue(migrated_student.student_id.startswith('080'))
+
+    def test_program_migration_respects_id_mode_semi_auto(self):
+        from core.models import SystemSettings
+        sys_settings = SystemSettings.objects.get_or_create(id=1)[0]
+        sys_settings.id_mode = 'semi_auto'
+        sys_settings.save()
+        
+        student = Student.objects.get(student_id='CSE001')
+        url = reverse('change_program', kwargs={'student_id': student.student_id})
+        
+        # 1. Post with invalid/missing serial
+        data = {
+            'new_program': 'EEE',
+            'new_cluster': 'Engineering & Technology',
+            'new_year': '2026',
+            'new_semester': 'Spring',
+            'hall_name': 'Non-Residential',
+            'notes': 'Semi migration test',
+            'student_id_serial': 'abc' # invalid
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        messages = list(response.wsgi_request._messages)
+        self.assertTrue(any("Error: In semi-auto mode, a 3-digit numeric serial must be provided." in str(m) for m in messages))
+        
+        # 2. Post with valid serial
+        data['student_id_serial'] = '999'
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        
+        migrated_student = Student.objects.filter(old_student_id='CSE001').first()
+        self.assertIsNotNone(migrated_student)
+        self.assertTrue(migrated_student.student_id.endswith('999'))
+
+    def test_program_migration_respects_id_mode_manual(self):
+        from core.models import SystemSettings
+        sys_settings = SystemSettings.objects.get_or_create(id=1)[0]
+        sys_settings.id_mode = 'manual'
+        sys_settings.save()
+        
+        student = Student.objects.get(student_id='CSE001')
+        url = reverse('change_program', kwargs={'student_id': student.student_id})
+        
+        # 1. Post with invalid manual ID
+        data = {
+            'new_program': 'EEE',
+            'new_cluster': 'Engineering & Technology',
+            'new_year': '2026',
+            'new_semester': 'Spring',
+            'hall_name': 'Non-Residential',
+            'notes': 'Manual migration test',
+            'manual_student_id': '123' # invalid length
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        messages = list(response.wsgi_request._messages)
+        self.assertTrue(any("Error: In manual mode, a valid 16-digit numeric student ID must be provided." in str(m) for m in messages))
+        
+        # 2. Post with valid manual ID
+        data['manual_student_id'] = '0802610005021777'
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        
+        migrated_student = Student.objects.filter(old_student_id='CSE001').first()
+        self.assertIsNotNone(migrated_student)
+        self.assertEqual(migrated_student.student_id, '0802610005021777')
+
+    def test_directory_hall_filtering(self):
+        # Setup student hall attachments
+        student_non_res = Student.objects.get(student_id='CSE001')
+        student_non_res.is_non_residential = True
+        student_non_res.save()
+
+        student_auah = Student.objects.get(student_id='CSE002')
+        student_auah.is_non_residential = False
+        student_auah.hall_attached = 'AUAH'
+        student_auah.save()
+
+        student_btbh = Student.objects.get(student_id='CSE003')
+        student_btbh.is_non_residential = False
+        student_btbh.hall_attached = 'BTBH'
+        student_btbh.save()
+
+        # 1. Filter by Non-Residential
+        response = self.client.get(reverse('student_list'), {'hall': 'non_residential'})
+        self.assertEqual(response.status_code, 200)
+        students = list(response.context['page_obj'].paginator.object_list)
+        self.assertIn(student_non_res, students)
+        self.assertNotIn(student_auah, students)
+        self.assertNotIn(student_btbh, students)
+
+        # 2. Filter by Unspecified
+        response = self.client.get(reverse('student_list'), {'hall': 'unspecified'})
+        self.assertEqual(response.status_code, 200)
+        students = list(response.context['page_obj'].paginator.object_list)
+        self.assertNotIn(student_non_res, students)
+        self.assertNotIn(student_auah, students)
+        self.assertNotIn(student_btbh, students)
+        # Check standard student remains (since they are residential but have no hall)
+        student_default = Student.objects.get(student_id='CSE004')
+        self.assertIn(student_default, students)
+
+        # 3. Filter by specific hall AUAH
+        response = self.client.get(reverse('student_list'), {'hall': 'AUAH'})
+        self.assertEqual(response.status_code, 200)
+        students = list(response.context['page_obj'].paginator.object_list)
+        self.assertNotIn(student_non_res, students)
+        self.assertIn(student_auah, students)
+        self.assertNotIn(student_btbh, students)
+
+        # 4. Filter by specific hall BTBH
+        response = self.client.get(reverse('student_list'), {'hall': 'BTBH'})
+        self.assertEqual(response.status_code, 200)
+        students = list(response.context['page_obj'].paginator.object_list)
+        self.assertNotIn(student_non_res, students)
+        self.assertNotIn(student_auah, students)
+        self.assertIn(student_btbh, students)
+
+
 
 
 

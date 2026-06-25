@@ -644,6 +644,12 @@
             </a>
           </li>
           {% endif %}
+          <li class="nav-item">
+            <a href="#" class="nav-link" data-toggle="modal" data-target="#systemOfferingsModal">
+              <i class="nav-icon fas fa-info-circle text-info"></i>
+              <p>System Overview</p>
+            </a>
+          </li>
         </ul>
       </nav>
       <!-- /.sidebar-menu -->
@@ -834,6 +840,175 @@
 
   <!-- Global Modal Container for HTMX -->
   <div id="modals-here" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 1060;"></div>
+
+  <!-- System Offerings Modal -->
+  <div id="systemOfferingsModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="systemOfferingsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+          <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+              <div class="modal-header border-0 p-4 text-white" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
+                  <div class="d-flex align-items-center">
+                      <div class="mr-3 p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; background: rgba(255,255,255,0.2);">
+                          <i class="fas fa-cubes fa-lg"></i>
+                      </div>
+                      <div>
+                          <h4 class="modal-title font-weight-black mb-1" id="systemOfferingsModalLabel">Campus Connect: System Capabilities</h4>
+                          <p class="mb-0 small text-white-50">Discover modules and offerings for institutional excellence</p>
+                      </div>
+                  </div>
+                  <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                  </button>
+              </div>
+              <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
+                  <style>
+                      .offering-card {
+                          border: 1px solid #e2e8f0;
+                          border-radius: 16px;
+                          padding: 1.25rem;
+                          height: 100%;
+                          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                          background: #f8fafc;
+                      }
+                      .offering-card:hover {
+                          transform: translateY(-4px);
+                          box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+                          border-color: #3b82f6;
+                      }
+                      .offering-icon {
+                          width: 48px;
+                          height: 48px;
+                          border-radius: 12px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          margin-bottom: 1.25rem;
+                          font-size: 1.25rem;
+                          font-weight: bold;
+                          color: white;
+                      }
+                      .offering-title {
+                          font-size: 1.1rem;
+                          font-weight: 800;
+                          margin-bottom: 0.75rem;
+                          color: #1e293b;
+                      }
+                      .offering-list {
+                          list-style: none;
+                          padding-left: 0;
+                          margin-bottom: 0;
+                          font-size: 0.88rem;
+                          color: #475569;
+                      }
+                      .offering-list li {
+                          position: relative;
+                          padding-left: 1.25rem;
+                          margin-bottom: 0.5rem;
+                      }
+                      .offering-list li::before {
+                          content: "•";
+                          color: #3b82f6;
+                          font-weight: bold;
+                          display: inline-block;
+                          width: 1rem;
+                          margin-left: -1rem;
+                          position: absolute;
+                      }
+                      
+                      /* Dark Mode Compatibility */
+                      .dark-mode #systemOfferingsModal .modal-content {
+                          background: rgba(30, 41, 59, 0.95) !important;
+                          border: 1px solid rgba(255,255,255,0.05);
+                          color: #f8fafc !important;
+                      }
+                      .dark-mode .offering-card {
+                          background: #0f172a !important;
+                          border-color: #334155 !important;
+                      }
+                      .dark-mode .offering-card:hover {
+                          border-color: #60a5fa !important;
+                      }
+                      .dark-mode .offering-title {
+                          color: #f8fafc !important;
+                      }
+                      .dark-mode .offering-list {
+                          color: #94a3b8 !important;
+                      }
+                  </style>
+                  
+                  <div class="row">
+                      <!-- Administrators -->
+                      <div class="col-md-6 mb-4">
+                          <div class="offering-card">
+                              <div class="offering-icon" style="background: linear-gradient(135deg, #4f46e5, #6366f1);">
+                                  <i class="fas fa-graduation-cap"></i>
+                              </div>
+                              <h5 class="offering-title">Academic Administration</h5>
+                              <ul class="offering-list">
+                                  <li><strong>Unified 360° Timeline</strong>: Comprehensive student event tracking in a single view.</li>
+                                  <li><strong>Automated Board Verification</strong>: SSC/HSC verification from official portal results.</li>
+                                  <li><strong>Smart UGC ID Generator</strong>: Dynamic 16-digit ID preview based on program & hall.</li>
+                                  <li><strong>Program Migration Hub</strong>: Visual, logic-checked department transfer interface with SMS alerts.</li>
+                              </ul>
+                          </div>
+                      </div>
+                      
+                      <!-- Faculty & Remuneration -->
+                      <div class="col-md-6 mb-4">
+                          <div class="offering-card">
+                              <div class="offering-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                                  <i class="fas fa-file-invoice-dollar"></i>
+                              </div>
+                              <h5 class="offering-title">Faculty Remuneration</h5>
+                              <ul class="offering-list">
+                                  <li><strong>Automated Calculations</strong>: Exam billing setup with script evaluation rates.</li>
+                                  <li><strong>Remuneration Portal</strong>: Input and track examiner claims and rates.</li>
+                                  <li><strong>Payout Analytics</strong>: Live dashboard displaying projected payables.</li>
+                                  <li><strong>Document Export</strong>: Print-ready PDF statements and attendance sheets.</li>
+                              </ul>
+                          </div>
+                      </div>
+                      
+                      <!-- Admissions & Strategic Insights -->
+                      <div class="col-md-6 mb-4 mb-md-0">
+                          <div class="offering-card">
+                              <div class="offering-icon" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
+                                  <i class="fas fa-chart-pie"></i>
+                              </div>
+                              <h5 class="offering-title">Strategic Admissions</h5>
+                              <ul class="offering-list">
+                                  <li><strong>Visual Dashboards</strong>: Live interactive charts detailing student status.</li>
+                                  <li><strong>Feeder Analysis</strong>: Tracking top source colleges and candidate grades.</li>
+                                  <li><strong>Geographic Outreach</strong>: Real-time map mapping intake distributions by district.</li>
+                              </ul>
+                          </div>
+                      </div>
+                      
+                      <!-- IT Support & Security -->
+                      <div class="col-md-6">
+                          <div class="offering-card">
+                              <div class="offering-icon" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                                  <i class="fas fa-shield-alt"></i>
+                              </div>
+                              <h5 class="offering-title">IT Control & Security</h5>
+                              <ul class="offering-list">
+                                  <li><strong>Command Search</strong>: Zero-latency real-time student indexing (HTMX).</li>
+                                  <li><strong>Audit Logging</strong>: Permanent record of changes, IP addresses, and logins.</li>
+                                  <li><strong>Role Matrix (RBAC)</strong>: Granular user permissions and user statuses.</li>
+                                  <li><strong>Adaptive UI Engine</strong>: Sticky layouts with native persistent Dark/Light modes.</li>
+                              </ul>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <div class="modal-footer border-0 p-3 bg-light d-flex justify-content-between align-items-center" style="background: rgba(0,0,0,0.02) !important;">
+                  <div class="small text-muted font-weight-bold">
+                      Developed for BAUST with <i class="fas fa-heart text-danger"></i>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-secondary rounded-pill px-4" data-dismiss="modal">Close</button>
+              </div>
+          </div>
+      </div>
+  </div>
 
 </body>
 </html>

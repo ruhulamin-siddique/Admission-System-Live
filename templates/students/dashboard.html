@@ -607,7 +607,7 @@
                 
                 <!-- Numeric Summary Table -->
                 <div class="mt-3">
-                    <table class="table table-sm table-borderless" id="hallTable">
+                    <table class="table table-sm table-borderless table-hover" id="hallTable">
                         <thead class="text-muted small text-uppercase">
                             <tr>
                                 <th>Hall</th>
@@ -1058,6 +1058,27 @@
                     }]
                 },
                 options: {
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const item = data[index];
+                            const hallCode = item.code;
+                            const batch = $('#unifiedBatchFilter').val();
+                            
+                            let targetUrl = "{% url 'student_list' %}";
+                            const params = new URLSearchParams();
+                            if (hallCode) {
+                                params.set('hall', hallCode);
+                            }
+                            if (batch && batch !== 'all') {
+                                params.set('batch', batch);
+                            }
+                            window.location.href = `${targetUrl}?${params.toString()}`;
+                        }
+                    },
+                    onHover: (event, chartElement) => {
+                        event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
+                    },
                     maintainAspectRatio: false,
                     responsive: true,
                     plugins: {
@@ -1075,7 +1096,7 @@
             data.forEach(item => {
                 const color = hallColors[item.hall] || '#6c757d';
                 tbody.append(`
-                    <tr>
+                    <tr class="clickable-row-hall" data-code="${item.code || ''}" style="cursor: pointer;">
                         <td class="font-weight-bold">
                             <i class="fas fa-circle mr-1" style="color: ${color}; font-size: 0.7rem;"></i>
                             ${item.hall}
@@ -1371,6 +1392,22 @@
                 </div>
             `);
         });
+    });
+
+    // Click handler for hallwise distribution table rows
+    $(document).on('click', '.clickable-row-hall', function() {
+        const hallCode = $(this).data('code');
+        const batch = $('#unifiedBatchFilter').val();
+        
+        let targetUrl = "{% url 'student_list' %}";
+        const params = new URLSearchParams();
+        if (hallCode) {
+            params.set('hall', hallCode);
+        }
+        if (batch && batch !== 'all') {
+            params.set('batch', batch);
+        }
+        window.location.href = `${targetUrl}?${params.toString()}`;
     });
 
     // Modal click handler for student distribution matrix cells
