@@ -106,7 +106,7 @@ class StudentForm(forms.ModelForm):
             'second_installment': forms.NumberInput(attrs={'class': 'form-control'}),
             'waiver': forms.NumberInput(attrs={'class': 'form-control'}),
             'others': forms.NumberInput(attrs={'class': 'form-control'}),
-            'reference': forms.TextInput(attrs={'class': 'form-control'}),
+            'reference': forms.Select(attrs={'class': 'form-control select2-reference'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'mba_credits': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_non_residential': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
@@ -196,6 +196,13 @@ class StudentForm(forms.ModelForm):
         self.fields['student_mobile'].required = True
         self.fields['father_mobile'].required = True
         self.fields['mother_mobile'].required = True
+
+        # Reference choices for Select2 AJAX compatibility
+        from .models import ReferenceNode
+        if self.instance and self.instance.pk and self.instance.reference:
+            self.fields['reference'].choices = [(self.instance.reference.id, str(self.instance.reference))]
+        else:
+            self.fields['reference'].choices = [('', 'Select Reference/Influence Node')]
 
     def clean_student_id(self):
         student_id = self.cleaned_data.get('student_id')

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>BAUST Reference Node Report</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1.5cm;
+            margin-bottom: 2cm;
+            @frame footer {
+                -pdf-frame-content: footerContent;
+                bottom: 0.5cm;
+                margin-left: 1.5cm;
+                margin-right: 1.5cm;
+                height: 1.2cm;
+            }
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 9pt;
+            line-height: 1.4;
+            color: #1e293b;
+        }
+
+        #footerContent {
+            color: #64748b;
+        }
+
+        .report-header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 10px;
+        }
+
+        .institution-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #0f172a;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .report-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #475569;
+            margin-bottom: 5px;
+        }
+
+        .meta-table {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .meta-table td {
+            font-size: 8.5pt;
+            color: #64748b;
+            padding: 2px 0;
+            border: none;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .data-table th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: bold;
+            text-align: left;
+            border: 1px solid #cbd5e1;
+            padding: 8px 6px;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+        }
+
+        .data-table td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 6px;
+            font-size: 8.5pt;
+            vertical-align: top;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+
+        .id-badge {
+            font-family: monospace;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Frame Footer Content -->
+    <div id="footerContent">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="border: none; text-align: left; font-size: 8pt; padding: 0;">
+                    Bangladesh Army University of Science and Technology (BAUST)
+                </td>
+                <td style="border: none; text-align: right; font-size: 8pt; padding: 0;">
+                    Page <pdf:pagenumber> of <pdf:pagecount>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Report Header Section -->
+    <div class="report-header">
+        <div class="institution-title">BAUST, Saidpur</div>
+        <div class="report-title">Admission Reference & Influence Node Ledger</div>
+    </div>
+
+    <!-- Metadata Details Table -->
+    <table class="meta-table">
+        <tr>
+            <td style="width: 50%;">Generated on: <strong>{{ today|date:"d-N-Y g:i a" }}</strong></td>
+            <td style="width: 50%; text-align: right;">
+                {% if search_query %}
+                    Filtered by search: <strong>"{{ search_query }}"</strong>
+                {% else %}
+                    Total reference nodes: <strong>{{ references.count }}</strong>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <!-- Ledger Data Table -->
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;" class="text-center">#</th>
+                <th style="width: 15%;">Reference ID</th>
+                <th style="width: 15%;">BAUST ID</th>
+                <th style="width: 25%;">English Name</th>
+                <th style="width: 25%;">Bangla Name</th>
+                <th style="width: 20%;">Designation</th>
+                <th style="width: 15%;">Mobile No</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ref in references %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td class="id-badge">{{ ref.reference_id }}</td>
+                <td>{{ ref.baust_id|default:"-" }}</td>
+                <td><strong>{{ ref.name_en }}</strong></td>
+                <td>{{ ref.name_bn|default:"-" }}</td>
+                <td>{{ ref.designation|default:"-" }}</td>
+                <td>{{ ref.mobile|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center" style="padding: 30px; color: #64748b;">
+                    No reference node ledger accounts found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

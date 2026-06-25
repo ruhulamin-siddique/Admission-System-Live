@@ -436,19 +436,24 @@ class StudentDirectoryTests(TestCase):
         self.assertContains(response, 'window.print()')
 
     def test_dashboard_reference_nodes(self):
+        # Create ReferenceNode objects
+        from students.models import ReferenceNode
+        ref_fb = ReferenceNode.objects.create(name_en='Facebook Ad')
+        ref_alumni = ReferenceNode.objects.create(name_en='Alumni Network')
+
         # Update some students to have references
         student1 = Student.objects.get(student_id='CSE001')
-        student1.reference = 'Facebook Ad'
+        student1.reference = ref_fb
         student1.batch = '26th'
         student1.save()
 
         student2 = Student.objects.get(student_id='CSE002')
-        student2.reference = 'Alumni Network'
+        student2.reference = ref_alumni
         student2.batch = '26th'
         student2.save()
 
         student3 = Student.objects.get(student_id='CSE003')
-        student3.reference = 'Facebook Ad'
+        student3.reference = ref_fb
         student3.batch = '26th'
         student3.save()
 
@@ -1129,6 +1134,111 @@ class StudentDirectoryTests(TestCase):
         self.assertNotIn(student_non_res, students)
         self.assertNotIn(student_auah, students)
         self.assertIn(student_btbh, students)
+
+
+class ReferenceNodeSystemTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        from core.models import Role, RolePermission
+        
+        self.superuser = User.objects.create_superuser(
+            username='admin_ref',
+            email='admin_ref@example.com',
+            password='password123',
+        )
+        # Enable permissions for student module
+        scoped_role, _ = Role.objects.get_or_create(name='Ref Staff')
+        RolePermission.objects.get_or_create(role=scoped_role, module='students', task='view_directory')
+        self.superuser.profile.role = scoped_role
+        self.superuser.profile.save()
+        self.client.force_login(self.superuser)
+
+    def test_reference_node_auto_id_generation(self):
+        from students.models import ReferenceNode
+        ref1 = ReferenceNode.objects.create(name_en="First Reference")
+        ref2 = ReferenceNode.objects.create(name_en="Second Reference")
+        self.assertTrue(ref1.reference_id.startswith("REF-"))
+        self.assertTrue(ref2.reference_id.startswith("REF-"))
+        self.assertNotEqual(ref1.reference_id, ref2.reference_id)
+
+    def test_api_search_references_endpoint(self):
+        from students.models import ReferenceNode
+        ref1 = ReferenceNode.objects.create(name_en="John Doe", name_bn="জন ডো", baust_id="BAUST-111")
+        ReferenceNode.objects.create(name_en="Jane Smith", designation="Professor")
+        
+        # Search by English Name
+        response = self.client.get(reverse('api_search_references'), {'q': 'John'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data['results']), 1)
+        self.assertEqual(data['results'][0]['id'], ref1.id)
+
+        # Search by Bangla Name
+        response = self.client.get(reverse('api_search_references'), {'q': 'জন'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data['results']), 1)
+
+        # Search by BAUST ID
+        response = self.client.get(reverse('api_search_references'), {'q': '111'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data['results']), 1)
+
+    def test_reference_hub_spa_actions(self):
+        from students.models import ReferenceNode
+        ref = ReferenceNode.objects.create(name_en="Original Name", designation="Lecturer")
+
+        # 1. Create via HTMX
+        response = self.client.post(reverse('reference_manage'), {
+            'action': 'create',
+            'name_en': 'New HTMX Node',
+            'designation': 'Assistant Professor',
+            'mobile': '01899999999'
+        }, HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'New HTMX Node')
+        self.assertTrue(ReferenceNode.objects.filter(name_en='New HTMX Node').exists())
+
+        # 2. Update via HTMX
+        response = self.client.post(reverse('reference_manage'), {
+            'action': 'update',
+            'id': ref.id,
+            'name_en': 'Updated Name',
+            'designation': 'Senior Lecturer'
+        }, HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        ref.refresh_from_db()
+        self.assertEqual(ref.name_en, 'Updated Name')
+        self.assertEqual(ref.designation, 'Senior Lecturer')
+
+        # 3. Delete via HTMX
+        response = self.client.post(reverse('reference_manage'), {
+            'action': 'delete',
+            'id': ref.id
+        }, HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(ReferenceNode.objects.filter(id=ref.id).exists())
+
+    def test_export_excel_and_pdf_formats(self):
+        from students.models import ReferenceNode
+        ReferenceNode.objects.create(name_en="Excel Target Node", mobile="01799999999")
+
+        # Excel template download
+        response = self.client.get(reverse('reference_manage'), {'export': 'template'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+        # Excel export list
+        response = self.client.get(reverse('reference_manage'), {'export': 'excel'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+        # PDF list
+        response = self.client.get(reverse('reference_manage'), {'export': 'pdf'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+
 
 
 

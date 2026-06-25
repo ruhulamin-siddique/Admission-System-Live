@@ -313,13 +313,17 @@ def dashboard(request):
 
     # Top References (Sources / Channels) for the current batch
     ref_qs = Student.objects.filter(batch=latest_batch) if latest_batch else Student.objects.all()
-    top_references = list(
+    from django.db.models import F
+    top_references_raw = list(
         ref_qs.exclude(reference__isnull=True)
-        .exclude(reference='')
-        .values('reference')
+        .values(reference_name=F('reference__name_en'))
         .annotate(count=Count('student_id'))
         .order_by('-count')[:5]
     )
+    top_references = [
+        {'reference': item['reference_name'], 'count': item['count']}
+        for item in top_references_raw
+    ]
 
     stats = {
         'total_students': Student.objects.count(),
@@ -4239,5 +4243,215 @@ def download_studentship_certificate(request, student_id):
         filename = f"Studentship_Certificate_{student_id}.pdf"
         pdf_response['Content-Disposition'] = f"inline; filename={filename}"
         return pdf_response
-        
     return HttpResponse("Error generating Studentship Certificate PDF", status=400)
+
+
+@login_required
+@require_access('reports', 'view_analytics')
+def api_search_references(request):
+    query = request.GET.get('q', '').strip()
+    results = []
+    
+    from .models import ReferenceNode
+    
+    if query:
+        nodes = ReferenceNode.objects.filter(
+            Q(name_en__icontains=query) |
+            Q(name_bn__icontains=query) |
+            Q(baust_id__icontains=query)
+        )[:30]
+    else:
+        nodes = ReferenceNode.objects.all().order_by('name_en')[:30]
+        
+    for node in nodes:
+        parts = [node.name_en]
+        if node.name_bn:
+            parts.append(f"({node.name_bn})")
+        if node.designation:
+            parts.append(f"- {node.designation}")
+        if node.baust_id:
+            parts.append(f"[{node.baust_id}]")
+            
+        results.append({
+            'id': node.id,
+            'text': " ".join(parts)
+        })
+        
+    return JsonResponse({'results': results})
+
+
+@login_required
+@require_access('students', 'view_directory')
+def reference_manage_dashboard(request):
+    from .models import ReferenceNode
+    
+    export_format = request.GET.get('export')
+    search_q = request.GET.get('search', '').strip()
+    
+    queryset = ReferenceNode.objects.all().order_by('-id')
+    if search_q:
+        queryset = queryset.filter(
+            Q(name_en__icontains=search_q) |
+            Q(name_bn__icontains=search_q) |
+            Q(baust_id__icontains=search_q) |
+            Q(designation__icontains=search_q) |
+            Q(mobile__icontains=search_q) |
+            Q(reference_id__icontains=search_q)
+        )
+        
+    if export_format == 'excel':
+        import pandas as pd
+        data = []
+        for r in queryset:
+            data.append({
+                'Reference ID': r.reference_id,
+                'BAUST ID': r.baust_id or '',
+                'English Name': r.name_en,
+                'Bangla Name': r.name_bn or '',
+                'Designation': r.designation or '',
+                'Mobile': r.mobile or ''
+            })
+        df = pd.DataFrame(data)
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=References_Export.xlsx'
+        df.to_excel(response, index=False)
+        return response
+        
+    elif export_format == 'template':
+        import pandas as pd
+        df = pd.DataFrame([{
+            'BAUST ID': '12345',
+            'English Name': 'Mohni Rahman',
+            'Bangla Name': 'মোহিনী রহমান',
+            'Designation': 'Assistant Professor, CSE',
+            'Mobile': '01712345678'
+        }])
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=References_Import_Template.xlsx'
+        df.to_excel(response, index=False)
+        return response
+        
+    elif export_format == 'pdf':
+        context = {
+            'references': queryset,
+            'search_query': search_q,
+            'today': timezone.now()
+        }
+        pdf_response = render_to_pdf('students/references/pdf_list.html', context)
+        if pdf_response:
+            pdf_response['Content-Disposition'] = 'inline; filename=References_List.pdf'
+            return pdf_response
+        return HttpResponse("Error generating PDF", status=400)
+        
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create':
+            name_en = request.POST.get('name_en', '').strip()
+            baust_id = request.POST.get('baust_id', '').strip() or None
+            name_bn = request.POST.get('name_bn', '').strip() or None
+            designation = request.POST.get('designation', '').strip() or None
+            mobile = request.POST.get('mobile', '').strip() or None
+            
+            if not name_en:
+                return HttpResponse('<div class="alert alert-danger font-weight-bold">English Name is required!</div>', status=400)
+                
+            node = ReferenceNode.objects.create(
+                name_en=name_en,
+                baust_id=baust_id,
+                name_bn=name_bn,
+                designation=designation,
+                mobile=mobile
+            )
+            response = render(request, 'students/references/partials/reference_table.html', {
+                'references': ReferenceNode.objects.all().order_by('-id')[:50]
+            })
+            response['HX-Trigger'] = 'referenceCreated'
+            return response
+            
+        elif action == 'update':
+            node_id = request.POST.get('id')
+            node = get_object_or_404(ReferenceNode, id=node_id)
+            
+            node.name_en = request.POST.get('name_en', '').strip()
+            node.baust_id = request.POST.get('baust_id', '').strip() or None
+            node.name_bn = request.POST.get('name_bn', '').strip() or None
+            node.designation = request.POST.get('designation', '').strip() or None
+            node.mobile = request.POST.get('mobile', '').strip() or None
+            
+            if not node.name_en:
+                return HttpResponse('<div class="alert alert-danger font-weight-bold">English Name is required!</div>', status=400)
+                
+            node.save()
+            response = render(request, 'students/references/partials/reference_table.html', {
+                'references': ReferenceNode.objects.all().order_by('-id')[:50]
+            })
+            response['HX-Trigger'] = 'referenceUpdated'
+            return response
+            
+        elif action == 'delete':
+            node_id = request.POST.get('id')
+            node = get_object_or_404(ReferenceNode, id=node_id)
+            node.delete()
+            response = render(request, 'students/references/partials/reference_table.html', {
+                'references': ReferenceNode.objects.all().order_by('-id')[:50]
+            })
+            response['HX-Trigger'] = 'referenceDeleted'
+            return response
+            
+        elif action == 'import':
+            excel_file = request.FILES.get('excel_file')
+            if not excel_file:
+                messages.error(request, "Please select an Excel file to upload.")
+                return redirect('reference_manage')
+                
+            try:
+                import pandas as pd
+                df = pd.read_excel(excel_file)
+                
+                required_cols = ['English Name']
+                for col in required_cols:
+                    if col not in df.columns:
+                        messages.error(request, f"Missing required column in Excel: '{col}'")
+                        return redirect('reference_manage')
+                        
+                created_count = 0
+                for _, row in df.iterrows():
+                    name_en = str(row.get('English Name', '')).strip()
+                    if not name_en or name_en.lower() == 'nan':
+                        continue
+                        
+                    baust_id = str(row.get('BAUST ID', '')).strip() if pd.notna(row.get('BAUST ID')) else None
+                    if baust_id and baust_id.lower() == 'nan': baust_id = None
+                    
+                    name_bn = str(row.get('Bangla Name', '')).strip() if pd.notna(row.get('Bangla Name')) else None
+                    if name_bn and name_bn.lower() == 'nan': name_bn = None
+                    
+                    designation = str(row.get('Designation', '')).strip() if pd.notna(row.get('Designation')) else None
+                    if designation and designation.lower() == 'nan': designation = None
+                    
+                    mobile = str(row.get('Mobile', '')).strip() if pd.notna(row.get('Mobile')) else None
+                    if mobile and mobile.lower() == 'nan': mobile = None
+                    
+                    ReferenceNode.objects.create(
+                        name_en=name_en,
+                        baust_id=baust_id,
+                        name_bn=name_bn,
+                        designation=designation,
+                        mobile=mobile
+                    )
+                    created_count += 1
+                    
+                messages.success(request, f"Successfully imported {created_count} reference nodes from Excel!")
+            except Exception as e:
+                messages.error(request, f"Excel Import failed: {str(e)}")
+            return redirect('reference_manage')
+            
+    if request.headers.get('HX-Request'):
+        return render(request, 'students/references/partials/reference_table.html', {
+            'references': queryset[:50]
+        })
+        
+    return render(request, 'students/references/manage.html', {
+        'references': queryset[:50]
+    })

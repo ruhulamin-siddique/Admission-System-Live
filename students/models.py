@@ -2,6 +2,35 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+class ReferenceNode(models.Model):
+    reference_id = models.CharField(max_length=50, unique=True, db_index=True, blank=True)
+    baust_id = models.CharField(max_length=50, blank=True, null=True, db_index=True)
+    name_en = models.CharField(max_length=255)
+    name_bn = models.CharField(max_length=255, blank=True, null=True)
+    designation = models.CharField(max_length=255, blank=True, null=True)
+    mobile = models.CharField(max_length=20, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.reference_id:
+            max_id = ReferenceNode.objects.aggregate(models.Max('id'))['id__max'] or 0
+            next_id = max_id + 1
+            ref_id = f"REF-{next_id:05d}"
+            while ReferenceNode.objects.filter(reference_id=ref_id).exists():
+                next_id += 1
+                ref_id = f"REF-{next_id:05d}"
+            self.reference_id = ref_id
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        parts = [self.name_en]
+        if self.designation:
+            parts.append(self.designation)
+        if self.baust_id:
+            parts.append(self.baust_id)
+        return " - ".join(parts)
+
 class Student(models.Model):
     # Core Identification
     student_id = models.CharField(max_length=50, primary_key=True, help_text="UGC Compliant ID")
@@ -90,7 +119,8 @@ class Student(models.Model):
     others = models.FloatField(null=True, blank=True, default=0.0)
     
     # Miscellaneous Flags
-    reference = models.CharField(max_length=255, null=True, blank=True)
+    reference_legacy = models.CharField(max_length=255, null=True, blank=True)
+    reference = models.ForeignKey(ReferenceNode, on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
     remarks = models.TextField(null=True, blank=True)
     is_temp_admission_cancel = models.BooleanField(default=False)
     is_credit_transfer = models.BooleanField(default=False)

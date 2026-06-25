@@ -1,0 +1,558 @@
+{% extends 'base.html' %}
+
+{% block title %}Reference & Influence Nodes Hub | Bangladesh Army University of Science and Technology{% endblock %}
+{% block page_title %}Reference Node Intelligence Console v2.0{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-blue: #1e293b;
+        --secondary-blue: #334155;
+        --accent-blue: #3b82f6;
+        --success-green: #10b981;
+        --danger-red: #ef4444;
+        --surface-bg: #f8fafc;
+        --border-color: #cbd5e1;
+    }
+
+    .dark-mode :root {
+        --primary-blue: #0f172a;
+        --secondary-blue: #1e293b;
+        --surface-bg: #0b0f19;
+        --border-color: #334155;
+    }
+
+    .bangla-font {
+        font-family: 'SolaimanLipi', 'Kalpurush', 'Hind Siliguri', sans-serif;
+    }
+
+    /* Premium Header */
+    .dashboard-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        margin-bottom: 2rem;
+    }
+    
+    .dark-mode .dashboard-header {
+        background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+    }
+
+    /* Search and Filter Ribbon */
+    .ribbon-bar {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 1.25rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+    }
+
+    .dark-mode .ribbon-bar {
+        background: var(--secondary-blue);
+    }
+
+    .search-input-group {
+        position: relative;
+    }
+
+    .search-input-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+
+    .search-input-field {
+        padding-left: 2.75rem !important;
+        border-radius: 10px !important;
+        border: 1.5px solid var(--border-color) !important;
+        font-weight: 600;
+        height: 45px !important;
+        transition: all 0.2s;
+    }
+
+    .search-input-field:focus {
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+
+    /* Floating Field Outline Modals */
+    .floating-modal-field {
+        position: relative;
+        margin-bottom: 1.25rem;
+    }
+
+    .floating-modal-field label {
+        position: absolute;
+        top: -9px;
+        left: 10px;
+        background: white;
+        padding: 0 5px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        z-index: 2;
+        margin-bottom: 0;
+        transition: all 0.2s;
+        border-radius: 3px;
+    }
+
+    .dark-mode .floating-modal-field label {
+        background: #1e293b;
+        color: #94a3b8;
+    }
+
+    .floating-modal-field .form-control {
+        border: 1.5px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        padding: 0.65rem 1rem !important;
+        height: auto !important;
+        font-weight: 600 !important;
+        color: #1e293b !important;
+        background-color: white !important;
+    }
+
+    .dark-mode .floating-modal-field .form-control {
+        background-color: #0f172a !important;
+        color: #f1f5f9 !important;
+    }
+
+    .floating-modal-field .form-control:focus {
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+
+    /* Table Container Styling */
+    .table-responsive-premium {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        background: white;
+    }
+
+    .dark-mode .table-responsive-premium {
+        background: var(--secondary-blue);
+    }
+
+    .table-premium thead th {
+        background-color: #f1f5f9 !important;
+        color: #475569 !important;
+        font-weight: 700;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding: 1rem 0.75rem;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    .dark-mode .table-premium thead th {
+        background-color: #0f172a !important;
+        color: #94a3b8 !important;
+    }
+
+    .table-premium tbody td {
+        padding: 1rem 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table-premium tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Modal Layout Headers */
+    .modal-premium-header {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: white;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .dark-mode .modal-premium-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+
+    /* File Import Drag Area Box */
+    .excel-import-dropzone {
+        border: 2px dashed #cbd5e1;
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .dark-mode .excel-import-dropzone {
+        border-color: #475569;
+        background: #0f172a;
+    }
+
+    .excel-import-dropzone:hover {
+        border-color: var(--accent-blue);
+        background: rgba(59, 130, 246, 0.03);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-2">
+    <!-- Premium SPA Header -->
+    <div class="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+        <div>
+            <h2 class="font-weight-black mb-1"><i class="fas fa-network-wired mr-2"></i> Reference & Influence Hub</h2>
+            <p class="mb-0 opacity-75 small">Centralized register of referrers, university staff connect points, and candidate student enrollment influencers.</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2" style="gap: 8px;">
+            <button type="button" class="btn btn-success font-weight-bold px-4 rounded-pill shadow-sm" data-toggle="modal" data-target="#uploadExcelModal">
+                <i class="fas fa-file-excel mr-2"></i> Import Excel
+            </button>
+            <button type="button" class="btn btn-primary font-weight-bold px-4 rounded-pill shadow-sm" data-toggle="modal" data-target="#addRefModal">
+                <i class="fas fa-plus-circle mr-2"></i> Add Reference
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Messaging -->
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 10px;">
+            <strong class="font-weight-bold">System Status:</strong> {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- SPA Ribbon Search Bar -->
+    <div class="ribbon-bar shadow-sm">
+        <div class="row align-items-center">
+            <div class="col-lg-6 col-md-8 mb-3 mb-md-0">
+                <div class="search-input-group">
+                    <i class="fas fa-search search-input-icon"></i>
+                    <input type="text" 
+                           name="search" 
+                           class="form-control search-input-field" 
+                           placeholder="Type to search by Name (EN/BN), BAUST ID, Mobile, or Ref ID..."
+                           hx-get="{% url 'reference_manage' %}"
+                           hx-target="#reference-table-body"
+                           hx-trigger="keyup changed delay:300ms"
+                           value="{{ request.GET.search|default:'' }}">
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-4 d-flex justify-content-md-end gap-2" style="gap: 8px;">
+                <a href="?export=excel{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" id="export-excel-btn" class="btn btn-outline-dark font-weight-bold px-3 rounded-pill">
+                    <i class="fas fa-download mr-1"></i> Export Excel
+                </a>
+                <a href="?export=pdf{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" id="export-pdf-btn" target="_blank" class="btn btn-outline-danger font-weight-bold px-3 rounded-pill">
+                    <i class="fas fa-file-pdf mr-1"></i> Print Report (PDF)
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main List Container -->
+    <div class="table-responsive-premium mb-5">
+        <table class="table table-hover table-premium mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 130px;">Ref ID</th>
+                    <th style="width: 140px;">BAUST ID</th>
+                    <th>Name (English)</th>
+                    <th>Name (Bangla)</th>
+                    <th>Designation</th>
+                    <th style="width: 180px;">Mobile</th>
+                    <th class="text-right" style="width: 180px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="reference-table-body">
+                {% include 'students/references/partials/reference_table.html' %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODALS SECTION -->
+<!-- ========================================================================= -->
+
+<!-- ADD REFERENCE MODAL -->
+<div class="modal fade" id="addRefModal" tabindex="-1" role="dialog" aria-hidden="true" style="border-radius: 12px;">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius: 12px;">
+            <div class="modal-premium-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title font-weight-black mb-0"><i class="fas fa-plus-circle mr-2"></i> Add Reference Node</h5>
+                <button type="button" class="close text-white opacity-75" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="addRefForm" hx-post="{% url 'reference_manage' %}" hx-target="#reference-table-body" hx-swap="innerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                
+                <div class="modal-body p-4">
+                    <div id="add-error-box"></div>
+                    
+                    <div class="floating-modal-field">
+                        <label>English Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name_en" class="form-control" placeholder="Enter name in English" required>
+                    </div>
+                    
+                    <div class="floating-modal-field">
+                        <label>Bangla Name (Optional)</label>
+                        <input type="text" name="name_bn" class="form-control bangla-font" placeholder="বাংলায় নাম লিখুন (ঐচ্ছিক)">
+                    </div>
+
+                    <div class="floating-modal-field">
+                        <label>BAUST ID (Optional)</label>
+                        <input type="text" name="baust_id" class="form-control" placeholder="e.g. 210101001">
+                    </div>
+
+                    <div class="floating-modal-field">
+                        <label>Designation (Optional)</label>
+                        <input type="text" name="designation" class="form-control" placeholder="e.g. Associate Professor, ME">
+                    </div>
+
+                    <div class="floating-modal-field">
+                        <label>Mobile Number (Optional)</label>
+                        <input type="text" name="mobile" class="form-control" placeholder="e.g. 01700000000">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary px-4 rounded-pill font-weight-bold" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-5 rounded-pill font-weight-bold shadow-sm">
+                        Save Node
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT REFERENCE MODAL -->
+<div class="modal fade" id="editRefModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius: 12px;">
+            <div class="modal-premium-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title font-weight-black mb-0"><i class="fas fa-edit mr-2"></i> Edit Reference: <span id="edit-ref-display-id" class="badge badge-light ml-1 font-monospace">REF-XXXXX</span></h5>
+                <button type="button" class="close text-white opacity-75" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="editRefForm" hx-post="{% url 'reference_manage' %}" hx-target="#reference-table-body" hx-swap="innerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="id" id="edit-node-pk">
+                
+                <div class="modal-body p-4">
+                    <div id="edit-error-box"></div>
+                    
+                    <div class="floating-modal-field">
+                        <label>English Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name_en" id="edit-name-en" class="form-control" placeholder="Enter name in English" required>
+                    </div>
+                    
+                    <div class="floating-modal-field">
+                        <label>Bangla Name (Optional)</label>
+                        <input type="text" name="name_bn" id="edit-name-bn" class="form-control bangla-font" placeholder="বাংলায় নাম লিখুন (ঐচ্ছিক)">
+                    </div>
+
+                    <div class="floating-modal-field">
+                        <label>BAUST ID (Optional)</label>
+                        <input type="text" name="baust_id" id="edit-baust-id" class="form-control" placeholder="e.g. 210101001">
+                    </div>
+
+                    <div class="floating-modal-field">
+                        <label>Designation (Optional)</label>
+                        <input type="text" name="designation" id="edit-designation" class="form-control" placeholder="e.g. Associate Professor, ME">
+                    </div>
+
+                    <div class="floating-modal-field">
+                        <label>Mobile Number (Optional)</label>
+                        <input type="text" name="mobile" id="edit-mobile" class="form-control" placeholder="e.g. 01700000000">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary px-4 rounded-pill font-weight-bold" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success px-5 rounded-pill font-weight-bold shadow-sm">
+                        Update Node
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EXCEL IMPORT MODAL -->
+<div class="modal fade" id="uploadExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius: 12px;">
+            <div class="modal-premium-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title font-weight-black mb-0"><i class="fas fa-file-excel mr-2"></i> Batch Import from Excel</h5>
+                <button type="button" class="close text-white opacity-75" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{% url 'reference_manage' %}" method="POST" enctype="multipart/form-data" id="excelUploadForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="import">
+                
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Upload an Excel spreadsheet (`.xlsx`) to bulk-import reference records. Ensure the Excel spreadsheet matches the standard template layout below.</p>
+                    
+                    <div class="excel-import-dropzone mb-3" onclick="document.getElementById('excel-file-selector').click();">
+                        <i class="fas fa-cloud-upload-alt text-primary fa-3x mb-2 opacity-75"></i>
+                        <h6 class="font-weight-bold mb-1">Click to browse Excel file</h6>
+                        <p class="text-muted small mb-0" id="selected-filename">Supported file types: .xlsx (Max 5MB)</p>
+                        <input type="file" name="excel_file" id="excel-file-selector" class="d-none" accept=".xlsx" onchange="displaySelectedFilename(this)">
+                    </div>
+
+                    <div class="card bg-light border-0" style="border-radius: 8px;">
+                        <div class="card-body p-3">
+                            <h6 class="font-weight-bold text-dark mb-2" style="font-size: 0.85rem;"><i class="fas fa-info-circle text-info mr-1"></i> Excel Column Layout Guideline:</h6>
+                            <ul class="text-muted small pl-3 mb-0" style="list-style-type: square;">
+                                <li><strong>English Name</strong> (Required, Name of Node)</li>
+                                <li><strong>Bangla Name</strong> (Optional, Bangla translation)</li>
+                                <li><strong>BAUST ID</strong> (Optional, internal staff/student ID)</li>
+                                <li><strong>Designation</strong> (Optional, current title/profession)</li>
+                                <li><strong>Mobile</strong> (Optional, contact cell number)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 d-flex justify-content-between align-items-center">
+                    <a href="?export=template" class="btn btn-outline-success font-weight-bold rounded-pill px-3 py-2 btn-sm">
+                        <i class="fas fa-file-download mr-1"></i> Download Template
+                    </a>
+                    <div>
+                        <button type="button" class="btn btn-secondary px-3 py-2 btn-sm rounded-pill font-weight-bold" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success px-4 py-2 btn-sm rounded-pill font-weight-bold shadow-sm">
+                            Run Import
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Sync export URLs dynamically when a user types in search input
+        $('[name="search"]').on('input', function() {
+            const query = $(this).val().trim();
+            const excelBtn = document.getElementById('export-excel-btn');
+            const pdfBtn = document.getElementById('export-pdf-btn');
+            
+            if (query) {
+                excelBtn.setAttribute('href', '?export=excel&search=' + encodeURIComponent(query));
+                pdfBtn.setAttribute('href', '?export=pdf&search=' + encodeURIComponent(query));
+            } else {
+                excelBtn.setAttribute('href', '?export=excel');
+                pdfBtn.setAttribute('href', '?export=pdf');
+            }
+        });
+
+        // Dynamic Event Listener Hookups for HTMX Trigger Events
+        document.body.addEventListener('referenceCreated', function() {
+            Swal.fire({
+                icon: 'success',
+                title: 'Created Successfully!',
+                text: 'The new reference node has been successfully logged.',
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'rounded-12'
+                }
+            });
+            $('#addRefModal').modal('hide');
+            $('#addRefForm')[0].reset();
+        });
+
+        document.body.addEventListener('referenceUpdated', function() {
+            Swal.fire({
+                icon: 'success',
+                title: 'Updated Successfully!',
+                text: 'The reference node modifications have been committed.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            $('#editRefModal').modal('hide');
+        });
+
+        document.body.addEventListener('referenceDeleted', function() {
+            Swal.fire({
+                icon: 'success',
+                title: 'Node Erased!',
+                text: 'The reference node record was completely deleted.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        });
+    });
+
+    // Populate and open edit reference dialog
+    function openEditModal(pk, refId, baustId, nameEn, nameBn, designation, mobile) {
+        document.getElementById('edit-node-pk').value = pk;
+        document.getElementById('edit-ref-display-id').innerText = refId;
+        document.getElementById('edit-name-en').value = nameEn;
+        document.getElementById('edit-name-bn').value = nameBn;
+        document.getElementById('edit-baust-id').value = baustId;
+        document.getElementById('edit-designation').value = designation;
+        document.getElementById('edit-mobile').value = mobile;
+        
+        $('#editRefModal').modal('show');
+    }
+
+    // Display selected file name inside drag area
+    function displaySelectedFilename(input) {
+        const selectedLabel = document.getElementById('selected-filename');
+        if (input.files && input.files.length > 0) {
+            selectedLabel.innerText = "Selected file: " + input.files[0].name;
+            selectedLabel.classList.add('text-success', 'font-weight-bold');
+        } else {
+            selectedLabel.innerText = "Supported file types: .xlsx (Max 5MB)";
+            selectedLabel.classList.remove('text-success', 'font-weight-bold');
+        }
+    }
+
+    // Trigger sweetalert delete confirm prompt before firing HTMX delete POST
+    function confirmDeleteNode(pk, nodeName) {
+        Swal.fire({
+            title: 'Delete Reference?',
+            html: `Are you sure you want to delete <strong>${nodeName}</strong>?<br><span class="text-danger small"><i class="fas fa-exclamation-triangle"></i> This might leave linked students without references!</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Execute HTMX call programmatically
+                htmx.ajax('POST', "{% url 'reference_manage' %}", {
+                    values: {
+                        action: 'delete',
+                        id: pk
+                    },
+                    target: '#reference-table-body',
+                    swap: 'innerHTML'
+                });
+            }
+        });
+    }
+</script>
+{% endblock %}

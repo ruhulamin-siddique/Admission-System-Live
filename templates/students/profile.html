@@ -341,6 +341,27 @@
                                     <tr><td><strong>Religion:</strong></td><td>{{ student.religion }}</td></tr>
                                     <tr><td><strong>Blood Group:</strong></td><td>{{ student.blood_group }}</td></tr>
                                     <tr><td><strong>NID/Birth Reg:</strong></td><td>{{ student.national_id }}</td></tr>
+                                    <tr>
+                                        <td><strong>Reference Node:</strong></td>
+                                        <td>
+                                            {% if student.reference %}
+                                                <a href="{% url 'reference_manage' %}?search={{ student.reference.reference_id }}" class="font-weight-bold text-dark">
+                                                    {{ student.reference.name_en }}
+                                                    {% if student.reference.name_bn %}({{ student.reference.name_bn }}){% endif %}
+                                                </a>
+                                                {% if student.reference.designation %}
+                                                    <div class="small text-muted">{{ student.reference.designation }}</div>
+                                                {% endif %}
+                                                {% if student.reference.mobile %}
+                                                    <div class="small text-muted"><i class="fas fa-phone-alt mr-1"></i>{{ student.reference.mobile }}</div>
+                                                {% endif %}
+                                            {% elif student.reference_legacy %}
+                                                <span class="text-muted">{{ student.reference_legacy }} <small class="text-warning font-weight-bold">(Legacy)</small></span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
                                 </table>
                             </div>
                             <div class="col-md-6">

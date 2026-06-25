@@ -438,6 +438,15 @@
           </li>
           {% endif %}
 
+          {% if can_view_students %}
+          <li class="nav-item">
+            <a href="{% url 'reference_manage' %}" class="nav-link {% if request.resolver_match.url_name == 'reference_manage' %}active{% endif %}">
+              <i class="nav-icon fas fa-network-wired"></i>
+              <p>Reference Hub</p>
+            </a>
+          </li>
+          {% endif %}
+
           {% has_access 'students' 'bulk_import' as can_import %}
           {% has_access 'students' 'data_integrity' as can_scan %}
           {% has_access 'students' 'academic_audit' as can_audit %}
