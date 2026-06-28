@@ -130,7 +130,8 @@
     /* Table Container Styling */
     .table-responsive-premium {
         border-radius: 12px;
-        overflow: hidden;
+        max-height: 500px;
+        overflow-y: auto;
         border: 1px solid var(--border-color);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         background: white;
@@ -140,29 +141,90 @@
         background: var(--secondary-blue);
     }
 
+    /* Premium Scrollbar */
+    .table-responsive-premium::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .table-responsive-premium::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .table-responsive-premium::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .table-responsive-premium::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+    .dark-mode .table-responsive-premium::-webkit-scrollbar-thumb {
+        background: #475569;
+    }
+    .dark-mode .table-responsive-premium::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+
+    .table-premium {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+    }
+
     .table-premium thead th {
         background-color: #f1f5f9 !important;
         color: #475569 !important;
         font-weight: 700;
-        border-bottom: 1px solid var(--border-color) !important;
-        padding: 1rem 0.75rem;
+        padding: 0.5rem 0.75rem !important; /* Compact padding */
         text-transform: uppercase;
         font-size: 0.75rem;
         letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 2px solid var(--border-color) !important;
+        box-shadow: 0 1px 0 var(--border-color); /* Extra line definition for older browsers */
     }
 
     .dark-mode .table-premium thead th {
         background-color: #0f172a !important;
         color: #94a3b8 !important;
+        border-bottom-color: var(--border-color) !important;
+        box-shadow: 0 1px 0 var(--border-color);
     }
 
     .table-premium tbody td {
-        padding: 1rem 0.75rem;
+        padding: 0.5rem 0.75rem !important; /* Compact padding */
         border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
     }
 
     .table-premium tbody tr:last-child td {
         border-bottom: none;
+    }
+
+    /* Action Buttons Hover Text Styling */
+    .btn-action-hover {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease-in-out;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .btn-action-hover .hover-text {
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        transition: max-width 0.25s ease-in-out, opacity 0.2s ease-in-out, margin-left 0.25s ease-in-out;
+        margin-left: 0;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .btn-action-hover:hover .hover-text {
+        max-width: 100px;
+        opacity: 1;
+        margin-left: 0.35rem;
     }
 
     /* Modal Layout Headers */
