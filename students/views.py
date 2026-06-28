@@ -314,16 +314,23 @@ def dashboard(request):
     # Top References (Sources / Channels) for the current batch
     ref_qs = Student.objects.filter(batch=latest_batch) if latest_batch else Student.objects.all()
     from django.db.models import F
-    top_references_raw = list(
-        ref_qs.exclude(reference__isnull=True)
-        .values(reference_name=F('reference__name_en'))
-        .annotate(count=Count('student_id'))
-        .order_by('-count')[:5]
-    )
-    top_references = [
-        {'reference': item['reference_name'], 'count': item['count']}
-        for item in top_references_raw
-    ]
+    
+    # Employee references
+    emp_qs = ref_qs.exclude(reference__isnull=True).values(
+        name=F('reference__name_en')
+    ).annotate(count=Count('student_id'))
+    emp_list = [{'reference': item['name'], 'count': item['count']} for item in emp_qs]
+    
+    # Student references
+    stud_qs = ref_qs.exclude(referred_by_student__isnull=True).values(
+        name=F('referred_by_student__student_name')
+    ).annotate(count=Count('student_id'))
+    stud_list = [{'reference': f"[Student] {item['name']}", 'count': item['count']} for item in stud_qs]
+    
+    # Combine and sort
+    combined_refs = emp_list + stud_list
+    combined_refs.sort(key=lambda x: x['count'], reverse=True)
+    top_references = combined_refs[:5]
 
     stats = {
         'total_students': Student.objects.count(),
@@ -4282,6 +4289,30 @@ def api_search_references(request):
 
 @login_required
 @require_access('students', 'view_directory')
+def api_search_students(request):
+    query = request.GET.get('q', '').strip()
+    results = []
+    
+    if query:
+        students = Student.objects.filter(
+            Q(student_id__icontains=query) |
+            Q(student_name__icontains=query)
+        )[:30]
+    else:
+        students = Student.objects.all().order_by('-created_at')[:30]
+        
+    for s in students:
+        text = f"{s.student_name} ({s.student_id}) - {s.program or 'No Dept'}, Batch {s.batch or 'Unknown'}"
+        results.append({
+            'id': s.student_id,
+            'text': text
+        })
+        
+    return JsonResponse({'results': results})
+
+
+@login_required
+@require_access('students', 'view_directory')
 def reference_manage_dashboard(request):
     from .models import ReferenceNode
     
@@ -4306,6 +4337,7 @@ def reference_manage_dashboard(request):
             data.append({
                 'Reference ID': r.reference_id,
                 'BAUST ID': r.baust_id or '',
+                'Category': r.category,
                 'English Name': r.name_en,
                 'Bangla Name': r.name_bn or '',
                 'Designation': r.designation or '',
@@ -4321,6 +4353,7 @@ def reference_manage_dashboard(request):
         import pandas as pd
         df = pd.DataFrame([{
             'BAUST ID': '12345',
+            'Category': 'Employee',
             'English Name': 'Mohni Rahman',
             'Bangla Name': 'মোহিনী রহমান',
             'Designation': 'Assistant Professor, CSE',
@@ -4352,6 +4385,7 @@ def reference_manage_dashboard(request):
             name_bn = request.POST.get('name_bn', '').strip() or None
             designation = request.POST.get('designation', '').strip() or None
             mobile = request.POST.get('mobile', '').strip() or None
+            category = request.POST.get('category', 'Employee').strip()
             
             if not name_en:
                 return HttpResponse('<div class="alert alert-danger font-weight-bold">English Name is required!</div>', status=400)
@@ -4361,7 +4395,8 @@ def reference_manage_dashboard(request):
                 baust_id=baust_id,
                 name_bn=name_bn,
                 designation=designation,
-                mobile=mobile
+                mobile=mobile,
+                category=category
             )
             response = render(request, 'students/references/partials/reference_table.html', {
                 'references': ReferenceNode.objects.all().order_by('-id')[:50]
@@ -4378,6 +4413,7 @@ def reference_manage_dashboard(request):
             node.name_bn = request.POST.get('name_bn', '').strip() or None
             node.designation = request.POST.get('designation', '').strip() or None
             node.mobile = request.POST.get('mobile', '').strip() or None
+            node.category = request.POST.get('category', 'Employee').strip()
             
             if not node.name_en:
                 return HttpResponse('<div class="alert alert-danger font-weight-bold">English Name is required!</div>', status=400)
@@ -4399,6 +4435,38 @@ def reference_manage_dashboard(request):
             response['HX-Trigger'] = 'referenceDeleted'
             return response
             
+        elif action == 'merge':
+            source_id = request.POST.get('source_id')
+            target_id = request.POST.get('target_id')
+            
+            if not source_id or not target_id:
+                return HttpResponse('<div class="alert alert-danger font-weight-bold">Both Source and Target references are required!</div>', status=400)
+            if source_id == target_id:
+                return HttpResponse('<div class="alert alert-danger font-weight-bold">Source and Target references cannot be the same!</div>', status=400)
+                
+            source_node = get_object_or_404(ReferenceNode, id=source_id)
+            target_node = get_object_or_404(ReferenceNode, id=target_id)
+            
+            # Transfer all linked students from source to target
+            linked_students_count = source_node.students.count()
+            source_node.students.update(reference=target_node)
+            
+            # Delete the source node
+            source_node_name = source_node.name_en
+            source_node.delete()
+            
+            response = render(request, 'students/references/partials/reference_table.html', {
+                'references': ReferenceNode.objects.all().order_by('-id')[:50]
+            })
+            response['HX-Trigger'] = json.dumps({
+                'referenceMerged': {
+                    'source': source_node_name,
+                    'target': target_node.name_en,
+                    'count': linked_students_count
+                }
+            })
+            return response
+            
         elif action == 'import':
             excel_file = request.FILES.get('excel_file')
             if not excel_file:
@@ -4416,6 +4484,7 @@ def reference_manage_dashboard(request):
                         return redirect('reference_manage')
                         
                 created_count = 0
+                updated_count = 0
                 for _, row in df.iterrows():
                     name_en = str(row.get('English Name', '')).strip()
                     if not name_en or name_en.lower() == 'nan':
@@ -4433,25 +4502,69 @@ def reference_manage_dashboard(request):
                     mobile = str(row.get('Mobile', '')).strip() if pd.notna(row.get('Mobile')) else None
                     if mobile and mobile.lower() == 'nan': mobile = None
                     
-                    ReferenceNode.objects.create(
-                        name_en=name_en,
-                        baust_id=baust_id,
-                        name_bn=name_bn,
-                        designation=designation,
-                        mobile=mobile
-                    )
-                    created_count += 1
+                    category = str(row.get('Category', 'Employee')).strip() if pd.notna(row.get('Category')) else 'Employee'
+                    if category not in ['Employee', 'External']:
+                        category = 'Employee'
                     
-                messages.success(request, f"Successfully imported {created_count} reference nodes from Excel!")
+                    # Smart Matching to prevent duplicates:
+                    # 1. Match by BAUST ID
+                    # 2. Match by Mobile
+                    # 3. Match by Name (case-insensitive)
+                    node = None
+                    if baust_id:
+                        node = ReferenceNode.objects.filter(baust_id=baust_id).first()
+                    if not node and mobile:
+                        node = ReferenceNode.objects.filter(mobile=mobile).first()
+                    if not node:
+                        node = ReferenceNode.objects.filter(name_en__iexact=name_en).first()
+                        
+                    if node:
+                        if baust_id: node.baust_id = baust_id
+                        if name_bn: node.name_bn = name_bn
+                        if designation: node.designation = designation
+                        if mobile: node.mobile = mobile
+                        if name_en: node.name_en = name_en
+                        node.category = category
+                        node.save()
+                        updated_count += 1
+                    else:
+                        ReferenceNode.objects.create(
+                            name_en=name_en,
+                            baust_id=baust_id,
+                            name_bn=name_bn,
+                            designation=designation,
+                            mobile=mobile,
+                            category=category
+                        )
+                        created_count += 1
+                    
+                messages.success(request, f"Successfully imported references from Excel! (Created: {created_count}, Updated/Merged: {updated_count})")
             except Exception as e:
                 messages.error(request, f"Excel Import failed: {str(e)}")
             return redirect('reference_manage')
             
+    all_refs = ReferenceNode.objects.all().order_by('name_en')
     if request.headers.get('HX-Request'):
         return render(request, 'students/references/partials/reference_table.html', {
-            'references': queryset[:50]
+            'references': queryset[:50],
+            'all_references': all_refs
         })
         
     return render(request, 'students/references/manage.html', {
-        'references': queryset[:50]
+        'references': queryset[:50],
+        'all_references': all_refs
+    })
+
+
+@login_required
+@require_access('students', 'view_directory')
+def api_reference_link_count(request, ref_id):
+    """Returns the number of students linked to a given ReferenceNode."""
+    from .models import ReferenceNode
+    node = get_object_or_404(ReferenceNode, id=ref_id)
+    count = node.students.count()
+    return JsonResponse({
+        'id': node.id,
+        'name': node.name_en,
+        'linked_students': count
     })

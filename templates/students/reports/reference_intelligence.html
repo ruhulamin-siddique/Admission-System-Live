@@ -159,6 +159,9 @@
                         <thead>
                             <tr>
                                 <th class="pl-4">Reference Name</th>
+                                <th class="text-center">Type</th>
+                                <th class="text-center">Designation</th>
+                                <th class="text-center">Student Info</th>
                                 <th class="text-center">Student Count</th>
                                 <th class="text-right pr-4">Impact Share</th>
                             </tr>
@@ -168,6 +171,11 @@
                             <tr>
                                 <td class="pl-4 font-weight-bold">{{ row.reference }}</td>
                                 <td class="text-center">
+                                    <span class="badge {% if row.type == 'Employee' %}badge-info{% else %}badge-success{% endif %} px-2 py-1">{{ row.type }}</span>
+                                </td>
+                                <td class="text-center text-muted small">{{ row.designation }}</td>
+                                <td class="text-center text-muted small font-weight-bold">{{ row.student_info }}</td>
+                                <td class="text-center">
                                     <span class="badge badge-soft-primary px-3 py-1">{{ row.count }}</span>
                                 </td>
                                 <td class="text-right pr-4 text-muted">
@@ -175,7 +183,7 @@
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="3" class="text-center py-5">No reference data found for this selection.</td></tr>
+                            <tr><td colspan="6" class="text-center py-5">No reference data found for this selection.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

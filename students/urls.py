@@ -82,4 +82,6 @@ urlpatterns = [
     path('api/revert-change/<int:history_id>/', views.revert_field_change, name='revert_field_change'),
     path('students/references/', views.reference_manage_dashboard, name='reference_manage'),
     path('api/search-references/', views.api_search_references, name='api_search_references'),
+    path('api/search-students/', views.api_search_students, name='api_search_students'),
+    path('api/reference-link-count/<int:ref_id>/', views.api_reference_link_count, name='api_reference_link_count'),
 ]

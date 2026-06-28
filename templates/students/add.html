@@ -876,15 +876,26 @@
                                 <div class="col-md-12"><div class="field-outline-group"><label>Full Name <span class="text-danger">*</span></label>{{ form.student_name }}</div></div>
                                 <div class="col-md-6"><div class="field-outline-group"><label>Gender <span class="text-danger">*</span></label>{{ form.gender }}</div></div>
                                 <div class="col-md-6"><div class="field-outline-group"><label>Date of Birth <span class="text-danger">*</span></label>{{ form.dob }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Blood Group</label>{{ form.blood_group }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Religion <span class="text-danger">*</span></label>{{ form.religion }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>National ID</label>{{ form.national_id }}<small id="nid-help" class="form-text"></small></div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Mobile No <span class="text-danger">*</span></label>{{ form.student_mobile }}<small id="mobile-help" class="form-text"></small></div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Email Address</label>{{ form.student_email }}<small id="email-help" class="form-text"></small></div></div>
-                                <div class="col-md-4">
-                                    <div class="field-outline-group">
-                                        <label>Reference / Influence Node</label>
-                                        {{ form.reference }}
+                                <div class="col-md-6"><div class="field-outline-group"><label>Blood Group</label>{{ form.blood_group }}</div></div>
+                                <div class="col-md-6"><div class="field-outline-group"><label>Religion <span class="text-danger">*</span></label>{{ form.religion }}</div></div>
+                                <div class="col-md-6"><div class="field-outline-group"><label>National ID</label>{{ form.national_id }}<small id="nid-help" class="form-text"></small></div></div>
+                                <div class="col-md-6"><div class="field-outline-group"><label>Mobile No <span class="text-danger">*</span></label>{{ form.student_mobile }}<small id="mobile-help" class="form-text"></small></div></div>
+                                <div class="col-md-6"><div class="field-outline-group"><label>Email Address</label>{{ form.student_email }}<small id="email-help" class="form-text"></small></div></div>
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-end align-items-center mb-1">
+                                        <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-success">
+                                            <input type="checkbox" class="custom-control-input" id="toggle-student-ref">
+                                            <label class="custom-control-label font-weight-bold text-xs" for="toggle-student-ref" style="cursor: pointer; font-size: 0.75rem;">Student Referrer</label>
+                                        </div>
+                                    </div>
+                                    <div class="field-outline-group" style="margin-top: 0;">
+                                        <label id="reference-field-label">Reference Node</label>
+                                        <div id="reference-node-select-container">
+                                            {{ form.reference }}
+                                        </div>
+                                        <div id="referred-student-select-container" class="d-none">
+                                            {{ form.referred_by_student }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1060,6 +1071,49 @@
             },
             minimumInputLength: 1
         });
+
+        // Initialize Select2 Referred By Student Autocomplete
+        $('.select2-referred-by-student').select2({
+            placeholder: 'Search Student by Name or ID',
+            allowClear: true,
+            ajax: {
+                url: "{% url 'api_search_students' %}",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.results
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 1
+        });
+
+        // Toggle logic between Reference Node and Student Referrer
+        $('#toggle-student-ref').on('change', function() {
+            if (this.checked) {
+                $('#reference-field-label').text('Referring Student');
+                $('#reference-node-select-container').addClass('d-none');
+                $('#referred-student-select-container').removeClass('d-none');
+                $('.select2-reference').val(null).trigger('change');
+            } else {
+                $('#reference-field-label').text('Reference Node');
+                $('#referred-student-select-container').addClass('d-none');
+                $('#reference-node-select-container').removeClass('d-none');
+                $('.select2-referred-by-student').val(null).trigger('change');
+            }
+        });
+
+        // Initialize toggle state if editing/prefilled
+        if ($('.select2-referred-by-student').val()) {
+            $('#toggle-student-ref').prop('checked', true).trigger('change');
+        }
 
         // Initialize tooltips
         $('[data-toggle="tooltip"]').tooltip();

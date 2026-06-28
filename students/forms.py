@@ -107,6 +107,7 @@ class StudentForm(forms.ModelForm):
             'waiver': forms.NumberInput(attrs={'class': 'form-control'}),
             'others': forms.NumberInput(attrs={'class': 'form-control'}),
             'reference': forms.Select(attrs={'class': 'form-control select2-reference'}),
+            'referred_by_student': forms.Select(attrs={'class': 'form-control select2-referred-by-student'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'mba_credits': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_non_residential': forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
@@ -203,6 +204,11 @@ class StudentForm(forms.ModelForm):
             self.fields['reference'].choices = [(self.instance.reference.id, str(self.instance.reference))]
         else:
             self.fields['reference'].choices = [('', 'Select Reference/Influence Node')]
+
+        if self.instance and self.instance.pk and self.instance.referred_by_student:
+            self.fields['referred_by_student'].choices = [(self.instance.referred_by_student.student_id, f"{self.instance.referred_by_student.student_name} ({self.instance.referred_by_student.student_id})")]
+        else:
+            self.fields['referred_by_student'].choices = [('', 'Select Referring Student')]
 
     def clean_student_id(self):
         student_id = self.cleaned_data.get('student_id')

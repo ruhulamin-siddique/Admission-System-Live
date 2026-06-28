@@ -1135,6 +1135,125 @@ class StudentDirectoryTests(TestCase):
         self.assertNotIn(student_auah, students)
         self.assertIn(student_btbh, students)
 
+    def test_api_search_students_endpoint(self):
+        # Search for students via API
+        response = self.client.get(reverse('api_search_students'), {'q': 'Student'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(len(data['results']) > 0)
+
+    def test_referred_by_student_saved_via_form(self):
+        from students.models import Student
+        from master_data.models import Batch, AdmissionYear, Hall
+        
+        # Ensure batch, year, and hall exist for form choices
+        year_obj, _ = AdmissionYear.objects.get_or_create(year=2026, is_active=True)
+        Batch.objects.get_or_create(name="26th", sort_order=26, admission_year=year_obj)
+        Hall.objects.get_or_create(short_name="AUAH", code="01")
+        
+        # Create a referrer student
+        referrer = Student.objects.create(
+            student_id="CSE2026010100102",
+            student_name="Referrer Student",
+            program="Computer Science and Engineering",
+            admission_year=2026,
+            batch="26th",
+            admission_status="Active"
+        )
+        
+        # Post to create a student with referred_by_student set
+        post_data = {
+            'student_name': 'Candidate Student',
+            'gender': 'Male',
+            'dob': '2005-01-01',
+            'blood_group': 'O+',
+            'religion': 'Islam',
+            'national_id': '1234567890',
+            'student_mobile': '01712345678',
+            'father_name': 'Father Name',
+            'mother_name': 'Mother Name',
+            'father_mobile': '01711111111',
+            'mother_mobile': '01722222222',
+            'program': 'Computer Science and Engineering',
+            'admission_year': 2026,
+            'semester_name': 'Spring',
+            'batch': '26th',
+            'hall_attached': 'AUAH',
+            'referred_by_student': referrer.student_id,
+            'admission_status': 'Active',
+        }
+        
+        response = self.client.post(reverse('add_student'), post_data)
+        self.assertEqual(response.status_code, 302)
+        
+        # Verify the candidate was created and linked to the referrer student
+        candidate = Student.objects.get(student_name='Candidate Student')
+        self.assertEqual(candidate.referred_by_student, referrer)
+
+    def test_combined_reference_report_and_dashboard_statistics(self):
+        from students.models import Student, ReferenceNode
+        from students.reports import get_reference_intelligence
+        
+        # 1. Create a ReferenceNode
+        emp_ref = ReferenceNode.objects.create(
+            name_en="Test Employee Referrer",
+            designation="Lecturer"
+        )
+        
+        # 2. Create a Student Referrer
+        stud_ref = Student.objects.create(
+            student_id="CSE202699999",
+            student_name="Test Student Referrer",
+            program="Computer Science and Engineering",
+            admission_year=2026,
+            batch="26th",
+            admission_status="Active"
+        )
+        
+        # 3. Create students referring to each
+        Student.objects.create(
+            student_id="CSE202600001",
+            student_name="Ref Candidate A",
+            reference=emp_ref,
+            batch="26th",
+            admission_status="Active"
+        )
+        Student.objects.create(
+            student_id="CSE202600002",
+            student_name="Ref Candidate B",
+            referred_by_student=stud_ref,
+            batch="26th",
+            admission_status="Active"
+        )
+        
+        # 4. Check get_reference_intelligence combining both
+        report_data = get_reference_intelligence()
+        refs = report_data['references']
+        
+        # Verify that both are present in the references list
+        names = [r['reference'] for r in refs]
+        self.assertIn("Test Employee Referrer", names)
+        self.assertIn("Test Student Referrer", names)
+        
+        # Verify columns designation and student_info
+        emp_item = next(r for r in refs if r['reference'] == "Test Employee Referrer")
+        self.assertEqual(emp_item['type'], 'Employee')
+        self.assertEqual(emp_item['designation'], 'Lecturer')
+        self.assertEqual(emp_item['student_info'], 'N/A')
+        
+        stud_item = next(r for r in refs if r['reference'] == "Test Student Referrer")
+        self.assertEqual(stud_item['type'], 'Student')
+        self.assertEqual(stud_item['designation'], 'N/A')
+        self.assertIn("CSE202699999", stud_item['student_info'])
+        
+        # 5. Check dashboard view top_references context
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        top_refs = response.context['stats']['top_references']
+        top_ref_names = [r['reference'] for r in top_refs]
+        self.assertIn("Test Employee Referrer", top_ref_names)
+        self.assertIn("[Student] Test Student Referrer", top_ref_names)
+
 
 class ReferenceNodeSystemTests(TestCase):
     def setUp(self):
@@ -1184,6 +1303,32 @@ class ReferenceNodeSystemTests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data['results']), 1)
+
+    def test_api_reference_link_count(self):
+        from students.models import ReferenceNode, Student
+
+        # Create a reference node with no students
+        ref = ReferenceNode.objects.create(name_en="Unlinked Ref", designation="Lecturer")
+
+        # 1. Count should be 0 when no students linked
+        response = self.client.get(reverse('api_reference_link_count', args=[ref.id]))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['linked_students'], 0)
+        self.assertEqual(data['name'], "Unlinked Ref")
+
+        # 2. Link two students and verify count
+        Student.objects.create(student_id="CSE202600900", student_name="Link A", reference=ref, admission_status="Active")
+        Student.objects.create(student_id="CSE202600901", student_name="Link B", reference=ref, admission_status="Active")
+
+        response = self.client.get(reverse('api_reference_link_count', args=[ref.id]))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['linked_students'], 2)
+
+        # 3. 404 for non-existent node
+        response = self.client.get(reverse('api_reference_link_count', args=[999999]))
+        self.assertEqual(response.status_code, 404)
 
     def test_reference_hub_spa_actions(self):
         from students.models import ReferenceNode
@@ -1238,6 +1383,137 @@ class ReferenceNodeSystemTests(TestCase):
         response = self.client.get(reverse('reference_manage'), {'export': 'pdf'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
+
+    def test_merge_reference_nodes(self):
+        from students.models import ReferenceNode, Student
+        
+        # Create source and target reference nodes
+        source = ReferenceNode.objects.create(name_en="Ruhulamin", designation="Lecturer", mobile="01711111111")
+        target = ReferenceNode.objects.create(name_en="Save Ruhul", designation="Assistant Professor", mobile="01722222222")
+        
+        # Create a student linked to source reference node
+        student = Student.objects.create(
+            student_id="CSE2026010100101",
+            student_name="Test Student",
+            program="Computer Science and Engineering",
+            admission_year=2026,
+            batch="26th",
+            admission_status="Active",
+            reference=source
+        )
+        
+        # Verify initial linkage
+        self.assertEqual(source.students.count(), 1)
+        self.assertEqual(target.students.count(), 0)
+        
+        # Post request to merge source into target
+        response = self.client.post(reverse('reference_manage'), {
+            'action': 'merge',
+            'source_id': source.id,
+            'target_id': target.id
+        }, HTTP_HX_REQUEST='true')
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Verify that source node is deleted and student is transferred to target
+        self.assertFalse(ReferenceNode.objects.filter(id=source.id).exists())
+        self.assertTrue(ReferenceNode.objects.filter(id=target.id).exists())
+        
+        student.refresh_from_db()
+        self.assertEqual(student.reference, target)
+        self.assertEqual(target.students.count(), 1)
+
+    def test_import_references_with_smart_matching(self):
+        from students.models import ReferenceNode
+        import io
+        import pandas as pd
+        
+        # Create an existing node
+        existing = ReferenceNode.objects.create(
+            name_en="Original Name", 
+            baust_id="BAUST-1001", 
+            mobile="01799999999", 
+            designation="Teacher"
+        )
+        
+        # Create an in-memory excel sheet
+        df = pd.DataFrame([
+            {
+                'English Name': 'Original Name', 
+                'BAUST ID': 'BAUST-1001',
+                'Bangla Name': 'বাংলা নাম',
+                'Designation': 'Updated Designation', 
+                'Mobile': '01799999999'
+            },
+            {
+                'English Name': 'Brand New Name', 
+                'BAUST ID': 'BAUST-2002',
+                'Bangla Name': '',
+                'Designation': 'New Designation',
+                'Mobile': '01788888888'
+            }
+        ])
+        
+        excel_file = io.BytesIO()
+        df.to_excel(excel_file, index=False)
+        excel_file.seek(0)
+        excel_file.name = "import_test.xlsx"
+        
+        # Call the import action
+        response = self.client.post(reverse('reference_manage'), {
+            'action': 'import',
+            'excel_file': excel_file
+        })
+        
+        self.assertEqual(response.status_code, 302) 
+        
+        # Verify that "Original Name" was updated rather than duplicated
+        self.assertEqual(ReferenceNode.objects.filter(name_en="Original Name").count(), 1)
+        existing.refresh_from_db()
+        self.assertEqual(existing.designation, "Updated Designation")
+        self.assertEqual(existing.name_bn, "বাংলা নাম")
+        
+        # Verify that "Brand New Name" was created
+        self.assertTrue(ReferenceNode.objects.filter(name_en="Brand New Name").exists())
+
+    def test_reference_node_category_handling(self):
+        from students.models import ReferenceNode
+        
+        # 1. Test create with default Employee category via POST
+        post_data = {
+            'action': 'create',
+            'name_en': 'Post Employee Ref',
+            'designation': 'Lecturer',
+            'category': 'Employee'
+        }
+        response = self.client.post(reverse('reference_manage'), post_data)
+        self.assertEqual(response.status_code, 200)
+        node = ReferenceNode.objects.get(name_en='Post Employee Ref')
+        self.assertEqual(node.category, 'Employee')
+        
+        # 2. Test create with External category via POST
+        post_data = {
+            'action': 'create',
+            'name_en': 'Post External Ref',
+            'designation': 'Sponsor',
+            'category': 'External'
+        }
+        response = self.client.post(reverse('reference_manage'), post_data)
+        self.assertEqual(response.status_code, 200)
+        node2 = ReferenceNode.objects.get(name_en='Post External Ref')
+        self.assertEqual(node2.category, 'External')
+        
+        # 3. Test update category via POST
+        update_data = {
+            'action': 'update',
+            'id': node2.id,
+            'name_en': 'Post External Ref',
+            'category': 'Employee'
+        }
+        response = self.client.post(reverse('reference_manage'), update_data)
+        self.assertEqual(response.status_code, 200)
+        node2.refresh_from_db()
+        self.assertEqual(node2.category, 'Employee')
 
 
 

@@ -272,12 +272,15 @@
             <h2 class="font-weight-black mb-1"><i class="fas fa-network-wired mr-2"></i> Reference & Influence Hub</h2>
             <p class="mb-0 opacity-75 small">Centralized register of referrers, university staff connect points, and candidate student enrollment influencers.</p>
         </div>
-        <div class="mt-3 mt-md-0 d-flex flex-wrap gap-2" style="gap: 8px;">
-            <button type="button" class="btn btn-success font-weight-bold px-4 rounded-pill shadow-sm" data-toggle="modal" data-target="#uploadExcelModal">
-                <i class="fas fa-file-excel mr-2"></i> Import Excel
+        <div class="mt-3 mt-md-0 btn-group shadow-sm" style="border-radius: 50px; overflow: hidden;">
+            <button type="button" class="btn btn-warning btn-action-hover rounded-left text-dark font-weight-bold px-3 py-2" data-toggle="modal" data-target="#mergeRefsModal" title="Merge Nodes">
+                <i class="fas fa-object-group"></i><span class="hover-text">Merge Nodes</span>
             </button>
-            <button type="button" class="btn btn-primary font-weight-bold px-4 rounded-pill shadow-sm" data-toggle="modal" data-target="#addRefModal">
-                <i class="fas fa-plus-circle mr-2"></i> Add Reference
+            <button type="button" class="btn btn-success btn-action-hover font-weight-bold px-3 py-2" data-toggle="modal" data-target="#uploadExcelModal" title="Import Excel">
+                <i class="fas fa-file-excel"></i><span class="hover-text">Import Excel</span>
+            </button>
+            <button type="button" class="btn btn-primary btn-action-hover rounded-right font-weight-bold px-3 py-2" data-toggle="modal" data-target="#addRefModal" title="Add Reference">
+                <i class="fas fa-plus-circle"></i><span class="hover-text">Add Reference</span>
             </button>
         </div>
     </div>
@@ -330,8 +333,8 @@
                 <tr>
                     <th style="width: 130px;">Ref ID</th>
                     <th style="width: 140px;">BAUST ID</th>
-                    <th>Name (English)</th>
-                    <th>Name (Bangla)</th>
+                    <th style="width: 120px;">Category</th>
+                    <th>Referrer Name</th>
                     <th>Designation</th>
                     <th style="width: 180px;">Mobile</th>
                     <th class="text-right" style="width: 180px;">Actions</th>
@@ -378,6 +381,14 @@
                     <div class="floating-modal-field">
                         <label>BAUST ID (Optional)</label>
                         <input type="text" name="baust_id" class="form-control" placeholder="e.g. 210101001">
+                    </div>
+
+                    <div class="floating-modal-field">
+                        <label>Category <span class="text-danger">*</span></label>
+                        <select name="category" class="form-control" required>
+                            <option value="Employee" selected>Employee</option>
+                            <option value="External">External</option>
+                        </select>
                     </div>
 
                     <div class="floating-modal-field">
@@ -432,6 +443,14 @@
                     <div class="floating-modal-field">
                         <label>BAUST ID (Optional)</label>
                         <input type="text" name="baust_id" id="edit-baust-id" class="form-control" placeholder="e.g. 210101001">
+                    </div>
+
+                    <div class="floating-modal-field">
+                        <label>Category <span class="text-danger">*</span></label>
+                        <select name="category" id="edit-category" class="form-control" required>
+                            <option value="Employee">Employee</option>
+                            <option value="External">External</option>
+                        </select>
                     </div>
 
                     <div class="floating-modal-field">
@@ -508,6 +527,58 @@
     </div>
 </div>
 
+<!-- MERGE REFERENCE NODES MODAL -->
+<div class="modal fade" id="mergeRefsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 overflow-hidden" style="border-radius: 12px;">
+            <div class="modal-premium-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title font-weight-black mb-0"><i class="fas fa-object-group mr-2"></i> Merge Reference Nodes</h5>
+                <button type="button" class="close text-white opacity-75" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="mergeRefsForm" hx-post="{% url 'reference_manage' %}" hx-target="#reference-table-body" hx-swap="innerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="merge">
+                
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Merge a duplicate reference node into a master reference node. All students linked to the duplicate node will be transferred to the master node, and the duplicate node will be permanently deleted.</p>
+                    
+                    <div class="floating-modal-field">
+                        <label>Duplicate Node (To Delete) <span class="text-danger">*</span></label>
+                        <select name="source_id" id="merge-source-id" class="form-control text-dark bg-white" required style="height: auto !important; padding: 0.65rem 1rem !important;">
+                            <option value="" class="text-muted">-- Select Duplicate Reference --</option>
+                            {% for ref in all_references %}
+                                <option value="{{ ref.id }}">{{ ref.name_en }} ({% if ref.baust_id %}{{ ref.baust_id }}, {% endif %}{{ ref.reference_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="floating-modal-field mt-4">
+                        <label>Master Node (To Keep) <span class="text-danger">*</span></label>
+                        <select name="target_id" id="merge-target-id" class="form-control text-dark bg-white" required style="height: auto !important; padding: 0.65rem 1rem !important;">
+                            <option value="" class="text-muted">-- Select Master Reference --</option>
+                            {% for ref in all_references %}
+                                <option value="{{ ref.id }}">{{ ref.name_en }} ({% if ref.baust_id %}{{ ref.baust_id }}, {% endif %}{{ ref.reference_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-warning small mb-0 mt-3" style="border-radius: 8px;">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> <strong>Important:</strong> This action is irreversible. Double-check that you are merging the correct nodes.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary px-4 rounded-pill font-weight-bold" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark px-5 rounded-pill font-weight-bold shadow-sm">
+                        Execute Merge
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -564,15 +635,31 @@
                 showConfirmButton: false
             });
         });
+
+        document.body.addEventListener('referenceMerged', function(evt) {
+            const data = evt.detail;
+            Swal.fire({
+                icon: 'success',
+                title: 'Merged Successfully!',
+                html: `Successfully merged <strong>${data.source}</strong> into <strong>${data.target}</strong>.<br>Transferred <strong>${data.count}</strong> student links.`,
+                confirmButtonColor: '#3085d6',
+            });
+            $('#mergeRefsModal').modal('hide');
+            $('#mergeRefsForm')[0].reset();
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        });
     });
 
     // Populate and open edit reference dialog
-    function openEditModal(pk, refId, baustId, nameEn, nameBn, designation, mobile) {
+    function openEditModal(pk, refId, baustId, nameEn, nameBn, designation, mobile, category) {
         document.getElementById('edit-node-pk').value = pk;
         document.getElementById('edit-ref-display-id').innerText = refId;
         document.getElementById('edit-name-en').value = nameEn;
         document.getElementById('edit-name-bn').value = nameBn;
         document.getElementById('edit-baust-id').value = baustId;
+        document.getElementById('edit-category').value = category || 'Employee';
         document.getElementById('edit-designation').value = designation;
         document.getElementById('edit-mobile').value = mobile;
         
@@ -591,28 +678,72 @@
         }
     }
 
-    // Trigger sweetalert delete confirm prompt before firing HTMX delete POST
-    function confirmDeleteNode(pk, nodeName) {
+    // Smart delete confirmation — fetches linked student count first
+    async function confirmDeleteNode(pk, nodeName) {
+        // Show a loading indicator while fetching
+        Swal.fire({
+            title: 'Checking...',
+            text: 'Fetching linked student data...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        let linkedCount = 0;
+        try {
+            const resp = await fetch(`/api/reference-link-count/${pk}/`);
+            const data = await resp.json();
+            linkedCount = data.linked_students || 0;
+        } catch(e) {
+            linkedCount = 0;
+        }
+
+        // Build dialog content based on linked count
+        let icon = 'warning';
+        let titleText = `Delete <strong>${nodeName}</strong>?`;
+        let bodyHtml = '';
+
+        if (linkedCount > 0) {
+            bodyHtml = `
+                <div class="text-left mt-2">
+                    <div class="alert alert-warning border-0 rounded-lg py-2 px-3 mb-3" style="background: #fff8e1;">
+                        <i class="fas fa-exclamation-triangle text-warning mr-1"></i>
+                        <strong>${linkedCount} student${linkedCount > 1 ? 's are' : ' is'} currently linked</strong> to this reference node.
+                        <br><small class="text-muted">Deleting will set their reference field to <em>None</em>. Their records will not be deleted.</small>
+                    </div>
+                    <div class="alert alert-info border-0 rounded-lg py-2 px-3" style="background: #e8f4fd;">
+                        <i class="fas fa-lightbulb text-info mr-1"></i>
+                        <strong>Tip:</strong> Consider using <strong>Merge Nodes</strong> instead to transfer all ${linkedCount} student${linkedCount > 1 ? 's' : ''} to another reference before deleting.
+                    </div>
+                </div>`;
+        } else {
+            bodyHtml = `<p class="text-muted">No students are currently linked to this node. Safe to delete.</p>`;
+            icon = 'question';
+        }
+
         Swal.fire({
             title: 'Delete Reference?',
-            html: `Are you sure you want to delete <strong>${nodeName}</strong>?<br><span class="text-danger small"><i class="fas fa-exclamation-triangle"></i> This might leave linked students without references!</span>`,
-            icon: 'warning',
+            html: titleText + bodyHtml,
+            icon: icon,
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            cancelButtonColor: linkedCount > 0 ? '#3085d6' : '#6c757d',
+            confirmButtonText: linkedCount > 0
+                ? `<i class="fas fa-trash-alt mr-1"></i> Delete anyway (${linkedCount} student${linkedCount > 1 ? 's' : ''} will lose reference)`
+                : `<i class="fas fa-trash-alt mr-1"></i> Yes, delete it`,
+            cancelButtonText: linkedCount > 0 ? '<i class="fas fa-object-group mr-1"></i> Cancel (use Merge instead)' : 'Cancel',
+            customClass: { popup: 'rounded-lg', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-primary' },
+            buttonsStyling: true,
+            width: linkedCount > 0 ? '520px' : '400px'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Execute HTMX call programmatically
                 htmx.ajax('POST', "{% url 'reference_manage' %}", {
-                    values: {
-                        action: 'delete',
-                        id: pk
-                    },
+                    values: { action: 'delete', id: pk },
                     target: '#reference-table-body',
                     swap: 'innerHTML'
                 });
+            } else if (linkedCount > 0) {
+                // Guide user to merge modal
+                $('#mergeRefsModal').modal('show');
             }
         });
     }

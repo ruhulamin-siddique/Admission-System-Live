@@ -9,6 +9,11 @@ class ReferenceNode(models.Model):
     name_bn = models.CharField(max_length=255, blank=True, null=True)
     designation = models.CharField(max_length=255, blank=True, null=True)
     mobile = models.CharField(max_length=20, blank=True, null=True)
+    category = models.CharField(
+        max_length=20, 
+        choices=[('Employee', 'Employee'), ('External', 'External')], 
+        default='Employee'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
@@ -121,6 +126,7 @@ class Student(models.Model):
     # Miscellaneous Flags
     reference_legacy = models.CharField(max_length=255, null=True, blank=True)
     reference = models.ForeignKey(ReferenceNode, on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
+    referred_by_student = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_students', help_text="Referrer if they are an existing student")
     remarks = models.TextField(null=True, blank=True)
     is_temp_admission_cancel = models.BooleanField(default=False)
     is_credit_transfer = models.BooleanField(default=False)

@@ -228,7 +228,7 @@ def get_subject_performance(year=None, program=None, batch=None):
     }
 
 def get_reference_intelligence(year=None, program=None, batch=None):
-    """Analyzes recruitment references and sources."""
+    """Analyzes recruitment references and sources, combining employee and student referrers."""
     queryset = Student.objects.all()
     if batch:
         queryset = queryset.filter(batch=batch)
@@ -238,10 +238,54 @@ def get_reference_intelligence(year=None, program=None, batch=None):
     if program:
         queryset = queryset.filter(program=program)
 
-    refs = queryset.values('reference').annotate(count=Count('student_id')).exclude(reference='').order_by('-count')
+    from django.db.models import F
+
+    # 1. Fetch Employee Referrals (ReferenceNode)
+    employee_qs = queryset.exclude(reference__isnull=True).values(
+        ref_id=F('reference__id'),
+        name=F('reference__name_en'),
+        designation=F('reference__designation')
+    ).annotate(count=Count('student_id'))
+
+    employee_list = []
+    for item in employee_qs:
+        employee_list.append({
+            'reference': item['name'],
+            'type': 'Employee',
+            'designation': item['designation'] or 'N/A',
+            'student_info': 'N/A',
+            'count': item['count']
+        })
+
+    # 2. Fetch Student Referrals (referred_by_student)
+    student_qs = queryset.exclude(referred_by_student__isnull=True).values(
+        ref_id=F('referred_by_student__student_id'),
+        name=F('referred_by_student__student_name'),
+        program_name=F('referred_by_student__program'),
+        batch_name=F('referred_by_student__batch')
+    ).annotate(count=Count('student_id'))
+
+    student_list = []
+    for item in student_qs:
+        student_info = f"ID: {item['ref_id']} - {item['program_name'] or 'No Dept'} ({item['batch_name'] or 'Unknown'})"
+        student_list.append({
+            'reference': item['name'],
+            'type': 'Student',
+            'designation': 'N/A',
+            'student_info': student_info,
+            'count': item['count']
+        })
+
+    # 3. Combine and sort
+    combined = employee_list + student_list
+    combined.sort(key=lambda x: x['count'], reverse=True)
+
+    # Compute total referrals count
+    total_referrals = sum(item['count'] for item in combined)
+
     return {
-        'references': list(refs),
-        'total': queryset.count()
+        'references': combined,
+        'total': total_referrals or 1
     }
 
 def get_financial_intelligence(year=None, program=None, batch=None):

@@ -11,10 +11,13 @@
         {% endif %}
     </td>
     <td>
-        <div class="font-weight-bold text-dark">{{ ref.name_en }}</div>
+        <span class="badge {% if ref.category == 'Employee' %}badge-info{% else %}badge-warning{% endif %} px-2 py-1 rounded">{{ ref.category|default:"Employee" }}</span>
     </td>
-    <td class="bangla-font text-dark">
-        {{ ref.name_bn|default:"-" }}
+    <td>
+        <div class="font-weight-bold text-dark">{{ ref.name_en }}</div>
+        {% if ref.name_bn %}
+            <div class="bangla-font text-muted small mt-1" style="font-size: 0.8rem;">{{ ref.name_bn }}</div>
+        {% endif %}
     </td>
     <td>
         {% if ref.designation %}
@@ -35,7 +38,7 @@
             <button class="btn btn-sm btn-outline-primary btn-action-hover rounded-left" 
                     type="button" 
                     title="Edit Reference Node"
-                    onclick="openEditModal('{{ ref.id }}', '{{ ref.reference_id|escapejs }}', '{{ ref.baust_id|default:""|escapejs }}', '{{ ref.name_en|escapejs }}', '{{ ref.name_bn|default:""|escapejs }}', '{{ ref.designation|default:""|escapejs }}', '{{ ref.mobile|default:""|escapejs }}')">
+                    onclick="openEditModal('{{ ref.id }}', '{{ ref.reference_id|escapejs }}', '{{ ref.baust_id|default:""|escapejs }}', '{{ ref.name_en|escapejs }}', '{{ ref.name_bn|default:""|escapejs }}', '{{ ref.designation|default:""|escapejs }}', '{{ ref.mobile|default:""|escapejs }}', '{{ ref.category|default:"Employee"|escapejs }}')">
                 <i class="fas fa-edit"></i><span class="hover-text">Edit</span>
             </button>
             <button class="btn btn-sm btn-outline-danger btn-action-hover rounded-right" 
