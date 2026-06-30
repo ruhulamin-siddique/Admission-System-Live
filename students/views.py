@@ -20,10 +20,18 @@ from .models import Student, ProgramChangeHistory, SMSHistory, AdmissionStatusHi
 from .geo_data import BANGLADESH_GEO
 from .utils import (
     generate_next_ugc_id,
-    generate_ugc_prefix, 
-    decompose_ugc_id, 
-    import_students_from_excel, 
-    execute_program_change_web
+    generate_ugc_prefix,
+    decompose_ugc_id,
+    import_students_from_excel,
+    execute_program_change_web,
+    patch_academic_data_from_excel,
+    SSC_FIELDS,
+    HSC_FIELDS,
+    ALL_ACADEMIC_FIELDS,
+    FIELD_LABELS,
+    FIELD_PRESETS,
+    get_academic_patch_fields,
+    derive_field_groups,
 )
 import json
 import os
@@ -4879,3 +4887,182 @@ def api_reference_students(request):
         'students': queryset,
         'referrer_type': ref_type
     })
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Academic Data Patch Views
+# ──────────────────────────────────────────────────────────────────────────────
+
+@require_access('students', 'patch_academic_data')
+def academic_data_patch(request):
+    """
+    Hub view for the Targeted Academic Data Patch feature.
+    Supports three modes:
+      GET              → Render the configuration form.
+      POST action=preview → Dry-run parse, return HTMX diff preview partial.
+      POST action=commit  → Execute the actual bulk_update and return report partial.
+    """
+    from master_data.models import Batch
+    batches = Batch.objects.all().order_by('name')
+    programs = Program.objects.all().order_by('name')
+
+    if request.method == 'GET':
+        import json as _json
+        return render(request, 'students/academic_patch.html', {
+            'batches': batches,
+            'programs': programs,
+            'ssc_fields': SSC_FIELDS,
+            'hsc_fields': HSC_FIELDS,
+            'all_fields': ALL_ACADEMIC_FIELDS,
+            'field_labels': FIELD_LABELS,
+            'field_labels_json': _json.dumps(FIELD_LABELS),
+            'presets': FIELD_PRESETS,
+        })
+
+    # ── Common POST setup ──────────────────────────────────────────────────
+    batch_name = request.POST.get('batch', '').strip()
+    program_name = request.POST.get('program', '').strip()
+
+    # Collect selected fields from checkboxes (name="patch_fields")
+    selected_fields = request.POST.getlist('patch_fields')
+    # Filter to only valid academic field names (security)
+    selected_fields = [f for f in selected_fields if f in ALL_ACADEMIC_FIELDS]
+
+    if not selected_fields:
+        return HttpResponse(
+            "<div class='alert alert-danger mt-3'>"
+            "<i class='fas fa-exclamation-triangle mr-2'></i>"
+            "Please select at least one field to patch."
+            "</div>"
+        )
+
+    scope_qs = Student.objects.all()
+    if batch_name:
+        scope_qs = scope_qs.filter(batch=batch_name)
+    if program_name:
+        scope_qs = scope_qs.filter(program=program_name)
+
+    action = request.POST.get('action', 'preview')
+
+    if action == 'preview':
+        if not request.FILES.get('excel_file'):
+            return HttpResponse("<div class='alert alert-danger'>Please select an Excel file.</div>")
+
+        result = patch_academic_data_from_excel(
+            file_obj=request.FILES['excel_file'],
+            selected_fields=selected_fields,
+            scope_queryset=scope_qs,
+            dry_run=True,
+            changed_by_user=request.user,
+        )
+        if not result['success']:
+            return HttpResponse(f"<div class='alert alert-danger mt-3'><strong>Error:</strong> {escape(result['error'])}</div>")
+
+        return render(request, 'students/partials/academic_patch_preview.html', {
+            'result': result,
+            'batch_name': batch_name,
+            'program_name': program_name,
+            'selected_fields': selected_fields,
+        })
+
+    elif action == 'commit':
+        if not request.FILES.get('excel_file'):
+            return HttpResponse("<div class='alert alert-danger'>Please re-upload the Excel file to confirm.</div>")
+
+        result = patch_academic_data_from_excel(
+            file_obj=request.FILES['excel_file'],
+            selected_fields=selected_fields,
+            scope_queryset=scope_qs,
+            dry_run=False,
+            changed_by_user=request.user,
+        )
+
+        if result.get('success') and result.get('updated_count', 0) > 0:
+            from core.models import ActivityLog
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR', None)
+            ActivityLog.objects.create(
+                user=request.user,
+                action_type='UPDATE',
+                module='students',
+                object_id='batch_patch',
+                description=(
+                    f"Academic Data Patch: {result['updated_count']} students updated. "
+                    f"Fields: {', '.join(result.get('fields_patched', selected_fields))}. "
+                    f"Batch: '{batch_name or 'All'}', Program: '{program_name or 'All'}'"
+                ),
+                ip_address=ip
+            )
+
+        return render(request, 'students/partials/academic_patch_report.html', {
+            'result': result,
+            'batch_name': batch_name,
+            'program_name': program_name,
+            'selected_fields': selected_fields,
+        })
+
+    return redirect('academic_data_patch')
+
+
+@require_access('students', 'patch_academic_data')
+def download_academic_patch_template(request):
+    """
+    Generates a pre-filled Excel template for the Academic Data Patch.
+    Query params:
+      fields  : comma-separated list of field names to include (e.g. ssc_board,ssc_year,ssc_roll,ssc_reg)
+      batch   : batch name filter (optional)
+      program : program name filter (optional)
+    """
+    import pandas as pd
+
+    batch_name = request.GET.get('batch', '').strip()
+    program_name = request.GET.get('program', '').strip()
+
+    # Accept either comma-sep 'fields' param or multiple 'fields' GET params
+    raw_fields = request.GET.get('fields', '')
+    if raw_fields:
+        patch_fields = [f.strip() for f in raw_fields.split(',') if f.strip()]
+    else:
+        patch_fields = request.GET.getlist('fields')
+
+    # Validate and preserve order
+    patch_fields = [f for f in patch_fields if f in ALL_ACADEMIC_FIELDS]
+    if not patch_fields:
+        # Fallback to SSC board IDs
+        patch_fields = ['ssc_board', 'ssc_year', 'ssc_roll', 'ssc_reg']
+
+    export_columns = ['student_id', 'student_name'] + patch_fields
+
+    qs = Student.objects.all()
+    if batch_name:
+        qs = qs.filter(batch=batch_name)
+    if program_name:
+        qs = qs.filter(program=program_name)
+    qs = qs.order_by('student_id')
+
+    data = []
+    for s in qs:
+        row = {}
+        for col in export_columns:
+            row[col] = getattr(s, col, None)
+        data.append(row)
+
+    df = pd.DataFrame(data, columns=export_columns)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Academic Patch')
+
+    scope_label = ''
+    if batch_name:
+        scope_label += f'_Batch_{batch_name.replace(" ", "_")}'
+    if program_name:
+        scope_label += f'_{program_name.replace(" ", "_")}'
+
+    fields_label = '_'.join(patch_fields[:3])  # cap label length
+    filename = f'Academic_Patch_{fields_label}{scope_label}.xlsx'
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

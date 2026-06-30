@@ -1,0 +1,165 @@
+{% comment %}
+  HTMX partial — returned by academic_data_patch (action=commit, dry_run=False).
+  Shows final result report after the patch has been applied.
+{% endcomment %}
+
+{% if not result.success %}
+<div class="alert alert-danger mt-3 rounded-lg shadow-sm">
+    <i class="fas fa-exclamation-triangle mr-2"></i>
+    <strong>Patch Failed:</strong> {{ result.error }}
+</div>
+
+{% else %}
+
+<!-- Success Banner -->
+<div class="alert {% if result.updated_count > 0 %}alert-success{% else %}alert-warning{% endif %} rounded-lg shadow-sm mt-3 p-4">
+    <div class="d-flex align-items-center">
+        {% if result.updated_count > 0 %}
+        <i class="fas fa-check-circle fa-2x text-success mr-3"></i>
+        <div>
+            <h5 class="font-weight-bold mb-1">Patch Applied Successfully</h5>
+            <p class="mb-0">
+                <strong>{{ result.updated_count }}</strong> student record(s) updated &mdash;
+                fields: <code>{{ result.fields_patched|join:", " }}</code>
+            </p>
+        </div>
+        {% else %}
+        <i class="fas fa-exclamation-circle fa-2x text-warning mr-3"></i>
+        <div>
+            <h5 class="font-weight-bold mb-1">No Records Updated</h5>
+            <p class="mb-0">Check that the uploaded file has matching student IDs within the selected scope, and that at least one field value is non-blank.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row mb-4 g-2">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-lg text-center py-3 px-2 h-100"
+             style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
+            <div class="h3 font-weight-bold text-success mb-0">{{ result.updated_count }}</div>
+            <small class="text-muted">Updated</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-lg text-center py-3 px-2 h-100"
+             style="background:linear-gradient(135deg,#fefce8,#fef9c3);">
+            <div class="h3 font-weight-bold text-warning mb-0">{{ result.skipped_blank|length }}</div>
+            <small class="text-muted">Skipped (Blank)</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-lg text-center py-3 px-2 h-100"
+             style="background:linear-gradient(135deg,#fff7ed,#ffedd5);">
+            <div class="h3 font-weight-bold text-warning mb-0">{{ result.not_in_scope|length }}</div>
+            <small class="text-muted">Out of Scope</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-lg text-center py-3 px-2 h-100"
+             style="background:linear-gradient(135deg,#fef2f2,#fee2e2);">
+            <div class="h3 font-weight-bold text-danger mb-0">{{ result.not_found|length }}</div>
+            <small class="text-muted">IDs Not Found</small>
+        </div>
+    </div>
+</div>
+
+<!-- Info Line -->
+<p class="text-muted small mb-3">
+    <i class="fas fa-info-circle mr-1"></i>
+    Scope applied &mdash; Batch: <strong>{{ batch_name|default:"All" }}</strong> &nbsp;|&nbsp;
+    Program: <strong>{{ program_name|default:"All" }}</strong> &nbsp;|&nbsp;
+    Field Group: <strong>{{ field_group|upper }}</strong>
+</p>
+
+{% if result.updated_count > 0 %}
+<!-- Updated Students Summary -->
+<div class="card border-0 shadow-sm rounded-lg mb-3">
+    <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-2">
+        <span class="font-weight-bold small"><i class="fas fa-check mr-1 text-success"></i> Updated Students</span>
+        <span class="badge badge-success badge-pill">{{ result.preview_rows|length }}</span>
+    </div>
+    <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
+        <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead class="thead-light sticky-top">
+                <tr>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Changed Fields</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in result.preview_rows %}
+                <tr>
+                    <td class="font-weight-bold text-monospace">{{ row.student_id }}</td>
+                    <td>{{ row.student_name }}</td>
+                    <td>
+                        {% for diff in row.diffs %}
+                        {% if diff.changed %}
+                        <span class="badge badge-light border mr-1 mb-1 text-monospace small"
+                              title="{{ diff.field }}: {{ diff.old }} → {{ diff.new }}">
+                            {{ diff.field }}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if result.errors %}
+<div class="alert alert-warning small rounded-lg mb-3">
+    <strong>{{ result.errors|length }} row error(s) during processing:</strong>
+    <ul class="mb-0 mt-1">
+        {% for e in result.errors|slice:":15" %}
+        <li>{{ e }}</li>
+        {% endfor %}
+        {% if result.errors|length > 15 %}
+        <li>… and {{ result.errors|length|add:"-15" }} more.</li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+
+{% if result.not_in_scope or result.not_found or result.skipped_blank %}
+<div class="small text-muted">
+    {% if result.skipped_blank %}
+    <p class="mb-1">
+        <i class="fas fa-minus-circle text-secondary mr-1"></i>
+        <strong>Skipped (all fields blank):</strong>
+        {{ result.skipped_blank|slice:":8"|join:", " }}{% if result.skipped_blank|length > 8 %} …{% endif %}
+    </p>
+    {% endif %}
+    {% if result.not_in_scope %}
+    <p class="mb-1">
+        <i class="fas fa-ban text-warning mr-1"></i>
+        <strong>Out of scope:</strong>
+        {{ result.not_in_scope|slice:":8"|join:", " }}{% if result.not_in_scope|length > 8 %} …{% endif %}
+    </p>
+    {% endif %}
+    {% if result.not_found %}
+    <p class="mb-1">
+        <i class="fas fa-question-circle text-danger mr-1"></i>
+        <strong>Not in database:</strong>
+        {{ result.not_found|slice:":8"|join:", " }}{% if result.not_found|length > 8 %} …{% endif %}
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Action Buttons -->
+<div class="mt-4 pt-3 border-top d-flex align-items-center">
+    <a href="{% url 'academic_data_patch' %}" class="btn btn-outline-secondary rounded-pill px-4 mr-3">
+        <i class="fas fa-redo mr-2"></i> Run Another Patch
+    </a>
+    <a href="{% url 'student_list' %}" class="btn btn-link text-muted">
+        Back to Student Directory
+    </a>
+</div>
+
+{% endif %}{# end result.success #}

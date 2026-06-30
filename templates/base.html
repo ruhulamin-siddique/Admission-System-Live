@@ -457,10 +457,11 @@
           {% has_access 'students' 'data_integrity' as can_scan %}
           {% has_access 'students' 'academic_audit' as can_audit %}
           {% has_access 'students' 'mobile_repair' as can_repair %}
+          {% has_access 'students' 'patch_academic_data' as can_patch %}
 
-          {% if can_import or can_scan or can_audit or can_repair %}
-          <li class="nav-item {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' %}menu-open{% endif %}">
-            <a href="#" class="nav-link {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' %}active{% endif %}">
+          {% if can_import or can_scan or can_audit or can_repair or can_patch %}
+          <li class="nav-item {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' or request.resolver_match.url_name == 'academic_data_patch' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' or request.resolver_match.url_name == 'academic_data_patch' %}active{% endif %}">
               <i class="nav-icon fas fa-toolbox"></i>
               <p>
                 Administrative Tools
@@ -497,6 +498,14 @@
                 <a href="{% url 'academic_audit_center' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_audit_center' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Academic Audit</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_patch %}
+              <li class="nav-item">
+                <a href="{% url 'academic_data_patch' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_data_patch' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Academic Data Patch</p>
                 </a>
               </li>
               {% endif %}

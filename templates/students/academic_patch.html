@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+{% load i18n core_tags %}
+
+{% block title %}Academic Data Patch | BAUST{% endblock %}
+{% block page_title %}Academic Data Patch{% endblock %}
+
+{% block content %}
+<div class="row pt-4">
+    <div class="col-md-10 offset-md-1">
+
+        <!-- Header Banner -->
+        <div class="d-flex align-items-center mb-4">
+            <div class="rounded-circle p-3 mr-3 shadow-sm" style="background: linear-gradient(135deg,#f0fdf4,#dcfce7);">
+                <i class="fas fa-flask text-success fa-lg"></i>
+            </div>
+            <div>
+                <h5 class="mb-0 font-weight-bold">Targeted Academic Data Patch</h5>
+                <p class="text-muted mb-0 small">Surgically update selected SSC / HSC fields for a specific batch or program via Excel — without touching any other student data.</p>
+            </div>
+        </div>
+
+        <div class="card shadow-lg border-0 rounded-lg overflow-hidden">
+            <div class="card-body p-4">
+
+                <!-- ─── STEP 1 — Configure Scope ─── -->
+                <div class="step-block mb-4 pb-4 border-bottom">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="step-badge bg-success text-white rounded-circle d-flex align-items-center justify-content-center mr-3 shadow-sm"
+                              style="width:36px;height:36px;font-size:16px;font-weight:700;flex-shrink:0;">1</span>
+                        <div>
+                            <h6 class="mb-0 font-weight-bold">Configure Scope &amp; Fields</h6>
+                            <small class="text-muted">Select which students and exactly which fields to patch.</small>
+                        </div>
+                    </div>
+
+                    <!-- Scope Row -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-group mb-0">
+                                <label class="font-weight-600 small" for="batch-select">
+                                    <i class="fas fa-layer-group text-info mr-1"></i> Batch Filter
+                                </label>
+                                <select id="batch-select" class="form-control shadow-sm">
+                                    <option value="">— All Batches —</option>
+                                    {% for b in batches %}
+                                    <option value="{{ b.name }}">{{ b.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-0">
+                                <label class="font-weight-600 small" for="program-select">
+                                    <i class="fas fa-graduation-cap text-warning mr-1"></i> Program Filter
+                                </label>
+                                <select id="program-select" class="form-control shadow-sm">
+                                    <option value="">— All Programs —</option>
+                                    {% for p in programs %}
+                                    <option value="{{ p.short_name|default:p.name }}">{{ p.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick-Select Presets -->
+                    <div class="mb-3">
+                        <p class="small font-weight-600 text-muted mb-2">
+                            <i class="fas fa-bolt mr-1 text-warning"></i> Quick Presets:
+                        </p>
+                        <div class="d-flex flex-wrap gap-2" id="preset-buttons">
+                            {% for preset_id, preset_label, preset_icon, preset_fields in presets %}
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-1 preset-btn"
+                                    data-preset-id="{{ preset_id }}"
+                                    data-preset-fields="{{ preset_fields|join:',' }}">
+                                <i class="fas {{ preset_icon }} mr-1"></i>{{ preset_label }}
+                            </button>
+                            {% endfor %}
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger rounded-pill px-3 mb-1"
+                                    id="clear-all-btn">
+                                <i class="fas fa-times mr-1"></i>Clear All
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Individual Field Checkboxes -->
+                    <div class="row">
+                        <!-- SSC Fields -->
+                        <div class="col-md-6 mb-2">
+                            <div class="card border rounded" style="background:#f8fffe;">
+                                <div class="card-header py-2 d-flex align-items-center justify-content-between"
+                                     style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-bottom:1px solid #bbf7d0;">
+                                    <span class="font-weight-bold small text-success">
+                                        <i class="fas fa-school mr-1"></i> SSC Fields
+                                    </span>
+                                    <div>
+                                        <button type="button" class="btn btn-xs btn-link text-success p-0 mr-2 select-group-btn" data-group="ssc">All</button>
+                                        <button type="button" class="btn btn-xs btn-link text-muted p-0 deselect-group-btn" data-group="ssc">None</button>
+                                    </div>
+                                </div>
+                                <div class="card-body py-2 px-3">
+                                    {% for f in ssc_fields %}
+                                    <div class="custom-control custom-checkbox mb-1">
+                                        <input type="checkbox" class="custom-control-input field-checkbox ssc-field"
+                                               id="field-{{ f }}" name="patch_fields" value="{{ f }}"
+                                               data-group="ssc">
+                                        <label class="custom-control-label small" for="field-{{ f }}">
+                                            <span class="font-weight-500">{{ field_labels|get_item:f }}</span>
+                                            <span class="text-monospace text-muted small ml-1">({{ f }})</span>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HSC Fields -->
+                        <div class="col-md-6 mb-2">
+                            <div class="card border rounded" style="background:#f8f9ff;">
+                                <div class="card-header py-2 d-flex align-items-center justify-content-between"
+                                     style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe;">
+                                    <span class="font-weight-bold small text-primary">
+                                        <i class="fas fa-university mr-1"></i> HSC Fields
+                                    </span>
+                                    <div>
+                                        <button type="button" class="btn btn-xs btn-link text-primary p-0 mr-2 select-group-btn" data-group="hsc">All</button>
+                                        <button type="button" class="btn btn-xs btn-link text-muted p-0 deselect-group-btn" data-group="hsc">None</button>
+                                    </div>
+                                </div>
+                                <div class="card-body py-2 px-3">
+                                    {% for f in hsc_fields %}
+                                    <div class="custom-control custom-checkbox mb-1">
+                                        <input type="checkbox" class="custom-control-input field-checkbox hsc-field"
+                                               id="field-{{ f }}" name="patch_fields" value="{{ f }}"
+                                               data-group="hsc">
+                                        <label class="custom-control-label small" for="field-{{ f }}">
+                                            <span class="font-weight-500">{{ field_labels|get_item:f }}</span>
+                                            <span class="text-monospace text-muted small ml-1">({{ f }})</span>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selection Summary -->
+                    <p class="small text-muted mt-2 mb-0" id="selection-summary">No fields selected.</p>
+                </div>
+
+                <!-- ─── STEP 2 — Download Template ─── -->
+                <div class="step-block mb-4 pb-4 border-bottom">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="step-badge bg-info text-white rounded-circle d-flex align-items-center justify-content-center mr-3 shadow-sm"
+                              style="width:36px;height:36px;font-size:16px;font-weight:700;flex-shrink:0;">2</span>
+                        <div>
+                            <h6 class="mb-0 font-weight-bold">Download Pre-filled Template</h6>
+                            <small class="text-muted">Get an Excel file with your selected columns and current DB values pre-filled.</small>
+                        </div>
+                    </div>
+
+                    <div class="registration-guide bg-light p-3 rounded mb-3 border-left border-info" style="border-left-width:4px !important;">
+                        <ul class="small text-muted mb-0" style="padding-left:20px;">
+                            <li>File contains <strong>student_id</strong>, <strong>student_name</strong>, and only the fields you selected above.</li>
+                            <li>Current database values are pre-filled — edit what needs to change, leave the rest as-is.</li>
+                            <li>Do <strong>not</strong> rename or remove columns.</li>
+                        </ul>
+                    </div>
+
+                    <button type="button" id="download-template-btn" class="btn btn-info rounded-pill px-4 shadow-sm font-weight-bold">
+                        <i class="fas fa-cloud-download-alt mr-2"></i> Download Scoped Template
+                    </button>
+                </div>
+
+                <!-- ─── STEP 3 — Upload & Preview ─── -->
+                <div class="step-block">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="step-badge bg-warning text-white rounded-circle d-flex align-items-center justify-content-center mr-3 shadow-sm"
+                              style="width:36px;height:36px;font-size:16px;font-weight:700;flex-shrink:0;">3</span>
+                        <div>
+                            <h6 class="mb-0 font-weight-bold">Upload Edited File &amp; Preview Changes</h6>
+                            <small class="text-muted">A field-by-field diff will appear before any data is saved.</small>
+                        </div>
+                    </div>
+
+                    <!-- This form is for HTMX preview -->
+                    <form id="patch-upload-form"
+                          method="POST"
+                          enctype="multipart/form-data"
+                          action="{% url 'academic_data_patch' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="preview" id="patch-action-input">
+                        <input type="hidden" name="batch" id="patch-hidden-batch">
+                        <input type="hidden" name="program" id="patch-hidden-program">
+                        <!-- patch_fields checkboxes will be cloned here by JS -->
+                        <div id="patch-hidden-fields"></div>
+
+                        <div class="form-group mb-3">
+                            <label class="font-weight-600" for="patchExcelFile">Select Edited Excel File</label>
+                            <div class="custom-file shadow-sm">
+                                <input type="file" name="excel_file" class="custom-file-input" id="patchExcelFile" accept=".xlsx,.xls" required>
+                                <label class="custom-file-label border-0 bg-light" for="patchExcelFile">Browse local files...</label>
+                            </div>
+                        </div>
+
+                        <!-- HTMX preview result container -->
+                        <div id="patch-preview-container"></div>
+
+                        <div class="d-flex align-items-center mt-3">
+                            <button type="button" id="preview-patch-btn"
+                                    class="btn btn-primary rounded-pill px-4 shadow-sm font-weight-bold mr-3"
+                                    hx-post="{% url 'academic_data_patch' %}"
+                                    hx-encoding="multipart/form-data"
+                                    hx-include="#patch-upload-form"
+                                    hx-target="#patch-preview-container"
+                                    hx-swap="innerHTML"
+                                    hx-indicator="#patch-preview-loader">
+                                <i class="fas fa-eye mr-2"></i> Preview Changes
+                            </button>
+                            <span class="htmx-indicator text-muted small" id="patch-preview-loader">
+                                <i class="fas fa-spinner fa-spin mr-1"></i> Analysing file…
+                            </span>
+                        </div>
+                    </form>
+                </div>
+
+            </div><!-- /card-body -->
+        </div><!-- /card -->
+
+
+    </div>
+</div>
+{{ field_labels|json_script:"field-labels-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const FIELD_LABELS = JSON.parse(document.getElementById('field-labels-data').textContent);
+
+    // ── Preset buttons
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const fields = this.dataset.presetFields.split(',');
+            document.querySelectorAll('.field-checkbox').forEach(cb => cb.checked = false);
+            fields.forEach(f => {
+                const cb = document.getElementById('field-' + f);
+                if (cb) cb.checked = true;
+            });
+            updateSummary();
+            highlightPreset(this.dataset.presetId);
+        });
+    });
+
+    function highlightPreset(presetId) {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('btn-secondary');
+            b.classList.add('btn-outline-secondary');
+        });
+        const active = document.querySelector(`.preset-btn[data-preset-id="${presetId}"]`);
+        if (active) {
+            active.classList.remove('btn-outline-secondary');
+            active.classList.add('btn-secondary');
+        }
+    }
+
+    // ── Clear all
+    document.getElementById('clear-all-btn').addEventListener('click', function () {
+        document.querySelectorAll('.field-checkbox').forEach(cb => cb.checked = false);
+        updateSummary();
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('btn-secondary');
+            b.classList.add('btn-outline-secondary');
+        });
+    });
+
+    // ── Group select/deselect
+    document.querySelectorAll('.select-group-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const group = this.dataset.group;
+            document.querySelectorAll(`.${group}-field`).forEach(cb => cb.checked = true);
+            updateSummary();
+        });
+    });
+    document.querySelectorAll('.deselect-group-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const group = this.dataset.group;
+            document.querySelectorAll(`.${group}-field`).forEach(cb => cb.checked = false);
+            updateSummary();
+        });
+    });
+
+    // ── Live summary
+    document.querySelectorAll('.field-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSummary);
+    });
+
+    function updateSummary() {
+        const checked = [...document.querySelectorAll('.field-checkbox:checked')].map(cb => {
+            return FIELD_LABELS[cb.value] || cb.value;
+        });
+        const el = document.getElementById('selection-summary');
+        if (checked.length === 0) {
+            el.textContent = 'No fields selected.';
+            el.className = 'small text-danger mt-2 mb-0';
+        } else {
+            el.textContent = `✓ ${checked.length} field(s) selected: ${checked.join(', ')}`;
+            el.className = 'small text-success mt-2 mb-0';
+        }
+    }
+
+    // ── Download Template: build URL with selected fields
+    document.getElementById('download-template-btn').addEventListener('click', function () {
+        const checked = [...document.querySelectorAll('.field-checkbox:checked')].map(cb => cb.value);
+        if (checked.length === 0) {
+            alert('Please select at least one field before downloading the template.');
+            return;
+        }
+        const batch = document.getElementById('batch-select').value;
+        const program = document.getElementById('program-select').value;
+
+        const params = new URLSearchParams();
+        params.set('fields', checked.join(','));
+        if (batch) params.set('batch', batch);
+        if (program) params.set('program', program);
+
+        window.location.href = '{% url "academic_patch_template" %}?' + params.toString();
+    });
+
+    // ── Before HTMX preview: sync scope + selected fields into the hidden form
+    document.getElementById('preview-patch-btn').addEventListener('click', function () {
+        // Validate
+        const checked = document.querySelectorAll('.field-checkbox:checked');
+        if (checked.length === 0) {
+            document.getElementById('patch-preview-container').innerHTML =
+                "<div class='alert alert-danger mt-3'><i class='fas fa-exclamation-triangle mr-2'></i>Please select at least one field.</div>";
+            return false;
+        }
+
+        // Sync scope
+        document.getElementById('patch-hidden-batch').value = document.getElementById('batch-select').value;
+        document.getElementById('patch-hidden-program').value = document.getElementById('program-select').value;
+        document.getElementById('patch-action-input').value = 'preview';
+
+        // Clone checked field values into hidden inputs inside the form
+        const container = document.getElementById('patch-hidden-fields');
+        container.innerHTML = '';
+        checked.forEach(cb => {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'patch_fields';
+            hidden.value = cb.value;
+            container.appendChild(hidden);
+        });
+    });
+
+    // ── File input label update
+    document.getElementById('patchExcelFile').addEventListener('change', function () {
+        const label = this.closest('.custom-file').querySelector('.custom-file-label');
+        label.textContent = this.files[0] ? this.files[0].name : 'Browse local files...';
+    });
+
+    // ── Auto-select "SSC Board IDs" preset on page load
+    const defaultBtn = document.querySelector('.preset-btn[data-preset-id="ssc_ids"]');
+    if (defaultBtn) defaultBtn.click();
+})();
+</script>
+{% endblock %}
+
+<style>
+.font-weight-600 { font-weight: 600; }
+.step-block { position: relative; }
+.btn-xs { font-size: 0.72rem; padding: 0.1rem 0.4rem; }
+
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator { display: inline-block; }
+
+body.dark-mode .card { background: #1e293b; border-color: #334155; }
+body.dark-mode .bg-light { background: #0f172a !important; color: #cbd5e1 !important; }
+body.dark-mode .registration-guide { border-left-color: #334155 !important; }
+body.dark-mode .border-bottom { border-bottom-color: #334155 !important; }
+body.dark-mode .card.border { border-color: #334155 !important; background: #0f172a !important; }
+</style>

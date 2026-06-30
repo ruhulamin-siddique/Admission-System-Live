@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load core_tags %}
 
 {% block title %}Bulk Import Hub | BAUST{% endblock %}
 {% block page_title %}Mass Data & Identity Sync{% endblock %}
@@ -19,7 +20,16 @@
                             <i class="fas fa-images text-primary mr-2"></i> Bulk Photo Sync
                         </a>
                     </li>
+                    {% has_access 'students' 'patch_academic_data' as can_patch %}
+                    {% if can_patch %}
+                    <li class="nav-item">
+                        <a class="nav-link py-3 font-weight-bold" href="{% url 'academic_data_patch' %}">
+                            <i class="fas fa-flask text-success mr-2"></i> Academic Data Patch
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
+
             </div>
 
             <div class="card-body p-0">

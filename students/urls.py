@@ -86,4 +86,8 @@ urlpatterns = [
     path('api/reference-link-count/<int:ref_id>/', views.api_reference_link_count, name='api_reference_link_count'),
     path('api/align-legacy-reference/', views.api_align_legacy_reference, name='api_align_legacy_reference'),
     path('api/reference-students/', views.api_reference_students, name='api_reference_students'),
+
+    # Academic Data Patch
+    path('students/academic-patch/', views.academic_data_patch, name='academic_data_patch'),
+    path('students/academic-patch/template/', views.download_academic_patch_template, name='academic_patch_template'),
 ]

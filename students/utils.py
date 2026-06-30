@@ -456,3 +456,289 @@ def execute_program_change_web(student, new_program, new_cluster, new_year, new_
             return {'success': True, 'new_id': new_id}
     except Exception as e:
         return {'success': False, 'error': str(e)}
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Academic Data Patch Utility
+# ──────────────────────────────────────────────────────────────────────────────
+
+SSC_FIELDS = [
+    'ssc_school', 'ssc_year', 'ssc_board', 'ssc_roll',
+    'ssc_reg', 'ssc_gpa', 'ssc_physics', 'ssc_chemistry', 'ssc_math',
+]
+HSC_FIELDS = [
+    'hsc_college', 'hsc_year', 'hsc_board', 'hsc_roll',
+    'hsc_reg', 'hsc_gpa', 'hsc_physics', 'hsc_chemistry', 'hsc_math',
+]
+FLOAT_FIELDS = {'ssc_gpa', 'ssc_physics', 'ssc_chemistry', 'ssc_math',
+                'hsc_gpa', 'hsc_physics', 'hsc_chemistry', 'hsc_math'}
+
+ALL_ACADEMIC_FIELDS = SSC_FIELDS + HSC_FIELDS
+
+# Friendly labels for each field (used in templates)
+FIELD_LABELS = {
+    'ssc_school':    'SSC School',
+    'ssc_year':      'SSC Year',
+    'ssc_board':     'SSC Board',
+    'ssc_roll':      'SSC Roll',
+    'ssc_reg':       'SSC Registration',
+    'ssc_gpa':       'SSC GPA',
+    'ssc_physics':   'SSC Physics',
+    'ssc_chemistry': 'SSC Chemistry',
+    'ssc_math':      'SSC Math',
+    'hsc_college':   'HSC College',
+    'hsc_year':      'HSC Year',
+    'hsc_board':     'HSC Board',
+    'hsc_roll':      'HSC Roll',
+    'hsc_reg':       'HSC Registration',
+    'hsc_gpa':       'HSC GPA',
+    'hsc_physics':   'HSC Physics',
+    'hsc_chemistry': 'HSC Chemistry',
+    'hsc_math':      'HSC Math',
+}
+
+# Quick-select presets: (label, icon, field list)
+FIELD_PRESETS = [
+    (
+        'ssc_ids',
+        'SSC Board IDs',
+        'fa-id-card',
+        ['ssc_board', 'ssc_year', 'ssc_roll', 'ssc_reg'],
+    ),
+    (
+        'hsc_ids',
+        'HSC Board IDs',
+        'fa-id-badge',
+        ['hsc_board', 'hsc_year', 'hsc_roll', 'hsc_reg'],
+    ),
+    (
+        'both_ids',
+        'Both Board IDs',
+        'fa-layer-group',
+        ['ssc_board', 'ssc_year', 'ssc_roll', 'ssc_reg',
+         'hsc_board', 'hsc_year', 'hsc_roll', 'hsc_reg'],
+    ),
+    (
+        'ssc_all',
+        'All SSC Fields',
+        'fa-list-ul',
+        SSC_FIELDS,
+    ),
+    (
+        'hsc_all',
+        'All HSC Fields',
+        'fa-list-ol',
+        HSC_FIELDS,
+    ),
+    (
+        'both_all',
+        'All Academic Fields',
+        'fa-th-list',
+        ALL_ACADEMIC_FIELDS,
+    ),
+]
+
+
+def get_academic_patch_fields(field_group):
+    """Backward-compat helper: returns field list for a field_group string."""
+    if field_group == 'ssc':
+        return list(SSC_FIELDS)
+    elif field_group == 'hsc':
+        return list(HSC_FIELDS)
+    else:  # 'both'
+        return list(ALL_ACADEMIC_FIELDS)
+
+
+def derive_field_groups(selected_fields):
+    """
+    Given an arbitrary list of field names, returns which verification groups
+    are affected: {'ssc': bool, 'hsc': bool}.
+    Used to decide which *_verified flags to reset.
+    """
+    ssc_set = set(SSC_FIELDS)
+    hsc_set = set(HSC_FIELDS)
+    fields_set = set(selected_fields)
+    return {
+        'ssc': bool(fields_set & ssc_set),
+        'hsc': bool(fields_set & hsc_set),
+    }
+
+
+def patch_academic_data_from_excel(file_obj, selected_fields, scope_queryset, dry_run=False, changed_by_user=None):
+    """
+    Targeted Excel patch for SSC/HSC academic fields.
+
+    Args:
+        file_obj        : The uploaded Excel file object.
+        selected_fields : List of model field names to patch (e.g. ['ssc_board', 'ssc_year', 'ssc_roll', 'ssc_reg']).
+                          Only columns present in BOTH this list AND the Excel file are processed.
+        scope_queryset  : A pre-filtered Django queryset of eligible Student objects.
+        dry_run         : If True, compute diffs but do NOT commit to the database.
+        changed_by_user : The User performing the action (for history logging).
+
+    Returns a dict:
+        success         : bool
+        preview_rows    : list of dicts (for diff display)
+        updated_count   : number of students actually updated
+        skipped_blank   : rows skipped because all target fields were blank
+        not_in_scope    : IDs found in Excel but not in scope_queryset
+        not_found       : IDs in Excel that don't exist at all in the database
+        errors          : list of error strings
+        error           : top-level error string (only when success=False)
+    """
+    # Validate selected_fields against known academic fields
+    valid_selected = [f for f in selected_fields if f in ALL_ACADEMIC_FIELDS]
+    if not valid_selected:
+        return {'success': False, 'error': "No valid academic fields selected."}
+
+    try:
+        df = pd.read_excel(file_obj)
+        df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
+
+        if 'student_id' not in df.columns:
+            return {'success': False, 'error': "Excel file must contain a 'student_id' column."}
+
+        # Intersect: only process fields that are both selected AND present in the file
+        fields_in_file = [f for f in valid_selected if f in df.columns]
+        if not fields_in_file:
+            field_list = ', '.join(valid_selected)
+            return {
+                'success': False,
+                'error': f"None of the selected columns were found in the file. Expected: {field_list}"
+            }
+
+        # Build scope lookup: student_id → Student instance
+        scope_map = {s.student_id: s for s in scope_queryset}
+        all_ids_in_db = set(Student.objects.values_list('student_id', flat=True))
+
+        preview_rows = []
+        students_to_update = []
+
+        not_in_scope = []
+        not_found = []
+        skipped_blank = []
+        errors = []
+
+        for idx, row in df.iterrows():
+            raw_id = str(row.get('student_id', '')).strip()
+            # Clean float representation (e.g. "12345.0")
+            if raw_id.endswith('.0'):
+                raw_id = raw_id[:-2]
+            if not raw_id or raw_id == 'nan':
+                errors.append(f"Row {idx + 2}: Missing student_id.")
+                continue
+
+            # Check existence
+            if raw_id not in all_ids_in_db:
+                not_found.append(raw_id)
+                continue
+
+            # Check scope
+            if raw_id not in scope_map:
+                not_in_scope.append(raw_id)
+                continue
+
+            student = scope_map[raw_id]
+            row_diffs = []
+            has_any_value = False
+
+            for field in fields_in_file:
+                raw_val = row.get(field)
+                if pd.isna(raw_val) or raw_val == '':
+                    new_val = None
+                else:
+                    if field in FLOAT_FIELDS:
+                        try:
+                            new_val = float(raw_val)
+                        except (ValueError, TypeError):
+                            errors.append(f"Row {idx + 2} ({raw_id}): Invalid numeric for '{field}': {raw_val}")
+                            new_val = None
+                    else:
+                        new_val = str(raw_val).strip()
+                        if new_val.endswith('.0'):
+                            new_val = new_val[:-2]
+                        if new_val == 'nan':
+                            new_val = None
+
+                if new_val is not None:
+                    has_any_value = True
+
+                old_val = getattr(student, field, None)
+                old_display = str(old_val) if old_val is not None else '—'
+                new_display = str(new_val) if new_val is not None else '—'
+
+                row_diffs.append({
+                    'field': field,
+                    'label': FIELD_LABELS.get(field, field),
+                    'old': old_display,
+                    'new': new_display,
+                    'changed': (str(old_val) if old_val is not None else '') != (str(new_val) if new_val is not None else ''),
+                })
+                setattr(student, field, new_val)
+
+            if not has_any_value:
+                skipped_blank.append(raw_id)
+                continue
+
+            preview_rows.append({
+                'student_id': raw_id,
+                'student_name': student.student_name,
+                'diffs': row_diffs,
+            })
+            students_to_update.append(student)
+
+        # Determine which verification flags need to be reset
+        groups = derive_field_groups(fields_in_file)
+        bulk_update_fields = list(fields_in_file)
+
+        if groups['ssc'] and students_to_update:
+            bulk_update_fields.append('ssc_verified')
+            for s in students_to_update:
+                s.ssc_verified = False
+        if groups['hsc'] and students_to_update:
+            bulk_update_fields.append('hsc_verified')
+            for s in students_to_update:
+                s.hsc_verified = False
+
+        if not dry_run and students_to_update:
+            with transaction.atomic():
+                Student.objects.bulk_update(students_to_update, bulk_update_fields, batch_size=200)
+
+                # Manual StudentFieldHistory creation (bulk_update bypasses save())
+                if changed_by_user:
+                    from .models import StudentFieldHistory
+                    history_records = []
+                    for preview in preview_rows:
+                        sid = preview['student_id']
+                        student = scope_map[sid]
+                        for diff in preview['diffs']:
+                            if diff['changed']:
+                                history_records.append(StudentFieldHistory(
+                                    student=student,
+                                    field_name=diff['field'],
+                                    old_value=diff['old'] if diff['old'] != '—' else None,
+                                    new_value=diff['new'] if diff['new'] != '—' else None,
+                                    changed_by=changed_by_user,
+                                ))
+                    if history_records:
+                        StudentFieldHistory.objects.bulk_create(history_records, batch_size=500)
+
+        return {
+            'success': True,
+            'preview_rows': preview_rows,
+            'updated_count': len(students_to_update) if not dry_run else 0,
+            'preview_count': len(students_to_update),
+            'fields_patched': fields_in_file,
+            'groups_affected': groups,
+            'skipped_blank': skipped_blank,
+            'not_in_scope': not_in_scope,
+            'not_found': not_found,
+            'errors': errors,
+        }
+
+    except Exception as e:
+        import traceback
+        return {'success': False, 'error': str(e), 'traceback': traceback.format_exc()}
+
+
+

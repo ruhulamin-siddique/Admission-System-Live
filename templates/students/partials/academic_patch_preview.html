@@ -1,0 +1,207 @@
+{% comment %}
+  HTMX partial — returned by academic_data_patch (action=preview, dry_run=True).
+  Contains the diff table and a Confirm form that POSTs action=commit.
+{% endcomment %}
+
+{% if not result.success %}
+<div class="alert alert-danger mt-3 rounded-lg shadow-sm">
+    <i class="fas fa-exclamation-triangle mr-2"></i>
+    <strong>Parse Error:</strong> {{ result.error }}
+</div>
+
+{% else %}
+
+<!-- Summary Bar -->
+<div class="row mt-4 mb-3 g-2">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-lg text-center py-3 px-2 h-100"
+             style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
+            <div class="h3 font-weight-bold text-success mb-0">{{ result.preview_count }}</div>
+            <small class="text-muted">Students to Update</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-lg text-center py-3 px-2 h-100"
+             style="background:linear-gradient(135deg,#fefce8,#fef9c3);">
+            <div class="h3 font-weight-bold text-warning mb-0">{{ result.skipped_blank|length }}</div>
+            <small class="text-muted">Rows Skipped (Blank)</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-lg text-center py-3 px-2 h-100"
+             style="background:linear-gradient(135deg,#fff7ed,#ffedd5);">
+            <div class="h3 font-weight-bold text-orange mb-0">{{ result.not_in_scope|length }}</div>
+            <small class="text-muted">Out of Scope</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-lg text-center py-3 px-2 h-100"
+             style="background:linear-gradient(135deg,#fef2f2,#fee2e2);">
+            <div class="h3 font-weight-bold text-danger mb-0">{{ result.not_found|length }}</div>
+            <small class="text-muted">IDs Not Found in DB</small>
+        </div>
+    </div>
+</div>
+
+<!-- Scope & Field Group Info -->
+<p class="text-muted small mb-3">
+    <i class="fas fa-info-circle mr-1"></i>
+    Scope: <strong>{{ batch_name|default:"All Batches" }}</strong>
+    &nbsp;·&nbsp;
+    <strong>{{ program_name|default:"All Programs" }}</strong>
+    &nbsp;·&nbsp;
+    Field Group: <strong>{{ field_group|upper }}</strong>
+    &nbsp;·&nbsp;
+    Patching columns: <code>{{ result.fields_patched|join:", " }}</code>
+</p>
+
+{% if result.preview_count == 0 %}
+<div class="alert alert-warning rounded-lg shadow-sm">
+    <i class="fas fa-exclamation-circle mr-2"></i>
+    No students with actionable data found. Please check your file and scope settings.
+</div>
+
+{% else %}
+
+<!-- Diff Preview Table -->
+<div class="card border-0 shadow-sm rounded-lg mb-3">
+    <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-2">
+        <span class="font-weight-bold small"><i class="fas fa-list-alt mr-1 text-primary"></i> Diff Preview (first {{ result.preview_rows|length }} rows)</span>
+        <span class="badge badge-success badge-pill">{{ result.preview_count }} students</span>
+    </div>
+    <div class="table-responsive" style="max-height:450px;overflow-y:auto;">
+        <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead class="thead-light sticky-top">
+                <tr>
+                    <th style="min-width:140px;">Student ID</th>
+                    <th style="min-width:160px;">Name</th>
+                    <th>Field</th>
+                    <th>Old Value</th>
+                    <th>New Value</th>
+                    <th class="text-center">Changed?</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in result.preview_rows %}
+                    {% for diff in row.diffs %}
+                    <tr class="{% if diff.changed %}table-warning{% endif %}">
+                        {% if forloop.first %}
+                        <td rowspan="{{ row.diffs|length }}" class="align-middle font-weight-bold text-monospace" style="border-right:2px solid #e2e8f0;">
+                            {{ row.student_id }}
+                        </td>
+                        <td rowspan="{{ row.diffs|length }}" class="align-middle text-truncate" style="max-width:150px;border-right:2px solid #e2e8f0;">
+                            {{ row.student_name }}
+                        </td>
+                        {% endif %}
+                        <td class="text-monospace text-muted">{{ diff.field }}</td>
+                        <td class="text-muted">{{ diff.old }}</td>
+                        <td class="{% if diff.changed %}text-success font-weight-bold{% endif %}">{{ diff.new }}</td>
+                        <td class="text-center">
+                            {% if diff.changed %}
+                            <i class="fas fa-check-circle text-success"></i>
+                            {% else %}
+                            <i class="fas fa-minus text-muted"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if result.errors %}
+<div class="alert alert-warning small rounded-lg mb-3">
+    <strong>{{ result.errors|length }} row error(s) encountered:</strong>
+    <ul class="mb-0 mt-1">
+        {% for e in result.errors|slice:":10" %}
+        <li>{{ e }}</li>
+        {% endfor %}
+        {% if result.errors|length > 10 %}
+        <li>… and {{ result.errors|length|add:"-10" }} more.</li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Confirm Form -->
+<div class="alert alert-success rounded-lg shadow-sm p-3 mb-0">
+    <div class="d-flex align-items-start">
+        <i class="fas fa-check-circle text-success mt-1 mr-3 fa-lg"></i>
+        <div class="flex-grow-1">
+            <p class="mb-2 font-weight-bold">Ready to apply patch to {{ result.preview_count }} student(s)?</p>
+            <p class="small text-muted mb-3">
+                <i class="fas fa-shield-alt mr-1"></i>
+                {% if field_group == 'ssc' or field_group == 'both' %}SSC verification flags will be reset. {% endif %}
+                {% if field_group == 'hsc' or field_group == 'both' %}HSC verification flags will be reset. {% endif %}
+                All changes will be logged to student field history.
+            </p>
+            <form method="POST"
+                  enctype="multipart/form-data"
+                  action="{% url 'academic_data_patch' %}"
+                  id="patch-commit-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="commit">
+                <input type="hidden" name="batch" value="{{ batch_name }}">
+                <input type="hidden" name="program" value="{{ program_name }}">
+                <input type="hidden" name="field_group" value="{{ field_group }}">
+
+                <div class="form-group mb-3">
+                    <label class="font-weight-600 small" for="commitExcelFile">
+                        <i class="fas fa-upload mr-1"></i> Re-upload the same Excel file to confirm:
+                    </label>
+                    <div class="custom-file shadow-sm" style="max-width:400px;">
+                        <input type="file" name="excel_file" class="custom-file-input" id="commitExcelFile" accept=".xlsx,.xls" required>
+                        <label class="custom-file-label border-0 bg-white" for="commitExcelFile">Select file…</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success rounded-pill px-5 shadow-sm font-weight-bold"
+                        hx-post="{% url 'academic_data_patch' %}"
+                        hx-encoding="multipart/form-data"
+                        hx-include="#patch-commit-form"
+                        hx-target="#patch-preview-container"
+                        hx-swap="innerHTML"
+                        hx-indicator="#commit-loader">
+                    <i class="fas fa-bolt mr-2"></i> Confirm &amp; Apply Patch
+                </button>
+                <span class="htmx-indicator text-muted small ml-3" id="commit-loader">
+                    <i class="fas fa-spinner fa-spin mr-1"></i> Applying patch…
+                </span>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endif %}{# end preview_count > 0 #}
+
+{% if result.not_in_scope or result.not_found %}
+<div class="mt-3 small text-muted">
+    {% if result.not_in_scope %}
+    <p class="mb-1"><i class="fas fa-ban text-warning mr-1"></i>
+        <strong>{{ result.not_in_scope|length }} ID(s) excluded (out of scope):</strong>
+        {{ result.not_in_scope|slice:":10"|join:", " }}{% if result.not_in_scope|length > 10 %} …{% endif %}
+    </p>
+    {% endif %}
+    {% if result.not_found %}
+    <p class="mb-1"><i class="fas fa-question-circle text-danger mr-1"></i>
+        <strong>{{ result.not_found|length }} ID(s) not in database:</strong>
+        {{ result.not_found|slice:":10"|join:", " }}{% if result.not_found|length > 10 %} …{% endif %}
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endif %}{# end result.success #}
+
+<script>
+// Update file label on commit form
+const commitFile = document.getElementById('commitExcelFile');
+if (commitFile) {
+    commitFile.addEventListener('change', function() {
+        const label = this.closest('.custom-file').querySelector('.custom-file-label');
+        label.textContent = this.files[0] ? this.files[0].name : 'Select file…';
+    });
+}
+</script>

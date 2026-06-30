@@ -31,6 +31,7 @@ ACCESS_REGISTRY = {
             "mobile_repair": ("Mobile Number Repair", "Identify and fix incorrectly formatted mobile numbers missing leading zeros."),
             "bulk_update": ("Mass Data Harmonizer", "Modify fields across multiple selected students at once."),
             "manage_references": ("Reference Hub Manager", "Access, update, and merge standardized Reference Hub nodes."),
+            "patch_academic_data": ("Academic Data Patch", "Upload scoped Excel to patch SSC/HSC academic data for a batch or program."),
         }
     },
     "reports": {
