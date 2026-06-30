@@ -1,5 +1,7 @@
 {% load core_tags %}
+{% if is_htmx %}
 <span id="total-count-badge" hx-swap-oob="true" class="total-badge">{{ total_count }}</span>
+{% endif %}
 <style>
     .btn-download-smart-campus {
         background: #6366f1 !important;
@@ -24,7 +26,7 @@
     }
 </style>
 <div id="directory-export-actions" hx-swap-oob="true" class="d-flex align-items-center" style="gap: 10px;">
-    {% has_access 'students' 'export_data' as can_export %}
+    {% has_access 'students' 'export_excel' as can_export %}
     {% if can_export %}
     <a href="{% url 'export_students_smart_campus' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn directory-action-btn btn-download-smart-campus">
         <i class="fas fa-university"></i> <span class="d-none d-sm-inline">SMART CAMPUS Export</span><span class="d-inline d-sm-none">SC Export</span>
@@ -42,6 +44,9 @@
             </a>
             <a class="dropdown-item py-2" href="{% url 'export_students_all' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
                 <i class="fas fa-database mr-2 text-primary"></i> Full Database Dump
+            </a>
+            <a class="dropdown-item py-2" href="javascript:void(0)" onclick="handlePhotoZipDownload(this)" data-default-url="{% url 'export_photos_zip' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
+                <i class="fas fa-images mr-2 text-info"></i> Download Student Photos (ZIP)
             </a>
             <div class="dropdown-divider"></div>
             <a class="dropdown-item py-2" href="{% url 'print_blank_form' %}" target="_blank" style="font-size: 13px; font-weight: 600;">

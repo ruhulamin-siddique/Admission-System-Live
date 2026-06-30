@@ -7,7 +7,7 @@
 
 {% block page_actions %}
 <div id="directory-export-actions" class="d-flex align-items-center" style="gap: 10px;">
-    {% has_access 'students' 'export_data' as can_export %}
+    {% has_access 'students' 'export_excel' as can_export %}
     {% if can_export %}
     <a href="{% url 'export_students_smart_campus' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn directory-action-btn btn-download-smart-campus">
         <i class="fas fa-university"></i> <span class="d-none d-sm-inline">SMART CAMPUS Export</span><span class="d-inline d-sm-none">SC Export</span>
@@ -26,7 +26,7 @@
             <a class="dropdown-item py-2" href="{% url 'export_students_all' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
                 <i class="fas fa-database mr-2 text-primary"></i> Full Database Dump
             </a>
-            <a class="dropdown-item py-2" href="{% url 'export_photos_zip' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
+            <a class="dropdown-item py-2" href="javascript:void(0)" onclick="handlePhotoZipDownload(this)" data-default-url="{% url 'export_photos_zip' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
                 <i class="fas fa-images mr-2 text-info"></i> Download Student Photos (ZIP)
             </a>
             <div class="dropdown-divider"></div>
@@ -800,13 +800,9 @@
             padding: 10px 15px !important;
             gap: 10px !important;
         }
-        #bulk-action-bar .btn-warning {
-            padding: 6px 12px !important;
-            font-size: 0.9rem;
-        }
-
-    }
-        #bulk-action-bar .btn-warning {
+        #bulk-action-bar .btn-warning,
+        #bulk-action-bar .btn-info,
+        #bulk-action-bar .btn-success {
             padding: 6px 12px !important;
             font-size: 0.9rem;
         }
@@ -1103,6 +1099,13 @@
     <button class="btn btn-info font-weight-bold rounded-pill px-3 px-md-4 shadow-sm" onclick="initiateBulkAudit()" title="Board Audit">
         <i class="fas fa-shield-halved"></i> <span class="ml-1 d-none d-md-inline">Board Audit</span>
     </button>
+    
+    {% has_access 'students' 'export_excel' as can_export_photos %}
+    {% if can_export_photos %}
+    <button class="btn btn-success font-weight-bold rounded-pill px-3 px-md-4 shadow-sm" onclick="downloadSelectedPhotos()" title="Download Photos">
+        <i class="fas fa-images"></i> <span class="ml-1 d-none d-md-inline">Download Photos</span>
+    </button>
+    {% endif %}
     
     <button class="btn btn-outline-danger border-0 rounded-circle ml-1" style="width: 32px; height: 32px; padding: 0; line-height: 32px;" onclick="clearSelection()" title="Clear Selection">
         <i class="fas fa-times"></i>
@@ -1543,6 +1546,50 @@ function clearSelection() {
 function getSelectedIds() {
     const checked = document.querySelectorAll('.student-checkbox:checked');
     return Array.from(checked).map(cb => cb.value).join(',');
+}
+
+function downloadSelectedPhotos() {
+    const checked = document.querySelectorAll('.student-checkbox:checked');
+    if (checked.length === 0) {
+        toastr.warning("Please select at least one student.");
+        return;
+    }
+    
+    // Create a dynamic form to submit via POST to export_photos_zip
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{% url "export_photos_zip" %}';
+    
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = '{{ csrf_token }}';
+    form.appendChild(csrfInput);
+    
+    // Add student_ids[]
+    checked.forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'student_ids[]';
+        input.value = cb.value;
+        form.appendChild(input);
+    });
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+function handlePhotoZipDownload(elem) {
+    const checked = document.querySelectorAll('.student-checkbox:checked');
+    if (checked.length > 0) {
+        // If there are checked checkboxes, download only those selected
+        downloadSelectedPhotos();
+    } else {
+        // Otherwise, navigate to the default URL which downloads with filters
+        window.location.href = elem.getAttribute('data-default-url');
+    }
 }
 
 function openBulkUpdateModal() {

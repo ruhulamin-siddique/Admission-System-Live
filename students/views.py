@@ -709,6 +709,7 @@ def student_list(request):
         'query': params['search'],
         'per_page': directory_state['per_page'],
         'total_count': directory_state['total_count'],
+        'is_htmx': request.headers.get('HX-Request') == 'true',
         'selected_program': params['program'],
         'selected_batch': params['batch'],
         'selected_current_batch': params['current_batch'],
@@ -1433,6 +1434,8 @@ def api_demographic_students(request):
         'program': program,
     })
 
+@login_required
+@require_access('students', 'export_excel')
 def api_bulk_photo_zip(request):
     """Packages student photos into a ZIP archive with support for direct selection or dynamic filtering."""
     if request.method not in ['GET', 'POST']:
