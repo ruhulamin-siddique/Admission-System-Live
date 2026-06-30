@@ -244,14 +244,16 @@ def get_reference_intelligence(year=None, program=None, batch=None):
     employee_qs = queryset.exclude(reference__isnull=True).values(
         ref_id=F('reference__id'),
         name=F('reference__name_en'),
-        designation=F('reference__designation')
+        designation=F('reference__designation'),
+        category=F('reference__category')
     ).annotate(count=Count('student_id'))
 
     employee_list = []
     for item in employee_qs:
         employee_list.append({
+            'ref_id': item['ref_id'],
             'reference': item['name'],
-            'type': 'Employee',
+            'type': item.get('category') or 'Employee',
             'designation': item['designation'] or 'N/A',
             'student_info': 'N/A',
             'count': item['count']
@@ -269,6 +271,7 @@ def get_reference_intelligence(year=None, program=None, batch=None):
     for item in student_qs:
         student_info = f"ID: {item['ref_id']} - {item['program_name'] or 'No Dept'} ({item['batch_name'] or 'Unknown'})"
         student_list.append({
+            'ref_id': item['ref_id'],
             'reference': item['name'],
             'type': 'Student',
             'designation': 'N/A',

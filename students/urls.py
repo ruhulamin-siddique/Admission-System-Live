@@ -84,4 +84,6 @@ urlpatterns = [
     path('api/search-references/', views.api_search_references, name='api_search_references'),
     path('api/search-students/', views.api_search_students, name='api_search_students'),
     path('api/reference-link-count/<int:ref_id>/', views.api_reference_link_count, name='api_reference_link_count'),
+    path('api/align-legacy-reference/', views.api_align_legacy_reference, name='api_align_legacy_reference'),
+    path('api/reference-students/', views.api_reference_students, name='api_reference_students'),
 ]

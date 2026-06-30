@@ -4,8 +4,9 @@ from django.db import migrations
 import re
 
 def rectify_legacy_students(apps, schema_editor):
+    db_alias = schema_editor.connection.alias
     Student = apps.get_model('students', 'Student')
-    for s in Student.objects.all():
+    for s in Student.objects.using(db_alias).all():
         s_id = str(s.student_id).strip()
         is_legacy = False
         
@@ -23,7 +24,7 @@ def rectify_legacy_students(apps, schema_editor):
                     
         if is_legacy and not s.is_legacy_student:
             s.is_legacy_student = True
-            s.save()
+            s.save(using=db_alias)
 
 def reverse_rectify(apps, schema_editor):
     pass

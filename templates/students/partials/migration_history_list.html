@@ -1,0 +1,103 @@
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light text-muted small text-uppercase font-weight-bold">
+            <tr>
+                <th style="width: 60px;" class="pl-4">SL</th>
+                <th style="width: 150px;">Date</th>
+                <th>Change Path</th>
+                <th style="width: 250px;">Old ID / New ID</th>
+                <th class="pr-4">Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in history_page_obj %}
+            <tr>
+                <td class="pl-4 py-3 align-middle text-muted">{{ history_page_obj.start_index|add:forloop.counter0 }}</td>
+                <td class="py-3 align-middle">
+                    <div class="font-weight-bold text-dark">{{ item.change_date|date:"d M, Y" }}</div>
+                    <small class="text-muted">{{ item.change_date|time }}</small>
+                </td>
+                <td class="py-3 align-middle">
+                    <span class="badge badge-secondary px-2 py-1" style="border-radius: 4px;">{{ item.old_program }}</span>
+                    <i class="fas fa-long-arrow-alt-right mx-2 text-muted"></i>
+                    <span class="badge badge-indigo px-2 py-1" style="background: rgba(102, 16, 242, 0.1); color: #6610f2; border-radius: 4px;">{{ item.new_program }}</span>
+                </td>
+                <td class="py-3 align-middle">
+                    <div class="small text-muted mb-1">Old: <code class="text-monospace">{{ item.old_student_id }}</code></div>
+                    <div class="font-weight-bold">New: <code class="text-monospace">{{ item.new_student_id }}</code></div>
+                </td>
+                <td class="py-3 align-middle pr-4 text-muted small" title="{{ item.notes|default:'' }}">
+                    {{ item.notes|default:"--" }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center py-5 text-muted">
+                    <div class="mb-3"><i class="fas fa-ghost fa-3x opacity-25"></i></div>
+                    No academic migrations have been recorded matching the filters.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination Panel -->
+{% if history_page_obj.has_other_pages %}
+<div class="card-footer clearfix bg-white border-top-0 py-3">
+    <div class="row align-items-center">
+        <div class="col-sm-6 text-muted small">
+            Showing {{ history_page_obj.start_index }} to {{ history_page_obj.end_index }} of {{ history_page_obj.paginator.count }} records.
+        </div>
+        <div class="col-sm-6 text-right">
+            <ul class="pagination pagination-sm m-0 float-right">
+                {% if history_page_obj.has_previous %}
+                <li class="page-item">
+                    <button class="page-link"
+                            hx-get="{% url 'migration_center' %}?page=1&search_history={{ search_history|urlencode }}&old_program={{ selected_old_program|urlencode }}&new_program={{ selected_new_program|urlencode }}&target=history"
+                            hx-target="#migration-history-container"
+                            hx-indicator="#table-loader">
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+                </li>
+                <li class="page-item">
+                    <button class="page-link"
+                            hx-get="{% url 'migration_center' %}?page={{ history_page_obj.previous_page_number }}&search_history={{ search_history|urlencode }}&old_program={{ selected_old_program|urlencode }}&new_program={{ selected_new_program|urlencode }}&target=history"
+                            hx-target="#migration-history-container"
+                            hx-indicator="#table-loader">
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link text-muted"><i class="fas fa-angle-left"></i></span></li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link bg-indigo border-indigo" style="background-color: #6610f2; border-color: #6610f2;">{{ history_page_obj.number }}</span>
+                </li>
+
+                {% if history_page_obj.has_next %}
+                <li class="page-item">
+                    <button class="page-link"
+                            hx-get="{% url 'migration_center' %}?page={{ history_page_obj.next_page_number }}&search_history={{ search_history|urlencode }}&old_program={{ selected_old_program|urlencode }}&new_program={{ selected_new_program|urlencode }}&target=history"
+                            hx-target="#migration-history-container"
+                            hx-indicator="#table-loader">
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+                </li>
+                <li class="page-item">
+                    <button class="page-link"
+                            hx-get="{% url 'migration_center' %}?page={{ history_page_obj.paginator.num_pages }}&search_history={{ search_history|urlencode }}&old_program={{ selected_old_program|urlencode }}&new_program={{ selected_new_program|urlencode }}&target=history"
+                            hx-target="#migration-history-container"
+                            hx-indicator="#table-loader">
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link text-muted"><i class="fas fa-angle-right"></i></span></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}

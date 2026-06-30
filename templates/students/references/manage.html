@@ -269,11 +269,19 @@
     <!-- Premium SPA Header -->
     <div class="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
         <div>
-            <h2 class="font-weight-black mb-1"><i class="fas fa-network-wired mr-2"></i> Reference & Influence Hub</h2>
+            <h2 class="font-weight-black mb-1">
+                <i class="fas fa-network-wired mr-2"></i> Reference & Influence Hub
+                <span class="badge badge-primary px-3 py-1 ml-2 rounded-pill shadow-xs" style="font-size: 0.95rem; font-weight: 700; vertical-align: middle;">
+                    {{ total_count|default:0 }} Total Verified
+                </span>
+            </h2>
             <p class="mb-0 opacity-75 small">Centralized register of referrers, university staff connect points, and candidate student enrollment influencers.</p>
         </div>
         <div class="mt-3 mt-md-0 btn-group shadow-sm" style="border-radius: 50px; overflow: hidden;">
-            <button type="button" class="btn btn-warning btn-action-hover rounded-left text-dark font-weight-bold px-3 py-2" data-toggle="modal" data-target="#mergeRefsModal" title="Merge Nodes">
+            <a href="{% url 'reference_report' %}" class="btn btn-info btn-action-hover rounded-left font-weight-bold px-3 py-2 text-white" title="Intel & Fixation">
+                <i class="fas fa-tools mr-1"></i><span class="hover-text">Intel & Fixation</span>
+            </a>
+            <button type="button" class="btn btn-warning btn-action-hover font-weight-bold px-3 py-2 text-dark" data-toggle="modal" data-target="#mergeRefsModal" title="Merge Nodes">
                 <i class="fas fa-object-group"></i><span class="hover-text">Merge Nodes</span>
             </button>
             <button type="button" class="btn btn-success btn-action-hover font-weight-bold px-3 py-2" data-toggle="modal" data-target="#uploadExcelModal" title="Import Excel">
@@ -302,7 +310,7 @@
     <!-- SPA Ribbon Search Bar -->
     <div class="ribbon-bar shadow-sm">
         <div class="row align-items-center">
-            <div class="col-lg-6 col-md-8 mb-3 mb-md-0">
+            <div class="col-lg-5 col-md-7 mb-3 mb-md-0">
                 <div class="search-input-group">
                     <i class="fas fa-search search-input-icon"></i>
                     <input type="text" 
@@ -315,12 +323,37 @@
                            value="{{ request.GET.search|default:'' }}">
                 </div>
             </div>
-            <div class="col-lg-6 col-md-4 d-flex justify-content-md-end gap-2" style="gap: 8px;">
+            <div class="col-lg-3 col-md-5 mb-3 mb-md-0">
+                <div class="btn-group btn-group-sm w-100" role="group">
+                    <button type="button" class="btn btn-outline-secondary category-filter-btn active font-weight-bold" data-category=""
+                            hx-get="{% url 'reference_manage' %}"
+                            hx-target="#reference-table-body"
+                            hx-trigger="click"
+                            hx-vals='{"category_filter": ""}'>
+                        All
+                    </button>
+                    <button type="button" class="btn btn-outline-info category-filter-btn font-weight-bold" data-category="Employee"
+                            hx-get="{% url 'reference_manage' %}"
+                            hx-target="#reference-table-body"
+                            hx-trigger="click"
+                            hx-vals='{"category_filter": "Employee"}'>
+                        <i class="fas fa-user-tie mr-1"></i>Employee
+                    </button>
+                    <button type="button" class="btn btn-outline-warning category-filter-btn font-weight-bold" data-category="External"
+                            hx-get="{% url 'reference_manage' %}"
+                            hx-target="#reference-table-body"
+                            hx-trigger="click"
+                            hx-vals='{"category_filter": "External"}'>
+                        <i class="fas fa-user-friends mr-1"></i>External
+                    </button>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12 d-flex justify-content-md-end" style="gap: 8px;">
                 <a href="?export=excel{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" id="export-excel-btn" class="btn btn-outline-dark font-weight-bold px-3 rounded-pill">
                     <i class="fas fa-download mr-1"></i> Export Excel
                 </a>
                 <a href="?export=pdf{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" id="export-pdf-btn" target="_blank" class="btn btn-outline-danger font-weight-bold px-3 rounded-pill">
-                    <i class="fas fa-file-pdf mr-1"></i> Print Report (PDF)
+                    <i class="fas fa-file-pdf mr-1"></i> Print (PDF)
                 </a>
             </div>
         </div>
@@ -331,6 +364,7 @@
         <table class="table table-hover table-premium mb-0">
             <thead>
                 <tr>
+                    <th style="width: 60px;">SL</th>
                     <th style="width: 130px;">Ref ID</th>
                     <th style="width: 140px;">BAUST ID</th>
                     <th style="width: 120px;">Category</th>
@@ -505,6 +539,7 @@
                                 <li><strong>English Name</strong> (Required, Name of Node)</li>
                                 <li><strong>Bangla Name</strong> (Optional, Bangla translation)</li>
                                 <li><strong>BAUST ID</strong> (Optional, internal staff/student ID)</li>
+                                <li><strong>Category</strong> (Optional: <em>Employee</em> or <em>External</em> — defaults to Employee)</li>
                                 <li><strong>Designation</strong> (Optional, current title/profession)</li>
                                 <li><strong>Mobile</strong> (Optional, contact cell number)</li>
                             </ul>
@@ -599,6 +634,12 @@
             }
         });
 
+        // Category filter chip active-state toggle
+        $('.category-filter-btn').on('click', function() {
+            $('.category-filter-btn').removeClass('active');
+            $(this).addClass('active');
+        });
+
         // Dynamic Event Listener Hookups for HTMX Trigger Events
         document.body.addEventListener('referenceCreated', function() {
             Swal.fire({
@@ -613,6 +654,7 @@
             });
             $('#addRefModal').modal('hide');
             $('#addRefForm')[0].reset();
+            refreshMergeDropdowns();
         });
 
         document.body.addEventListener('referenceUpdated', function() {
@@ -624,6 +666,7 @@
                 showConfirmButton: false
             });
             $('#editRefModal').modal('hide');
+            refreshMergeDropdowns();
         });
 
         document.body.addEventListener('referenceDeleted', function() {
@@ -634,6 +677,7 @@
                 timer: 2000,
                 showConfirmButton: false
             });
+            refreshMergeDropdowns();
         });
 
         document.body.addEventListener('referenceMerged', function(evt) {
@@ -650,7 +694,44 @@
                 window.location.reload();
             }, 2000);
         });
+
+        // Prevent same-node selection in Merge modal
+        $('#merge-source-id, #merge-target-id').on('change', function() {
+            const sourceVal = $('#merge-source-id').val();
+            const targetVal = $('#merge-target-id').val();
+            // Re-enable all options first, then disable the matching one
+            $('#merge-source-id option').prop('disabled', false);
+            $('#merge-target-id option').prop('disabled', false);
+            if (sourceVal) $('#merge-target-id option[value="' + sourceVal + '"]').prop('disabled', true);
+            if (targetVal) $('#merge-source-id option[value="' + targetVal + '"]').prop('disabled', true);
+        });
     });
+
+    // Refresh merge modal dropdowns dynamically after any HTMX node mutation
+    function refreshMergeDropdowns() {
+        fetch('{% url "api_search_references" %}?q=')
+            .then(r => r.json())
+            .then(data => {
+                const sourceSelect = document.getElementById('merge-source-id');
+                const targetSelect = document.getElementById('merge-target-id');
+                if (!sourceSelect || !targetSelect) return;
+
+                const buildOptions = (select) => {
+                    const currentVal = select.value;
+                    select.innerHTML = '<option value="">-- Select Reference --</option>';
+                    data.results.forEach(ref => {
+                        const opt = document.createElement('option');
+                        opt.value = ref.id;
+                        opt.textContent = ref.text;
+                        select.appendChild(opt);
+                    });
+                    select.value = currentVal; // restore selection if still valid
+                };
+                buildOptions(sourceSelect);
+                buildOptions(targetSelect);
+            })
+            .catch(() => {}); // silently fail
+    }
 
     // Populate and open edit reference dialog
     function openEditModal(pk, refId, baustId, nameEn, nameBn, designation, mobile, category) {
@@ -741,8 +822,8 @@
                     target: '#reference-table-body',
                     swap: 'innerHTML'
                 });
-            } else if (linkedCount > 0) {
-                // Guide user to merge modal
+            } else if (linkedCount > 0 && result.dismiss === Swal.DismissReason.cancel) {
+                // Only open Merge modal if user explicitly clicked the Cancel button (not Escape/backdrop)
                 $('#mergeRefsModal').modal('show');
             }
         });

@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Campus Connect | {% block title %}{{ sys_settings.institution_name|default:"Bangladesh Army University of Science and Technology" }}{% endblock %}</title>
 
-  <!-- Google Font: Source Sans Pro -->
+  <!-- Google Font: Source Sans Pro & Hind Siliguri (Bangla) -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700,900&display=fallback">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Theme style (AdminLTE) -->
@@ -27,10 +28,14 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
-    body {
+    body, input, select, textarea, button {
+      font-family: 'Source Sans Pro', 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: optimizeLegibility;
+    }
+    .bangla-font {
+      font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif !important;
     }
     .font-weight-black {
       font-weight: 900 !important;
@@ -418,8 +423,8 @@
           </li>
           {% endif %}
 
-          {% has_access 'students' 'manage_migrations' as can_migrate %}
-          {% if can_migrate %}
+          {% has_access 'students' 'view_migrations' as can_view_migrations %}
+          {% if can_view_migrations %}
           <li class="nav-item">
             <a href="{% url 'migration_center' %}" class="nav-link {% if request.resolver_match.url_name == 'migration_center' %}active{% endif %}">
               <i class="nav-icon fas fa-exchange-alt"></i>
@@ -428,8 +433,8 @@
           </li>
           {% endif %}
 
-          {% has_access 'students' 'cancel_admission' as can_cancel %}
-          {% if can_cancel %}
+          {% has_access 'students' 'view_cancellations' as can_view_cancellations %}
+          {% if can_view_cancellations %}
           <li class="nav-item">
             <a href="{% url 'cancellation_hub' %}" class="nav-link {% if request.resolver_match.url_name == 'cancellation_hub' %}active{% endif %}">
               <i class="nav-icon fas fa-user-times"></i>
@@ -438,7 +443,8 @@
           </li>
           {% endif %}
 
-          {% if can_view_students %}
+          {% has_access 'students' 'manage_references' as can_manage_references %}
+          {% if can_manage_references %}
           <li class="nav-item">
             <a href="{% url 'reference_manage' %}" class="nav-link {% if request.resolver_match.url_name == 'reference_manage' %}active{% endif %}">
               <i class="nav-icon fas fa-network-wired"></i>
@@ -671,9 +677,12 @@
     <!-- Content Header (Page header) -->
     <div class="content-header">
       <div class="container-fluid">
-        <div class="row mb-2">
+        <div class="row mb-2 align-items-center">
           <div class="col-sm-6">
             <h1 class="m-0">{% block page_title %}Dashboard{% endblock %}</h1>
+          </div>
+          <div class="col-sm-6 text-sm-right d-flex align-items-center justify-content-sm-end mt-2 mt-sm-0" style="gap: 10px;">
+            {% block page_actions %}{% endblock %}
           </div>
         </div>
       </div>

@@ -6,14 +6,15 @@ from django.db import migrations
 
 
 def backfill_batch_numbers(apps, schema_editor):
+    db_alias = schema_editor.connection.alias
     Student = apps.get_model('students', 'Student')
 
-    for student in Student.objects.exclude(batch__isnull=True).exclude(batch=''):
+    for student in Student.objects.using(db_alias).exclude(batch__isnull=True).exclude(batch=''):
         matches = re.findall(r'\d+', student.batch or '')
         batch_number = int(matches[0]) if matches else 0
         if student.batch_number != batch_number:
             student.batch_number = batch_number
-            student.save(update_fields=['batch_number'])
+            student.save(using=db_alias, update_fields=['batch_number'])
 
 
 def noop(apps, schema_editor):

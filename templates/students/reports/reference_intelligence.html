@@ -1,32 +1,82 @@
 {% extends 'base.html' %}
 
-{% block title %}Reference Intelligence | Bangladesh Army University of Science and Technology{% endblock %}
-{% block page_title %}Recruitment Source Analysis{% endblock %}
+{% block title %}Reference Intelligence & Fixation | Bangladesh Army University of Science and Technology{% endblock %}
+{% block page_title %}Recruitment Source & Influence Nodes Console{% endblock %}
 
 {% block extra_css %}
 <style>
-    .intelligence-card {
-        border-radius: 20px;
-        border: none;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        background: #fff;
-        margin-bottom: 2rem;
-    }
-    .ref-kpi {
-        background: linear-gradient(135deg, #6366f1, #4f46e5);
+    .compact-kpi-card {
+        border-radius: 12px;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         color: white;
-        border-radius: 20px;
-        padding: 2rem;
-        text-align: center;
+        padding: 1.25rem;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .kpi-val { font-size: 3rem; font-weight: 800; line-height: 1; }
+    
+    .dark-mode .compact-kpi-card {
+        background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+    }
+
+    .report-card {
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        background: #fff;
+        margin-bottom: 1.5rem;
+    }
+    
+    .dark-mode .report-card {
+        background: var(--secondary-blue);
+    }
+
     .table-premium thead th {
-        background: #f8fafc;
+        background-color: #f1f5f9 !important;
+        color: #475569 !important;
+        font-weight: 700;
+        padding: 0.5rem 0.75rem !important;
         text-transform: uppercase;
-        font-size: 0.7rem;
-        letter-spacing: 1px;
-        font-weight: 800;
-        color: #475569;
+        font-size: 0.72rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 2px solid var(--border-color) !important;
+    }
+
+    .dark-mode .table-premium thead th {
+        background-color: #0f172a !important;
+        color: #94a3b8 !important;
+        border-bottom-color: var(--border-color) !important;
+    }
+    
+    .table-premium tbody td {
+        padding: 0.5rem 0.75rem !important;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .nav-tabs-premium {
+        border-bottom: 2px solid var(--border-color);
+    }
+    
+    .nav-tabs-premium .nav-link {
+        font-weight: 700;
+        color: #64748b;
+        border: none;
+        padding: 0.75rem 1.25rem;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+    }
+    
+    .nav-tabs-premium .nav-link:hover {
+        color: var(--accent-blue);
+    }
+    
+    .nav-tabs-premium .nav-link.active {
+        color: var(--accent-blue) !important;
+        background: transparent !important;
+        border-bottom-color: var(--accent-blue) !important;
     }
 </style>
 {% endblock %}
@@ -35,159 +85,358 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     $(document).ready(function() {
-        const data = {{ data_json|safe }};
-        const refs = data.references.slice(0, 10);
-
-        // 1. Top 10 References Bar Chart
-        new Chart(document.getElementById('refBarChart'), {
-            type: 'bar',
-            data: {
-                labels: refs.map(r => r.reference.substring(0, 20) + (r.reference.length > 20 ? '...' : '')),
-                datasets: [{
-                    label: 'Students Recruited',
-                    data: refs.map(r => r.count),
-                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true } }
+        const rawData = {{ data_json|safe }};
+        const references = rawData.references || [];
+        
+        // Group counts by type (Employee, External, Student)
+        let empCount = 0;
+        let extCount = 0;
+        let studCount = 0;
+        
+        references.forEach(r => {
+            if (r.type === 'Student') {
+                studCount += r.count;
+            } else if (r.type === 'External') {
+                extCount += r.count;
+            } else {
+                empCount += r.count;
             }
         });
-
-        // 2. Reference Distribution Pie Chart
-        new Chart(document.getElementById('refPieChart'), {
+        
+        // Distribution Chart
+        new Chart(document.getElementById('refDoughnutChart'), {
             type: 'doughnut',
             data: {
-                labels: refs.map(r => r.reference),
+                labels: ['Employee', 'External', 'Student'],
                 datasets: [{
-                    data: refs.map(r => r.count),
-                    backgroundColor: [
-                        '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-                        '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#64748b'
-                    ]
+                    data: [empCount, extCount, studCount],
+                    backgroundColor: ['#3b82f6', '#f59e0b', '#64748b'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
                 }]
             },
             options: {
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
-                cutout: '70%'
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            font: { weight: 'bold' }
+                        }
+                    }
+                },
+                cutout: '75%',
+                responsive: true,
+                maintainAspectRatio: true
             }
         });
     });
+
+    // Alignment and Fixation AJAX handler
+    function alignLegacyReference(legacyText, btn, rowId) {
+        const row = document.getElementById(rowId);
+        const select = row.querySelector('.target-node-select');
+        const targetNodeId = select.value;
+        
+        if (!targetNodeId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Target Node Required',
+                text: 'Please select an existing Reference Node from the dropdown list.'
+            });
+            return;
+        }
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Linking...';
+        
+        const formData = new FormData();
+        formData.append('legacy_text', legacyText);
+        formData.append('target_node_id', targetNodeId);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch("{% url 'api_align_legacy_reference' %}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text || `HTTP ${response.status}: ${response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Aligned Successfully!',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Update status badge to success
+                const badgeContainer = row.querySelector('.status-badge-container');
+                if (badgeContainer) {
+                    badgeContainer.innerHTML = '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Linked</span>';
+                }
+                
+                // Visual feedback highlight
+                row.style.transition = 'background-color 0.5s';
+                row.style.backgroundColor = '#e8f5e9';
+                setTimeout(() => {
+                    row.style.backgroundColor = 'transparent';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check mr-1"></i> Aligned';
+                    btn.className = 'btn btn-sm btn-outline-success rounded-pill px-3';
+                }, 1000);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Alignment Failed',
+                    text: data.error || 'An error occurred during updating.'
+                });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-link mr-1"></i> Align';
+            }
+        })
+        .catch(err => {
+            console.error('Alignment error details:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Request Failed',
+                text: err.message && err.message.length < 200 ? err.message : 'Server error occurred during alignment update.'
+            });
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-link mr-1"></i> Align';
+        });
+    }
 </script>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center">
-    <div class="col-md-6">
-        <h2 class="font-weight-bold mb-0">Reference Intelligence</h2>
-        <p class="text-muted">Tracking recruitment efficiency and influence nodes.</p>
-    </div>
-    <div class="col-md-6 text-right">
-        <form method="get" class="d-inline-block">
-            <div class="input-group">
-                <select name="year" class="form-control form-control-sm mr-2 rounded-pill" onchange="this.form.submit()">
+<div class="container-fluid pt-2">
+    <!-- Compact Title & Filters Ribbon -->
+    <div class="row align-items-center mb-3">
+        <div class="col-md-5">
+            <h3 class="font-weight-black text-dark mb-0"><i class="fas fa-brain text-indigo mr-2"></i> Reference Intelligence & Fixation</h3>
+            <p class="text-muted small mb-0">Redesign, analyze, and align raw references to standardized Hub records.</p>
+        </div>
+        <div class="col-md-7 d-flex justify-content-md-end align-items-center mt-2 mt-md-0" style="gap: 8px;">
+            <form method="get" class="d-flex align-items-center mb-0" style="gap: 6px;">
+                <select name="year" class="form-control form-control-sm rounded-pill font-weight-bold text-dark px-3" onchange="this.form.submit()" style="height: 34px;">
                     <option value="">All Intake Years</option>
                     {% for y in years %}
                         <option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>Year {{ y }}</option>
                     {% endfor %}
                 </select>
-                <select name="program" class="form-control form-control-sm mr-2 rounded-pill" onchange="this.form.submit()">
-                    <option value="">All Programs</option>
+                <select name="program" class="form-control form-control-sm rounded-pill font-weight-bold text-dark px-3" onchange="this.form.submit()" style="height: 34px;">
+                    <option value="">All Depts</option>
                     {% for p in programs %}
                         <option value="{{ p }}" {% if selected_program == p %}selected{% endif %}>{{ p }}</option>
                     {% endfor %}
                 </select>
-                <select name="batch" class="form-control form-control-sm mr-2 rounded-pill" onchange="this.form.submit()">
+                <select name="batch" class="form-control form-control-sm rounded-pill font-weight-bold text-dark px-3" onchange="this.form.submit()" style="height: 34px;">
                     <option value="">All Batches</option>
                     {% for b in batches %}
                         <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>Batch {{ b }}</option>
                     {% endfor %}
                 </select>
-                <a href="{% url 'reports_center' %}" class="btn btn-sm btn-outline-secondary rounded-pill">
-                    <i class="fas fa-arrow-left mr-1"></i> Back
-                </a>
-            </div>
-        </form>
+            </form>
+            <a href="{% url 'reference_manage' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-weight-bold shadow-sm" style="height: 34px; line-height: 22px;">
+                <i class="fas fa-network-wired mr-1"></i> Reference Hub
+            </a>
+            <a href="{% url 'reports_center' %}" class="btn btn-sm btn-secondary rounded-pill px-3 font-weight-bold shadow-sm" style="height: 34px; line-height: 22px;">
+                <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="row mb-4">
-    <div class="col-lg-4">
-        <div class="ref-kpi shadow-sm">
-            <span class="text-white-50 font-weight-bold text-uppercase small">Total Indexed References</span>
-            <div class="kpi-val mt-2">{{ data.references|length }}</div>
-            <div class="mt-3 bg-white-10 p-2 rounded-lg">
-                <span class="small">Total Students Analyzed: <b>{{ data.total }}</b></span>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-8">
-        <div class="card intelligence-card h-100">
-            <div class="card-header bg-white border-0 pt-4 px-4">
-                <h5 class="font-weight-bold mb-0">Top Recruitment Sources</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="refBarChart" style="height: 200px;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-lg-5 mb-4">
-        <div class="card intelligence-card h-100">
-            <div class="card-header bg-white border-0 pt-4 px-4 text-center">
-                <h5 class="font-weight-bold mb-0">Source Contribution</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="refPieChart"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-7 mb-4">
-        <div class="card intelligence-card h-100 shadow-sm">
-            <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between">
-                <h5 class="font-weight-bold mb-0">Reference Data Grid</h5>
-                <span class="badge badge-primary px-3 py-1 rounded-pill">Detailed Breakdown</span>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-premium mb-0">
-                        <thead>
-                            <tr>
-                                <th class="pl-4">Reference Name</th>
-                                <th class="text-center">Type</th>
-                                <th class="text-center">Designation</th>
-                                <th class="text-center">Student Info</th>
-                                <th class="text-center">Student Count</th>
-                                <th class="text-right pr-4">Impact Share</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in data.references %}
-                            <tr>
-                                <td class="pl-4 font-weight-bold">{{ row.reference }}</td>
-                                <td class="text-center">
-                                    <span class="badge {% if row.type == 'Employee' %}badge-info{% else %}badge-success{% endif %} px-2 py-1">{{ row.type }}</span>
-                                </td>
-                                <td class="text-center text-muted small">{{ row.designation }}</td>
-                                <td class="text-center text-muted small font-weight-bold">{{ row.student_info }}</td>
-                                <td class="text-center">
-                                    <span class="badge badge-soft-primary px-3 py-1">{{ row.count }}</span>
-                                </td>
-                                <td class="text-right pr-4 text-muted">
-                                    {% widthratio row.count data.total 100 %}%
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="6" class="text-center py-5">No reference data found for this selection.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <div class="row">
+        <!-- LEFT COLUMN: Main Tabbed Ledger & Alignment Console -->
+        <div class="col-lg-8 mb-4">
+            <div class="card report-card">
+                <div class="card-header p-0 bg-transparent">
+                    <ul class="nav nav-tabs nav-tabs-premium px-3 pt-2" id="reportTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="ledger-tab" data-toggle="tab" href="#ledger" role="tab" aria-selected="true">
+                                <i class="fas fa-list-ol mr-1"></i> Reference Data Grid
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="fixation-tab" data-toggle="tab" href="#fixation" role="tab" aria-selected="false">
+                                <i class="fas fa-wrench text-warning mr-1"></i> Alignment & Fixation Console
+                            </a>
+                        </li>
+                    </ul>
                 </div>
+                
+                <div class="tab-content" id="reportTabsContent">
+                    <!-- TAB 1: DATA GRID -->
+                    <div class="tab-pane fade show active" id="ledger" role="tabpanel">
+                        <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                            <table class="table table-hover table-premium mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="pl-4" style="width: 30%;">Referrer Name</th>
+                                        <th class="text-center" style="width: 15%;">Type</th>
+                                        <th style="width: 30%;">Designation / Student Info</th>
+                                        <th class="text-center" style="width: 12%;">Count</th>
+                                        <th class="text-right pr-4" style="width: 13%;">Share</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in data.references %}
+                                    <tr>
+                                        <td class="pl-4 font-weight-bold text-dark align-middle">{{ row.reference }}</td>
+                                        <td class="text-center align-middle">
+                                            {% if row.type == 'Employee' %}
+                                                <span class="badge badge-info px-2 py-1" style="font-size: 0.7rem; border-radius: 4px;">Employee</span>
+                                            {% elif row.type == 'External' %}
+                                                <span class="badge badge-warning px-2 py-1" style="font-size: 0.7rem; border-radius: 4px; color: #5f3f11; background-color: #fff3cd;">External</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary px-2 py-1" style="font-size: 0.7rem; border-radius: 4px;">Student</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="align-middle text-muted small" style="font-size: 0.78rem; font-weight: 500;">
+                                            {% if row.type == 'Student' %}
+                                                <span class="text-dark font-monospace">{{ row.student_info }}</span>
+                                            {% else %}
+                                                <span>{{ row.designation }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <button type="button" 
+                                                    class="btn btn-xs btn-outline-primary font-weight-bold px-3 py-1 rounded-pill shadow-xs"
+                                                    data-toggle="modal" 
+                                                    data-target="#referredStudentsModal"
+                                                    hx-get="{% url 'api_reference_students' %}?type={{ row.type }}&id={{ row.ref_id }}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_program %}&program={{ selected_program }}{% endif %}{% if selected_batch %}&batch={{ selected_batch }}{% endif %}"
+                                                    hx-target="#referred-students-modal-body"
+                                                    hx-trigger="click">
+                                                {{ row.count }}
+                                            </button>
+                                        </td>
+                                        <td class="text-right pr-4 text-muted font-weight-bold align-middle">
+                                            {% widthratio row.count data.total 100 %}%
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">No reference records found for this selection.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: ALIGNMENT & FIXATION CONSOLE -->
+                    <div class="tab-pane fade" id="fixation" role="tabpanel">
+                        <div class="p-3 bg-light border-bottom">
+                            <h6 class="font-weight-bold text-dark mb-1"><i class="fas fa-magic text-indigo mr-1"></i> Resolve Legacy Text References</h6>
+                            <p class="text-muted small mb-0">Students added with arbitrary text references (e.g. <em>"Head AIS"</em>) can be aligned to standardized Reference Hub records. This will re-link all matching students in one click.</p>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover table-premium mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th class="pl-4">Legacy String Name</th>
+                                        <th class="text-center" style="width: 15%;">Total Links</th>
+                                        <th class="text-center" style="width: 15%;">Status</th>
+                                        <th style="width: 40%;">Map to Reference Node</th>
+                                        <th class="text-right pr-4" style="width: 15%;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in legacy_refs %}
+                                    <tr id="legacy-row-{{ forloop.counter }}">
+                                        <td class="pl-4 font-weight-bold text-dark align-middle">{{ item.reference_legacy }}</td>
+                                        <td class="text-center align-middle">
+                                            <span class="badge badge-light border font-weight-bold px-2 py-1">{{ item.total_students }} students</span>
+                                        </td>
+                                        <td class="text-center align-middle status-badge-container">
+                                            {% if item.unaligned_count > 0 %}
+                                                <span class="badge badge-warning font-weight-bold px-2 py-1"><i class="fas fa-exclamation-triangle"></i> {{ item.unaligned_count }} unlinked</span>
+                                            {% else %}
+                                                <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle"></i> Linked</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="align-middle">
+                                            <select class="form-control form-control-sm target-node-select text-dark" style="height: auto !important; padding: 0.35rem 0.5rem !important; font-weight: 600;">
+                                                <option value="">-- Select Target Reference Node --</option>
+                                                {% for ref in all_references_list %}
+                                                    <option value="{{ ref.id }}">{{ ref.name_en }} ({% if ref.category == 'Employee' %}Employee{% else %}External{% endif %}{% if ref.baust_id %}, {{ ref.baust_id }}{% endif %})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td class="text-right pr-4 align-middle">
+                                            <button class="btn btn-sm btn-primary rounded-pill px-3 align-btn font-weight-bold" 
+                                                    type="button"
+                                                    onclick="alignLegacyReference('{{ item.reference_legacy|escapejs }}', this, 'legacy-row-{{ forloop.counter }}')">
+                                                <i class="fas fa-link mr-1"></i> Align
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">No legacy string references found.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Compact KPIs & Doughnut Chart -->
+        <div class="col-lg-4">
+            <!-- Compact KPI Box -->
+            <div class="compact-kpi-card shadow-sm mb-3">
+                <span class="text-white-50 font-weight-bold text-uppercase small">Total Recruits Indexed</span>
+                <div class="h2 font-weight-bold mt-1 mb-0">{{ data.references|length }} Referrers</div>
+                <div class="mt-2 pt-2 border-top border-secondary d-flex justify-content-between text-white-50 small">
+                    <span>Total Students: <strong>{{ data.total }}</strong></span>
+                    <span>Selection: <strong>{% if selected_year %}Year {{ selected_year }}{% else %}Overall{% endif %}</strong></span>
+                </div>
+            </div>
+
+            <!-- Distribution Chart Card -->
+            <div class="card report-card">
+                <div class="card-header border-0 bg-transparent pt-3 px-3">
+                    <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-chart-pie text-indigo mr-1"></i> Referrer Type Share</h6>
+                </div>
+                <div class="card-body p-3 d-flex justify-content-center">
+                    <div style="width: 220px; height: 220px;">
+                        <canvas id="refDoughnutChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REFERRED STUDENTS DRILLDOWN MODAL -->
+<div class="modal fade" id="referredStudentsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 overflow-hidden shadow" style="border-radius: 12px;">
+            <div class="modal-premium-header bg-dark text-white p-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;">
+                <h5 class="modal-title font-weight-black mb-0"><i class="fas fa-users mr-2 text-info"></i> Referred Student Roster</h5>
+                <button type="button" class="close text-white opacity-75" data-dismiss="modal" aria-label="Close" style="outline: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" id="referred-students-modal-body">
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary"></i>
+                    <p class="mb-0">Loading student roster records...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 py-2">
+                <button type="button" class="btn btn-secondary px-4 rounded-pill font-weight-bold" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

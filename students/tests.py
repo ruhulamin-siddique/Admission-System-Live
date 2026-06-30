@@ -1252,7 +1252,17 @@ class StudentDirectoryTests(TestCase):
         top_refs = response.context['stats']['top_references']
         top_ref_names = [r['reference'] for r in top_refs]
         self.assertIn("Test Employee Referrer", top_ref_names)
-        self.assertIn("[Student] Test Student Referrer", top_ref_names)
+        self.assertIn("Test Student Referrer", top_ref_names)
+
+        # Verify the designations and student_info in top references
+        emp_ref = next(r for r in top_refs if r['reference'] == "Test Employee Referrer")
+        self.assertEqual(emp_ref['designation'], "Lecturer")
+        self.assertEqual(emp_ref['type'], "Employee")
+
+        stud_ref = next(r for r in top_refs if r['reference'] == "Test Student Referrer")
+        self.assertEqual(stud_ref['designation'], "N/A")
+        self.assertEqual(stud_ref['type'], "Student")
+        self.assertIn("CSE202699999", stud_ref['student_info'])
 
 
 class ReferenceNodeSystemTests(TestCase):
@@ -1329,6 +1339,70 @@ class ReferenceNodeSystemTests(TestCase):
         # 3. 404 for non-existent node
         response = self.client.get(reverse('api_reference_link_count', args=[999999]))
         self.assertEqual(response.status_code, 404)
+
+    def test_api_align_legacy_reference(self):
+        from students.models import ReferenceNode, Student
+
+        # Setup standard target ReferenceNode
+        target_ref = ReferenceNode.objects.create(name_en="Head of AIS", designation="Employee")
+
+        # Setup students with legacy references
+        s1 = Student.objects.create(student_id="CSE202611111", student_name="Legacy A", reference_legacy="Head AIS", admission_status="Active")
+        s2 = Student.objects.create(student_id="CSE202622222", student_name="Legacy B", reference_legacy="Head AIS", admission_status="Active")
+        s3 = Student.objects.create(student_id="CSE202633333", student_name="Other Ref", reference_legacy="Random Text", admission_status="Active")
+
+        # Ensure reference field is originally empty
+        self.assertNil = lambda x: self.assertIsNone(x)
+        self.assertNil(s1.reference)
+        self.assertNil(s2.reference)
+
+        # Login admin user to authenticate edit access
+        self.client.force_login(self.superuser)
+
+        # Perform bulk alignment POST call
+        response = self.client.post(reverse('api_align_legacy_reference'), {
+            'legacy_text': 'Head AIS',
+            'target_node_id': target_ref.id
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['updated_count'], 2)
+
+        # Verify database updates
+        s1.refresh_from_db()
+        s2.refresh_from_db()
+        s3.refresh_from_db()
+        self.assertEqual(s1.reference, target_ref)
+        self.assertEqual(s2.reference, target_ref)
+        self.assertNil(s3.reference)
+
+    def test_api_reference_students(self):
+        from students.models import ReferenceNode, Student
+
+        # 1. Setup a standard ReferenceNode
+        ref = ReferenceNode.objects.create(name_en="Test Referrer Node", category="Employee")
+        
+        # 2. Setup a referring student
+        referrer_student = Student.objects.create(student_id="CSE202688888", student_name="Student Referrer", admission_status="Active")
+
+        # 3. Setup referred students
+        s1 = Student.objects.create(student_id="CSE202600001", student_name="Student A", reference=ref, admission_status="Active")
+        s2 = Student.objects.create(student_id="CSE202600002", student_name="Student B", referred_by_student=referrer_student, admission_status="Active")
+
+        self.client.force_login(self.superuser)
+
+        # 4. Query ReferenceNode referred list
+        response = self.client.get(reverse('api_reference_students') + f"?type=Employee&id={ref.id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Student A")
+        self.assertNotContains(response, "Student B")
+
+        # 5. Query Student referred list
+        response = self.client.get(reverse('api_reference_students') + f"?type=Student&id={referrer_student.student_id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Student B")
+        self.assertNotContains(response, "Student A")
 
     def test_reference_hub_spa_actions(self):
         from students.models import ReferenceNode
@@ -1514,6 +1588,144 @@ class ReferenceNodeSystemTests(TestCase):
         self.assertEqual(response.status_code, 200)
         node2.refresh_from_db()
         self.assertEqual(node2.category, 'Employee')
+
+    def test_cancellation_hub_access_and_filtering(self):
+        from core.models import Role, RolePermission
+        from students.models import Student
+        from django.contrib.auth.models import User
+        
+        # Create a user with view permission
+        viewer_role = Role.objects.create(name='Cancellation Viewer')
+        RolePermission.objects.create(role=viewer_role, module='students', task='view_cancellations')
+        
+        viewer_user = User.objects.create_user(username='viewer_cancel', password='password123')
+        viewer_user.profile.role = viewer_role
+        viewer_user.profile.save()
+        
+        # Create a user without view permission
+        unprivileged_user = User.objects.create_user(username='no_cancel', password='password123')
+        
+        # 1. Unprivileged user gets forbidden/redirected
+        self.client.force_login(unprivileged_user)
+        response = self.client.get(reverse('cancellation_hub'))
+        self.assertEqual(response.status_code, 302) # Redirect to permission denied
+        
+        # 2. Privileged viewer user can access hub
+        self.client.force_login(viewer_user)
+        response = self.client.get(reverse('cancellation_hub'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cancellations Directory')
+        
+        # 3. Create a cancelled student and check filters
+        cancelled_student = Student.objects.create(
+            student_id="CSE2025999",
+            student_name="Cancelled Tester",
+            program="Computer Science and Engineering",
+            batch="25th",
+            admission_status="Cancelled"
+        )
+        # Create history log
+        from students.models import AdmissionStatusHistory
+        AdmissionStatusHistory.objects.create(
+            student=cancelled_student,
+            old_status="Active",
+            new_status="Cancelled",
+            reason_category="Migration",
+            custom_notes="Going to another university",
+            performed_by=self.superuser
+        )
+        
+        # Access search/filters via HTMX
+        response = self.client.get(reverse('cancellation_hub') + "?search_cancelled=Tester&target=cancelled", HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CSE2025999")
+        self.assertContains(response, "Cancelled Tester")
+        
+        # Filter by program
+        response = self.client.get(reverse('cancellation_hub') + "?program=Computer+Science+and+Engineering&target=cancelled", HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CSE2025999")
+        
+        # Filter by non-existent program
+        response = self.client.get(reverse('cancellation_hub') + "?program=NonExistent&target=cancelled", HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "CSE2025999")
+        
+        # 4. Check export permission
+        # Viewer doesn't have export permission
+        response = self.client.get(reverse('export_cancellations_dynamic'))
+        self.assertEqual(response.status_code, 302)
+        
+        # Give viewer export permission
+        RolePermission.objects.create(role=viewer_role, module='students', task='export_cancellations')
+        response = self.client.get(reverse('export_cancellations_dynamic') + "?program=Computer+Science+and+Engineering")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    def test_migration_hub_access_and_filtering(self):
+        from core.models import Role, RolePermission
+        from students.models import Student, ProgramChangeHistory
+        from django.contrib.auth.models import User
+        
+        # Create a user with view permission
+        viewer_role = Role.objects.create(name='Migration Viewer')
+        RolePermission.objects.create(role=viewer_role, module='students', task='view_migrations')
+        
+        viewer_user = User.objects.create_user(username='viewer_mig', password='password123')
+        viewer_user.profile.role = viewer_role
+        viewer_user.profile.save()
+        
+        # Create a user without view permission
+        unprivileged_user = User.objects.create_user(username='no_mig', password='password123')
+        
+        # 1. Unprivileged user gets redirected
+        self.client.force_login(unprivileged_user)
+        response = self.client.get(reverse('migration_center'))
+        self.assertEqual(response.status_code, 302)
+        
+        # 2. Privileged viewer user can access hub
+        self.client.force_login(viewer_user)
+        response = self.client.get(reverse('migration_center'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Migration Log History')
+        
+        # 3. Create a migration log history and check filters
+        history_item = ProgramChangeHistory.objects.create(
+            old_student_id="CSE2025001",
+            new_student_id="EEE2025001",
+            old_program="Computer Science and Engineering",
+            new_program="Electrical and Electronic Engineering",
+            notes="Interested in electrical fields"
+        )
+        
+        # Access search/filters via HTMX
+        response = self.client.get(reverse('migration_center') + "?search_history=CSE2025001&target=history", HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CSE2025001")
+        self.assertContains(response, "EEE2025001")
+        
+        # Filter by old program
+        response = self.client.get(reverse('migration_center') + "?old_program=Computer+Science+and+Engineering&target=history", HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CSE2025001")
+        
+        # Filter by non-matching old program
+        response = self.client.get(reverse('migration_center') + "?old_program=Electrical+and+Electronic+Engineering&target=history", HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "CSE2025001")
+        
+        # 4. Check export permission
+        # Viewer doesn't have export permission
+        response = self.client.get(reverse('export_migrations_dynamic'))
+        self.assertEqual(response.status_code, 302)
+        
+        # Give viewer export permission
+        RolePermission.objects.create(role=viewer_role, module='students', task='export_migrations')
+        response = self.client.get(reverse('export_migrations_dynamic') + "?old_program=Computer+Science+and+Engineering")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
 
 
 

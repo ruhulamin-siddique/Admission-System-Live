@@ -4,14 +4,16 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 def copy_to_legacy(apps, schema_editor):
+    db_alias = schema_editor.connection.alias
     Student = apps.get_model('students', 'Student')
-    for s in Student.objects.all():
+    for s in Student.objects.using(db_alias).all():
         s.reference_legacy = s.reference
         # Always set to None (NULL) to clean the column for the ForeignKey AlterField operation
         s.reference = None
-        s.save()
+        s.save(using=db_alias)
 
 def populate_foreign_keys(apps, schema_editor):
+    db_alias = schema_editor.connection.alias
     Student = apps.get_model('students', 'Student')
     ReferenceNode = apps.get_model('students', 'ReferenceNode')
     
@@ -19,7 +21,7 @@ def populate_foreign_keys(apps, schema_editor):
     node_map = {}
     
     # Query Student objects where reference_legacy is not null/empty
-    students_with_legacy = Student.objects.exclude(reference_legacy__isnull=True).exclude(reference_legacy='')
+    students_with_legacy = Student.objects.using(db_alias).exclude(reference_legacy__isnull=True).exclude(reference_legacy='')
     
     next_id = 1
     for s in students_with_legacy:
@@ -30,11 +32,11 @@ def populate_foreign_keys(apps, schema_editor):
         if legacy_str not in node_map:
             # Manually generate reference_id since historical models in migrations bypass custom save()
             ref_id = f"REF-{next_id:05d}"
-            while ReferenceNode.objects.filter(reference_id=ref_id).exists():
+            while ReferenceNode.objects.using(db_alias).filter(reference_id=ref_id).exists():
                 next_id += 1
                 ref_id = f"REF-{next_id:05d}"
                 
-            node = ReferenceNode.objects.create(
+            node = ReferenceNode.objects.using(db_alias).create(
                 name_en=legacy_str,
                 reference_id=ref_id
             )
@@ -42,7 +44,7 @@ def populate_foreign_keys(apps, schema_editor):
             next_id += 1
             
         s.reference = node_map[legacy_str]
-        s.save()
+        s.save(using=db_alias)
 
 class Migration(migrations.Migration):
 

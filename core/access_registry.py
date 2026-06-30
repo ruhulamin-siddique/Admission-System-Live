@@ -17,8 +17,12 @@ ACCESS_REGISTRY = {
             "view_directory": ("Intelligence Search & Directory", "Access the Global Search and browse the student database."),
             "add_student": ("Admit New Student", "Process new admissions and enroll students."),
             "edit_profile": ("Edit Student Profile", "Update student biographical and academic info."),
-            "manage_migrations": ("Program Migrations", "Manage department changes and student program history."),
-            "cancel_admission": ("Admission Cancellation", "Manage individual and bulk admission cancellations."),
+            "view_migrations": ("View Migration Center", "Allows browsing, searching, and viewing academic migrations directory."),
+            "manage_migrations": ("Execute Academic Migration", "Allows processing a program migration/department change."),
+            "export_migrations": ("Export Migration History", "Allows downloading Excel logs of academic migrations."),
+            "view_cancellations": ("View Cancellation Hub", "Allows access to search, browse, and view cancelled students lists."),
+            "cancel_admission": ("Cancel/Modify Admission", "Allows executing individual and bulk admission cancellations/suspensions."),
+            "export_cancellations": ("Export & Print Cancellations", "Allows generating Excel downloads of cancelled student directories."),
             "delete_record": ("Delete Student", "Permanently remove student records from system."),
             "export_excel": ("Export to Excel", "Generate and download the 44-column Excel master list."),
             "bulk_import": ("Bulk Excel Import", "Upload and process mass student registrations."),
@@ -26,6 +30,7 @@ ACCESS_REGISTRY = {
             "academic_audit": ("Academic Board Audit", "Verify student SSC/HSC data against official education board portals."),
             "mobile_repair": ("Mobile Number Repair", "Identify and fix incorrectly formatted mobile numbers missing leading zeros."),
             "bulk_update": ("Mass Data Harmonizer", "Modify fields across multiple selected students at once."),
+            "manage_references": ("Reference Hub Manager", "Access, update, and merge standardized Reference Hub nodes."),
         }
     },
     "reports": {

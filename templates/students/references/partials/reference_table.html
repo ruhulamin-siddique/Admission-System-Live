@@ -1,5 +1,8 @@
 {% for ref in references %}
 <tr id="ref-row-{{ ref.id }}" class="align-middle">
+    <td class="text-muted font-weight-bold" style="font-size: 0.85rem;">
+        {{ forloop.counter }}
+    </td>
     <td class="font-weight-bold text-primary font-monospace" style="font-size: 0.9rem;">
         {{ ref.reference_id }}
     </td>
@@ -52,7 +55,7 @@
 </tr>
 {% empty %}
 <tr>
-    <td colspan="7" class="text-center text-muted py-5">
+    <td colspan="8" class="text-center text-muted py-5">
         <div class="mb-3"><i class="fas fa-folder-open fa-3x opacity-50"></i></div>
         No Reference Nodes found matching the search criteria.
     </td>

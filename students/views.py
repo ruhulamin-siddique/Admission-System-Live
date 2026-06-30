@@ -317,15 +317,32 @@ def dashboard(request):
     
     # Employee references
     emp_qs = ref_qs.exclude(reference__isnull=True).values(
-        name=F('reference__name_en')
+        name=F('reference__name_en'),
+        designation=F('reference__designation'),
+        category=F('reference__category')
     ).annotate(count=Count('student_id'))
-    emp_list = [{'reference': item['name'], 'count': item['count']} for item in emp_qs]
+    emp_list = [{
+        'reference': item['name'], 
+        'type': item['category'] or 'Employee',
+        'designation': item['designation'] or 'Employee',
+        'student_info': 'N/A',
+        'count': item['count']
+    } for item in emp_qs]
     
     # Student references
     stud_qs = ref_qs.exclude(referred_by_student__isnull=True).values(
-        name=F('referred_by_student__student_name')
+        name=F('referred_by_student__student_name'),
+        ref_id=F('referred_by_student__student_id'),
+        referred_program=F('referred_by_student__program'),
+        batch_name=F('referred_by_student__batch')
     ).annotate(count=Count('student_id'))
-    stud_list = [{'reference': f"[Student] {item['name']}", 'count': item['count']} for item in stud_qs]
+    stud_list = [{
+        'reference': item['name'], 
+        'type': 'Student',
+        'designation': 'N/A',
+        'student_info': f"ID: {item['ref_id']} - {item['referred_program'] or 'No Dept'} ({item['batch_name'] or 'Unknown'})",
+        'count': item['count']
+    } for item in stud_qs]
     
     # Combine and sort
     combined_refs = emp_list + stud_list
@@ -775,66 +792,174 @@ def delete_student(request, student_id):
         return redirect('student_list')
     return redirect('student_profile', student_id=student_id)
 
-@require_access('students', 'manage_migrations')
+@require_access('students', 'view_migrations')
 def migration_center(request):
-    """Refined Migration Center with Search-First logic and History."""
-    query = request.GET.get('search', '').strip()
-    per_page = request.GET.get('per_page', 10)
+    """Unified Academic Migration & History Hub."""
+    # Active search for candidates (Tab 2)
+    search_active = request.GET.get('search_active', '').strip()
+    
+    # History search & filters (Tab 1)
+    search_history = request.GET.get('search_history', '').strip()
+    selected_old_program = request.GET.get('old_program', '').strip()
+    selected_new_program = request.GET.get('new_program', '').strip()
     page_number = request.GET.get('page', 1)
     
-    # Context initialization
-    context = {'query': query, 'per_page': int(per_page)}
+    # 1. Query Migration History Log
+    history_queryset = ProgramChangeHistory.objects.all()
+    if selected_old_program:
+        history_queryset = history_queryset.filter(old_program=selected_old_program)
+    if selected_new_program:
+        history_queryset = history_queryset.filter(new_program=selected_new_program)
+    if search_history:
+        history_queryset = history_queryset.filter(
+            Q(old_student_id__icontains=search_history) |
+            Q(new_student_id__icontains=search_history)
+        )
     
-    if query:
-        # State 1: Search Active
-        students_queryset = Student.objects.filter(
-            Q(student_name__icontains=query) | 
-            Q(student_id__icontains=query) |
-            Q(old_student_id__icontains=query) |
-            Q(student_mobile__icontains=query)
-        ).order_by('student_id')
+    history_queryset = history_queryset.order_by('-change_date')
+    
+    # Paginate History
+    paginator_history = Paginator(history_queryset, 20)
+    history_page_obj = paginator_history.get_page(page_number)
+    
+    # 2. Query Candidate Active Students
+    active_candidates = []
+    if search_active:
+        active_candidates = Student.objects.filter(
+            Q(student_name__icontains=search_active) | 
+            Q(student_id__icontains=search_active) |
+            Q(old_student_id__icontains=search_active) |
+            Q(student_mobile__icontains=search_active)
+        ).exclude(admission_status='Cancelled').order_by('student_id')[:25]
         
-        paginator = Paginator(students_queryset, per_page)
-        page_obj = paginator.get_page(page_number)
-        context['page_obj'] = page_obj
-        context['page_range'] = paginator.get_elided_page_range(number=page_obj.number, on_each_side=2, on_ends=1)
-        
-        template = 'students/partials/migration_table.html' if request.headers.get('HX-Request') else 'students/migration_list.html'
-    else:
-        # State 2: No Search (Show History)
-        migration_history = ProgramChangeHistory.objects.order_by('-change_date')[:15]
-        context['migration_history'] = migration_history
-        
-        template = 'students/partials/migration_history_table.html' if request.headers.get('HX-Request') else 'students/migration_list.html'
-        
-    return render(request, template, context)
+    # Dynamic Program Filters
+    programs = Student.objects.values_list('program', flat=True).distinct().exclude(program=None).order_by('program')
+    
+    # Build export parameters
+    import urllib.parse
+    export_params = {}
+    if search_history: export_params['search'] = search_history
+    if selected_old_program: export_params['old_program'] = selected_old_program
+    if selected_new_program: export_params['new_program'] = selected_new_program
+    export_querystring = urllib.parse.urlencode(export_params) if export_params else ""
 
-@require_access('students', 'cancel_admission')
-def cancellation_hub(request):
-    """Search-First hub for managing admission cancellations and suspensions."""
-    query = request.GET.get('search', '').strip()
-    
-    # Aggregate Analytics for the Stat Card
-    cancelled_count = Student.objects.filter(admission_status='Cancelled').count()
-    
     context = {
-        'query': query,
-        'cancelled_count': cancelled_count,
+        'search_active': search_active,
+        'search_history': search_history,
+        'selected_old_program': selected_old_program,
+        'selected_new_program': selected_new_program,
+        'history_page_obj': history_page_obj,
+        'active_candidates': active_candidates,
+        'programs': programs,
+        'export_querystring': export_querystring,
+        'total_migrations': ProgramChangeHistory.objects.count(),
     }
-    
-    if query:
-        # Search for students eligible for status change (Active/Inactive)
-        students = Student.objects.filter(
-            Q(student_name__icontains=query) | 
-            Q(student_id__icontains=query) |
-            Q(old_student_id__icontains=query)
-        ).exclude(admission_status='Cancelled').order_by('student_id')[:20]
-        context['students'] = students
-    
-    template = 'students/partials/cancellation_results.html' if request.headers.get('HX-Request') else 'students/cancellation_hub.html'
-    return render(request, template, context)
 
-@require_access('students', 'cancel_admission')
+    if request.headers.get('HX-Request'):
+        target = request.GET.get('target', 'history')
+        if target == 'active':
+            # Render candidates table (renamed from page_obj inside migration_table)
+            context['page_obj'] = active_candidates
+            return render(request, 'students/partials/migration_table.html', context)
+        else:
+            return render(request, 'students/partials/migration_history_list.html', context)
+
+    return render(request, 'students/migration_list.html', context)
+
+@require_access('students', 'view_cancellations')
+def cancellation_hub(request):
+    """Unified Admission Cancellation & Status Hub."""
+    # Active search (Tab 2)
+    search_active = request.GET.get('search_active', '').strip()
+    
+    # Cancelled search & filters (Tab 1)
+    search_cancelled = request.GET.get('search_cancelled', '').strip()
+    selected_program = request.GET.get('program', '').strip()
+    selected_batch = request.GET.get('batch', '').strip()
+    selected_reason = request.GET.get('reason', '').strip()
+    
+    # 1. Query Cancelled students
+    cancelled_queryset = Student.objects.filter(admission_status='Cancelled').prefetch_related('status_history')
+    if selected_program:
+        cancelled_queryset = cancelled_queryset.filter(program=selected_program)
+    if selected_batch:
+        cancelled_queryset = cancelled_queryset.filter(batch=selected_batch)
+    if selected_reason:
+        cancelled_queryset = cancelled_queryset.filter(
+            status_history__new_status='Cancelled',
+            status_history__reason_category=selected_reason
+        )
+    if search_cancelled:
+        cancelled_queryset = cancelled_queryset.filter(
+            Q(student_id__icontains=search_cancelled) |
+            Q(student_name__icontains=search_cancelled)
+        )
+    
+    cancelled_queryset = cancelled_queryset.distinct().order_by('-last_updated')
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(cancelled_queryset, 20)
+    page_number = request.GET.get('page', 1)
+    cancelled_page_obj = paginator.get_page(page_number)
+    
+    # 2. Query Active students for new cancellations
+    active_students = []
+    if search_active:
+        active_students = Student.objects.filter(
+            Q(student_name__icontains=search_active) | 
+            Q(student_id__icontains=search_active) |
+            Q(old_student_id__icontains=search_active)
+        ).exclude(admission_status='Cancelled').order_by('student_id')[:25]
+
+    # Dynamic Filter Choices
+    programs = Student.objects.filter(admission_status='Cancelled').values_list('program', flat=True).distinct().order_by('program')
+    batches = Student.objects.filter(admission_status='Cancelled').values_list('batch', flat=True).distinct().exclude(batch=None).order_by('batch')
+    reasons = [
+        ('Migration', 'Migration to other University'),
+        ('Financial', 'Financial/Non-Payment'),
+        ('Personal', 'Personal Reasons'),
+        ('Academic', 'Academic Non-Performance'),
+        ('Disciplinary', 'Disciplinary Action'),
+        ('Other', 'Other (See Notes)'),
+    ]
+    reasons_map = dict(reasons)
+    
+    # Build export query parameters string
+    import urllib.parse
+    export_params = {}
+    if search_cancelled: export_params['search'] = search_cancelled
+    if selected_program: export_params['program'] = selected_program
+    if selected_batch: export_params['batch'] = selected_batch
+    if selected_reason: export_params['reason'] = selected_reason
+    export_querystring = urllib.parse.urlencode(export_params) if export_params else ""
+
+    context = {
+        'search_active': search_active,
+        'search_cancelled': search_cancelled,
+        'selected_program': selected_program,
+        'selected_batch': selected_batch,
+        'selected_reason': selected_reason,
+        'cancelled_page_obj': cancelled_page_obj,
+        'active_students': active_students,
+        'programs': programs,
+        'batches': batches,
+        'reasons': reasons,
+        'reasons_map': reasons_map,
+        'export_querystring': export_querystring,
+        'cancelled_count': Student.objects.filter(admission_status='Cancelled').count(),
+    }
+
+    if request.headers.get('HX-Request'):
+        target = request.GET.get('target', 'cancelled')
+        if target == 'active':
+            return render(request, 'students/partials/cancellation_results.html', context)
+        else:
+            return render(request, 'students/partials/cancellation_list.html', context)
+
+    return render(request, 'students/cancellation_hub.html', context)
+
+@require_access('students', 'view_cancellations')
 def cancellation_list_modal(request):
     """Returns a partial list of cancelled students for the drill-down modal."""
     cancelled_students = Student.objects.filter(admission_status='Cancelled').order_by('-last_updated')
@@ -1310,43 +1435,48 @@ def api_demographic_students(request):
 
 def api_bulk_photo_zip(request):
     """Packages student photos into a ZIP archive with support for direct selection or dynamic filtering."""
-    if request.method != 'POST':
+    if request.method not in ['GET', 'POST']:
         return HttpResponse("Method not allowed", status=405)
         
-    student_ids = request.POST.getlist('student_ids[]')
+    data_source = request.POST if request.method == 'POST' else request.GET
+    student_ids = data_source.getlist('student_ids[]')
     
     if student_ids:
         # Priority 1: Specific selection from Directory
         students = Student.objects.filter(student_id__in=student_ids)
     else:
-        # Priority 2: Dynamic filtering from Export Center
-        query = request.POST.get('search', '')
-        program = request.POST.get('program')
-        status = request.POST.get('status')
-        batch = request.POST.get('batch')
-        semester = request.POST.get('semester')
-        hall = request.POST.get('hall')
-        start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date')
-        
-        students = Student.objects.all()
-        if query:
-            students = students.filter(Q(student_name__icontains=query) | Q(student_id__icontains=query))
-        if program and program != 'All':
-            students = students.filter(program=program)
-        if status and status != 'All':
-            students = students.filter(admission_status=status)
-        if batch:
-            students = students.filter(batch=batch)
-        if semester and semester != 'All':
-            students = students.filter(semester_name=semester)
-        if hall:
-            students = students.filter(hall_attached__icontains=hall)
-        if start_date:
-            students = students.filter(admission_date__gte=start_date)
-        if end_date:
-            students = students.filter(admission_date__lte=end_date)
+        # Priority 2: Use directory state filtering
+        try:
+            students = _build_directory_state(request)['filtered_queryset']
+        except Exception:
+            # Fallback if request cannot build directory state
+            query = data_source.get('search', '')
+            program = data_source.get('program')
+            status = data_source.get('status')
+            batch = data_source.get('batch')
+            semester = data_source.get('semester')
+            hall = data_source.get('hall')
+            start_date = data_source.get('start_date')
+            end_date = data_source.get('end_date')
             
+            students = Student.objects.all()
+            if query:
+                students = students.filter(Q(student_name__icontains=query) | Q(student_id__icontains=query))
+            if program and program != 'All':
+                students = students.filter(program=program)
+            if status and status != 'All':
+                students = students.filter(admission_status=status)
+            if batch:
+                students = students.filter(batch=batch)
+            if semester and semester != 'All':
+                students = students.filter(semester_name=semester)
+            if hall:
+                students = students.filter(hall_attached__icontains=hall)
+            if start_date:
+                students = students.filter(admission_date__gte=start_date)
+            if end_date:
+                students = students.filter(admission_date__lte=end_date)
+                
     students = students.exclude(photo_path__isnull=True).exclude(photo_path='')
     
     if not students.exists():
@@ -2847,20 +2977,38 @@ def export_students_dynamic(request):
         return response
     return redirect('export_center')
 
-@require_access('reports', 'view_analytics')
+@require_access('students', 'export_migrations')
 def export_migrations_dynamic(request):
-    """Date-range based export for program migration history."""
+    """Excel export for program migration history based on current filters."""
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     query = request.GET.get('search')
+    old_program = request.GET.get('old_program')
+    new_program = request.GET.get('new_program')
 
     queryset = ProgramChangeHistory.objects.all()
     if start_date: queryset = queryset.filter(change_date__gte=start_date)
     if end_date: queryset = queryset.filter(change_date__lte=end_date)
     if query:
-        queryset = queryset.filter(Q(old_student_id__icontains=query) | Q(new_student_id__icontains=query))
+        queryset = queryset.filter(
+            Q(old_student_id__icontains=query) | 
+            Q(new_student_id__icontains=query)
+        )
+    if old_program:
+        queryset = queryset.filter(old_program=old_program)
+    if new_program:
+        queryset = queryset.filter(new_program=new_program)
 
-    data = list(queryset.values('old_student_id', 'new_student_id', 'old_program', 'new_program', 'change_date', 'notes'))
+    data = []
+    for item in queryset:
+        data.append({
+            'Change Date': item.change_date.strftime('%Y-%m-%d %H:%M') if item.change_date else '',
+            'Old Program': item.old_program,
+            'New Program': item.new_program,
+            'Old Student ID': item.old_student_id,
+            'New Student ID': item.new_student_id,
+            'Notes': item.notes or '',
+        })
     df = pd.DataFrame(data)
     
     output = BytesIO()
@@ -2868,31 +3016,45 @@ def export_migrations_dynamic(request):
         df.to_excel(writer, index=False, sheet_name='MigrationHistory')
     
     response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="Migrations_Audit_{timezone.now().strftime("%Y%m%d")}.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="Migrations_Export_{timezone.now().strftime("%Y%m%d")}.xlsx"'
     return response
 
-@require_access('reports', 'view_analytics')
+@require_access('students', 'export_cancellations')
 def export_cancellations_dynamic(request):
-    """Date-range based export for admission cancellation history."""
+    """Excel export for admission cancellation history based on current filters."""
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     query = request.GET.get('search')
+    program = request.GET.get('program')
+    batch = request.GET.get('batch')
+    reason = request.GET.get('reason')
 
-    queryset = AdmissionStatusHistory.objects.filter(new_status='Cancelled')
+    queryset = AdmissionStatusHistory.objects.filter(new_status='Cancelled').select_related('student', 'performed_by')
     if start_date: queryset = queryset.filter(change_date__gte=start_date)
     if end_date: queryset = queryset.filter(change_date__lte=end_date)
     if query:
-        queryset = queryset.filter(student__student_id__icontains=query)
+        queryset = queryset.filter(
+            Q(student__student_id__icontains=query) |
+            Q(student__student_name__icontains=query)
+        )
+    if program:
+        queryset = queryset.filter(student__program=program)
+    if batch:
+        queryset = queryset.filter(student__batch=batch)
+    if reason:
+        queryset = queryset.filter(reason_category=reason)
 
     data = []
     for item in queryset:
         data.append({
-            'student_id': item.student.student_id,
-            'student_name': item.student.student_name,
-            'reason': item.reason_category,
-            'notes': item.custom_notes,
-            'date': item.change_date,
-            'performed_by': item.performed_by.username if item.performed_by else 'System'
+            'Student ID': item.student.student_id,
+            'Student Name': item.student.student_name,
+            'Program': item.student.program,
+            'Batch': item.student.batch or '',
+            'Reason Category': item.reason_category,
+            'Administrative Notes': item.custom_notes or '',
+            'Cancellation Date': item.change_date.strftime('%Y-%m-%d %H:%M'),
+            'Cancelled By': item.performed_by.username if item.performed_by else 'System'
         })
     df = pd.DataFrame(data)
     
@@ -2901,7 +3063,7 @@ def export_cancellations_dynamic(request):
         df.to_excel(writer, index=False, sheet_name='Cancellations')
     
     response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="Cancellations_Audit_{timezone.now().strftime("%Y%m%d")}.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="Cancellations_Export_{timezone.now().strftime("%Y%m%d")}.xlsx"'
     return response
 
 from .reports import (
@@ -3167,6 +3329,7 @@ def subject_report(request):
         'selected_batch': batch
     })
 
+@login_required
 @require_access('reports', 'view_analytics')
 def reference_report(request):
     """Reference efficiency and recruitment source analysis."""
@@ -3188,6 +3351,55 @@ def reference_report(request):
     programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
     batches = Student.objects.values_list('batch', flat=True).distinct().exclude(batch='').order_by('batch')
     
+    from django.db.models import Count, Q
+    from .models import ReferenceNode
+    
+    # Fetch unique legacy names from Student.reference_legacy and unverified ReferenceNodes
+    legacy_texts = list(Student.objects.exclude(
+        reference_legacy__isnull=True
+    ).exclude(
+        reference_legacy=''
+    ).values_list('reference_legacy', flat=True).distinct())
+    
+    unverified_names = list(ReferenceNode.objects.filter(is_verified=False).values_list('name_en', flat=True).distinct())
+    
+    all_legacy_names = sorted(list(set(legacy_texts + unverified_names)))
+    
+    legacy_refs = []
+    for name in all_legacy_names:
+        name_clean = name.strip()
+        if not name_clean:
+            continue
+            
+        # Count students having this legacy text or currently linked to a node of this name
+        total_students = Student.objects.filter(
+            Q(reference_legacy=name) | Q(reference__name_en=name)
+        ).count()
+        
+        if total_students == 0:
+            continue
+            
+        # Count how many of these students are linked to a VERIFIED node
+        aligned_count = Student.objects.filter(
+            Q(reference_legacy=name) | Q(reference__name_en=name)
+        ).filter(
+            reference__isnull=False,
+            reference__is_verified=True
+        ).count()
+        
+        unaligned_count = total_students - aligned_count
+        
+        legacy_refs.append({
+            'reference_legacy': name,
+            'total_students': total_students,
+            'unaligned_count': unaligned_count
+        })
+        
+    # Sort by unaligned count first, then total students descending
+    legacy_refs.sort(key=lambda x: (x['unaligned_count'], x['total_students']), reverse=True)
+    
+    all_nodes = ReferenceNode.objects.filter(is_verified=True).order_by('name_en')
+    
     return render(request, 'students/reports/reference_intelligence.html', {
         'data': data,
         'data_json': json.dumps(data),
@@ -3196,7 +3408,9 @@ def reference_report(request):
         'batches': list(batches),
         'selected_year': str(year) if year else None,
         'selected_program': program,
-        'selected_batch': batch
+        'selected_batch': batch,
+        'legacy_refs': list(legacy_refs),
+        'all_references_list': all_nodes
     })
 
 @require_access('reports', 'view_analytics')
@@ -4312,14 +4526,15 @@ def api_search_students(request):
 
 
 @login_required
-@require_access('students', 'view_directory')
+@require_access('students', 'manage_references')
 def reference_manage_dashboard(request):
     from .models import ReferenceNode
     
     export_format = request.GET.get('export')
     search_q = request.GET.get('search', '').strip()
+    category_filter = request.GET.get('category_filter', '').strip()
     
-    queryset = ReferenceNode.objects.all().order_by('-id')
+    queryset = ReferenceNode.objects.filter(is_verified=True).order_by('-id')
     if search_q:
         queryset = queryset.filter(
             Q(name_en__icontains=search_q) |
@@ -4329,6 +4544,8 @@ def reference_manage_dashboard(request):
             Q(mobile__icontains=search_q) |
             Q(reference_id__icontains=search_q)
         )
+    if category_filter in ('Employee', 'External'):
+        queryset = queryset.filter(category=category_filter)
         
     if export_format == 'excel':
         import pandas as pd
@@ -4399,7 +4616,7 @@ def reference_manage_dashboard(request):
                 category=category
             )
             response = render(request, 'students/references/partials/reference_table.html', {
-                'references': ReferenceNode.objects.all().order_by('-id')[:50]
+                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')[:50]
             })
             response['HX-Trigger'] = 'referenceCreated'
             return response
@@ -4420,7 +4637,7 @@ def reference_manage_dashboard(request):
                 
             node.save()
             response = render(request, 'students/references/partials/reference_table.html', {
-                'references': ReferenceNode.objects.all().order_by('-id')[:50]
+                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')[:50]
             })
             response['HX-Trigger'] = 'referenceUpdated'
             return response
@@ -4430,7 +4647,7 @@ def reference_manage_dashboard(request):
             node = get_object_or_404(ReferenceNode, id=node_id)
             node.delete()
             response = render(request, 'students/references/partials/reference_table.html', {
-                'references': ReferenceNode.objects.all().order_by('-id')[:50]
+                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')[:50]
             })
             response['HX-Trigger'] = 'referenceDeleted'
             return response
@@ -4456,7 +4673,7 @@ def reference_manage_dashboard(request):
             source_node.delete()
             
             response = render(request, 'students/references/partials/reference_table.html', {
-                'references': ReferenceNode.objects.all().order_by('-id')[:50]
+                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')[:50]
             })
             response['HX-Trigger'] = json.dumps({
                 'referenceMerged': {
@@ -4483,6 +4700,9 @@ def reference_manage_dashboard(request):
                         messages.error(request, f"Missing required column in Excel: '{col}'")
                         return redirect('reference_manage')
                         
+                # Pre-fetch all reference nodes for in-memory matching to avoid collation mismatch issues on MySQL
+                all_nodes = list(ReferenceNode.objects.all())
+                
                 created_count = 0
                 updated_count = 0
                 for _, row in df.iterrows():
@@ -4506,17 +4726,14 @@ def reference_manage_dashboard(request):
                     if category not in ['Employee', 'External']:
                         category = 'Employee'
                     
-                    # Smart Matching to prevent duplicates:
-                    # 1. Match by BAUST ID
-                    # 2. Match by Mobile
-                    # 3. Match by Name (case-insensitive)
+                    # Smart Matching to prevent duplicates (in-memory to bypass collation conflicts):
                     node = None
                     if baust_id:
-                        node = ReferenceNode.objects.filter(baust_id=baust_id).first()
+                        node = next((n for n in all_nodes if n.baust_id == baust_id), None)
                     if not node and mobile:
-                        node = ReferenceNode.objects.filter(mobile=mobile).first()
+                        node = next((n for n in all_nodes if n.mobile == mobile), None)
                     if not node:
-                        node = ReferenceNode.objects.filter(name_en__iexact=name_en).first()
+                        node = next((n for n in all_nodes if n.name_en and n.name_en.strip().lower() == name_en.lower()), None)
                         
                     if node:
                         if baust_id: node.baust_id = baust_id
@@ -4528,7 +4745,7 @@ def reference_manage_dashboard(request):
                         node.save()
                         updated_count += 1
                     else:
-                        ReferenceNode.objects.create(
+                        new_node = ReferenceNode.objects.create(
                             name_en=name_en,
                             baust_id=baust_id,
                             name_bn=name_bn,
@@ -4536,6 +4753,7 @@ def reference_manage_dashboard(request):
                             mobile=mobile,
                             category=category
                         )
+                        all_nodes.append(new_node)
                         created_count += 1
                     
                 messages.success(request, f"Successfully imported references from Excel! (Created: {created_count}, Updated/Merged: {updated_count})")
@@ -4543,7 +4761,9 @@ def reference_manage_dashboard(request):
                 messages.error(request, f"Excel Import failed: {str(e)}")
             return redirect('reference_manage')
             
-    all_refs = ReferenceNode.objects.all().order_by('name_en')
+    all_refs = ReferenceNode.objects.filter(is_verified=True).order_by('name_en')
+    total_count = queryset.count()
+    
     if request.headers.get('HX-Request'):
         return render(request, 'students/references/partials/reference_table.html', {
             'references': queryset[:50],
@@ -4552,7 +4772,8 @@ def reference_manage_dashboard(request):
         
     return render(request, 'students/references/manage.html', {
         'references': queryset[:50],
-        'all_references': all_refs
+        'all_references': all_refs,
+        'total_count': total_count
     })
 
 
@@ -4567,4 +4788,91 @@ def api_reference_link_count(request, ref_id):
         'id': node.id,
         'name': node.name_en,
         'linked_students': count
+    })
+
+
+@login_required
+@require_access('reports', 'view_analytics')
+def api_align_legacy_reference(request):
+    """Bulk aligns all students matching a legacy reference string to a selected ReferenceNode."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST request required'}, status=400)
+        
+    legacy_text = request.POST.get('legacy_text', '').strip()
+    target_node_id = request.POST.get('target_node_id', '').strip()
+    
+    if not legacy_text or not target_node_id:
+        return JsonResponse({'error': 'Missing parameters'}, status=400)
+        
+    from .models import ReferenceNode, Student
+    target_node = get_object_or_404(ReferenceNode, id=target_node_id)
+    
+    # 1. Fetch matching student IDs first (SELECT query allows joins on MySQL/MariaDB)
+    matching_student_ids = list(Student.objects.filter(
+        Q(reference_legacy=legacy_text) | Q(reference__name_en=legacy_text)
+    ).values_list('student_id', flat=True))
+    
+    # 2. Perform update using ID list (no JOINs in the UPDATE statement)
+    updated_count = Student.objects.filter(student_id__in=matching_student_ids).update(reference=target_node)
+    
+    # 2. Clean up the unverified ReferenceNode with that legacy name if it exists (so it does not clutter database)
+    unverified_legacy_nodes = ReferenceNode.objects.filter(name_en=legacy_text, is_verified=False)
+    deleted_nodes_count = 0
+    if unverified_legacy_nodes.exists():
+        deleted_nodes_count = unverified_legacy_nodes.count()
+        unverified_legacy_nodes.delete()
+        
+    # Log activity
+    from core.models import ActivityLog
+    ActivityLog.objects.create(
+        user=request.user,
+        action_type="UPDATE",
+        module="students",
+        scope="Reference Node Alignment",
+        description=f"Bulk-mapped {updated_count} students with legacy text '{legacy_text}' to reference node '{target_node.name_en}' ({target_node.reference_id}) and cleaned up {deleted_nodes_count} legacy nodes."
+    )
+    
+    return JsonResponse({
+        'success': True,
+        'message': f"Linked {updated_count} student(s) to '{target_node.name_en}' and cleaned up legacy nodes.",
+        'updated_count': updated_count
+    })
+
+
+@login_required
+@require_access('reports', 'view_analytics')
+def api_reference_students(request):
+    """Returns an HTMX HTML partial snippet containing all students referred by a given referrer."""
+    ref_type = request.GET.get('type', '').strip()
+    ref_id = request.GET.get('id', '').strip()
+    
+    if not ref_type or not ref_id:
+        return HttpResponse("<div class='alert alert-danger mb-0'>Missing type or id parameters.</div>")
+        
+    from .models import Student
+    
+    if ref_type in ('Employee', 'External'):
+        queryset = Student.objects.filter(reference_id=ref_id)
+    elif ref_type == 'Student':
+        queryset = Student.objects.filter(referred_by_student_id=ref_id)
+    else:
+        queryset = Student.objects.none()
+        
+    # Respect dashboard filters
+    year = request.GET.get('year', '').strip()
+    program = request.GET.get('program', '').strip()
+    batch = request.GET.get('batch', '').strip()
+    
+    if batch:
+        queryset = queryset.filter(batch=batch)
+    elif year:
+        queryset = queryset.filter(admission_year=year)
+    if program:
+        queryset = queryset.filter(program=program)
+        
+    queryset = queryset.order_by('student_id')
+    
+    return render(request, 'students/reports/partials/referrer_students_list.html', {
+        'students': queryset,
+        'referrer_type': ref_type
     })

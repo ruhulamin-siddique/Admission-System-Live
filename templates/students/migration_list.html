@@ -1,46 +1,182 @@
 {% extends 'base.html' %}
+{% load core_tags %}
 
 {% block title %}Migration Hub | Bangladesh Army University of Science and Technology{% endblock %}
 {% block page_title %}Academic Migration & History{% endblock %}
 
+{% block extra_css %}
+<style>
+    .stat-card { border: none; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .search-box-pill { border-radius: 50px; border: 2px solid #dee2e6; padding: 1.25rem 2rem; transition: all 0.3s; }
+    .search-box-pill:focus { border-color: #6610f2; box-shadow: 0 0 0 0.25rem rgba(102, 16, 242, 0.1); }
+    
+    .filter-card { border-radius: 12px; border: 1px solid var(--border-color); background: #f8fafc; }
+    .dark-mode .filter-card { background: #1e293b; border-color: #334155; }
+    
+    .nav-tabs-premium { border-bottom: 2px solid #e2e8f0; }
+    .nav-tabs-premium .nav-link { font-weight: 700; color: #64748b; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; padding: 12px 20px; transition: all 0.2s; }
+    .nav-tabs-premium .nav-link:hover { color: #6610f2; }
+    .nav-tabs-premium .nav-link.active { color: #6610f2; border-bottom-color: #6610f2; background: transparent; }
+    
+    .dark-mode .nav-tabs-premium { border-bottom-color: #334155; }
+    .dark-mode .nav-tabs-premium .nav-link.active { color: #818cf8; border-bottom-color: #818cf8; }
+
+    .badge-indigo { background: rgba(102, 16, 242, 0.1); color: #6610f2; }
+    .btn-indigo { background: #6610f2; color: white; }
+    .btn-indigo:hover { background: #520dc2; color: white; }
+    .btn-outline-indigo { border-color: #6610f2; color: #6610f2; }
+    .btn-outline-indigo:hover { background: #6610f2; color: white; }
+
+    /* Dark Mode Overrides */
+    body.dark-mode .card { background: #1e293b; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .search-box-pill { background: #0f172a; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .modal-content { background: #1e293b; color: #f8fafc; }
+    body.dark-mode .form-control { background: #0f172a; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .text-dark { color: #f8fafc !important; }
+    body.dark-mode .text-muted { color: #94a3b8 !important; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <!-- Search Explorer -->
-        <div class="card shadow-sm border-0 mb-4" style="border-radius: 16px; background: #f8f9fa;">
-            <div class="card-body p-4 p-lg-5 text-center">
-                <h2 class="font-weight-black mb-1">Find Student to Migrate</h2>
-                <p class="text-muted mb-4">Enter Student ID, Name, or Mobile to initiate a department change</p>
-                
-                <div class="row justify-content-center">
-                    <div class="col-lg-8">
-                        <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden bg-white border">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text bg-white border-0 pl-4"><i class="fas fa-search text-muted"></i></span>
-                            </div>
-                            <input type="text" name="search" class="form-control border-0 px-3" 
-                                   placeholder="e.g. 080261..." 
-                                   autofocus
-                                   hx-get="{% url 'migration_center' %}" 
-                                   hx-trigger="keyup changed delay:300ms" 
-                                   hx-target="#migration-container"
-                                   value="{{ query }}">
-                            <div class="input-group-append">
-                                <button class="btn btn-indigo px-4 font-weight-bold" style="background: #6610f2; color: white;">Explore</button>
-                            </div>
+<div class="container-fluid">
+    
+    <!-- Top Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card stat-card shadow-sm bg-indigo text-white" style="background: linear-gradient(135deg, #6610f2, #520dc2) !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-0 font-weight-black">{{ total_migrations }}</h2>
+                            <p class="mb-0 opacity-75 font-weight-bold">Academic Migrations</p>
+                        </div>
+                        <div class="opacity-50">
+                            <i class="fas fa-exchange-alt fa-3x"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Dynamic Container: Results or History -->
-        <div id="migration-container">
-            {% if query %}
-                {% include 'students/partials/migration_table.html' %}
-            {% else %}
-                {% include 'students/partials/migration_history_table.html' %}
-            {% endif %}
+    <!-- Main Dynamic Hub Panel -->
+    <div class="card card-outline card-indigo shadow-sm border-0" style="border-radius: 16px; overflow: hidden; border-top: 3px solid #6610f2;">
+        <div class="card-header bg-white p-0 border-bottom-0">
+            <ul class="nav nav-tabs nav-tabs-premium px-4 pt-3" id="migrationHubTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="history-tab" data-toggle="tab" href="#history" role="tab" aria-controls="history" aria-selected="true">
+                        <i class="fas fa-history mr-2"></i> Migration Log History
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="action-tab" data-toggle="tab" href="#action" role="tab" aria-controls="action" aria-selected="false">
+                        <i class="fas fa-plus-circle mr-2"></i> Initiate Migration
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card-body p-4">
+            <div class="tab-content" id="migrationHubTabContent">
+                
+                <!-- TAB 1: MIGRATION HISTORY DIRECTORY -->
+                <div class="tab-pane fade show active" id="history" role="tabpanel" aria-labelledby="history-tab">
+                    
+                    <!-- Filters Grid -->
+                    <form id="history-filter-form" class="p-3 mb-4 filter-card shadow-sm"
+                          hx-get="{% url 'migration_center' %}"
+                          hx-target="#migration-history-container"
+                          hx-trigger="change from:select, keyup changed delay:300ms from:input[name='search_history']"
+                          hx-indicator="#table-loader">
+                        <input type="hidden" name="target" value="history">
+                        
+                        <div class="row align-items-center">
+                            <div class="col-md-3 mb-2 mb-md-0">
+                                <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Search Logs</label>
+                                <input type="text" name="search_history" class="form-control form-control-sm" placeholder="Search ID or Name..." value="{{ search_history }}">
+                            </div>
+                            <div class="col-md-3 mb-2 mb-md-0">
+                                <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">From Program</label>
+                                <select name="old_program" class="form-control form-control-sm">
+                                    <option value="">All Source Programs</option>
+                                    {% for prog in programs %}
+                                    <option value="{{ prog }}" {% if prog == selected_old_program %}selected{% endif %}>{{ prog }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2 mb-md-0">
+                                <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">To Program</label>
+                                <select name="new_program" class="form-control form-control-sm">
+                                    <option value="">All Target Programs</option>
+                                    {% for prog in programs %}
+                                    <option value="{{ prog }}" {% if prog == selected_new_program %}selected{% endif %}>{{ prog }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3 text-md-right mt-3 mt-md-0">
+                                <div id="migration-export-container">
+                                    {% has_access 'students' 'export_migrations' as can_export %}
+                                    {% if can_export %}
+                                    <a href="{% url 'export_migrations_dynamic' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn btn-outline-indigo btn-sm font-weight-bold shadow-sm px-3 rounded-pill btn-block">
+                                        <i class="fas fa-file-excel mr-1"></i> Export Excel
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Table Loader Dynamic Indicator -->
+                    <div id="table-loader" class="htmx-indicator mb-2" style="height: 3px; background: #ffc107; overflow: hidden;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-indigo" style="width: 100%; height: 100%; background-color: #6610f2;"></div>
+                    </div>
+
+                    <!-- Migration Records Grid -->
+                    <div id="migration-history-container" class="border rounded shadow-sm bg-white overflow-hidden">
+                        {% include 'students/partials/migration_history_list.html' %}
+                    </div>
+                </div>
+
+                <!-- TAB 2: INITIATE MIGRATION -->
+                <div class="tab-pane fade" id="action" role="tabpanel" aria-labelledby="action-tab">
+                    {% has_access 'students' 'manage_migrations' as can_migrate %}
+                    {% if can_migrate %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="p-4 bg-light rounded shadow-sm border">
+                                <h5 class="font-weight-bold mb-3 text-indigo" style="color: #6610f2;"><i class="fas fa-search mr-2"></i> Find Candidate Student</h5>
+                                <input type="text" name="search_active" class="form-control form-control-lg search-box-pill shadow-sm" 
+                                       placeholder="Enter Candidate ID, Name, or Mobile to fetch record..."
+                                       hx-get="{% url 'migration_center' %}"
+                                       hx-trigger="keyup changed delay:300ms"
+                                       hx-target="#search-results"
+                                       hx-indicator="#table-loader">
+                                <input type="hidden" name="target" value="active" form="active-search-hidden-form">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Candidate Results Grid Area -->
+                    <div id="search-results" class="border rounded bg-white shadow-sm overflow-hidden">
+                        {% if search_active %}
+                            {% include 'students/partials/migration_table.html' %}
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-user-friends fa-4x mb-3 opacity-25" style="color: #6610f2;"></i>
+                                <p class="lead mb-0">Search for active student profiles to process department changes.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-lock fa-4x mb-3 opacity-25"></i>
+                        <h4 class="font-weight-bold">Access Denied</h4>
+                        <p class="mb-0">You do not have the **Execute Academic Migration** task authority required to initiate migrations.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
         </div>
     </div>
 </div>

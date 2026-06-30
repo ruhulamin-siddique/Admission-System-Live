@@ -14,19 +14,24 @@ class ReferenceNode(models.Model):
         choices=[('Employee', 'Employee'), ('External', 'External')], 
         default='Employee'
     )
+    is_verified = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         if not self.reference_id:
-            max_id = ReferenceNode.objects.aggregate(models.Max('id'))['id__max'] or 0
-            next_id = max_id + 1
-            ref_id = f"REF-{next_id:05d}"
-            while ReferenceNode.objects.filter(reference_id=ref_id).exists():
-                next_id += 1
+            from django.db import transaction
+            with transaction.atomic():
+                max_id = ReferenceNode.objects.select_for_update().aggregate(models.Max('id'))['id__max'] or 0
+                next_id = max_id + 1
                 ref_id = f"REF-{next_id:05d}"
-            self.reference_id = ref_id
-        super().save(*args, **kwargs)
+                while ReferenceNode.objects.filter(reference_id=ref_id).exists():
+                    next_id += 1
+                    ref_id = f"REF-{next_id:05d}"
+                self.reference_id = ref_id
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
     def __str__(self):
         parts = [self.name_en]

@@ -1,6 +1,43 @@
 {% extends 'base.html' %}
+{% load core_tags %}
 
 {% block title %}Student Directory | Bangladesh Army University of Science and Technology{% endblock %}
+
+{% block page_title %}Student Directory{% endblock %}
+
+{% block page_actions %}
+<div id="directory-export-actions" class="d-flex align-items-center" style="gap: 10px;">
+    {% has_access 'students' 'export_data' as can_export %}
+    {% if can_export %}
+    <a href="{% url 'export_students_smart_campus' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn directory-action-btn btn-download-smart-campus">
+        <i class="fas fa-university"></i> <span class="d-none d-sm-inline">SMART CAMPUS Export</span><span class="d-inline d-sm-none">SC Export</span>
+    </a>
+    <div class="dropdown">
+        <button class="btn directory-action-btn dropdown-toggle" type="button" id="downloadToolsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-tools"></i> Export Tools
+        </button>
+        <div class="dropdown-menu dropdown-menu-right shadow-lg border-0" aria-labelledby="downloadToolsDropdown" style="border-radius: 10px; padding: 5px; z-index: 1050;">
+            <a class="dropdown-item py-2" href="{% url 'export_students' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
+                <i class="fas fa-file-excel mr-2 text-success"></i> Standard Excel Export
+            </a>
+            <a class="dropdown-item py-2" href="javascript:void(0)" hx-get="{% url 'export_students_smart_campus_dept_modal' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" hx-target="#modals-here" style="font-size: 13px; font-weight: 600;">
+                <i class="fas fa-file-archive mr-2 text-warning"></i> Dept-wise Smart Campus
+            </a>
+            <a class="dropdown-item py-2" href="{% url 'export_students_all' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
+                <i class="fas fa-database mr-2 text-primary"></i> Full Database Dump
+            </a>
+            <a class="dropdown-item py-2" href="{% url 'export_photos_zip' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" style="font-size: 13px; font-weight: 600;">
+                <i class="fas fa-images mr-2 text-info"></i> Download Student Photos (ZIP)
+            </a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item py-2" href="{% url 'print_blank_form' %}" target="_blank" style="font-size: 13px; font-weight: 600;">
+                <i class="fas fa-print mr-2 text-info"></i> Print Blank Form
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -60,6 +97,53 @@
         background: transparent; 
         outline: none;
         height: 30px;
+    }
+
+    /* Active filter highlight */
+    .filter-group.active {
+        border-color: #3b82f6 !important; /* Vibrant Tailwind blue border */
+        background-color: #eff6ff !important; /* Very light attractive blue background */
+    }
+    .filter-group.active label {
+        color: #1d4ed8 !important; /* Rich blue label text for contrast */
+        background: #eff6ff !important;
+        border-radius: 2px;
+    }
+    
+    body.dark-mode .filter-group.active {
+        border-color: #38bdf8 !important; /* Bright cyan border */
+        background-color: #0c1e35 !important; /* Deep navy dark mode background */
+    }
+    body.dark-mode .filter-group.active label {
+        color: #38bdf8 !important;
+        background: #0c1e35 !important;
+        border-radius: 2px;
+    }
+
+    /* Hide the OOB export actions block if it is rendered inside the table results area during initial page load */
+    #directory-results #directory-export-actions {
+        display: none !important;
+    }
+
+    /* Sticky table header styles */
+    @media (min-width: 768px) {
+        .table-responsive {
+            overflow: visible !important;
+        }
+        .table thead th {
+            position: sticky !important;
+            top: 0;
+            z-index: 15;
+            background-color: var(--header-bg) !important;
+            box-shadow: inset 0 -1px 0 var(--border-color);
+        }
+        body.layout-navbar-fixed .table thead th {
+            top: 56px !important; /* Offset for dynamic AdminLTE fixed header navbar */
+        }
+        body.dark-mode .table thead th {
+            background-color: #0f172a !important;
+            box-shadow: inset 0 -1px 0 #334155 !important;
+        }
     }
 
     /* Compact UI overrides */
@@ -188,6 +272,22 @@
         color: #fff;
         transform: translateY(-1px);
         box-shadow: 0 8px 15px rgba(43, 58, 140, 0.15);
+    }
+
+    /* Small fitted animated action buttons */
+    .btn-sm-fitted {
+        height: 30px !important;
+        min-height: 30px !important;
+        font-size: 12px !important;
+        padding: 0 8px !important;
+        border-radius: 6px !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .btn-sm-fitted:hover {
+        transform: scale(1.05) translateY(-1px) !important;
+    }
+    .btn-sm-fitted:active {
+        transform: scale(0.95) !important;
     }
 
     .directory-action-btn i {
@@ -781,13 +881,12 @@
 {% endblock %}
 
 {% block content %}
-{% load core_tags %}
 
 <!-- Analytics Bar matching Image -->
 <div class="analytics-bar d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center">
         <span>Total:</span>
-        <span id="total-count-display" class="total-badge">{{ total_count }}</span>
+        <span id="total-count-badge" class="total-badge">{{ total_count }}</span>
     </div>
     <div class="search-container position-relative" style="width: 250px;">
         <input type="text" name="search" class="form-control form-control-sm" placeholder="Search Name/Roll..." value="{{ query }}" form="directory-filter-form"
@@ -821,7 +920,7 @@
             <div class="row compact-filters">
                 <!-- Row 1: Primary Selection -->
                 <div class="col-md-1">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_year %}active{% endif %}">
                         <label>Year</label>
                         <select name="year">
                             <option value="">All</option>
@@ -832,7 +931,7 @@
                     </div>
                 </div>
                 <div class="col-md-1">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_dept %}active{% endif %}">
                         <label>Cluster</label>
                         <select name="dept">
                             <option value="">All</option>
@@ -842,8 +941,8 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="filter-group">
+                <div class="col-md-2">
+                    <div class="filter-group {% if selected_program %}active{% endif %}">
                         <label>Program</label>
                         <select name="program">
                             <option value="">All</option>
@@ -854,7 +953,7 @@
                     </div>
                 </div>
                 <div class="col-md-1">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_type %}active{% endif %}">
                         <label>Type</label>
                         <select name="type">
                             <option value="">All</option>
@@ -864,7 +963,7 @@
                     </div>
                 </div>
                 <div class="col-md-1">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_batch %}active{% endif %}">
                         <label>Batch</label>
                         <select name="batch">
                             <option value="">All</option>
@@ -875,7 +974,7 @@
                     </div>
                 </div>
                 <div class="col-md-1">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_gender %}active{% endif %}">
                         <label>Gender</label>
                         <select name="gender">
                             <option value="">All</option>
@@ -885,8 +984,8 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-1">
-                    <div class="filter-group">
+                <div class="col-md-2">
+                    <div class="filter-group {% if selected_hall %}active{% endif %}">
                         <label>Hall</label>
                         <select name="hall">
                             <option value="">All</option>
@@ -899,11 +998,13 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_special_category %}active{% endif %}">
                         <label>Special Category</label>
                         <select name="special_category">
                             <option value="">All Categories</option>
+                            <option value="residential" {% if selected_special_category == 'residential' %}selected{% endif %}>Residential</option>
                             <option value="non_residential" {% if selected_special_category == 'non_residential' %}selected{% endif %}>Non-Residential</option>
+                            <option value="unspecified" {% if selected_special_category == 'unspecified' %}selected{% endif %}>Unspecified (No Hall/Non-Res)</option>
                             <option value="freedom_fighter" {% if selected_special_category == 'freedom_fighter' %}selected{% endif %}>Freedom Fighter</option>
                             <option value="armed_forces" {% if selected_special_category == 'armed_forces' %}selected{% endif %}>Armed Forces</option>
                             <option value="july_joddha" {% if selected_special_category == 'july_joddha' %}selected{% endif %}>July Joddha</option>
@@ -914,9 +1015,9 @@
                     </div>
                 </div>
 
-                <!-- Row 2: Status, Category, Sort & Actions -->
+                 <!-- Row 2: Status, Category, Sort & Actions -->
                 <div class="col-md-2">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_current_batch %}active{% endif %}">
                         <label>Current Batch</label>
                         <select name="current_batch">
                             <option value="">All</option>
@@ -927,7 +1028,7 @@
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_status %}active{% endif %}">
                         <label>Status</label>
                         <select name="status">
                             <option value="">All</option>
@@ -938,7 +1039,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="filter-group">
+                    <div class="filter-group {% if selected_verification %}active{% endif %}">
                         <label>Verification</label>
                         <select name="verification">
                             <option value="">All Statuses</option>
@@ -949,8 +1050,8 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <div class="filter-group">
+                <div class="col-md-3">
+                    <div class="filter-group {% if selected_sort != 'batch_dept_serial' %}active{% endif %}">
                         <label>Sort Results</label>
                         <select name="sort">
                             {% for sort_value, sort_label in sort_options %}
@@ -959,14 +1060,14 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="filter-action-group mt-auto mb-2" style="gap: 5px;">
-                        <button type="submit" class="btn btn-filter directory-action-btn flex-fill py-1" style="font-size: 13px;">
+                        <button type="submit" class="btn btn-filter directory-action-btn btn-sm-fitted flex-fill py-1">
                             <i class="fas fa-filter mr-1"></i> Filter
                         </button>
                         <button type="button" 
-                                class="btn btn-clear-filters directory-action-btn flex-fill py-1"
-                                style="font-size: 13px; background: #6c757d; color: #fff;"
+                                class="btn btn-clear-filters directory-action-btn btn-sm-fitted flex-fill py-1"
+                                style="background: #6c757d; color: #fff;"
                                 onclick="clearDirectoryFilters()"
                                 hx-get="{% url 'student_list' %}?per_page={{ per_page }}&sort={{ selected_sort }}"
                                 hx-target="#directory-results"
@@ -1070,11 +1171,59 @@
 const shortInfoCache = new Map();
 const shortInfoInFlight = new Map();
 
+function updateDropdownHighlights() {
+    const form = document.getElementById('directory-filter-form');
+    if (!form) return;
+    form.querySelectorAll('select').forEach(select => {
+        const filterGroup = select.closest('.filter-group');
+        if (filterGroup) {
+            let isActive = false;
+            if (select.name === 'sort') {
+                isActive = (select.value !== 'batch_dept_serial');
+            } else {
+                isActive = (select.value !== '');
+            }
+            if (isActive) {
+                filterGroup.classList.add('active');
+            } else {
+                filterGroup.classList.remove('active');
+            }
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('htmx:responseError', (e) => {
         console.error('HTMX Error:', e.detail.xhr.status);
         alert('Server unreachable or error occurred. Please refresh.');
     });
+    
+    // Initial highlight refresh
+    updateDropdownHighlights();
+    
+    // Watch for select changes to highlight instantly
+    const form = document.getElementById('directory-filter-form');
+    if (form) {
+        form.addEventListener('change', (e) => {
+            if (e.target && e.target.tagName === 'SELECT') {
+                const select = e.target;
+                const filterGroup = select.closest('.filter-group');
+                if (filterGroup) {
+                    let isActive = false;
+                    if (select.name === 'sort') {
+                        isActive = (select.value !== 'batch_dept_serial');
+                    } else {
+                        isActive = (select.value !== '');
+                    }
+                    if (isActive) {
+                        filterGroup.classList.add('active');
+                    } else {
+                        filterGroup.classList.remove('active');
+                    }
+                }
+            }
+        });
+    }
 });
 
 function clearDirectoryFilters() {
@@ -1098,6 +1247,9 @@ function clearDirectoryFilters() {
     if (searchInput) {
         searchInput.value = "";
     }
+    
+    // Update highlights instantly
+    updateDropdownHighlights();
 }
 
 function positionOverlay(btn) {

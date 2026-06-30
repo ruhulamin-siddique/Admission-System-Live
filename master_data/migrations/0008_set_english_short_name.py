@@ -1,18 +1,20 @@
 from django.db import migrations
 
 def set_english_short_name_and_normalize(apps, schema_editor):
+    db_alias = schema_editor.connection.alias
     Program = apps.get_model('master_data', 'Program')
     Student = apps.get_model('students', 'Student')
     
     # 1. Update the program "English" to have short_name='ENG'
-    Program.objects.filter(name__iexact='English').update(short_name='ENG')
+    Program.objects.using(db_alias).filter(name__iexact='English').update(short_name='ENG')
     
     # 2. Normalize student records where program is 'English' to 'ENG'
-    Student.objects.filter(program__iexact='English').update(program='ENG')
+    Student.objects.using(db_alias).filter(program__iexact='English').update(program='ENG')
 
 def rollback(apps, schema_editor):
+    db_alias = schema_editor.connection.alias
     Program = apps.get_model('master_data', 'Program')
-    Program.objects.filter(name__iexact='English').update(short_name=None)
+    Program.objects.using(db_alias).filter(name__iexact='English').update(short_name=None)
 
 class Migration(migrations.Migration):
 

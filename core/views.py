@@ -177,6 +177,9 @@ def role_management(request):
             messages.success(request, f'Permissions updated for role: {role.name}')
             from .utils import log_activity
             log_activity(request, 'PERMISSION', 'security', f'Reconfigured permission matrix for role: {role.name}', object_id=str(role.id))
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                from django.http import JsonResponse
+                return JsonResponse({'success': True, 'message': f'Permissions updated for role: {role.name}'})
             return redirect('role_management')
 
     roles = Role.objects.all().prefetch_related('permissions').order_by('name')

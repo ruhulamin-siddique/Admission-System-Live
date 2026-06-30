@@ -69,21 +69,97 @@
         margin-top: 2px;
     }
 
-    /* Custom Switch Styling */
-    .custom-switch .custom-control-label::before {
-        height: 1.5rem;
-        width: 2.75rem;
-        border-radius: 1rem;
+    /* Custom Checkbox Styling & Row Highlight */
+    .matrix-table tbody tr:hover td {
+        background-color: rgba(59, 130, 246, 0.08) !important;
+        transition: background-color 0.15s ease-in-out;
     }
-    .custom-switch .custom-control-label::after {
-        width: calc(1.5rem - 4px);
-        height: calc(1.5rem - 4px);
-        background-color: #adb5bd;
-        border-radius: 1rem;
+    
+    .matrix-table tbody tr.module-row:hover td {
+        background-color: #f1f5f9 !important;
     }
-    .custom-switch .custom-control-input:checked ~ .custom-control-label::after {
-        background-color: #fff;
-        transform: translateX(1.25rem);
+
+    /* Dark Bordered Matrix Table */
+    .matrix-table {
+        border: 2px solid #94a3b8 !important;
+    }
+    .matrix-table th, 
+    .matrix-table td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 0.65rem 1rem !important;
+        vertical-align: middle !important;
+    }
+    .matrix-table thead th {
+        vertical-align: middle !important;
+        border-bottom: 2.5px solid #94a3b8 !important;
+    }
+
+    /* Custom Checkbox Design */
+    .matrix-checkbox-container {
+        display: inline-block;
+        position: relative;
+        width: 1.25rem;
+        height: 1.25rem;
+        cursor: pointer;
+        user-select: none;
+        margin: 0;
+        vertical-align: middle;
+    }
+
+    /* Hide the browser's default checkbox */
+    .matrix-checkbox-container input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+    }
+
+    /* Create a custom checkbox */
+    .matrix-checkbox-checkmark {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 1.25rem;
+        width: 1.25rem;
+        background-color: #f8fafc;
+        border: 2px solid #cbd5e1;
+        border-radius: 4px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    /* On mouse-over, add a grey background color */
+    .matrix-checkbox-container:hover input ~ .matrix-checkbox-checkmark {
+        border-color: #3b82f6;
+    }
+
+    /* When the checkbox is checked, add a blue background */
+    .matrix-checkbox-container input:checked ~ .matrix-checkbox-checkmark {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+
+    /* Create the checkmark/indicator (hidden when not checked) */
+    .matrix-checkbox-checkmark::after {
+        content: "";
+        position: absolute;
+        display: none;
+    }
+
+    /* Show the checkmark when checked */
+    .matrix-checkbox-container input:checked ~ .matrix-checkbox-checkmark::after {
+        display: block;
+    }
+
+    /* Style the checkmark (tick) */
+    .matrix-checkbox-container .matrix-checkbox-checkmark::after {
+        left: 6px;
+        top: 2px;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2.5px 2.5px 0;
+        transform: rotate(45deg);
     }
 
     .select-all-btn {
@@ -180,7 +256,7 @@
     <div class="card-body p-0">
         {% if roles %}
         <div class="matrix-table-wrapper">
-            <table class="table matrix-table m-0">
+            <table class="table matrix-table table-sm table-bordered table-hover m-0">
                 <thead>
                     <tr>
                         <th class="p-4" style="width: 340px; z-index: 110;">
@@ -188,7 +264,7 @@
                         </th>
                         {% for role in roles %}
                         <th class="matrix-header-cell text-center">
-                            <form method="post" action="{% url 'role_management' %}" id="form-role-{{ role.id }}">
+                            <form method="post" action="{% url 'role_management' %}" id="form-role-{{ role.id }}" class="role-permission-form">
                                 {% csrf_token %}
                                 <input type="hidden" name="role_id" value="{{ role.id }}">
                                 
@@ -255,15 +331,15 @@
                         {% for role in roles %}
                         <td class="text-center align-middle">
                             {% with perm_key=mod_key|add:":"|add:task_key %}
-                            <div class="custom-control custom-switch">
+                            <label class="matrix-checkbox-container">
                                 <input type="checkbox"
-                                       class="custom-control-input role-{{ role.id }} mod-{{ mod_key }} role-{{ role.id }}-mod-{{ mod_key }}"
-                                       id="switch-{{ role.id }}-{{ mod_key }}-{{ task_key }}"
+                                       class="matrix-checkbox-input role-{{ role.id }} mod-{{ mod_key }} role-{{ role.id }}-mod-{{ mod_key }}"
+                                       id="checkbox-{{ role.id }}-{{ mod_key }}-{{ task_key }}"
                                        name="{{ perm_key }}"
                                        form="form-role-{{ role.id }}"
                                        {% for permission in role.permissions.all %}{% if permission.module == mod_key and permission.task == task_key %}checked{% endif %}{% endfor %}>
-                                <label class="custom-control-label" for="switch-{{ role.id }}-{{ mod_key }}-{{ task_key }}"></label>
-                            </div>
+                                <span class="matrix-checkbox-checkmark"></span>
+                            </label>
                             {% endwith %}
                         </td>
                         {% endfor %}
@@ -421,6 +497,43 @@
     
     $(function () {
       $('[data-toggle="tooltip"]').tooltip()
-    })
+
+      // Handle silent permission saves via AJAX
+      $('.role-permission-form').on('submit', function(e) {
+          e.preventDefault();
+          
+          const form = $(this);
+          const submitBtn = form.find('button[type="submit"]');
+          const originalHtml = submitBtn.html();
+          
+          submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+          
+          $.ajax({
+              type: 'POST',
+              url: form.attr('action'),
+              headers: { 'X-Requested-With': 'XMLHttpRequest' },
+              data: form.serialize(),
+              success: function(response) {
+                  if (typeof Toast !== 'undefined') {
+                      Toast.fire({
+                          icon: 'success',
+                          title: response.message || 'Permissions updated successfully!'
+                      });
+                  }
+              },
+              error: function() {
+                  if (typeof Toast !== 'undefined') {
+                      Toast.fire({
+                          icon: 'error',
+                          title: 'Failed to save permissions.'
+                      });
+                  }
+              },
+              complete: function() {
+                  submitBtn.prop('disabled', false).html(originalHtml);
+              }
+          });
+      });
+    });
 </script>
 {% endblock %}

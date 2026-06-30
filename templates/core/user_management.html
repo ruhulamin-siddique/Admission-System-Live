@@ -224,7 +224,7 @@
                     <th>Staff Member</th>
                     <th>ID & Contact</th>
                     <th>Designation / Dept</th>
-                    <th>Role</th>
+                    <th>Role & Scope</th>
                     <th>Status</th>
                     <th class="text-right">Actions</th>
                 </tr>
@@ -257,6 +257,16 @@
                         <span class="badge badge-info px-2 py-1 small">{{ u.profile.role.name }}</span>
                         {% else %}
                         <span class="badge badge-secondary px-2 py-1 small">No Role</span>
+                        {% endif %}
+                        
+                        {% if u.profile.department_scope %}
+                        <div class="mt-1 small text-muted font-weight-bold">
+                            <i class="fas fa-filter text-warning mr-1"></i> Scope: <span class="badge badge-warning px-2" style="background-color: #fef3c7; color: #d97706; border: 1px solid #fcd34d;">{{ u.profile.department_scope }}</span>
+                        </div>
+                        {% else %}
+                        <div class="mt-1 small text-muted">
+                            <span class="badge badge-light border text-muted px-2 py-0">Global Access</span>
+                        </div>
                         {% endif %}
                     </td>
                     <td>

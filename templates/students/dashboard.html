@@ -275,24 +275,43 @@
                         <thead class="bg-light text-muted text-uppercase font-weight-bold" style="font-size: 0.75rem;">
                             <tr>
                                 <th class="pl-3" style="width: 10%;">Rank</th>
-                                <th style="width: 65%;">Reference / Source</th>
-                                <th class="text-center" style="width: 15%;">Count</th>
+                                <th style="width: 35%;">Reference Name</th>
+                                <th style="width: 35%;">Designation / Student Info</th>
+                                <th class="text-center" style="width: 10%;">Count</th>
                                 <th class="text-right pr-3" style="width: 10%;">Share</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for item in stats.top_references %}
                             <tr>
-                                <td class="pl-3 py-2">
+                                <td class="pl-3 py-2 align-middle">
                                     <span class="badge {% if forloop.counter == 1 %}badge-primary{% elif forloop.counter == 2 %}badge-info{% else %}badge-light border{% endif %} badge-pill px-2">
                                         #{{ forloop.counter }}
                                     </span>
                                 </td>
-                                <td class="font-weight-bold text-dark">{{ item.reference }}</td>
-                                <td class="text-center">
+                                <td class="align-middle">
+                                    <div class="font-weight-bold text-dark">{{ item.reference }}</div>
+                                    <div class="mt-1">
+                                        {% if item.type == 'Employee' %}
+                                            <span class="badge badge-info px-2 py-0.5" style="font-size: 0.65rem; border-radius: 4px;">Employee</span>
+                                        {% elif item.type == 'External' %}
+                                            <span class="badge badge-warning px-2 py-0.5" style="font-size: 0.65rem; border-radius: 4px; color: #5f3f11; background-color: #fff3cd;">External</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary px-2 py-0.5" style="font-size: 0.65rem; border-radius: 4px;">Student</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="align-middle text-muted" style="font-size: 0.8rem; font-weight: 500;">
+                                    {% if item.type == 'Student' %}
+                                        <span class="text-dark font-monospace" style="font-size: 0.78rem;">{{ item.student_info }}</span>
+                                    {% else %}
+                                        <span>{{ item.designation }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center align-middle">
                                     <span class="badge badge-light border">{{ item.count }}</span>
                                 </td>
-                                <td class="text-right pr-3 text-muted small font-weight-bold">
+                                <td class="text-right pr-3 text-muted small font-weight-bold align-middle">
                                     {% if stats.total_batch_students > 0 %}
                                         {{ item.count|multiply:100|divide:stats.total_batch_students|floatformat:1 }}%
                                     {% else %}
@@ -302,7 +321,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="4" class="text-center py-4 text-muted italic">No reference data recorded.</td>
+                                <td colspan="5" class="text-center py-4 text-muted italic">No reference data recorded.</td>
                             </tr>
                             {% endfor %}
                         </tbody>

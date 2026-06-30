@@ -145,12 +145,13 @@
         <thead>
             <tr>
                 <th style="width: 5%;" class="text-center">#</th>
-                <th style="width: 15%;">Reference ID</th>
-                <th style="width: 15%;">BAUST ID</th>
-                <th style="width: 25%;">English Name</th>
-                <th style="width: 25%;">Bangla Name</th>
-                <th style="width: 20%;">Designation</th>
-                <th style="width: 15%;">Mobile No</th>
+                <th style="width: 13%;">Reference ID</th>
+                <th style="width: 13%;">BAUST ID</th>
+                <th style="width: 10%;">Category</th>
+                <th style="width: 22%;">English Name</th>
+                <th style="width: 15%;">Bangla Name</th>
+                <th style="width: 12%;">Designation</th>
+                <th style="width: 10%;">Mobile No</th>
             </tr>
         </thead>
         <tbody>
@@ -159,6 +160,7 @@
                 <td class="text-center">{{ forloop.counter }}</td>
                 <td class="id-badge">{{ ref.reference_id }}</td>
                 <td>{{ ref.baust_id|default:"-" }}</td>
+                <td>{{ ref.category|default:"Employee" }}</td>
                 <td><strong>{{ ref.name_en }}</strong></td>
                 <td>{{ ref.name_bn|default:"-" }}</td>
                 <td>{{ ref.designation|default:"-" }}</td>
