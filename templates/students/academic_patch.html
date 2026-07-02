@@ -240,6 +240,28 @@
 (function () {
     const FIELD_LABELS = JSON.parse(document.getElementById('field-labels-data').textContent);
 
+    // ── Sync functions
+    function syncScope() {
+        const batchEl = document.getElementById('patch-hidden-batch');
+        const programEl = document.getElementById('patch-hidden-program');
+        if (batchEl) batchEl.value = document.getElementById('batch-select').value;
+        if (programEl) programEl.value = document.getElementById('program-select').value;
+    }
+
+    function syncFields() {
+        const checked = document.querySelectorAll('.field-checkbox:checked');
+        const container = document.getElementById('patch-hidden-fields');
+        if (!container) return;
+        container.innerHTML = '';
+        checked.forEach(cb => {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'patch_fields';
+            hidden.value = cb.value;
+            container.appendChild(hidden);
+        });
+    }
+
     // ── Preset buttons
     document.querySelectorAll('.preset-btn').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -250,6 +272,7 @@
                 if (cb) cb.checked = true;
             });
             updateSummary();
+            syncFields();
             highlightPreset(this.dataset.presetId);
         });
     });
@@ -270,6 +293,7 @@
     document.getElementById('clear-all-btn').addEventListener('click', function () {
         document.querySelectorAll('.field-checkbox').forEach(cb => cb.checked = false);
         updateSummary();
+        syncFields();
         document.querySelectorAll('.preset-btn').forEach(b => {
             b.classList.remove('btn-secondary');
             b.classList.add('btn-outline-secondary');
@@ -282,6 +306,7 @@
             const group = this.dataset.group;
             document.querySelectorAll(`.${group}-field`).forEach(cb => cb.checked = true);
             updateSummary();
+            syncFields();
         });
     });
     document.querySelectorAll('.deselect-group-btn').forEach(btn => {
@@ -289,13 +314,20 @@
             const group = this.dataset.group;
             document.querySelectorAll(`.${group}-field`).forEach(cb => cb.checked = false);
             updateSummary();
+            syncFields();
         });
     });
 
-    // ── Live summary
+    // ── Live summary & change listeners
     document.querySelectorAll('.field-checkbox').forEach(cb => {
-        cb.addEventListener('change', updateSummary);
+        cb.addEventListener('change', function () {
+            updateSummary();
+            syncFields();
+        });
     });
+
+    document.getElementById('batch-select').addEventListener('change', syncScope);
+    document.getElementById('program-select').addEventListener('change', syncScope);
 
     function updateSummary() {
         const checked = [...document.querySelectorAll('.field-checkbox:checked')].map(cb => {
@@ -329,31 +361,20 @@
         window.location.href = '{% url "academic_patch_template" %}?' + params.toString();
     });
 
-    // ── Before HTMX preview: sync scope + selected fields into the hidden form
-    document.getElementById('preview-patch-btn').addEventListener('click', function () {
-        // Validate
-        const checked = document.querySelectorAll('.field-checkbox:checked');
-        if (checked.length === 0) {
-            document.getElementById('patch-preview-container').innerHTML =
-                "<div class='alert alert-danger mt-3'><i class='fas fa-exclamation-triangle mr-2'></i>Please select at least one field.</div>";
-            return false;
+    // ── HTMX beforeRequest: sync scope and validate
+    document.body.addEventListener('htmx:beforeRequest', function (evt) {
+        if (evt.detail.elt.id === 'preview-patch-btn') {
+            const checked = document.querySelectorAll('.field-checkbox:checked');
+            if (checked.length === 0) {
+                document.getElementById('patch-preview-container').innerHTML =
+                    "<div class='alert alert-danger mt-3'><i class='fas fa-exclamation-triangle mr-2'></i>Please select at least one field.</div>";
+                evt.preventDefault();
+                return;
+            }
+            // Double-check values are synced right before sending
+            syncScope();
+            syncFields();
         }
-
-        // Sync scope
-        document.getElementById('patch-hidden-batch').value = document.getElementById('batch-select').value;
-        document.getElementById('patch-hidden-program').value = document.getElementById('program-select').value;
-        document.getElementById('patch-action-input').value = 'preview';
-
-        // Clone checked field values into hidden inputs inside the form
-        const container = document.getElementById('patch-hidden-fields');
-        container.innerHTML = '';
-        checked.forEach(cb => {
-            const hidden = document.createElement('input');
-            hidden.type = 'hidden';
-            hidden.name = 'patch_fields';
-            hidden.value = cb.value;
-            container.appendChild(hidden);
-        });
     });
 
     // ── File input label update
@@ -361,6 +382,10 @@
         const label = this.closest('.custom-file').querySelector('.custom-file-label');
         label.textContent = this.files[0] ? this.files[0].name : 'Browse local files...';
     });
+
+    // Initialize sync
+    syncScope();
+    syncFields();
 
     // ── Auto-select "SSC Board IDs" preset on page load
     const defaultBtn = document.querySelector('.preset-btn[data-preset-id="ssc_ids"]');

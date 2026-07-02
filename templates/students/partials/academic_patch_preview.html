@@ -50,7 +50,7 @@
     &nbsp;·&nbsp;
     <strong>{{ program_name|default:"All Programs" }}</strong>
     &nbsp;·&nbsp;
-    Field Group: <strong>{{ field_group|upper }}</strong>
+    Field Group: <strong>{% if result.groups_affected.ssc and result.groups_affected.hsc %}BOTH{% elif result.groups_affected.ssc %}SSC{% elif result.groups_affected.hsc %}HSC{% else %}NONE{% endif %}</strong>
     &nbsp;·&nbsp;
     Patching columns: <code>{{ result.fields_patched|join:", " }}</code>
 </p>
@@ -133,8 +133,8 @@
             <p class="mb-2 font-weight-bold">Ready to apply patch to {{ result.preview_count }} student(s)?</p>
             <p class="small text-muted mb-3">
                 <i class="fas fa-shield-alt mr-1"></i>
-                {% if field_group == 'ssc' or field_group == 'both' %}SSC verification flags will be reset. {% endif %}
-                {% if field_group == 'hsc' or field_group == 'both' %}HSC verification flags will be reset. {% endif %}
+                {% if result.groups_affected.ssc %}SSC verification flags will be reset. {% endif %}
+                {% if result.groups_affected.hsc %}HSC verification flags will be reset. {% endif %}
                 All changes will be logged to student field history.
             </p>
             <form method="POST"
@@ -145,7 +145,9 @@
                 <input type="hidden" name="action" value="commit">
                 <input type="hidden" name="batch" value="{{ batch_name }}">
                 <input type="hidden" name="program" value="{{ program_name }}">
-                <input type="hidden" name="field_group" value="{{ field_group }}">
+                {% for field in selected_fields %}
+                <input type="hidden" name="patch_fields" value="{{ field }}">
+                {% endfor %}
 
                 <div class="form-group mb-3">
                     <label class="font-weight-600 small" for="commitExcelFile">
@@ -179,16 +181,57 @@
 {% if result.not_in_scope or result.not_found %}
 <div class="mt-3 small text-muted">
     {% if result.not_in_scope %}
-    <p class="mb-1"><i class="fas fa-ban text-warning mr-1"></i>
-        <strong>{{ result.not_in_scope|length }} ID(s) excluded (out of scope):</strong>
-        {{ result.not_in_scope|slice:":10"|join:", " }}{% if result.not_in_scope|length > 10 %} …{% endif %}
-    </p>
+    <div class="mb-2">
+        <p class="mb-1 d-flex align-items-center flex-wrap">
+            <i class="fas fa-ban text-warning mr-1"></i>
+            <strong>{{ result.not_in_scope|length }} ID(s) excluded (out of scope):</strong>
+            <span class="text-monospace ml-1">
+                {{ result.not_in_scope|slice:":10"|join:", " }}{% if result.not_in_scope|length > 10 %} …{% endif %}
+            </span>
+            <button type="button" class="btn btn-xs btn-outline-warning py-0 px-2 ml-2 rounded-pill font-weight-bold" style="font-size:0.68rem;"
+                    onclick="copyIdsList('{{ result.not_in_scope|join:',' }}', 'out of scope')">
+                <i class="fas fa-copy mr-1"></i>Copy All
+            </button>
+            {% if result.not_in_scope|length > 10 %}
+            <button type="button" class="btn btn-xs btn-link text-warning p-0 ml-2 font-weight-bold" style="font-size:0.68rem;"
+                    onclick="toggleFullList('not-in-scope-full', this)">
+                Show All
+            </button>
+            {% endif %}
+        </p>
+        {% if result.not_in_scope|length > 10 %}
+        <div id="not-in-scope-full" class="d-none mt-1 p-2 bg-light border rounded text-monospace small" style="max-height:80px; overflow-y:auto; word-break:break-all;">
+            {{ result.not_in_scope|join:", " }}
+        </div>
+        {% endif %}
+    </div>
     {% endif %}
+
     {% if result.not_found %}
-    <p class="mb-1"><i class="fas fa-question-circle text-danger mr-1"></i>
-        <strong>{{ result.not_found|length }} ID(s) not in database:</strong>
-        {{ result.not_found|slice:":10"|join:", " }}{% if result.not_found|length > 10 %} …{% endif %}
-    </p>
+    <div class="mb-2">
+        <p class="mb-1 d-flex align-items-center flex-wrap">
+            <i class="fas fa-question-circle text-danger mr-1"></i>
+            <strong>{{ result.not_found|length }} ID(s) not in database:</strong>
+            <span class="text-monospace ml-1">
+                {{ result.not_found|slice:":10"|join:", " }}{% if result.not_found|length > 10 %} …{% endif %}
+            </span>
+            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2 ml-2 rounded-pill font-weight-bold" style="font-size:0.68rem;"
+                    onclick="copyIdsList('{{ result.not_found|join:',' }}', 'missing')">
+                <i class="fas fa-copy mr-1"></i>Copy All
+            </button>
+            {% if result.not_found|length > 10 %}
+            <button type="button" class="btn btn-xs btn-link text-danger p-0 ml-2 font-weight-bold" style="font-size:0.68rem;"
+                    onclick="toggleFullList('not-found-full', this)">
+                Show All
+            </button>
+            {% endif %}
+        </p>
+        {% if result.not_found|length > 10 %}
+        <div id="not-found-full" class="d-none mt-1 p-2 bg-light border rounded text-monospace small" style="max-height:80px; overflow-y:auto; word-break:break-all;">
+            {{ result.not_found|join:", " }}
+        </div>
+        {% endif %}
+    </div>
     {% endif %}
 </div>
 {% endif %}
@@ -203,5 +246,32 @@ if (commitFile) {
         const label = this.closest('.custom-file').querySelector('.custom-file-label');
         label.textContent = this.files[0] ? this.files[0].name : 'Select file…';
     });
+}
+
+function copyIdsList(commaList, label) {
+    if (!commaList) return;
+    const newlineList = commaList.split(',').join('\n');
+    navigator.clipboard.writeText(newlineList).then(() => {
+        if (typeof toastr !== 'undefined') {
+            toastr.success("Copied " + commaList.split(',').length + " " + label + " IDs to clipboard.");
+        } else {
+            alert("Copied " + commaList.split(',').length + " IDs to clipboard.");
+        }
+    }).catch(err => {
+        alert("Failed to copy: " + err);
+    });
+}
+
+function toggleFullList(id, btn) {
+    const el = document.getElementById(id);
+    if (el) {
+        if (el.classList.contains('d-none')) {
+            el.classList.remove('d-none');
+            btn.textContent = 'Hide All';
+        } else {
+            el.classList.add('d-none');
+            btn.textContent = 'Show All';
+        }
+    }
 }
 </script>

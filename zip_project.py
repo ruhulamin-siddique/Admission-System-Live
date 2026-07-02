@@ -3,9 +3,9 @@ import zipfile
 
 def zipdir(path, ziph):
     # Directories to exclude from production zip
-    exclude_dirs = {'.git', '__pycache__', 'media', 'brain', 'venv', 'env', '.idea', '.vscode', '.gemini'}
+    exclude_dirs = {'.git', '__pycache__', 'media', 'brain', 'venv', 'env', '.idea', '.vscode', '.gemini', 'staticfiles'}
     # Files to exclude from production zip
-    exclude_files = {'db.sqlite3', '.env', 'zip_project.py', 'board_response_debug.html'}
+    exclude_files = {'db.sqlite3', '.env', 'zip_project.py', 'board_response_debug.html', 'academic_patch_release.zip'}
     
     for root, dirs, files in os.walk(path):
         # Filter directories in-place to prevent os.walk from entering them

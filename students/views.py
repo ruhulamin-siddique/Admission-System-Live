@@ -4029,6 +4029,65 @@ def api_verify_board_result(request):
         result['board_gpa'] = board_gpa
         result['current_gpa'] = current_gpa
 
+        # Sync official board details if current fields are empty, None, or placeholders
+        b_name = result.get('name', '').strip()
+        b_fname = result.get('father_name', '').strip()
+        b_mname = result.get('mother_name', '').strip()
+        b_gender = result.get('gender', '').strip()
+        b_dob = result.get('dob', '').strip()
+
+        def is_empty(val):
+            s_val = str(val).strip()
+            return not val or s_val == '' or s_val.lower() == 'none' or s_val in ('-', '.', 'n/a')
+
+        if b_name and is_empty(student.student_name):
+            student.student_name = b_name
+        if b_fname and is_empty(student.father_name):
+            student.father_name = b_fname
+        if b_mname and is_empty(student.mother_name):
+            student.mother_name = b_mname
+        if b_gender and is_empty(student.gender):
+            student.gender = b_gender
+        if b_dob and is_empty(student.dob):
+            from datetime import datetime
+            for fmt in ('%d-%m-%Y', '%Y-%m-%d', '%d/%m/%Y'):
+                try:
+                    student.dob = datetime.strptime(b_dob, fmt).date()
+                    break
+                except ValueError:
+                    continue
+
+        # Sync official academic details (GPA, school/college, and subject results)
+        grades = result.get('grades', {})
+        b_inst = result.get('inst_name', '').strip()
+        try:
+            b_gpa_float = float(board_gpa)
+        except (ValueError, TypeError):
+            b_gpa_float = None
+
+        if exam == 'SSC':
+            if b_gpa_float is not None:
+                student.ssc_gpa = b_gpa_float
+            if b_inst and is_empty(student.ssc_school):
+                student.ssc_school = b_inst
+            if 'physics' in grades:
+                student.ssc_physics = grades['physics']
+            if 'chemistry' in grades:
+                student.ssc_chemistry = grades['chemistry']
+            if 'math' in grades:
+                student.ssc_math = grades['math']
+        elif exam == 'HSC':
+            if b_gpa_float is not None:
+                student.hsc_gpa = b_gpa_float
+            if b_inst and is_empty(student.hsc_college):
+                student.hsc_college = b_inst
+            if 'physics' in grades:
+                student.hsc_physics = grades['physics']
+            if 'chemistry' in grades:
+                student.hsc_chemistry = grades['chemistry']
+            if 'math' in grades:
+                student.hsc_math = grades['math']
+
         # BUG-04 FIX: Mark verified on any successful board fetch, not just on GPA match
         log_entry = {
             'timestamp': timezone.now().isoformat(),
@@ -4056,6 +4115,7 @@ def api_verify_board_result(request):
             'father_name': result.get('father_name'),
             'mother_name': result.get('mother_name'),
             'dob': result.get('dob'),
+            'gender': result.get('gender'),
             'gpa': result.get('gpa'),
             'grades': result.get('grades', {}),
             'all_subjects': result.get('all_subjects', {}),
