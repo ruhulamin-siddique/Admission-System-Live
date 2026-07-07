@@ -21,6 +21,11 @@ class StudentDirectoryTests(TestCase):
         engineering = Cluster.objects.create(name='Engineering & Technology', code='05')
         business = Cluster.objects.create(name='Business & Management', code='09')
 
+        from master_data.models import Hall
+        Hall.objects.get_or_create(short_name='AUAH', code='01')
+        Hall.objects.get_or_create(short_name='BTBH', code='02')
+        Hall.objects.get_or_create(short_name='ZH', code='03')
+
         cls.cse_program = Program.objects.create(
             name='Computer Science and Engineering',
             short_name='CSE',

@@ -521,14 +521,15 @@
                                         <div class="col-md-4"><div class="field-outline-group"><label>Admitted Semester <span class="text-danger">*</span></label>{{ form.semester_name }}</div></div>
                                         <div class="col-md-4"><div class="field-outline-group"><label>Admission Year (Locked) <span class="text-danger">*</span></label>{{ form.admission_year }}</div></div>
                                         
-                                        <!-- Line 2: Hall, Batch, Date -->
+                                        <!-- Line 2: Hall, Residential Hall, Batch -->
                                         <div class="col-md-4"><div class="field-outline-group"><label>Hall Attachment <span class="text-danger">*</span></label>{{ form.hall_attached }}</div></div>
+                                        <div class="col-md-4" id="div_hall_residential"><div class="field-outline-group"><label>Residential Hall <span class="text-danger">*</span></label>{{ form.hall_residential }}</div></div>
                                         <div class="col-md-4"><div class="field-outline-group"><label>Batch <span class="text-danger">*</span></label>{{ form.batch }}</div></div>
+                                        
+                                        <!-- Line 3: Date, Current Batch, Current Semester -->
                                         <div class="col-md-4"><div class="field-outline-group"><label>Admission Date</label>{{ form.admission_date }}</div></div>
-
-                                        <!-- Line 3: Current Batch, Current Semester -->
-                                        <div class="col-md-6"><div class="field-outline-group"><label>Current Academic Batch</label>{{ form.current_batch }}</div></div>
-                                        <div class="col-md-6"><div class="field-outline-group"><label>Current Semester</label>{{ form.current_semester }}</div></div>
+                                        <div class="col-md-4"><div class="field-outline-group"><label>Current Academic Batch</label>{{ form.current_batch }}</div></div>
+                                        <div class="col-md-4"><div class="field-outline-group"><label>Current Semester</label>{{ form.current_semester }}</div></div>
                                         
                                         <!-- Legacy ID Field -->
                                         <div class="col-md-12" id="legacy-id-section" style="display: {% if student.is_legacy_student %}block{% else %}none{% endif %};">
@@ -1142,6 +1143,20 @@
             syncFullAddress('permanent');
             isSyncing = false;
         }
+
+        // Residential Hall visibility toggle based on Non-Residential checkbox
+        function updateResidentialHallVisibility() {
+            const isNonRes = $('[name="is_non_residential"]').is(':checked');
+            if (isNonRes) {
+                $('#div_hall_residential').slideUp();
+                $('[name="hall_residential"]').val('').prop('required', false);
+            } else {
+                $('#div_hall_residential').slideDown();
+                $('[name="hall_residential"]').prop('required', true);
+            }
+        }
+        $('[name="is_non_residential"]').on('change', updateResidentialHallVisibility);
+        updateResidentialHallVisibility();
 
         $('#same_as_present').on('change', function() {
             if ($(this).is(':checked')) {

@@ -27,6 +27,7 @@ class StudentForm(forms.ModelForm):
             'admission_year': 'Admission Year',
             'semester_name': 'Admitted Semester',
             'hall_attached': 'Hall Attachment',
+            'hall_residential': 'Residential Hall',
             'current_batch': 'Current Academic Batch',
             'current_semester': 'Current Semester',
         }
@@ -102,6 +103,7 @@ class StudentForm(forms.ModelForm):
             'hsc_reg': forms.TextInput(attrs={'class': 'form-control'}),
             'hsc_gpa': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'hall_attached': forms.Select(attrs={'class': 'form-control'}),
+            'hall_residential': forms.Select(attrs={'class': 'form-control'}),
             'admission_payment': forms.NumberInput(attrs={'class': 'form-control'}),
             'second_installment': forms.NumberInput(attrs={'class': 'form-control'}),
             'waiver': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -153,6 +155,8 @@ class StudentForm(forms.ModelForm):
         self.fields['hall_attached'].widget.choices = [('', 'Select Hall')] + [
             (h.short_name, h.full_name if h.full_name else h.short_name) for h in Hall.objects.all().order_by('full_name', 'short_name')
         ]
+        self.fields['hall_residential'].queryset = Hall.objects.all().order_by('full_name', 'short_name')
+        self.fields['hall_residential'].empty_label = "Select Residential Hall"
         self.fields['semester_name'].widget.choices = [('', 'Select Semester')] + [
             (s.name, s.name) for s in Semester.objects.all().order_by('name')
         ]
@@ -264,6 +268,24 @@ class StudentForm(forms.ModelForm):
 
         # auto mode: ID is blank here; view will generate it after form.save(commit=False)
         return student_id
+
+    def clean_hall_residential(self):
+        is_non_residential = self.cleaned_data.get('is_non_residential')
+        hall_residential = self.cleaned_data.get('hall_residential')
+        if is_non_residential:
+            return None
+        
+        if not hall_residential:
+            # Fallback to hall_attached if provided
+            hall_attached = self.cleaned_data.get('hall_attached')
+            if hall_attached:
+                from master_data.models import Hall
+                hall_obj = Hall.objects.filter(short_name=hall_attached).first()
+                if hall_obj:
+                    return hall_obj
+            # Return None if no hall attachment is specified (backward compatibility)
+            return None
+        return hall_residential
 
     def clean_national_id(self):
         nid = self.cleaned_data.get('national_id')

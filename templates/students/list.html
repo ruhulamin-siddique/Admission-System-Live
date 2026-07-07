@@ -912,6 +912,7 @@
               hx-include="[name='search']"
               hx-indicator="#table-loader"
               hx-push-url="true">
+            <input type="hidden" name="hall_mode" value="{{ selected_hall_mode|default:'residential' }}">
             
             <div class="row compact-filters">
                 <!-- Row 1: Primary Selection -->

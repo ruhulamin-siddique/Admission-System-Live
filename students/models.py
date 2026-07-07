@@ -122,6 +122,7 @@ class Student(models.Model):
     
     # Financial & Status
     hall_attached = models.CharField(max_length=100, null=True, blank=True)
+    hall_residential = models.ForeignKey('master_data.Hall', on_delete=models.SET_NULL, null=True, blank=True, related_name='residents', help_text="The actual hall where the student physically resides.")
     is_non_residential = models.BooleanField(default=False)
     admission_payment = models.FloatField(null=True, blank=True, default=0.0)
     second_installment = models.FloatField(null=True, blank=True, default=0.0)
@@ -151,6 +152,15 @@ class Student(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # Auto-sync physical hall_residential if attached hall is set and physical is empty
+        if not self.is_non_residential and self.hall_attached and not self.hall_residential_id:
+            from master_data.models import Hall
+            hall_obj = Hall.objects.filter(short_name=self.hall_attached).first()
+            if hall_obj:
+                self.hall_residential = hall_obj
+        elif self.is_non_residential:
+            self.hall_residential = None
+
         # Auto-detect legacy student status (batch 1-12 or short ID)
         is_legacy = False
         if self.is_legacy_student:
@@ -363,3 +373,20 @@ class StudentFieldHistory(models.Model):
 
     def __str__(self):
         return f"{self.student.student_id} - {self.field_name} by {self.changed_by.username if self.changed_by else 'System'}"
+
+class HallMigrationHistory(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='migration_history')
+    previous_hall = models.ForeignKey('master_data.Hall', on_delete=models.SET_NULL, null=True, blank=True, related_name='migrations_out')
+    new_hall = models.ForeignKey('master_data.Hall', on_delete=models.SET_NULL, null=True, blank=True, related_name='migrations_in')
+    migration_date = models.DateTimeField(auto_now_add=True)
+    previous_residency_status = models.BooleanField(default=False, help_text="True if was non-residential previously")
+    new_residency_status = models.BooleanField(default=False, help_text="True if is non-residential now")
+    reason = models.TextField(blank=True, null=True)
+    authorized_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-migration_date']
+        verbose_name_plural = "Hall migration histories"
+
+    def __str__(self):
+        return f"Migration for {self.student.student_id} on {self.migration_date}"

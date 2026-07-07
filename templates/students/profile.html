@@ -210,6 +210,23 @@
                         <b>Current Semester</b> <a class="float-right text-dark font-weight-bold">{{ student.current_semester|default:"Level 1 Term I" }}</a>
                     </li>
                     <li class="list-group-item">
+                        <b>Hall Attachment</b> <a class="float-right text-dark font-weight-bold">{{ student.hall_attached|default:"Unspecified" }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Residential Hall</b> 
+                        <a class="float-right text-dark font-weight-bold">
+                            {% if student.is_non_residential %}
+                                <span class="badge badge-secondary">Non-Residential</span>
+                            {% else %}
+                                {% if student.hall_residential %}
+                                    {{ student.hall_residential.full_name|default:student.hall_residential.short_name }}
+                                {% else %}
+                                    Unspecified
+                                {% endif %}
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="list-group-item">
                         <b>Status</b> 
                         <a class="float-right">
                             <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-3 py-2 rounded-pill">
@@ -289,6 +306,17 @@
                         {% endif %}
                     </div>
                 </div>
+
+                <hr class="my-2 opacity-50">
+
+                <div class="row no-gutters" style="margin-left: -4px; margin-right: -4px;">
+                    <div class="col-12" style="padding-left: 4px; padding-right: 4px;">
+                        <button type="button" class="btn btn-block btn-outline-info font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" data-toggle="modal" data-target="#migrateResidencyModal" title="Migrate Hall Residency">
+                            <i class="fas fa-hotel mb-1" style="font-size: 16px;"></i>
+                            <span>Migrate Residency</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -314,6 +342,58 @@
                         <button type="submit" class="btn btn-danger rounded-pill px-4 font-weight-bold">Yes, Permanently Delete</button>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Migrate Residency Modal -->
+    <div class="modal fade" id="migrateResidencyModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="modal-title font-weight-bold text-info"><i class="fas fa-hotel mr-2"></i> Migrate Hall Residency</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{% url 'migrate_hall_residency' student.student_id %}" method="POST">
+                    {% csrf_token %}
+                    <div class="modal-body px-4">
+                        <div class="alert alert-info border-0 small mb-4">
+                            <i class="fas fa-info-circle mr-1"></i> Changing residency updates where the student physically lives. It does **not** change their official university ID or administrative attachment.
+                        </div>
+                        
+                        <!-- Toggle for Non-Residential status -->
+                        <div class="form-group mb-4">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" name="is_non_residential" class="custom-control-input" id="modal_is_non_residential" {% if student.is_non_residential %}checked{% endif %}>
+                                <label class="custom-control-label font-weight-bold text-dark" for="modal_is_non_residential">Non-Residential Status</label>
+                            </div>
+                            <small class="form-text text-muted">Switch on if the student is moving off-campus (Non-Residential).</small>
+                        </div>
+                        
+                        <!-- New Hall Selection -->
+                        <div class="form-group mb-4" id="modal_hall_residential_container">
+                            <label class="small font-weight-bold text-uppercase text-muted">New Residential Hall</label>
+                            <select name="new_hall" id="modal_hall_residential" class="form-control" {% if not student.is_non_residential %}required{% endif %}>
+                                <option value="">Select Residential Hall</option>
+                                {% for h in migration_halls %}
+                                    <option value="{{ h.id }}" {% if student.hall_residential_id == h.id %}selected{% endif %}>{{ h.full_name|default:h.short_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Reason -->
+                        <div class="form-group mb-0">
+                            <label class="small font-weight-bold text-uppercase text-muted">Reason for Migration</label>
+                            <textarea name="reason" class="form-control" rows="3" required placeholder="e.g., Room allocation shifted, provost approval, etc."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pb-4 px-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-info rounded-pill px-4 font-weight-bold">Confirm Migration</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1329,6 +1409,22 @@
             }
         });
     }
+
+    // Modal Residency toggles
+    function updateModalResidencyVisibility() {
+        const isNonRes = $('#modal_is_non_residential').is(':checked');
+        if (isNonRes) {
+            $('#modal_hall_residential_container').slideUp();
+            $('#modal_hall_residential').val('').prop('required', false);
+        } else {
+            $('#modal_hall_residential_container').slideDown();
+            $('#modal_hall_residential').prop('required', true);
+        }
+    }
+    $('#modal_is_non_residential').on('change', updateModalResidencyVisibility);
+    $('#migrateResidencyModal').on('show.bs.modal', function() {
+        updateModalResidencyVisibility();
+    });
 
     function openUgcMigrationModal() {
         const modal = $('#ugcMigrationModal');

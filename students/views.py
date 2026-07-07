@@ -201,10 +201,10 @@ def dashboard(request):
             active=Count('student_id', filter=Q(admission_status='Active')),
             cancelled=Count('student_id', filter=Q(admission_status='Cancelled')),
             non_residential=Count('student_id', filter=Q(is_non_residential=True)),
-            hall_auah=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_attached='AUAH')),
-            hall_btbh=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached='BTBH') | Q(hall_attached='TBH'))),
-            hall_zh=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_attached='ZH')),
-            unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
+            hall_auah=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__short_name='AUAH')),
+            hall_btbh=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_residential__short_name='BTBH') | Q(hall_residential__short_name='TBH'))),
+            hall_zh=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__short_name='ZH')),
+            unspecified=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__isnull=True)),
             revenue=Sum('admission_payment'),
             quota=Count('student_id', filter=Q(is_armed_forces_child=True) | Q(is_freedom_fighter_child=True) | Q(is_july_joddha_2024=True))
         ).order_by('-total')
@@ -315,8 +315,8 @@ def dashboard(request):
         armed_forces=Count('student_id', filter=Q(is_armed_forces_child=True)),
         credit_transfer=Count('student_id', filter=Q(is_credit_transfer=True)),
         non_residential=Count('student_id', filter=Q(is_non_residential=True)),
-        residential=Count('student_id', filter=Q(is_non_residential=False) & ~Q(hall_attached__isnull=True) & ~Q(hall_attached='')),
-        unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
+        residential=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__isnull=False)),
+        unspecified=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__isnull=True)),
     )
 
     # Top References (Sources / Channels) for the current batch
@@ -461,6 +461,7 @@ DIRECTORY_FILTER_FIELDS = (
     'special_category',
     'sort',
     'hall',
+    'hall_mode',
 )
 DIRECTORY_SORT_OPTIONS = (
     ('dept_batch_serial', 'Dept > Batch > Serial'),
@@ -573,12 +574,19 @@ def _apply_directory_filters(queryset, params, include_cancelled=False):
         queryset = queryset.filter(program_type=params['type'])
     if params.get('hall'):
         hall_val = params['hall']
+        hall_mode = params.get('hall_mode', 'residential')
         if hall_val in ['Non-Residential', 'non_residential']:
             queryset = queryset.filter(is_non_residential=True)
         elif hall_val in ['Unspecified', 'unspecified']:
-            queryset = queryset.filter(is_non_residential=False).filter(Q(hall_attached__isnull=True) | Q(hall_attached=''))
+            if hall_mode == 'attached':
+                queryset = queryset.filter(is_non_residential=False).filter(Q(hall_attached__isnull=True) | Q(hall_attached=''))
+            else:
+                queryset = queryset.filter(is_non_residential=False).filter(hall_residential__isnull=True)
         else:
-            queryset = queryset.filter(hall_attached=hall_val)
+            if hall_mode == 'attached':
+                queryset = queryset.filter(hall_attached=hall_val)
+            else:
+                queryset = queryset.filter(hall_residential__short_name=hall_val)
 
     if params.get('verification'):
         v_status = params['verification']
@@ -596,9 +604,9 @@ def _apply_directory_filters(queryset, params, include_cancelled=False):
         if cat == 'non_residential':
             queryset = queryset.filter(is_non_residential=True)
         elif cat == 'residential':
-            queryset = queryset.filter(is_non_residential=False).exclude(hall_attached__isnull=True).exclude(hall_attached='')
+            queryset = queryset.filter(is_non_residential=False, hall_residential__isnull=False)
         elif cat == 'unspecified':
-            queryset = queryset.filter(is_non_residential=False).filter(Q(hall_attached__isnull=True) | Q(hall_attached=''))
+            queryset = queryset.filter(is_non_residential=False, hall_residential__isnull=True)
         elif cat == 'freedom_fighter':
             queryset = queryset.filter(is_freedom_fighter_child=True)
         elif cat == 'armed_forces':
@@ -675,7 +683,7 @@ def _build_directory_filter_metadata(base_queryset):
         'current_batches': _get_current_batch_filter_values(base_queryset),
         'genders': ['Male', 'Female', 'Other', 'Unspecified'],
         'statuses': _get_non_empty_values(base_queryset, 'admission_status', 'admission_status'),
-        'halls': _get_non_empty_values(base_queryset, 'hall_attached', 'hall_attached'),
+        'halls': list(base_queryset.exclude(hall_residential__isnull=True).values_list('hall_residential__short_name', flat=True).distinct().order_by('hall_residential__short_name')),
     }
 
 
@@ -730,6 +738,7 @@ def student_list(request):
         'selected_special_category': params['special_category'],
         'selected_sort': params['sort'],
         'selected_hall': params['hall'],
+        'selected_hall_mode': params.get('hall_mode', 'residential'),
         'sort_options': _get_directory_sort_choices(),
         'filter_metadata': directory_state['filter_metadata'],
         'export_querystring': directory_state['export_querystring'],
@@ -1226,8 +1235,8 @@ def api_special_distribution(request):
         armed_forces=Count('student_id', filter=Q(is_armed_forces_child=True)),
         credit_transfer=Count('student_id', filter=Q(is_credit_transfer=True)),
         non_residential=Count('student_id', filter=Q(is_non_residential=True)),
-        residential=Count('student_id', filter=Q(is_non_residential=False) & ~Q(hall_attached__isnull=True) & ~Q(hall_attached='')),
-        unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
+        residential=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__isnull=False)),
+        unspecified=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__isnull=True)),
     )
     return JsonResponse(stats)
 
@@ -1235,6 +1244,7 @@ def api_special_distribution(request):
 def api_hall_distribution(request):
     """Returns JSON data for hall distribution, optionally filtered by batch."""
     batch = request.GET.get('batch')
+    dist_type = request.GET.get('type', 'residence') # 'residence' | 'attachment'
     
     qs = Student.objects.all()
     if batch and batch != 'all':
@@ -1247,17 +1257,22 @@ def api_hall_distribution(request):
         'ZH': 'Zikrul Hoque Hall'
     }
     
-    # Exclude non-residential from hall counts, count separately
     non_res_count = qs.filter(is_non_residential=True).count()
-    unspec_count = qs.filter(is_non_residential=False).filter(Q(hall_attached__isnull=True) | Q(hall_attached='')).count()
     
-    dist_qs = qs.filter(is_non_residential=False).exclude(hall_attached__isnull=True).exclude(hall_attached='').values('hall_attached').annotate(count=Count('student_id'))
-    
+    if dist_type == 'attachment':
+        unspec_count = qs.filter(is_non_residential=False).filter(Q(hall_attached__isnull=True) | Q(hall_attached='')).count()
+        dist_qs = qs.filter(is_non_residential=False).exclude(hall_attached__isnull=True).exclude(hall_attached='').values('hall_attached').annotate(count=Count('student_id'))
+        group_key = 'hall_attached'
+    else:
+        unspec_count = qs.filter(is_non_residential=False).filter(hall_residential__isnull=True).count()
+        dist_qs = qs.filter(is_non_residential=False).exclude(hall_residential__isnull=True).values('hall_residential__short_name').annotate(count=Count('student_id'))
+        group_key = 'hall_residential__short_name'
+        
     agg_dist = {}
     total = qs.count()
     
     for item in dist_qs:
-        hall_code = item['hall_attached']
+        hall_code = item[group_key]
         count = item['count']
         name = hall_map.get(hall_code, hall_code)
         if name not in agg_dist:
@@ -1321,10 +1336,10 @@ def api_intake_distribution(request):
         active=Count('student_id', filter=Q(admission_status='Active')),
         cancelled=Count('student_id', filter=Q(admission_status='Cancelled')),
         non_residential=Count('student_id', filter=Q(is_non_residential=True)),
-        hall_auah=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_attached='AUAH')),
-        hall_btbh=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached='BTBH') | Q(hall_attached='TBH'))),
-        hall_zh=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_attached='ZH')),
-        unspecified=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_attached__isnull=True) | Q(hall_attached=''))),
+        hall_auah=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__short_name='AUAH')),
+        hall_btbh=Count('student_id', filter=Q(is_non_residential=False) & (Q(hall_residential__short_name='BTBH') | Q(hall_residential__short_name='TBH'))),
+        hall_zh=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__short_name='ZH')),
+        unspecified=Count('student_id', filter=Q(is_non_residential=False) & Q(hall_residential__isnull=True)),
         quota=Count('student_id', filter=Q(is_armed_forces_child=True) | Q(is_freedom_fighter_child=True) | Q(is_july_joddha_2024=True))
     ).order_by('-total')
 
@@ -1482,7 +1497,10 @@ def api_bulk_photo_zip(request):
             if semester and semester != 'All':
                 students = students.filter(semester_name=semester)
             if hall:
-                students = students.filter(hall_attached__icontains=hall)
+                students = students.filter(
+                    Q(hall_residential__short_name__icontains=hall) |
+                    Q(hall_residential__full_name__icontains=hall)
+                )
             if start_date:
                 students = students.filter(admission_date__gte=start_date)
             if end_date:
@@ -1917,6 +1935,70 @@ def rectify_student_id(request, student_id):
             messages.error(request, f"Migration Failed: {str(e)}")
             return redirect('student_profile', student_id=student_id)
 
+    return redirect('student_profile', student_id=student_id)
+
+
+@require_access('students', 'edit_profile')
+def migrate_hall_residency(request, student_id):
+    """
+    Migrates a student's physical residency hall and updates history.
+    Does not touch student_id or hall_attached.
+    """
+    student, _, _ = _resolve_student(student_id)
+    if request.method == 'POST':
+        from master_data.models import Hall
+        
+        is_non_residential_post = request.POST.get('is_non_residential') in ('on', 'true', '1')
+        new_hall_id = request.POST.get('new_hall')
+        reason = request.POST.get('reason', '').strip()
+        
+        new_hall = None
+        if not is_non_residential_post and new_hall_id:
+            try:
+                new_hall = Hall.objects.get(id=new_hall_id)
+            except Hall.DoesNotExist:
+                messages.error(request, "The selected hall does not exist.")
+                return redirect('student_profile', student_id=student_id)
+        
+        if not is_non_residential_post and not new_hall:
+            messages.error(request, "Please select a residential hall or check the non-residential option.")
+            return redirect('student_profile', student_id=student_id)
+        
+        try:
+            with transaction.atomic():
+                prev_hall_obj = student.hall_residential
+                prev_hall_name = prev_hall_obj.short_name if prev_hall_obj else "Non-Residential"
+                new_hall_name = new_hall.short_name if new_hall else "Non-Residential"
+                
+                # Record history
+                from .models import HallMigrationHistory
+                HallMigrationHistory.objects.create(
+                    student=student,
+                    previous_hall=prev_hall_obj,
+                    new_hall=new_hall,
+                    previous_residency_status=student.is_non_residential,
+                    new_residency_status=is_non_residential_post,
+                    reason=reason,
+                    authorized_by=request.user
+                )
+                
+                # Update student
+                student.hall_residential = new_hall
+                student.is_non_residential = is_non_residential_post
+                student.save()  # Full save to trigger auto_now and other hooks
+                
+                # Activity log
+                from core.utils import log_activity
+                log_activity(
+                    request, 'UPDATE', 'students',
+                    f"HALL MIGRATION: {student_id} moved from {prev_hall_name} to {new_hall_name}. Reason: {reason}",
+                    object_id=student.student_id
+                )
+                
+                messages.success(request, f"Residency successfully migrated to {new_hall_name}.")
+        except Exception as e:
+            messages.error(request, f"Migration failed: {str(e)}")
+            
     return redirect('student_profile', student_id=student_id)
 
 
@@ -2551,6 +2633,21 @@ def student_profile(request, student_id):
             'title': f'Status Change: {entry.new_status}',
             'description': f'Reason: {entry.get_reason_category_display()}. {entry.custom_notes or ""}',
             'user': entry.performed_by.username if entry.performed_by else 'Admin'
+        })
+
+    # Hall Migration History Events
+    from .models import HallMigrationHistory
+    hall_migrations = HallMigrationHistory.objects.filter(student=student).order_by('migration_date')
+    for entry in hall_migrations:
+        prev_hall = entry.previous_hall.short_name if entry.previous_hall else "Non-Residential"
+        new_hall = entry.new_hall.short_name if entry.new_hall else "Non-Residential"
+        timeline.append({
+            'timestamp': entry.migration_date,
+            'icon': 'fas fa-hotel',
+            'badge_class': 'bg-info',
+            'title': 'Residency Migration',
+            'description': f"Moved residency from {prev_hall} to {new_hall}. Reason: {entry.reason or 'Not Specified'}",
+            'user': entry.authorized_by.username if entry.authorized_by else 'Admin'
         })
 
     # 4. Board Verification Events

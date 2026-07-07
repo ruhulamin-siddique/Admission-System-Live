@@ -17,6 +17,7 @@ urlpatterns = [
     path('students/profile/<str:student_id>/studentship-pdf/', views.download_studentship_certificate, name='download_studentship'),
     path('students/edit/<str:student_id>/', views.edit_student, name='edit_student'),
     path('students/rectify-id/<str:student_id>/', views.rectify_student_id, name='rectify_student_id'),
+    path('students/migrate-residency/<str:student_id>/', views.migrate_hall_residency, name='migrate_hall_residency'),
     path('students/short-info/<str:student_id>/', views.student_short_info, name='student_short_info'),
     path('students/delete/<str:student_id>/', views.delete_student, name='delete_student'),
     path('reports/academic-intake/', views.academic_intake_report, name='academic_intake_report'),
