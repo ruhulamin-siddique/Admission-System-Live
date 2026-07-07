@@ -35,10 +35,14 @@ def add_master_data(request, model_name):
                 sort_order=request.POST.get('sort_order', 0)
             )
         elif model_name == 'hall':
+            code = request.POST.get('code')
+            if Hall.objects.filter(code=code).exists():
+                from django.contrib import messages
+                messages.warning(request, f"Warning: A duplicate Hall code '{code}' has been detected. The hall was successfully added, but duplicate codes may impact standard UGC ID assignments.")
             Hall.objects.create(
                 full_name=request.POST.get('full_name'),
                 short_name=request.POST.get('short_name'),
-                code=request.POST.get('code')
+                code=code
             )
         elif model_name == 'year':
             AdmissionYear.objects.create(year=request.POST.get('year'))
@@ -109,9 +113,13 @@ def edit_master_data(request, model_name, pk):
                 from students.models import Student
                 Student.objects.filter(program=old_canonical).update(program=new_canonical)
         elif model_name == 'hall':
+            new_code = request.POST.get('code')
             obj.full_name = request.POST.get('full_name')
             obj.short_name = request.POST.get('short_name')
-            obj.code = request.POST.get('code')
+            if Hall.objects.filter(code=new_code).exclude(pk=obj.pk).exists():
+                from django.contrib import messages
+                messages.warning(request, f"Warning: A duplicate Hall code '{new_code}' has been detected. The hall was successfully updated, but duplicate codes may impact standard UGC ID assignments.")
+            obj.code = new_code
         elif model_name == 'year':
             obj.year = request.POST.get('year')
             obj.is_active = request.POST.get('is_active') == 'on'

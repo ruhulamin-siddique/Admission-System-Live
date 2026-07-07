@@ -33,7 +33,7 @@ class BoardVerificationEngine:
         'Mymensingh': 'mymensingh',
         'Rajshahi': 'rajshahi',
         'Sylhet': 'sylhet',
-        'Technical': 'technical',
+        'Technical': 'tec',
     }
 
     EXAM_MAP = {
@@ -119,7 +119,25 @@ class BoardVerificationEngine:
         Sends the verification request to the board portal.
         """
         p_exam = self.EXAM_MAP.get(exam_name.upper(), 'ssc')
-        p_board = self.BOARD_MAP.get(board, board.lower())
+        
+        # Robust board normalization (case-insensitive & substring matching)
+        board_str = str(board).strip().lower()
+        p_board = board_str
+        for key, val in self.BOARD_MAP.items():
+            if key.lower() == board_str:
+                p_board = val
+                break
+        else:
+            if 'technical' in board_str:
+                p_board = 'tec'
+            elif 'madrasah' in board_str:
+                p_board = 'madrasah'
+            else:
+                for key, val in self.BOARD_MAP.items():
+                    if key.lower() in board_str:
+                        p_board = val
+                        break
+        
         
         def _clean(v):
             if v is None: return ""

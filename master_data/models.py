@@ -39,7 +39,7 @@ class Program(models.Model):
 class Hall(models.Model):
     full_name = models.CharField(max_length=150, unique=True, null=True, blank=True)
     short_name = models.CharField(max_length=100, unique=True)
-    code = models.CharField(max_length=10, unique=True, help_text="Internal/UGC Hall Code (e.g., 01)")
+    code = models.CharField(max_length=10, help_text="Internal/UGC Hall Code (e.g., 01)")
 
     def __str__(self):
         return self.full_name if self.full_name else self.short_name
