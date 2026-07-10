@@ -147,6 +147,17 @@ class Student(models.Model):
     ssc_verified = models.BooleanField(default=False)
     hsc_verified = models.BooleanField(default=False)
     academic_verification_logs = models.JSONField(default=dict, blank=True) # Stores Board Name, Official GPA, Match Status, etc.
+
+    # BTEB (Technical Board) Verification
+    bteb_curriculum = models.CharField(
+        max_length=100, null=True, blank=True,
+        help_text="BTEB Curriculum code+name, e.g. '27 - SSC (Vocational)' or '10 - Diploma in Engineering'"
+    )
+    bteb_semester = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text="BTEB Semester/Class number, e.g. '1', '4', '8'"
+    )
+    bteb_verified = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)

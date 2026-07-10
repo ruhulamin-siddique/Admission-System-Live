@@ -55,6 +55,11 @@
                 {% elif student.ssc_verified or student.hsc_verified %}
                     <span class="text-info ml-1" title="{% if student.ssc_verified %}SSC{% else %}HSC{% endif %} Board Verified" style="display: inline-flex; align-items: center;"><i class="fas fa-check" style="font-size: 11px;"></i></span>
                 {% endif %}
+                {% if student.bteb_verified %}
+                    <span class="ml-1" title="BTEB Technical Board Verified" style="color:#17a2b8; display: inline-flex; align-items: center;">
+                        <i class="fas fa-check" style="font-size: 11px;"></i><i class="fas fa-industry" style="font-size: 9px; margin-left:1px;"></i>
+                    </span>
+                {% endif %}
             </a>
         </div>
     </td>

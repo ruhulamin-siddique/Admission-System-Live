@@ -39,7 +39,7 @@ import requests
 import base64
 from django.core.files.base import ContentFile
 from django.conf import settings
-from .utils_board import BoardVerificationEngine
+from .utils_board import BoardVerificationEngine, BTEBVerificationEngine, is_technical_board
 
 def link_callback(uri, rel):
     """
@@ -4042,22 +4042,33 @@ def api_bulk_update_execute(request):
 
 @login_required
 def api_get_board_captcha(request):
-    """Fetches captcha from education board and saves session (BUG-02/03 fixed)."""
+    """Fetches captcha from education board and saves session.
+
+    For BTEB (Technical board) — returns mode='bteb' with no image captcha.
+    The math captcha is auto-solved server-side during verification.
+    For all other boards — returns a base64 image captcha as before.
+    """
+    # Detect if this is a BTEB / Technical board request
+    board_hint = request.GET.get('board', '')
+    if is_technical_board(board_hint):
+        # BTEB: no image captcha — auto-solved server-side during verification
+        return JsonResponse({
+            'success': True,
+            'mode': 'bteb',
+            'captcha_image': None,
+            'message': 'Technical Board verification is fully automated. No captcha required.'
+        })
+
+    # General board: existing image captcha flow
     engine = BoardVerificationEngine()
-    
-    # Load previously saved cookies if available to speed up captcha loading (fast path)
     saved_cookies = request.session.get('board_session_cookies')
     if saved_cookies:
         import requests.utils
         engine.session.cookies.update(saved_cookies)
-        
     captcha_b64 = engine.get_captcha()
-
     if captcha_b64:
         import requests.utils
-        # BUG-02 FIX: Use 'board_session_cookies' — the key api_verify_board_result reads
         request.session['board_session_cookies'] = requests.utils.dict_from_cookiejar(engine.session.cookies)
-        # BUG-03 FIX: Key is 'captcha_image' matching what profile.html and edit.html expect
         return JsonResponse({'success': True, 'captcha_image': f"data:image/jpeg;base64,{captcha_b64}"})
     return JsonResponse({'success': False, 'error': 'Failed to load captcha. Please try again.'})
 
@@ -4070,6 +4081,11 @@ def api_verify_board_result(request):
                            Loads student data from DB, saves verified flag immediately.
     Mode 2 (edit.html):    POST includes exam + board + year + roll + reg.
                            No student lookup; verified flag saved later on form submit.
+
+    For BTEB (Technical board): routes to BTEBVerificationEngine — fully automated,
+    no manual captcha input needed. Requires curriculum + semester (from DB or POST).
+    If those are missing, returns error='missing_bteb_fields' so the frontend
+    can show a fallback modal for the user to provide them.
     """
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Invalid request method.'})
@@ -4099,10 +4115,166 @@ def api_verify_board_result(request):
             elif exam == 'HSC':
                 board, year, roll, reg = student.hsc_board, student.hsc_year, student.hsc_roll, student.hsc_reg
                 current_gpa = str(student.hsc_gpa)
+            elif exam == 'BTEB':
+                # BTEB exam type passed explicitly — pull roll/reg from SSC fields
+                board = student.ssc_board or student.hsc_board or 'Technical'
+                roll  = student.ssc_roll or student.hsc_roll
+                reg   = student.ssc_reg  or student.hsc_reg
+                year  = student.ssc_year or student.hsc_year
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+    # ---------------------------------------------------------------
+    # BTEB / Technical Board routing (auto-solved captcha)
+    # ---------------------------------------------------------------
+    if is_technical_board(board):
+        # Collect curriculum & semester: prefer POST params, then DB fields
+        curriculum = (
+            request.POST.get('bteb_curriculum', '').strip() or
+            (student.bteb_curriculum if student else '')
+        )
+        semester = (
+            request.POST.get('bteb_semester', '').strip() or
+            (student.bteb_semester if student else '')
+        )
+
+        # Missing-data guard: tell frontend to show fallback modal
+        if not curriculum or not semester:
+            return JsonResponse({
+                'success': False,
+                'error': 'missing_bteb_fields',
+                'message': (
+                    'Curriculum and Semester are required for BTEB verification '
+                    'but were not found for this student. '
+                    'Please provide them in the form below.'
+                )
+            })
+
+        # If user provided curriculum/semester via the fallback modal, persist them
+        if student:
+            update_fields = []
+            if curriculum and student.bteb_curriculum != curriculum:
+                student.bteb_curriculum = curriculum
+                update_fields.append('bteb_curriculum')
+            if semester and student.bteb_semester != semester:
+                student.bteb_semester = semester
+                update_fields.append('bteb_semester')
+            if update_fields:
+                student.save(update_fields=update_fields)
+
+        # Query BTEB REST API directly (no captcha required)
+        bteb_engine = BTEBVerificationEngine()
+        result = bteb_engine.fetch_result(
+            examination=exam,
+            curriculum=curriculum,
+            semester=semester,
+            roll=roll,
+            reg=reg,
+            exam_year=year or None,
+        )
+
+        # Mode 1 & 2: Process results if successful
+        if result.get('success'):
+            board_gpa = result.get('gpa', '0.00')
+            try:
+                is_match = float(current_gpa) == float(board_gpa)
+            except (ValueError, TypeError):
+                is_match = str(current_gpa) == str(board_gpa)
+
+            result['is_match'] = is_match
+            result['board_gpa'] = board_gpa
+            result['current_gpa'] = current_gpa
+
+            if student:
+                # Sync official board details
+                b_name = result.get('name', '').strip()
+                b_fname = result.get('father_name', '').strip()
+                b_mname = result.get('mother_name', '').strip()
+                b_gender = result.get('gender', '').strip()
+                b_dob = result.get('dob', '').strip()
+
+                def is_empty(val):
+                    s_val = str(val).strip()
+                    return not val or s_val == '' or s_val.lower() == 'none' or s_val in ('-', '.', 'n/a')
+
+                if b_name and is_empty(student.student_name):
+                    student.student_name = b_name
+                if b_fname and is_empty(student.father_name):
+                    student.father_name = b_fname
+                if b_mname and is_empty(student.mother_name):
+                    student.mother_name = b_mname
+                if b_gender and is_empty(student.gender):
+                    student.gender = b_gender
+                if b_dob and is_empty(student.dob):
+                    from datetime import datetime
+                    for fmt in ('%d-%m-%Y', '%Y-%m-%d', '%d/%m/%Y'):
+                        try:
+                            student.dob = datetime.strptime(b_dob, fmt).date()
+                            break
+                        except ValueError:
+                            continue
+
+                # Sync official academic details (GPA, school/college, and subject results)
+                grades = result.get('grades', {})
+                b_inst = result.get('inst_name', '').strip()
+                try:
+                    b_gpa_float = float(board_gpa)
+                except (ValueError, TypeError):
+                    b_gpa_float = None
+
+                if exam == 'SSC':
+                    student.ssc_verified = True
+                    if b_gpa_float is not None:
+                        student.ssc_gpa = b_gpa_float
+                    if b_inst and is_empty(student.ssc_school):
+                        student.ssc_school = b_inst
+                    if 'physics' in grades:
+                        student.ssc_physics = grades['physics']
+                    if 'chemistry' in grades:
+                        student.ssc_chemistry = grades['chemistry']
+                    if 'math' in grades:
+                        student.ssc_math = grades['math']
+                elif exam == 'HSC':
+                    student.hsc_verified = True
+                    if b_gpa_float is not None:
+                        student.hsc_gpa = b_gpa_float
+                    if b_inst and is_empty(student.hsc_college):
+                        student.hsc_college = b_inst
+                    if 'physics' in grades:
+                        student.hsc_physics = grades['physics']
+                    if 'chemistry' in grades:
+                        student.hsc_chemistry = grades['chemistry']
+                    if 'math' in grades:
+                        student.hsc_math = grades['math']
+
+                # Log verification event
+                log_entry = {
+                    'timestamp': timezone.now().isoformat(),
+                    'verified_by': request.user.username,
+                    'exam': exam,
+                    'board_gpa': board_gpa,
+                    'stored_gpa': current_gpa,
+                    'is_match': is_match,
+                    'board_type': 'bteb',
+                    'curriculum': curriculum,
+                    'semester': semester
+                }
+                try:
+                    logs = getattr(student, 'academic_verification_logs', None) or {}
+                    logs[exam] = log_entry
+                    student.academic_verification_logs = logs
+                    student.save()
+                except Exception:
+                    student.save()
+
+        result['board_type'] = 'bteb'
+        return JsonResponse(result)
+
+    # ---------------------------------------------------------------
+    # General education board (existing flow)
+    # ---------------------------------------------------------------
     engine = BoardVerificationEngine()
+
 
     # BUG-02 FIX: Read from the correct session key
     saved_cookies = request.session.get('board_session_cookies')
