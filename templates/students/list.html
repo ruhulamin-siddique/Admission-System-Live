@@ -1759,6 +1759,16 @@ const BoardAuditManager = {
         const loader = document.getElementById('audit-loader');
         const wrapper = document.getElementById('audit-captcha-wrapper');
         
+        const task = this.queue[this.currentIndex];
+        const isBTEB = task && task.board && task.board.toLowerCase().includes('technical');
+        
+        if (isBTEB) {
+            if(loader) loader.style.display = 'none';
+            if(wrapper) wrapper.style.display = 'none';
+            document.getElementById('audit-captcha-input').value = 'BTEB';
+            return;
+        }
+        
         fetch('{% url "api_get_board_captcha" %}')
             .then(r => r.json())
             .then(data => {

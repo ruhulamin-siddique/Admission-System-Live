@@ -2301,24 +2301,82 @@ def academic_audit_center(request):
     from .models import Student
     from django.db.models import Count, Q
     
+    # GET Filter parameters
+    q = request.GET.get('q', '').strip()
+    board = request.GET.get('board', '').strip()
+    status = request.GET.get('status', '').strip()
+
+    # Base query filters
+    filters = Q()
+    if q:
+        filters &= (Q(student_id__icontains=q) | Q(student_name__icontains=q))
+    if board:
+        filters &= (Q(ssc_board__iexact=board) | Q(hsc_board__iexact=board))
+    
+    if status == 'pending':
+        filters &= (Q(ssc_verified=False) | Q(hsc_verified=False))
+    elif status == 'mismatch':
+        filters &= (Q(academic_verification_logs__SSC__is_match=False) | Q(academic_verification_logs__HSC__is_match=False))
+    else:
+        # Default queue view: show any discrepancies (unverified or mismatched)
+        if not q and not board and not status:
+            filters &= (
+                Q(ssc_verified=False) | 
+                Q(hsc_verified=False) | 
+                Q(academic_verification_logs__SSC__is_match=False) | 
+                Q(academic_verification_logs__HSC__is_match=False)
+            )
+
     # Verification Statistics
     stats = Student.objects.aggregate(
         total=Count('student_id'),
-        ssc_count=Count('student_id', filter=Q(ssc_verified=True)),
-        hsc_count=Count('student_id', filter=Q(hsc_verified=True)),
         both_count=Count('student_id', filter=Q(ssc_verified=True, hsc_verified=True)),
-        pending_count=Count('student_id', filter=Q(ssc_verified=False) | Q(hsc_verified=False))
+        pending_count=Count('student_id', filter=Q(ssc_verified=False) | Q(hsc_verified=False)),
+        mismatch_count=Count('student_id', filter=Q(academic_verification_logs__SSC__is_match=False) | Q(academic_verification_logs__HSC__is_match=False))
     )
     
-    # Get students for the Verification Queue
-    # Prioritize: 1. Those with logged errors, 2. Unverified students
-    queue_queryset = Student.objects.filter(
-        Q(ssc_verified=False) | Q(hsc_verified=False) | Q(academic_verification_logs__has_key='error')
-    ).order_by('-last_updated')[:25]
+    # Get filtered students for the Verification Queue (limit to 50 results)
+    queue_queryset = Student.objects.filter(filters).order_by('-last_updated')[:50]
+    
+    # Compile Live System Audit Feed (top 5 recent log attempts)
+    recent_students = Student.objects.filter(
+        Q(academic_verification_logs__isnull=False)
+    ).exclude(academic_verification_logs={}).order_by('-last_updated')[:10]
+    
+    feed_logs = []
+    from datetime import datetime
+    for s in recent_students:
+        for exam, log in s.academic_verification_logs.items():
+            if isinstance(log, dict) and 'timestamp' in log:
+                ts_str = log.get('timestamp', '')
+                try:
+                    dt = datetime.fromisoformat(ts_str)
+                    formatted_time = dt.strftime('%d %b, %I:%M %p')
+                except Exception:
+                    formatted_time = ts_str
+
+                feed_logs.append({
+                    'student_id': s.student_id,
+                    'student_name': s.student_name,
+                    'exam': exam,
+                    'timestamp_raw': ts_str,
+                    'timestamp': formatted_time,
+                    'verified_by': log.get('verified_by', 'system'),
+                    'is_match': log.get('is_match', False),
+                    'board_gpa': log.get('board_gpa', 'N/A'),
+                    'stored_gpa': log.get('stored_gpa', 'N/A'),
+                })
+    
+    feed_logs.sort(key=lambda x: x['timestamp_raw'], reverse=True)
+    feed_logs = feed_logs[:5]
     
     context = {
         'stats': stats,
         'recent_discrepancies': queue_queryset,
+        'feed_logs': feed_logs,
+        'q': q,
+        'selected_board': board,
+        'selected_status': status,
     }
     return render(request, 'students/reports/academic_audit_center.html', context)
 
@@ -4128,27 +4186,51 @@ def api_verify_board_result(request):
     # BTEB / Technical Board routing (auto-solved captcha)
     # ---------------------------------------------------------------
     if is_technical_board(board):
-        # Collect curriculum & semester: prefer POST params, then DB fields
+        # Collect curriculum & semester: prefer POST params, then exam-specific log, then fallback to shared DB fields
+        log_curriculum = ''
+        log_semester = ''
+        if student and student.academic_verification_logs:
+            exam_log = student.academic_verification_logs.get(exam, {})
+            if isinstance(exam_log, dict):
+                log_curriculum = exam_log.get('curriculum', '')
+                log_semester = exam_log.get('semester', '')
+
         curriculum = (
             request.POST.get('bteb_curriculum', '').strip() or
+            log_curriculum or
             (student.bteb_curriculum if student else '')
         )
         semester = (
             request.POST.get('bteb_semester', '').strip() or
+            log_semester or
             (student.bteb_semester if student else '')
         )
 
         # Missing-data guard: tell frontend to show fallback modal
         if not curriculum or not semester:
-            return JsonResponse({
-                'success': False,
-                'error': 'missing_bteb_fields',
-                'message': (
-                    'Curriculum and Semester are required for BTEB verification '
-                    'but were not found for this student. '
-                    'Please provide them in the form below.'
-                )
-            })
+            default_curriculum = '27' if exam == 'SSC' else '26'
+            default_semester = '2'
+            
+            # For bulk audits or backend clients where the student exists but BTEB parameters
+            # are not yet set, auto-apply and save smart defaults to keep the loop fluent.
+            if student and not request.POST.get('bteb_curriculum'):
+                curriculum = default_curriculum
+                semester = default_semester
+                student.bteb_curriculum = curriculum
+                student.bteb_semester = semester
+                student.save(update_fields=['bteb_curriculum', 'bteb_semester'])
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'missing_bteb_fields',
+                    'default_curriculum': default_curriculum,
+                    'default_semester': default_semester,
+                    'message': (
+                        'Curriculum and Semester are required for BTEB verification '
+                        'but were not found for this student. '
+                        'Please provide them in the form below.'
+                    )
+                })
 
         # If user provided curriculum/semester via the fallback modal, persist them
         if student:
@@ -4184,6 +4266,16 @@ def api_verify_board_result(request):
             result['is_match'] = is_match
             result['board_gpa'] = board_gpa
             result['current_gpa'] = current_gpa
+            result['details'] = {
+                'name': result.get('name'),
+                'father_name': result.get('father_name'),
+                'mother_name': result.get('mother_name'),
+                'dob': result.get('dob'),
+                'gender': result.get('gender'),
+                'gpa': result.get('gpa'),
+                'grades': result.get('grades', {}),
+                'all_subjects': result.get('all_subjects', {}),
+            }
 
             if student:
                 # Sync official board details

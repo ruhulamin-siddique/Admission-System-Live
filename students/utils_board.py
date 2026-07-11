@@ -224,10 +224,11 @@ class BoardVerificationEngine:
                     parsed['all_subjects'] = all_subjects
                     grades = {}
                     for code, grade in grade_map.items():
-                        if code in ('109', '265'): grades['math'] = grade_to_gpa(grade)
-                        elif code in ('136', '174'): grades['physics'] = grade_to_gpa(grade)
-                        elif code in ('137', '176'): grades['chemistry'] = grade_to_gpa(grade)
-                        elif code == '126': grades['higher_math'] = grade_to_gpa(grade)
+                        # General Board + Madrasah Dakhil codes (108=Math, 130=Phy, 131=Chem, 115=HM)
+                        if code in ('109', '265', '108'): grades['math'] = grade_to_gpa(grade)
+                        elif code in ('136', '174', '130'): grades['physics'] = grade_to_gpa(grade)
+                        elif code in ('137', '176', '131'): grades['chemistry'] = grade_to_gpa(grade)
+                        elif code in ('126', '115'): grades['higher_math'] = grade_to_gpa(grade)
                     parsed['grades'] = grades
                     return parsed
                 elif data_json.get('msg'):
@@ -323,6 +324,40 @@ class BTEBVerificationEngine:
             'captcha_image': None,
         }
 
+    def _normalize_semester(self, curriculum_code: str, semester_val: str) -> str:
+        s = str(semester_val).strip().lower()
+        
+        # Remove common prefixes/suffixes
+        s = s.replace('semester', '').replace('class', '').replace('year', '').strip()
+        s = re.sub(r'\b(\d+)(st|nd|rd|th)\b', r'\1', s)
+        
+        # Roman numerals to numbers
+        roman_map = {
+            'ix': '9', 'x': '10', 'xi': '11', 'xii': '12',
+            'i': '1', 'ii': '2', 'iii': '3', 'iv': '4', 'v': '5', 'vi': '6', 'vii': '7', 'viii': '8'
+        }
+        if s in roman_map:
+            s = roman_map[s]
+            
+        # Curriculum-specific mapping
+        if curriculum_code in ['27', '77']:  # SSC/Dakhil (Vocational)
+            if s in ['9', 'nine', 'first', '1']:
+                return '1'
+            if s in ['10', 'ten', 'second', '2']:
+                return '2'
+        elif curriculum_code in ['24', '44', '26']:  # HSC BM/Vocational
+            if s in ['11', 'eleven', 'first', '1']:
+                return '1'
+            if s in ['12', 'twelve', 'second', '2']:
+                return '2'
+                
+        # Fallback to only digits if present
+        digits = ''.join(c for c in s if c.isdigit())
+        if digits:
+            return digits
+            
+        return semester_val
+
     def fetch_result(self, examination, curriculum, semester, roll, reg, exam_year=None):
         """
         Direct REST query to the public BTEB endpoint.
@@ -342,6 +377,7 @@ class BTEBVerificationEngine:
         reg  = self._clean(reg)
         curriculum_code = self._extract_curriculum_code(curriculum)
         semester = self._clean(semester)
+        semester = self._normalize_semester(curriculum_code, semester)
         
         # If exam_year is missing, fallback to current year
         year = self._clean(exam_year)

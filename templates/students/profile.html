@@ -560,13 +560,23 @@
                                             {% if 'technical' in student.ssc_board|lower %}
                                             <tr>
                                                 <td><strong>Curriculum:</strong></td>
-                                                <td>{{ student.bteb_curriculum|default:"<span class='text-muted'>Not set</span>" }}
+                                                <td>
+                                                    {% if student.academic_verification_logs.SSC.curriculum %}
+                                                        {{ student.academic_verification_logs.SSC.curriculum }}
+                                                    {% else %}
+                                                        {{ student.bteb_curriculum|default:"<span class='text-muted'>Not set</span>" }}
+                                                    {% endif %}
                                                     {% if student.ssc_verified %}<i class="fas fa-check-circle ml-1" style="color:#17a2b8;"></i>{% endif %}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Semester:</strong></td>
-                                                <td>{{ student.bteb_semester|default:"<span class='text-muted'>Not set</span>" }}
+                                                <td>
+                                                    {% if student.academic_verification_logs.SSC.semester %}
+                                                        {{ student.academic_verification_logs.SSC.semester }}
+                                                    {% else %}
+                                                        {{ student.bteb_semester|default:"<span class='text-muted'>Not set</span>" }}
+                                                    {% endif %}
                                                     {% if student.ssc_verified %}<i class="fas fa-check-circle ml-1" style="color:#17a2b8;"></i>{% endif %}
                                                 </td>
                                             </tr>
@@ -695,13 +705,23 @@
                                             {% if 'technical' in student.hsc_board|lower %}
                                             <tr>
                                                 <td><strong>Curriculum:</strong></td>
-                                                <td>{{ student.bteb_curriculum|default:"<span class='text-muted'>Not set</span>" }}
+                                                <td>
+                                                    {% if student.academic_verification_logs.HSC.curriculum %}
+                                                        {{ student.academic_verification_logs.HSC.curriculum }}
+                                                    {% else %}
+                                                        {{ student.bteb_curriculum|default:"<span class='text-muted'>Not set</span>" }}
+                                                    {% endif %}
                                                     {% if student.hsc_verified %}<i class="fas fa-check-circle ml-1" style="color:#17a2b8;"></i>{% endif %}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Semester:</strong></td>
-                                                <td>{{ student.bteb_semester|default:"<span class='text-muted'>Not set</span>" }}
+                                                <td>
+                                                    {% if student.academic_verification_logs.HSC.semester %}
+                                                        {{ student.academic_verification_logs.HSC.semester }}
+                                                    {% else %}
+                                                        {{ student.bteb_semester|default:"<span class='text-muted'>Not set</span>" }}
+                                                    {% endif %}
                                                     {% if student.hsc_verified %}<i class="fas fa-check-circle ml-1" style="color:#17a2b8;"></i>{% endif %}
                                                 </td>
                                             </tr>
@@ -1097,31 +1117,62 @@
 
 <!-- BTEB Missing Fields Modal -->
 <div class="modal fade" id="btebMissingFieldsModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow-lg" style="border-radius:1.25rem; overflow:hidden;">
             <div class="modal-header border-0 py-3" style="background:linear-gradient(135deg,#17a2b8,#0c7a8a); color:#fff;">
                 <h5 class="modal-title font-weight-bold">
-                    <i class="fas fa-info-circle mr-2"></i> BTEB — Info Required
+                    <i class="fas fa-info-circle mr-2"></i> BTEB Technical Board (<span id="btebModalExamType">SSC</span>)
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body px-4 pt-4">
                 <p class="text-muted small mb-3">
-                    <i class="fas fa-exclamation-circle text-warning mr-1"></i>
-                    Curriculum and Semester are not recorded for this student.
-                    Please provide them to proceed with BTEB verification.
+                    <i class="fas fa-exclamation-circle text-info mr-1"></i>
+                    Curriculum and Semester codes are required for BTEB verification. Please verify/provide them below.
                 </p>
-                <div class="form-group mb-3">
-                    <label class="small font-weight-bold">Curriculum Code <span class="text-danger">*</span></label>
-                    <input type="text" id="btebCurriculumInput" class="form-control form-control-sm"
-                           placeholder="e.g. 27 (for SSC Vocational)" autocomplete="off">
-                    <small class="text-muted">Enter the numeric code shown on BTEB portal (e.g. 27, 10, 36)</small>
+                <div class="form-row">
+                    <div class="form-group col-md-6 mb-3">
+                        <label class="small font-weight-bold">Curriculum Code <span class="text-danger">*</span></label>
+                        <input type="text" id="btebCurriculumInput" class="form-control form-control-sm font-weight-bold text-center"
+                               placeholder="e.g. 27" autocomplete="off">
+                        <small class="text-muted text-xs">Numeric code (e.g. 27 for SSC Voc)</small>
+                    </div>
+                    <div class="form-group col-md-6 mb-3">
+                        <label class="small font-weight-bold">Semester / Class <span class="text-danger">*</span></label>
+                        <input type="text" id="btebSemesterInput" class="form-control form-control-sm font-weight-bold text-center"
+                               placeholder="e.g. 2" autocomplete="off">
+                        <small class="text-muted text-xs">Semester or class code (e.g. 2 for Class 10)</small>
+                    </div>
                 </div>
-                <div class="form-group mb-2">
-                    <label class="small font-weight-bold">Semester / Class <span class="text-danger">*</span></label>
-                    <input type="text" id="btebSemesterInput" class="form-control form-control-sm"
-                           placeholder="e.g. 1, 2, 3, 4..." autocomplete="off">
-                    <small class="text-muted">Enter the semester or class number</small>
+
+                <!-- Quick Guide Accordion/Box -->
+                <div class="card bg-light border-0 mt-2 mb-0" style="border-radius: 8px;">
+                    <div class="card-body p-3" style="font-size: 0.75rem; line-height: 1.4; color: #475569;">
+                        <div class="font-weight-bold mb-2 text-info d-flex align-items-center">
+                            <i class="fas fa-book-open mr-2"></i> BTEB Portal Code Guide
+                        </div>
+                        <div class="row">
+                            <div class="col-6 border-right">
+                                <div class="font-weight-black text-secondary mb-1">Curriculums:</div>
+                                <ul class="pl-3 mb-0 text-muted list-unstyled">
+                                    <li><strong>27</strong> - SSC (Vocational)</li>
+                                    <li><strong>77</strong> - Dakhil (Vocational)</li>
+                                    <li><strong>26</strong> - HSC (Vocational)</li>
+                                    <li><strong>24</strong> - HSC (Business Mgmt)</li>
+                                    <li><strong>44</strong> - HSC (BM & Tech)</li>
+                                    <li><strong>15</strong> - Diploma in Eng.</li>
+                                </ul>
+                            </div>
+                            <div class="col-6">
+                                <div class="font-weight-black text-secondary mb-1">Semesters/Classes:</div>
+                                <ul class="pl-3 mb-0 text-muted list-unstyled">
+                                    <li><strong>1</strong> - Class 9 / Class 11 / 1st Sem</li>
+                                    <li><strong>2</strong> - Class 10 / Class 12 / 2nd Sem</li>
+                                    <li><strong>3 to 8</strong> - 3rd to 8th Sem</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer border-0 pb-4 px-4">
@@ -1154,7 +1205,8 @@
         const modalHeader = document.querySelector('#boardVerifyModal .modal-header');
         if (isBTEB) {
             modalHeader.style.background = 'linear-gradient(135deg,#17a2b8,#0c7a8a)';
-            document.getElementById('verifyTitle').innerText = 'BTEB Technical Board';
+            document.getElementById('verifyTitle').innerText = 'BTEB Technical Board - ' + type;
+            document.getElementById('btebModalExamType').innerText = type;
         } else {
             modalHeader.style.background = '';
             document.getElementById('verifyTitle').innerText = type;
@@ -1263,6 +1315,10 @@
             if (data.success) {
                 renderVerificationResult(data);
             } else if (data.error === 'missing_bteb_fields') {
+                // Pre-fill BTEB input fields with defaults
+                document.getElementById('btebCurriculumInput').value = data.default_curriculum || '';
+                document.getElementById('btebSemesterInput').value = data.default_semester || '';
+
                 // Show fallback modal for BTEB missing curriculum/semester
                 loader.style.display = 'none';
                 captchaContainer.style.display = 'none';
@@ -1277,11 +1333,16 @@
                 document.getElementById('verifyError').classList.remove('d-none');
                 if (!isBTEB) loadCaptcha();
                 else {
-                    // Show retry button for BTEB
-                    loader.innerHTML = `<div class="text-danger text-center"><i class="fas fa-exclamation-circle fa-2x mb-2"></i>
-                        <p>${data.error || 'BTEB verification failed.'}</p>
-                        <button class="btn btn-sm btn-outline-info rounded-pill" onclick="loadCaptcha()">Retry</button>
-                    </div>`;
+                    // Show retry and field correction options for BTEB
+                    loader.innerHTML = `
+                        <div class="text-danger text-center">
+                            <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                            <p>${data.error || 'BTEB verification failed.'}</p>
+                            <div class="d-flex justify-content-center" style="gap: 8px;">
+                                <button class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="loadCaptcha()">Retry</button>
+                                <button class="btn btn-sm btn-info text-white rounded-pill px-3" onclick="showBtebFieldCorrection()">Change BTEB Info</button>
+                            </div>
+                        </div>`;
                     loader.style.display = 'block';
                 }
             }
@@ -1319,8 +1380,14 @@
         }, 400);
     }
 
+    function showBtebFieldCorrection() {
+        $('#boardVerifyModal').modal('hide');
+        setTimeout(() => $('#btebMissingFieldsModal').modal('show'), 400);
+    }
+
     function renderVerificationResult(data) {
         lastProfileVerificationResult = data;
+        document.getElementById('captchaLoader').style.display = 'none';
         document.getElementById('captchaContainer').style.display = 'none';
         const container = document.getElementById('verifyResultContainer');
         container.style.display = 'block';
@@ -1689,6 +1756,18 @@
         modal.modal('show');
         updateUgcMigrationPreview();
     }
+
+    $(document).ready(function() {
+        // Tab state persistence using localStorage
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            localStorage.setItem('activeProfileTab', $(e.target).attr('href'));
+        });
+
+        const activeTab = localStorage.getItem('activeProfileTab');
+        if (activeTab) {
+            $(`.nav-pills a[href="${activeTab}"]`).tab('show');
+        }
+    });
 </script>
 
 <style>

@@ -1761,18 +1761,41 @@
                             </div>
                         </div>
 
-                        <!-- CAPTCHA AREA -->
-                        <div class="bg-white p-3 rounded-lg shadow-sm mb-3 text-center border">
-                            <p class="small text-muted mb-2 font-weight-bold">Solve Captcha to Continue</p>
-                            <div id="captcha_container" class="mb-3">
-                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <!-- BTEB EXTRA FIELDS -->
+                        <div id="bteb_fields_container" class="d-none">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold text-muted">Curriculum Code <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control rounded-pill border-0 shadow-sm font-weight-bold text-center" id="verify_bteb_curriculum" placeholder="e.g. 27">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold text-muted">Semester / Class <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control rounded-pill border-0 shadow-sm font-weight-bold text-center" id="verify_bteb_semester" placeholder="e.g. 2">
+                                </div>
                             </div>
-                            <div class="input-group mb-2">
-                                <input type="text" id="verify_captcha" class="form-control border-right-0 rounded-left-pill text-center font-weight-bold" placeholder="????">
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary border-left-0 rounded-right-pill bg-white" type="button" onclick="loadBoardCaptcha()">
-                                        <i class="fas fa-sync-alt"></i>
-                                    </button>
+                            <div class="card bg-light border-0 mb-3" style="border-radius: 8px;">
+                                <div class="card-body p-2" style="font-size: 0.7rem; line-height: 1.3; color: #475569;">
+                                    <div class="font-weight-bold text-info mb-1"><i class="fas fa-book-open mr-1"></i> Quick Guide:</div>
+                                    <div><strong>Curriculums:</strong> 27 (SSC Voc), 26 (HSC Voc), 24 (HSC BM), 44 (HSC BMT), 15 (Diploma)</div>
+                                    <div><strong>Semester/Class:</strong> 1 (Class 9/11/1st Sem), 2 (Class 10/12/2nd Sem)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAPTCHA AREA -->
+                        <div id="captcha_area_container">
+                            <div class="bg-white p-3 rounded-lg shadow-sm mb-3 text-center border">
+                                <p class="small text-muted mb-2 font-weight-bold">Solve Captcha to Continue</p>
+                                <div id="captcha_container" class="mb-3">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                </div>
+                                <div class="input-group mb-2">
+                                    <input type="text" id="verify_captcha" class="form-control border-right-0 rounded-left-pill text-center font-weight-bold" placeholder="????">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary border-left-0 rounded-right-pill bg-white" type="button" onclick="loadBoardCaptcha()">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1849,9 +1872,41 @@
     $(document).ready(function() {
         const boardOptions = $('[name="ssc_board"]').html();
         $('#verify_board').html(boardOptions);
+
+        $('#verify_board').on('change', function() {
+            handleBoardChange();
+        });
     });
 
     let lastVerificationResult = null;
+
+    function handleBoardChange() {
+        const board = $('#verify_board').val() || '';
+        const level = $('#verify_exam_level').val() || 'SSC';
+        const isBTEB = board.toLowerCase().includes('technical');
+
+        if (isBTEB) {
+            $('#captcha_area_container').hide();
+            $('#verify_captcha').val('BTEB');
+            $('#bteb_fields_container').removeClass('d-none');
+            
+            // Set defaults based on exam level
+            if (!$('#verify_bteb_curriculum').val()) {
+                $('#verify_bteb_curriculum').val(level === 'SSC' ? '27' : '26');
+            }
+            if (!$('#verify_bteb_semester').val()) {
+                $('#verify_bteb_semester').val('2');
+            }
+            $('#btn_submit_verify').prop('disabled', false);
+        } else {
+            $('#bteb_fields_container').addClass('d-none');
+            $('#captcha_area_container').show();
+            if ($('#verify_captcha').val() === 'BTEB') {
+                $('#verify_captcha').val('');
+            }
+            loadBoardCaptcha();
+        }
+    }
 
     function openVerificationModal(level) {
         $('#boardVerificationModalLabel').html(`<i class="fas fa-shield-check mr-2"></i> Education Board Verification: <span class="badge badge-light text-primary px-3 ml-2">${level}</span>`);
@@ -1859,11 +1914,15 @@
         $('#verify_error').addClass('d-none');
         $('#verify_placeholder').removeClass('d-none');
         $('#verify_result_container').addClass('d-none');
-        $('#btn_submit_verify').removeClass('d-none').prop('disabled', true);
+        $('#btn_submit_verify').html('<i class="fas fa-search mr-1"></i> Check Result').removeClass('d-none').prop('disabled', true);
         $('#btn_accept_result').addClass('d-none');
         $('#btn_copy_result').addClass('d-none');
         $('#verify_captcha').val('');
         
+        // Reset BTEB field values on modal open to trigger fresh default resolution
+        $('#verify_bteb_curriculum').val('');
+        $('#verify_bteb_semester').val('');
+
         // Pre-fill data
         const prefix = level.toLowerCase();
         $('#verify_board').val($(`[name="${prefix}_board"]`).val());
@@ -1872,10 +1931,14 @@
         $('#verify_reg').val($(`[name="${prefix}_reg"]`).val());
 
         $('#boardVerificationModal').modal('show');
-        loadBoardCaptcha();
+        handleBoardChange();
     }
 
     function loadBoardCaptcha() {
+        const board = $('#verify_board').val() || '';
+        const isBTEB = board.toLowerCase().includes('technical');
+        if (isBTEB) return;
+
         $('#verify_captcha').val('');
         $('#btn_submit_verify').prop('disabled', true);
         $('#captcha_container').html('<div class="spinner-border text-primary spinner-border-sm"></div><span class="ml-2 small text-muted">Loading Secure Captcha...</span>');
@@ -1913,6 +1976,8 @@
             roll: $('#verify_roll').val(),
             reg: $('#verify_reg').val(),
             captcha: $('#verify_captcha').val(),
+            bteb_curriculum: $('#verify_bteb_curriculum').val(),
+            bteb_semester: $('#verify_bteb_semester').val(),
             csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
         };
 
@@ -1932,8 +1997,10 @@
                     const level = $('#verify_exam_level').val();
                     
                     // 1. Institutional Updates
+                    const selectedBoard = $('#verify_board option:selected').text() || $('#verify_board').val() || '';
+                    const selectedYear = $('#verify_year').val() || '';
                     previewHtml += `<div class="font-weight-black small text-uppercase text-muted mt-2 mb-2 border-bottom pb-1" style="letter-spacing:1px">Institutional Context</div>`;
-                    previewHtml += `<div class="d-flex justify-content-between mb-1"><span>Board / Year:</span> <span class="font-weight-bold text-dark">${response.board} ${response.year}</span></div>`;
+                    previewHtml += `<div class="d-flex justify-content-between mb-1"><span>Board / Year:</span> <span class="font-weight-bold text-dark">${selectedBoard} ${selectedYear}</span></div>`;
                     if(response.group) {
                         previewHtml += `<div class="d-flex justify-content-between mb-1"><span>Group / Track:</span> <span class="text-primary font-weight-bold">→ ${response.group}</span></div>`;
                     }
@@ -2027,6 +2094,25 @@
         const level = $('#verify_exam_level').val().toLowerCase();
         const prefix = level; // ssc or hsc
         
+        // Copy verification parameters back to the main form
+        const boardVal = $('#verify_board').val();
+        const yearVal = $('#verify_year').val();
+        const rollVal = $('#verify_roll').val();
+        const regVal = $('#verify_reg').val();
+        
+        if (boardVal) $(`[name="${prefix}_board"]`).val(boardVal).addClass('is-valid');
+        if (yearVal) $(`[name="${prefix}_year"]`).val(yearVal).addClass('is-valid');
+        if (rollVal) $(`[name="${prefix}_roll"]`).val(rollVal).addClass('is-valid');
+        if (regVal) $(`[name="${prefix}_reg"]`).val(regVal).addClass('is-valid');
+
+        // Apply BTEB curriculum and semester if technical board is selected
+        if (boardVal && boardVal.toLowerCase().includes('technical')) {
+            const curriculumVal = $('#verify_bteb_curriculum').val();
+            const semesterVal = $('#verify_bteb_semester').val();
+            if (curriculumVal) $('[name="bteb_curriculum"]').val(curriculumVal).addClass('is-valid');
+            if (semesterVal) $('[name="bteb_semester"]').val(semesterVal).addClass('is-valid');
+        }
+
         // 1. Apply GPA & School
         if(data.gpa !== undefined && data.gpa !== null && data.gpa !== 'N/A' && data.gpa !== '') {
             let parsedGpa = parseFloat(data.gpa);

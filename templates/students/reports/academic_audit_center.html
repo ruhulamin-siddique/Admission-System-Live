@@ -7,105 +7,167 @@
 <div class="container-fluid pt-4">
     <!-- Stat Cards -->
     <div class="row">
-        <div class="col-md-3">
-            <div class="info-box shadow-sm border-0">
-                <span class="info-box-icon bg-primary elevation-1"><i class="fas fa-users"></i></span>
+        <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box shadow-sm border-0 bg-white" style="border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <span class="info-box-icon bg-primary elevation-1" style="border-radius: 10px;"><i class="fas fa-users"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">Total Students</span>
-                    <span class="info-box-number">{{ stats.total }}</span>
+                    <span class="info-box-text text-muted text-uppercase text-xs font-weight-bold" style="letter-spacing: 0.5px;">Total Candidates</span>
+                    <span class="info-box-number text-dark font-weight-black" style="font-size: 1.6rem;">{{ stats.total }}</span>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="info-box shadow-sm border-0">
-                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-check-double"></i></span>
+        <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box shadow-sm border-0 bg-white" style="border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <span class="info-box-icon bg-success elevation-1" style="border-radius: 10px;"><i class="fas fa-check-double text-white"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">Fully Verified</span>
-                    <span class="info-box-number">{{ stats.both_count }}</span>
+                    <span class="info-box-text text-muted text-uppercase text-xs font-weight-bold" style="letter-spacing: 0.5px;">Fully Verified</span>
+                    <span class="info-box-number text-dark font-weight-black" style="font-size: 1.6rem;">{{ stats.both_count }}</span>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="info-box shadow-sm border-0">
-                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-clock"></i></span>
+        <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box shadow-sm border-0 bg-white" style="border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <span class="info-box-icon bg-warning elevation-1" style="border-radius: 10px;"><i class="fas fa-clock text-white"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">Verification Pending</span>
-                    <span class="info-box-number">{{ stats.pending_count }}</span>
+                    <span class="info-box-text text-muted text-uppercase text-xs font-weight-bold" style="letter-spacing: 0.5px;">Pending Audit</span>
+                    <span class="info-box-number text-dark font-weight-black" style="font-size: 1.6rem;">{{ stats.pending_count }}</span>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="info-box shadow-sm border-0">
-                <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-exclamation-circle"></i></span>
+        <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box shadow-sm border-0 bg-white" style="border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <span class="info-box-icon bg-danger elevation-1" style="border-radius: 10px;"><i class="fas fa-triangle-exclamation text-white"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">Discrepancies Found</span>
-                    <span class="info-box-number">{{ recent_discrepancies.count|default:0 }}</span>
+                    <span class="info-box-text text-muted text-uppercase text-xs font-weight-bold" style="letter-spacing: 0.5px;">GPA Mismatch</span>
+                    <span class="info-box-number text-dark font-weight-black" style="font-size: 1.6rem;">{{ stats.mismatch_count|default:0 }}</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card shadow-lg border-0 rounded-lg overflow-hidden">
+    <!-- Main Workspace Split Grid -->
+    <div class="row mt-3">
+        <!-- LEFT: Filters + Table (9-cols) -->
+        <div class="col-md-9">
+            <div class="card shadow-sm border-0 rounded-lg overflow-hidden">
                 <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
                     <h3 class="card-title font-weight-bold text-dark mb-0">
                         <i class="fas fa-list-check text-primary mr-2"></i> Verification Queue
                     </h3>
-                    <div class="card-tools">
-                        <button type="button" id="btnFilterUnverified" class="btn btn-sm btn-outline-primary rounded-pill" onclick="toggleUnverifiedFilter()">
-                            <i class="fas fa-filter mr-1"></i> Filter Unverified
-                        </button>
-                    </div>
+                    <span class="badge badge-light border text-muted px-3 py-1 text-xs">Showing {{ recent_discrepancies|length }} Candidates</span>
                 </div>
-                <div class="card-body p-0" style="max-height: 650px; overflow-y: auto; position: relative;">
+
+                <!-- Search and Filters Panel -->
+                <div class="p-3 bg-light border-bottom">
+                    <form method="GET" id="auditFilterForm" class="mb-0">
+                        <div class="form-row">
+                            <div class="col-md-5 mb-2 mb-md-0">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="q" value="{{ q }}" class="form-control rounded-left-pill text-xs px-3" placeholder="Search ID or Candidate Name..." autocomplete="off">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-info text-white rounded-right-pill px-3" type="submit"><i class="fas fa-search"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2 mb-md-0">
+                                <select name="board" class="form-control form-control-sm rounded-pill text-xs" onchange="this.form.submit()">
+                                    <option value="">-- All Boards --</option>
+                                    <option value="Dhaka" {% if selected_board == 'Dhaka' %}selected{% endif %}>Dhaka</option>
+                                    <option value="Technical" {% if selected_board == 'Technical' %}selected{% endif %}>Technical (BTEB)</option>
+                                    <option value="Madrasah" {% if selected_board == 'Madrasah' %}selected{% endif %}>Madrasah</option>
+                                    <option value="Rajshahi" {% if selected_board == 'Rajshahi' %}selected{% endif %}>Rajshahi</option>
+                                    <option value="Jessore" {% if selected_board == 'Jessore' %}selected{% endif %}>Jessore</option>
+                                    <option value="Comilla" {% if selected_board == 'Comilla' %}selected{% endif %}>Comilla</option>
+                                    <option value="Chittagong" {% if selected_board == 'Chittagong' %}selected{% endif %}>Chittagong</option>
+                                    <option value="Sylhet" {% if selected_board == 'Sylhet' %}selected{% endif %}>Sylhet</option>
+                                    <option value="Barisal" {% if selected_board == 'Barisal' %}selected{% endif %}>Barisal</option>
+                                    <option value="Dinajpur" {% if selected_board == 'Dinajpur' %}selected{% endif %}>Dinajpur</option>
+                                    <option value="Mymensingh" {% if selected_board == 'Mymensingh' %}selected{% endif %}>Mymensingh</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2 mb-md-0">
+                                <select name="status" class="form-control form-control-sm rounded-pill text-xs" onchange="this.form.submit()">
+                                    <option value="">-- All Statuses --</option>
+                                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending Verification</option>
+                                    <option value="mismatch" {% if selected_status == 'mismatch' %}selected{% endif %}>GPA Mismatch</option>
+                                </select>
+                            </div>
+                            {% if q or selected_board or selected_status %}
+                            <div class="col-md-1 text-right">
+                                <a href="{% url 'academic_audit_center' %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-xs"><i class="fas fa-times"></i> Clear</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card-body p-0" style="max-height: 550px; overflow-y: auto;">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light text-muted small text-uppercase font-weight-bold" style="position: sticky; top: 0; z-index: 10; background: #f8fafc;">
                                 <tr>
-                                    <th class="pl-4">Student ID & Name</th>
-                                    <th>SSC Status</th>
-                                    <th>HSC Status</th>
-                                    <th>Last Attempt</th>
-                                    <th class="text-center">Action</th>
+                                    <th class="pl-4 py-3">Student ID & Name</th>
+                                    <th class="py-3">SSC / Equivalent Info</th>
+                                    <th class="py-3">HSC / Equivalent Info</th>
+                                    <th class="text-center py-3">Quick Audit Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for student in recent_discrepancies %}
-                                <tr>
-                                    <td class="pl-4">
-                                        <div class="font-weight-bold">{{ student.student_id }}</div>
-                                        <div class="small text-muted">{{ student.student_name }}</div>
+                                <tr data-student-id="{{ student.student_id }}">
+                                    <td class="pl-4 py-3">
+                                        <div class="font-weight-bold text-dark">{{ student.student_id }}</div>
+                                        <div class="text-xs text-muted">{{ student.student_name }}</div>
                                     </td>
-                                    <td>
-                                        {% if student.ssc_verified %}
-                                            <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Verified</span>
-                                        {% else %}
-                                            <span class="badge badge-warning opacity-75">Pending</span>
-                                        {% endif %}
+                                    <td class="py-3">
+                                        <div class="text-xs font-weight-bold text-secondary">{{ student.ssc_board }} | {{ student.ssc_year }}</div>
+                                        <div class="mt-1" id="ssc-badge-{{ student.student_id }}">
+                                            {% if student.ssc_verified %}
+                                                <span class="badge badge-success-light text-success font-weight-bold text-xs"><i class="fas fa-check-circle mr-1"></i> Verified</span>
+                                            {% else %}
+                                                <span class="badge badge-warning-light text-warning font-weight-bold text-xs"><i class="fas fa-clock mr-1"></i> Pending</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
-                                    <td>
-                                        {% if student.hsc_verified %}
-                                            <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Verified</span>
-                                        {% else %}
-                                            <span class="badge badge-warning opacity-75">Pending</span>
-                                        {% endif %}
+                                    <td class="py-3">
+                                        <div class="text-xs font-weight-bold text-secondary">{{ student.hsc_board }} | {{ student.hsc_year }}</div>
+                                        <div class="mt-1" id="hsc-badge-{{ student.student_id }}">
+                                            {% if student.hsc_verified %}
+                                                <span class="badge badge-success-light text-success font-weight-bold text-xs"><i class="fas fa-check-circle mr-1"></i> Verified</span>
+                                            {% else %}
+                                                <span class="badge badge-warning-light text-warning font-weight-bold text-xs"><i class="fas fa-clock mr-1"></i> Pending</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
-                                    <td class="small text-muted">
-                                        {{ student.last_updated|timesince }} ago
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="{% url 'student_profile' student.student_id %}" class="btn btn-sm btn-primary rounded-pill px-3">
-                                            Open Profile <i class="fas fa-external-link-alt ml-1 small"></i>
-                                        </a>
+                                    <td class="text-center py-3 align-middle">
+                                        <div class="d-flex justify-content-center align-items-center" style="gap: 6px;">
+                                            <div id="ssc-btn-{{ student.student_id }}">
+                                                {% if not student.ssc_verified %}
+                                                    <button class="btn btn-xs btn-outline-info rounded-pill px-2 font-weight-bold text-xs" 
+                                                            onclick="openQuickVerify('SSC', '{{ student.student_id }}', '{{ student.ssc_board }}')">
+                                                        Verify SSC
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                            <div id="hsc-btn-{{ student.student_id }}">
+                                                {% if not student.hsc_verified %}
+                                                    <button class="btn btn-xs btn-outline-secondary rounded-pill px-2 font-weight-bold text-xs" 
+                                                            onclick="openQuickVerify('HSC', '{{ student.student_id }}', '{{ student.hsc_board }}')">
+                                                        Verify HSC
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                            <a href="{% url 'student_profile' student.student_id %}" target="_blank" class="btn btn-xs btn-primary rounded-pill px-3 font-weight-bold" title="Open Full Profile">
+                                                Profile <i class="fas fa-external-link-alt ml-1" style="font-size: 0.7rem;"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="5" class="py-5 text-center">
+                                    <td colspan="4" class="py-5 text-center">
                                         <i class="fas fa-check-circle text-success fa-3x opacity-25 mb-3"></i>
-                                        <p class="text-muted">No high-priority discrepancies found. All records seem healthy.</p>
-                                        <a href="{% url 'student_list' %}" class="btn btn-sm btn-outline-primary rounded-pill">Browse All Students</a>
+                                        <p class="text-muted mb-0 font-weight-bold">No candidates require verification matching the current filter.</p>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -113,11 +175,165 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white border-top text-center py-3">
-                    <p class="text-muted small mb-0">
-                        <i class="fas fa-info-circle mr-1"></i> This queue shows recent activity. Use the Student Directory filters for exhaustive audits.
-                    </p>
+            </div>
+        </div>
+
+        <!-- RIGHT: Timeline Activities (3-cols) -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-lg overflow-hidden bg-white">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="card-title font-weight-bold text-dark mb-0">
+                        <i class="fas fa-clock text-info mr-2"></i> Live Audit Feed
+                    </h5>
                 </div>
+                <div class="card-body p-3">
+                    <div class="timeline-activity" style="font-size: 0.8rem;">
+                        {% for log in feed_logs %}
+                        <div class="mb-3 border-left pl-3 position-relative" style="border-left-width: 3px !important; border-left-color: {% if log.is_match %}#28a745{% else %}#dc3545{% endif %} !important;">
+                            <div class="d-flex justify-content-between text-muted mb-1">
+                                <span class="font-weight-black text-secondary">{{ log.verified_by }}</span>
+                                <span class="text-xs text-muted">{{ log.timestamp }}</span>
+                            </div>
+                            <div class="mb-1 text-dark">
+                                Verified **{{ log.exam }}** for student <a href="{% url 'student_profile' log.student_id %}" target="_blank" class="font-weight-bold text-info">{{ log.student_id }}</a>
+                            </div>
+                            <div>
+                                {% if log.is_match %}
+                                    <span class="badge badge-success-light text-success font-weight-bold px-2 py-0.5" style="font-size: 0.7rem;"><i class="fas fa-check-circle mr-1"></i> Match (GPA: {{ log.board_gpa }})</span>
+                                {% else %}
+                                    <span class="badge badge-danger-light text-danger font-weight-bold px-2 py-0.5" style="font-size: 0.7rem;"><i class="fas fa-circle-exclamation mr-1"></i> Mismatch ({{ log.stored_gpa }} vs {{ log.board_gpa }})</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-history fa-2x opacity-25 mb-2"></i>
+                            <p class="mb-0 text-xs text-muted">No audit timelines recorded.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Verification Dialog                 -->
+<!-- ========================================== -->
+<div class="modal fade" id="boardVerifyModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:1.25rem; overflow:hidden;">
+            <div class="modal-header border-0 py-3" style="background:linear-gradient(135deg,#0d6efd,#0b5ed7); color:#fff;">
+                <h5 class="modal-title font-weight-bold" id="verifyTitle">Board Verification</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" onclick="resetVerifyDialogState()">&times;</button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <div id="captchaLoader" style="display:none;">
+                    <div class="text-center py-3">
+                        <i class="fas fa-cog fa-spin fa-2x mb-2 text-primary"></i>
+                        <p class="text-muted small mt-2">Connecting to Board Portal...</p>
+                    </div>
+                </div>
+
+                <div id="captchaContainer" style="display:none;" class="text-center">
+                    <p class="small text-muted mb-2 font-weight-bold text-uppercase">Enter Security Captcha</p>
+                    <img id="captchaImage" src="" class="img-fluid rounded border shadow-sm mb-3" style="max-height:65px;">
+                    <div class="input-group mb-3 mx-auto" style="max-width: 250px;">
+                        <input type="text" id="captchaInput" class="form-control form-control-lg text-center font-weight-black" 
+                               placeholder="????" style="border-radius: 30px 0 0 30px; letter-spacing: 2px;" maxlength="6" autocomplete="off">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary border-left-0" type="button" style="border-radius: 0 30px 30px 0; background: #fff;" onclick="loadCaptcha()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-block rounded-pill font-weight-bold shadow-sm" onclick="startVerification()">
+                        <i class="fas fa-shield-halved mr-1"></i> VERIFY & COMPARE DATA
+                    </button>
+                </div>
+
+                <div id="verifyResultContainer" style="display:none;">
+                    <!-- Results mapping is rendered here -->
+                </div>
+
+                <div id="verifyError" class="alert alert-danger small mt-3 d-none">
+                    <i class="fas fa-triangle-exclamation mr-1"></i> <span id="verifyErrorMsg">Error details</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: BTEB Missing Fields Dialog          -->
+<!-- ========================================== -->
+<div class="modal fade" id="btebMissingFieldsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:1.25rem; overflow:hidden;">
+            <div class="modal-header border-0 py-3" style="background:linear-gradient(135deg,#17a2b8,#0c7a8a); color:#fff;">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-info-circle mr-2"></i> BTEB Technical Board (<span id="btebModalExamType">SSC</span>)
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body px-4 pt-4">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-exclamation-circle text-info mr-1"></i>
+                    Curriculum and Semester codes are required for BTEB verification. Please verify/provide them below.
+                </p>
+                <div class="form-row">
+                    <div class="form-group col-md-6 mb-3">
+                        <label class="small font-weight-bold">Curriculum Code <span class="text-danger">*</span></label>
+                        <input type="text" id="btebCurriculumInput" class="form-control form-control-sm font-weight-bold text-center"
+                               placeholder="e.g. 27" autocomplete="off">
+                        <small class="text-muted text-xs">Numeric code (e.g. 27 for SSC Voc)</small>
+                    </div>
+                    <div class="form-group col-md-6 mb-3">
+                        <label class="small font-weight-bold">Semester / Class <span class="text-danger">*</span></label>
+                        <input type="text" id="btebSemesterInput" class="form-control form-control-sm font-weight-bold text-center"
+                               placeholder="e.g. 2" autocomplete="off">
+                        <small class="text-muted text-xs">Semester or class code (e.g. 2 for Class 10)</small>
+                    </div>
+                </div>
+
+                <!-- Quick Guide -->
+                <div class="card bg-light border-0 mt-2 mb-0" style="border-radius: 8px;">
+                    <div class="card-body p-3" style="font-size: 0.75rem; line-height: 1.4; color: #475569;">
+                        <div class="font-weight-bold mb-2 text-info d-flex align-items-center">
+                            <i class="fas fa-book-open mr-2"></i> Quick Guide
+                        </div>
+                        <div class="row">
+                            <div class="col-6 border-right">
+                                <div class="font-weight-black text-secondary mb-1">Curriculums:</div>
+                                <ul class="pl-3 mb-0 text-muted list-unstyled">
+                                    <li><strong>27</strong> - SSC (Vocational)</li>
+                                    <li><strong>77</strong> - Dakhil (Vocational)</li>
+                                    <li><strong>26</strong> - HSC (Vocational)</li>
+                                    <li><strong>24</strong> - HSC (Business Mgmt)</li>
+                                    <li><strong>44</strong> - HSC (BM & Tech)</li>
+                                    <li><strong>15</strong> - Diploma in Eng.</li>
+                                </ul>
+                            </div>
+                            <div class="col-6">
+                                <div class="font-weight-black text-secondary mb-1">Semesters/Classes:</div>
+                                <ul class="pl-3 mb-0 text-muted list-unstyled">
+                                    <li><strong>1</strong> - Class 9 / Class 11 / 1st Sem</li>
+                                    <li><strong>2</strong> - Class 10 / Class 12 / 2nd Sem</li>
+                                    <li><strong>3 to 8</strong> - 3rd to 8th Sem</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pb-4 px-4">
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm font-weight-bold rounded-pill px-4" id="btebMissingSubmitBtn"
+                        style="background:#17a2b8; color:#fff;"
+                        onclick="submitBTEBWithFields()">
+                    <i class="fas fa-shield-halved mr-1"></i> Verify Now
+                </button>
             </div>
         </div>
     </div>
@@ -130,34 +346,266 @@
     body.dark-mode .bg-light { background: #0f172a !important; color: #94a3b8 !important; }
     .info-box-number { font-size: 1.5rem; font-weight: 800; }
     .table th { border-top: 0 !important; }
-    tr.verified-hidden { display: none; }
+    
+    .badge-success-light { background-color: rgba(40, 167, 69, 0.1); }
+    .badge-danger-light { background-color: rgba(220, 53, 69, 0.1); }
+    .badge-warning-light { background-color: rgba(255, 193, 7, 0.1); }
+    .text-xs { font-size: 0.75rem; letter-spacing: 0.5px; }
 </style>
 
 <script>
-// BUG-08 FIX: Wire up the Filter Unverified button
-let filteringUnverified = false;
-function toggleUnverifiedFilter() {
-    filteringUnverified = !filteringUnverified;
-    const btn = document.getElementById('btnFilterUnverified');
-    const rows = document.querySelectorAll('tbody tr');
+    let currentVerifyType = null;
+    let currentStudentId = null;
+    let currentBoardName = null;
+    let lastProfileVerificationResult = null;
 
-    rows.forEach(row => {
-        // A row is "fully verified" if it has NO badge-warning cells
-        const hasPending = row.querySelector('.badge-warning') !== null;
-        if (filteringUnverified && !hasPending) {
-            row.classList.add('verified-hidden');
-        } else {
-            row.classList.remove('verified-hidden');
-        }
-    });
-
-    if (filteringUnverified) {
-        btn.classList.replace('btn-outline-primary', 'btn-primary');
-        btn.innerHTML = '<i class="fas fa-filter-circle-xmark mr-1"></i> Show All';
-    } else {
-        btn.classList.replace('btn-primary', 'btn-outline-primary');
-        btn.innerHTML = '<i class="fas fa-filter mr-1"></i> Filter Unverified';
+    function resetVerifyDialogState() {
+        document.getElementById('captchaLoader').style.display = 'none';
+        document.getElementById('captchaContainer').style.display = 'none';
+        document.getElementById('verifyResultContainer').style.display = 'none';
+        document.getElementById('verifyError').classList.add('d-none');
+        document.getElementById('captchaInput').value = '';
     }
-}
+
+    function openQuickVerify(type, sid, boardName) {
+        resetVerifyDialogState();
+        currentVerifyType = type;
+        currentStudentId = sid;
+        currentBoardName = boardName || '';
+
+        const isBTEB = currentBoardName.toLowerCase().includes('technical');
+
+        // Style the modal header according to board type
+        const modalHeader = document.querySelector('#boardVerifyModal .modal-header');
+        if (isBTEB) {
+            modalHeader.style.background = 'linear-gradient(135deg,#17a2b8,#0c7a8a)';
+            document.getElementById('verifyTitle').innerText = 'BTEB Technical Board - ' + type;
+            document.getElementById('btebModalExamType').innerText = type;
+        } else {
+            modalHeader.style.background = '';
+            document.getElementById('verifyTitle').innerText = 'Board Verification - ' + type;
+        }
+
+        $('#boardVerifyModal').modal('show');
+        loadCaptcha();
+    }
+
+    function loadCaptcha() {
+        resetVerifyDialogState();
+        const loader = document.getElementById('captchaLoader');
+        const container = document.getElementById('captchaContainer');
+        loader.style.display = 'block';
+
+        const isBTEB = currentBoardName.toLowerCase().includes('technical');
+
+        // BTEB mode bypasses captcha
+        if (isBTEB) {
+            loader.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-cog fa-spin fa-2x mb-2 text-info"></i>
+                    <p class="text-muted small mt-2">Connecting to BTEB portal...</p>
+                </div>`;
+            setTimeout(() => startVerification(), 400);
+            return;
+        }
+
+        // General Education Boards
+        loader.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-cog fa-spin fa-2x mb-2 text-primary"></i>
+                <p class="text-muted small mt-2">Connecting to Board Portal...</p>
+            </div>`;
+
+        fetch("{% url 'api_get_board_captcha' %}")
+        .then(r => r.json())
+        .then(data => {
+            loader.style.display = 'none';
+            if (data.success) {
+                container.style.display = 'block';
+                document.getElementById('captchaImage').src = data.captcha_image;
+            } else {
+                document.getElementById('verifyErrorMsg').innerText = data.error || 'Portal unreachable.';
+                document.getElementById('verifyError').classList.remove('d-none');
+            }
+        })
+        .catch(err => {
+            loader.style.display = 'none';
+            document.getElementById('verifyErrorMsg').innerText = 'Connection error: ' + err.message;
+            document.getElementById('verifyError').classList.remove('d-none');
+        });
+    }
+
+    function startVerification(extraFields = {}) {
+        const isBTEB = currentBoardName.toLowerCase().includes('technical');
+        const captcha = document.getElementById('captchaInput').value.trim();
+
+        if (!isBTEB && !captcha) {
+            toastr.warning('Please enter the captcha characters.');
+            return;
+        }
+
+        const loader = document.getElementById('captchaLoader');
+        loader.style.display = 'block';
+        loader.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-spinner fa-spin fa-2x mb-2 text-primary"></i>
+                <p class="text-muted small mt-2">Verifying credentials and fetching grades...</p>
+            </div>`;
+
+        document.getElementById('captchaContainer').style.display = 'none';
+        document.getElementById('verifyError').classList.add('d-none');
+
+        const formData = new FormData();
+        formData.append('student_id', currentStudentId);
+        formData.append('exam_type', currentVerifyType);
+        formData.append('captcha', isBTEB ? 'BTEB' : captcha);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        if (extraFields.curriculum) formData.append('bteb_curriculum', extraFields.curriculum);
+        if (extraFields.semester) formData.append('bteb_semester', extraFields.semester);
+
+        fetch("{% url 'api_verify_board_result' %}", { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            loader.style.display = 'none';
+            if (data.success) {
+                renderVerificationResult(data);
+            } else if (data.error === 'missing_bteb_fields') {
+                // Prefill default fields
+                document.getElementById('btebCurriculumInput').value = data.default_curriculum || '';
+                document.getElementById('btebSemesterInput').value = data.default_semester || '';
+
+                $('#boardVerifyModal').modal('hide');
+                setTimeout(() => $('#btebMissingFieldsModal').modal('show'), 400);
+            } else {
+                document.getElementById('verifyErrorMsg').innerText = data.error || 'Verification failed.';
+                document.getElementById('verifyError').classList.remove('d-none');
+
+                if (isBTEB) {
+                    loader.innerHTML = `
+                        <div class="text-danger text-center">
+                            <i class="fas fa-circle-exclamation fa-2x mb-2"></i>
+                            <p>${data.error || 'BTEB verification failed.'}</p>
+                            <div class="d-flex justify-content-center" style="gap: 8px;">
+                                <button class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="loadCaptcha()">Retry</button>
+                                <button class="btn btn-sm btn-info text-white rounded-pill px-3" onclick="showBtebFieldCorrection()">Change BTEB Info</button>
+                            </div>
+                        </div>`;
+                    loader.style.display = 'block';
+                } else {
+                    document.getElementById('captchaContainer').style.display = 'block';
+                    loadCaptcha();
+                }
+            }
+        })
+        .catch(err => {
+            loader.style.display = 'none';
+            document.getElementById('verifyErrorMsg').innerText = 'Verification failed: ' + err.message;
+            document.getElementById('verifyError').classList.remove('d-none');
+            if (isBTEB) {
+                loader.innerHTML = `
+                    <div class="text-danger text-center">
+                        <i class="fas fa-circle-exclamation fa-2x mb-2"></i>
+                        <p>Connection error: ${err.message}</p>
+                        <button class="btn btn-sm btn-outline-info rounded-pill" onclick="loadCaptcha()">Retry</button>
+                    </div>`;
+                loader.style.display = 'block';
+            } else {
+                document.getElementById('captchaContainer').style.display = 'block';
+                loadCaptcha();
+            }
+        });
+    }
+
+    function showBtebFieldCorrection() {
+        $('#boardVerifyModal').modal('hide');
+        setTimeout(() => $('#btebMissingFieldsModal').modal('show'), 400);
+    }
+
+    function submitBTEBWithFields() {
+        const curriculum = document.getElementById('btebCurriculumInput').value.trim();
+        const semester = document.getElementById('btebSemesterInput').value.trim();
+        if (!curriculum || !semester) {
+            toastr.warning('Please enter both Curriculum Code and Semester.');
+            return;
+        }
+
+        const btn = document.getElementById('btebMissingSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Verifying...';
+
+        $('#btebMissingFieldsModal').modal('hide');
+        setTimeout(() => {
+            $('#boardVerifyModal').modal('show');
+            document.getElementById('captchaLoader').style.display = 'block';
+            document.getElementById('captchaLoader').innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-cog fa-spin fa-2x mb-2 text-info"></i>
+                    <p class="text-muted small mt-2">Connecting to BTEB portal...</p>
+                </div>`;
+            startVerification({ curriculum, semester });
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-shield-halved mr-1"></i> Verify Now';
+        }, 400);
+    }
+
+    function renderVerificationResult(data) {
+        lastProfileVerificationResult = data;
+        document.getElementById('captchaLoader').style.display = 'none';
+        document.getElementById('captchaContainer').style.display = 'none';
+        
+        const container = document.getElementById('verifyResultContainer');
+        container.style.display = 'block';
+
+        const isMatch = data.is_match;
+        const details = data.details || {};
+
+        let html = `
+            <div class="alert ${isMatch ? 'alert-success' : 'alert-danger'} text-center mb-3 py-2" style="border-radius:10px;">
+                <h6 class="font-weight-black mb-0">
+                    <i class="fas ${isMatch ? 'fa-check-circle' : 'fa-triangle-exclamation'} mr-1"></i>
+                    ${isMatch ? 'GPA MATCHES STORED RECORD' : 'GPA DISCREPANCY DETECTED'}
+                </h6>
+            </div>
+            
+            <div class="card bg-light border-0 mb-3" style="border-radius:10px;">
+                <div class="card-body p-3 small text-dark">
+                    <div class="d-flex justify-content-between mb-1"><span>Candidate Name:</span> <span class="font-weight-bold">${details.name || 'N/A'}</span></div>
+                    <div class="d-flex justify-content-between mb-1"><span>Father's Name:</span> <span class="font-weight-bold">${details.father_name || 'N/A'}</span></div>
+                    <div class="d-flex justify-content-between mb-1"><span>Mother's Name:</span> <span class="font-weight-bold">${details.mother_name || 'N/A'}</span></div>
+                    <div class="d-flex justify-content-between mb-1"><span>Date of Birth:</span> <span class="font-weight-bold">${details.dob || 'N/A'}</span></div>
+                    <div class="d-flex justify-content-between border-top pt-2 mt-2" style="font-size:0.9rem;">
+                        <span>GPA (Board vs Stored):</span>
+                        <span class="font-weight-black ${isMatch ? 'text-success' : 'text-danger'}">${details.gpa || 'N/A'} vs ${data.current_gpa || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-success btn-block rounded-pill font-weight-black py-2 shadow-sm" onclick="finalizeQuickVerify()">
+                <i class="fas fa-check-double mr-1"></i> Finalize & Update Row Status
+            </button>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    function finalizeQuickVerify() {
+        $('#boardVerifyModal').modal('hide');
+        toastr.success('Verification finalized successfully.');
+
+        // Update the row values dynamically in the UI
+        const badgeId = (currentVerifyType === 'SSC' ? 'ssc-badge-' : 'hsc-badge-') + currentStudentId;
+        const btnId = (currentVerifyType === 'SSC' ? 'ssc-btn-' : 'hsc-btn-') + currentStudentId;
+
+        const badgeEl = document.getElementById(badgeId);
+        if (badgeEl) {
+            badgeEl.innerHTML = '<span class="badge badge-success-light text-success font-weight-bold text-xs"><i class="fas fa-check-circle mr-1"></i> Verified</span>';
+        }
+
+        const btnEl = document.getElementById(btnId);
+        if (btnEl) {
+            btnEl.innerHTML = ''; // Remove the verification button since it is now verified
+        }
+    }
 </script>
 {% endblock %}

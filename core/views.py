@@ -274,6 +274,19 @@ def user_management(request):
 
     pending_count = User.objects.filter(profile__registration_status='PENDING').count()
 
+    from django.contrib.sessions.models import Session
+    from django.utils import timezone
+    active_sessions = Session.objects.filter(expire_date__gte=timezone.now())
+    online_user_ids = set()
+    for s in active_sessions:
+        try:
+            data = s.get_decoded()
+            uid = data.get('_auth_user_id')
+            if uid:
+                online_user_ids.add(int(uid))
+        except Exception:
+            pass
+
     return render(request, 'core/user_management.html', {
         'users': users,
         'roles': roles,
@@ -288,6 +301,8 @@ def user_management(request):
         'unassigned_users': unassigned_users,
         'filtered_count': filtered_count,
         'pending_count': pending_count,
+        'online_user_ids': online_user_ids,
+        'online_count': len(online_user_ids),
     })
 
 
