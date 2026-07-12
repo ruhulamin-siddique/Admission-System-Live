@@ -521,21 +521,23 @@
                                 <div class="card card-outline card-info">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <span class="font-weight-bold">SSC / Equivalent</span>
-                                        {% if student.ssc_verified %}
-                                            {% if 'technical' in student.ssc_board|lower %}
-                                                <span class="badge px-2 py-1" style="background:#17a2b8; color:#fff;" title="Verified from BTEB Portal"><i class="fas fa-check-circle mr-1"></i> BTEB Verified</span>
+                                        <span id="ssc_verify_status_badge">
+                                            {% if student.ssc_verified %}
+                                                {% if 'technical' in student.ssc_board|lower %}
+                                                    <span class="badge px-2 py-1" style="background:#17a2b8; color:#fff;" title="Verified from BTEB Portal"><i class="fas fa-check-circle mr-1"></i> BTEB Verified</span>
+                                                {% else %}
+                                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Verified</span>
+                                                {% endif %}
                                             {% else %}
-                                                <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Verified</span>
+                                                <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i> Unverified</span>
                                             {% endif %}
-                                        {% else %}
-                                            <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i> Unverified</span>
-                                        {% endif %}
+                                        </span>
                                     </div>
                                     <div class="card-body p-0">
                                         <table class="table table-striped table-sm mb-0">
                                             <tr>
                                                 <td><strong>School:</strong></td>
-                                                <td>{{ student.ssc_school }}
+                                                <td><span id="display_ssc_school">{{ student.ssc_school }}</span>
                                                     {% if student.ssc_verified %}
                                                         {% if 'technical' in student.ssc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -547,7 +549,7 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Board:</strong></td>
-                                                <td>{{ student.ssc_board }}
+                                                <td><span id="display_ssc_board">{{ student.ssc_board }}</span>
                                                     {% if student.ssc_verified %}
                                                         {% if 'technical' in student.ssc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -583,7 +585,7 @@
                                             {% endif %}
                                             <tr>
                                                 <td><strong>Year:</strong></td>
-                                                <td>{{ student.ssc_year|clean_numeric }}
+                                                <td><span id="display_ssc_year">{{ student.ssc_year|clean_numeric }}</span>
                                                     {% if student.ssc_verified %}
                                                         {% if 'technical' in student.ssc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -595,7 +597,7 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Roll:</strong></td>
-                                                <td>{{ student.ssc_roll|clean_numeric }}
+                                                <td><span id="display_ssc_roll">{{ student.ssc_roll|clean_numeric }}</span>
                                                     {% if student.ssc_verified %}
                                                         {% if 'technical' in student.ssc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -607,7 +609,7 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Reg:</strong></td>
-                                                <td>{{ student.ssc_reg|clean_numeric|default:"N/A" }}
+                                                <td><span id="display_ssc_reg">{{ student.ssc_reg|clean_numeric|default:"N/A" }}</span>
                                                     {% if student.ssc_verified %}
                                                         {% if 'technical' in student.ssc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -620,7 +622,7 @@
                                             <tr>
                                                 <td><strong>GPA:</strong></td>
                                                 <td>
-                                                    <span class="badge badge-primary">{{ student.ssc_gpa }}</span>
+                                                    <span id="display_ssc_gpa" class="badge badge-primary">{{ student.ssc_gpa }}</span>
                                                     {% if student.ssc_verified %}
                                                         {% if 'technical' in student.ssc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -642,9 +644,9 @@
                                                             </tr>
                                                             <tr>
                                                                 <td><strong>GP / GL</strong></td>
-                                                                <td>{{ student.ssc_physics|default:"-" }} / <strong>{{ student.ssc_physics|gpa_to_gl }}</strong></td>
-                                                                <td>{{ student.ssc_chemistry|default:"-" }} / <strong>{{ student.ssc_chemistry|gpa_to_gl }}</strong></td>
-                                                                <td>{{ student.ssc_math|default:"-" }} / <strong>{{ student.ssc_math|gpa_to_gl }}</strong></td>
+                                                                <td><span id="display_ssc_physics">{{ student.ssc_physics|default:"-" }}</span> / <strong id="display_ssc_physics_gl">{{ student.ssc_physics|gpa_to_gl }}</strong></td>
+                                                                <td><span id="display_ssc_chemistry">{{ student.ssc_chemistry|default:"-" }}</span> / <strong id="display_ssc_chemistry_gl">{{ student.ssc_chemistry|gpa_to_gl }}</strong></td>
+                                                                <td><span id="display_ssc_math">{{ student.ssc_math|default:"-" }}</span> / <strong id="display_ssc_math_gl">{{ student.ssc_math|gpa_to_gl }}</strong></td>
                                                             </tr>
                                                         </table>
                                                     </div>
@@ -652,10 +654,16 @@
                                             </tr>
                                             <tr>
                                                 <td colspan="2" class="text-center bg-light py-2">
-                                                    <button type="button" class="btn btn-xs btn-outline-info font-weight-bold" 
-                                                            onclick="openVerificationModal('SSC', '{{ student.student_id }}', '{{ student.ssc_board }}')">
-                                                        <i class="fas fa-shield-halved mr-1"></i> Verify with Board
-                                                    </button>
+                                                    <div class="d-flex justify-content-center" style="gap: 8px;">
+                                                        <button id="btn_verify_ssc" type="button" class="btn btn-xs btn-outline-info font-weight-bold" 
+                                                                onclick="openVerificationModal('SSC', '{{ student.student_id }}', '{{ student.ssc_board }}')">
+                                                            <i class="fas fa-shield-halved mr-1"></i> Verify with Board
+                                                        </button>
+                                                        <button type="button" class="btn btn-xs btn-outline-warning font-weight-bold" 
+                                                                onclick="openEditAcademicModal('SSC')">
+                                                            <i class="fas fa-edit mr-1"></i> Edit SSC Info
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         </table>
@@ -666,21 +674,23 @@
                                 <div class="card card-outline card-info">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <span class="font-weight-bold">HSC / Equivalent</span>
-                                        {% if student.hsc_verified %}
-                                            {% if 'technical' in student.hsc_board|lower %}
-                                                <span class="badge px-2 py-1" style="background:#17a2b8; color:#fff;" title="Verified from BTEB Portal"><i class="fas fa-check-circle mr-1"></i> BTEB Verified</span>
+                                        <span id="hsc_verify_status_badge">
+                                            {% if student.hsc_verified %}
+                                                {% if 'technical' in student.hsc_board|lower %}
+                                                    <span class="badge px-2 py-1" style="background:#17a2b8; color:#fff;" title="Verified from BTEB Portal"><i class="fas fa-check-circle mr-1"></i> BTEB Verified</span>
+                                                {% else %}
+                                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Verified</span>
+                                                {% endif %}
                                             {% else %}
-                                                <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Verified</span>
+                                                <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i> Unverified</span>
                                             {% endif %}
-                                        {% else %}
-                                            <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i> Unverified</span>
-                                        {% endif %}
+                                        </span>
                                     </div>
                                     <div class="card-body p-0">
                                         <table class="table table-striped table-sm mb-0">
                                             <tr>
                                                 <td><strong>College:</strong></td>
-                                                <td>{{ student.hsc_college }}
+                                                <td><span id="display_hsc_college">{{ student.hsc_college }}</span>
                                                     {% if student.hsc_verified %}
                                                         {% if 'technical' in student.hsc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -692,7 +702,7 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Board:</strong></td>
-                                                <td>{{ student.hsc_board }}
+                                                <td><span id="display_hsc_board">{{ student.hsc_board }}</span>
                                                     {% if student.hsc_verified %}
                                                         {% if 'technical' in student.hsc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -728,7 +738,7 @@
                                             {% endif %}
                                             <tr>
                                                 <td><strong>Year:</strong></td>
-                                                <td>{{ student.hsc_year|clean_numeric }}
+                                                <td><span id="display_hsc_year">{{ student.hsc_year|clean_numeric }}</span>
                                                     {% if student.hsc_verified %}
                                                         {% if 'technical' in student.hsc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -740,7 +750,7 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Roll:</strong></td>
-                                                <td>{{ student.hsc_roll|clean_numeric }}
+                                                <td><span id="display_hsc_roll">{{ student.hsc_roll|clean_numeric }}</span>
                                                     {% if student.hsc_verified %}
                                                         {% if 'technical' in student.hsc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -752,7 +762,7 @@
                                             </tr>
                                             <tr>
                                                 <td><strong>Reg:</strong></td>
-                                                <td>{{ student.hsc_reg|clean_numeric|default:"N/A" }}
+                                                <td><span id="display_hsc_reg">{{ student.hsc_reg|clean_numeric|default:"N/A" }}</span>
                                                     {% if student.hsc_verified %}
                                                         {% if 'technical' in student.hsc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -765,7 +775,7 @@
                                             <tr>
                                                 <td><strong>GPA:</strong></td>
                                                 <td>
-                                                    <span class="badge badge-primary">{{ student.hsc_gpa }}</span>
+                                                    <span id="display_hsc_gpa" class="badge badge-primary">{{ student.hsc_gpa }}</span>
                                                     {% if student.hsc_verified %}
                                                         {% if 'technical' in student.hsc_board|lower %}
                                                             <i class="fas fa-check-circle ml-1" style="color:#17a2b8;" title="Verified from BTEB Portal"></i>
@@ -787,9 +797,9 @@
                                                             </tr>
                                                             <tr>
                                                                 <td><strong>GP / GL</strong></td>
-                                                                <td>{{ student.hsc_physics|default:"-" }} / <strong>{{ student.hsc_physics|gpa_to_gl }}</strong></td>
-                                                                <td>{{ student.hsc_chemistry|default:"-" }} / <strong>{{ student.hsc_chemistry|gpa_to_gl }}</strong></td>
-                                                                <td>{{ student.hsc_math|default:"-" }} / <strong>{{ student.hsc_math|gpa_to_gl }}</strong></td>
+                                                                <td><span id="display_hsc_physics">{{ student.hsc_physics|default:"-" }}</span> / <strong id="display_hsc_physics_gl">{{ student.hsc_physics|gpa_to_gl }}</strong></td>
+                                                                <td><span id="display_hsc_chemistry">{{ student.hsc_chemistry|default:"-" }}</span> / <strong id="display_hsc_chemistry_gl">{{ student.hsc_chemistry|gpa_to_gl }}</strong></td>
+                                                                <td><span id="display_hsc_math">{{ student.hsc_math|default:"-" }}</span> / <strong id="display_hsc_math_gl">{{ student.hsc_math|gpa_to_gl }}</strong></td>
                                                             </tr>
                                                         </table>
                                                     </div>
@@ -797,10 +807,16 @@
                                             </tr>
                                             <tr>
                                                 <td colspan="2" class="text-center bg-light py-2">
-                                                    <button type="button" class="btn btn-xs btn-outline-info font-weight-bold"
-                                                            onclick="openVerificationModal('HSC', '{{ student.student_id }}', '{{ student.hsc_board }}')">
-                                                        <i class="fas fa-shield-halved mr-1"></i> Verify with Board
-                                                    </button>
+                                                    <div class="d-flex justify-content-center" style="gap: 8px;">
+                                                        <button id="btn_verify_hsc" type="button" class="btn btn-xs btn-outline-info font-weight-bold"
+                                                                onclick="openVerificationModal('HSC', '{{ student.student_id }}', '{{ student.hsc_board }}')">
+                                                            <i class="fas fa-shield-halved mr-1"></i> Verify with Board
+                                                        </button>
+                                                        <button type="button" class="btn btn-xs btn-outline-warning font-weight-bold" 
+                                                                onclick="openEditAcademicModal('HSC')">
+                                                            <i class="fas fa-edit mr-1"></i> Edit HSC Info
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         </table>
@@ -1187,11 +1203,245 @@
     </div>
 </div>
 
+
+    <!-- Edit Academic Info Modal -->
+    <div class="modal fade" id="editAcademicModal" tabindex="-1" role="dialog" aria-labelledby="editAcademicModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <form id="editAcademicForm" onsubmit="saveAcademicInfo(event)">
+                    <input type="hidden" name="level" id="editAcademicLevel">
+                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title font-weight-bold text-dark"><i class="fas fa-edit mr-2"></i>Edit <span id="editAcademicTitle">SSC</span> Info</h5>
+                        <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger d-none" id="editAcademicError">
+                            <span id="editAcademicErrorMsg"></span>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label id="editSchoolCollegeLabel" class="font-weight-bold">School/College Name</label>
+                                <input type="text" name="school_college" id="editSchoolCollege" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label class="font-weight-bold">Board</label>
+                                <select name="board" id="editBoard" class="form-control" required style="cursor: pointer;">
+                                    <option value="">-- Select Board --</option>
+                                    <option value="Dhaka">Dhaka</option>
+                                    <option value="Rajshahi">Rajshahi</option>
+                                    <option value="Comilla">Comilla</option>
+                                    <option value="Jessore">Jessore</option>
+                                    <option value="Chittagong">Chittagong</option>
+                                    <option value="Barisal">Barisal</option>
+                                    <option value="Sylhet">Sylhet</option>
+                                    <option value="Dinajpur">Dinajpur</option>
+                                    <option value="Mymensingh">Mymensingh</option>
+                                    <option value="Technical">Technical</option>
+                                    <option value="Madrasah">Madrasah</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label class="font-weight-bold">Passing Year</label>
+                                <input type="number" name="year" id="editYear" class="form-control" required min="1990" max="2030">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="font-weight-bold">Roll Number</label>
+                                <input type="text" name="roll" id="editRoll" class="form-control" required>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="font-weight-bold">Registration Number (Optional)</label>
+                                <input type="text" name="reg" id="editReg" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 form-group">
+                                <label class="font-weight-bold">GPA (Optional)</label>
+                                <input type="number" step="0.01" name="gpa" id="editGpa" class="form-control" min="0" max="5">
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="font-weight-bold">Physics GP (Optional)</label>
+                                <input type="number" step="0.01" name="physics" id="editPhysics" class="form-control" min="0" max="5">
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="font-weight-bold">Chemistry GP (Optional)</label>
+                                <input type="number" step="0.01" name="chemistry" id="editChemistry" class="form-control" min="0" max="5">
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label class="font-weight-bold">Math GP (Optional)</label>
+                                <input type="number" step="0.01" name="math" id="editMath" class="form-control" min="0" max="5">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal"><i class="fas fa-times mr-1"></i> Close</button>
+                        <button type="submit" id="editAcademicSubmitBtn" class="btn btn-warning text-dark font-weight-bold"><i class="fas fa-save mr-1"></i> Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 <script>
     let currentVerifyType = '';
     let currentStudentId = '';
     let currentBoardName = '';
     let lastProfileVerificationResult = null;
+
+    function setSelectValueCaseInsensitive(selectId, value) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        const lowerVal = (value || '').toLowerCase().trim();
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value.toLowerCase().trim() === lowerVal) {
+                select.selectedIndex = i;
+                return;
+            }
+        }
+        select.value = '';
+    }
+
+    function openEditAcademicModal(level) {
+        document.getElementById('editAcademicError').classList.add('d-none');
+        document.getElementById('editAcademicLevel').value = level;
+        document.getElementById('editAcademicTitle').innerText = level;
+        
+        const levelL = level.toLowerCase();
+        
+        if (level === 'SSC') {
+            document.getElementById('editSchoolCollegeLabel').innerText = 'School Name';
+            document.getElementById('editSchoolCollege').value = document.getElementById('display_ssc_school').innerText.trim();
+        } else {
+            document.getElementById('editSchoolCollegeLabel').innerText = 'College Name';
+            document.getElementById('editSchoolCollege').value = document.getElementById('display_hsc_college').innerText.trim();
+        }
+        
+        const boardVal = document.getElementById(`display_${levelL}_board`).innerText.trim();
+        setSelectValueCaseInsensitive('editBoard', boardVal);
+        
+        document.getElementById('editYear').value = document.getElementById(`display_${levelL}_year`).innerText.trim();
+        document.getElementById('editRoll').value = document.getElementById(`display_${levelL}_roll`).innerText.trim();
+        
+        const regVal = document.getElementById(`display_${levelL}_reg`).innerText.trim();
+        document.getElementById('editReg').value = (regVal === 'N/A' || regVal === 'None') ? '' : regVal;
+        
+        const gpaVal = document.getElementById(`display_${levelL}_gpa`).innerText.trim();
+        document.getElementById('editGpa').value = (gpaVal === 'None' || gpaVal === 'N/A') ? '' : gpaVal;
+        
+        const phyVal = document.getElementById(`display_${levelL}_physics`).innerText.trim();
+        document.getElementById('editPhysics').value = (phyVal === '-' || phyVal === 'None' || phyVal === 'N/A') ? '' : phyVal;
+        
+        const chemVal = document.getElementById(`display_${levelL}_chemistry`).innerText.trim();
+        document.getElementById('editChemistry').value = (chemVal === '-' || chemVal === 'None' || chemVal === 'N/A') ? '' : chemVal;
+        
+        const mathVal = document.getElementById(`display_${levelL}_math`).innerText.trim();
+        document.getElementById('editMath').value = (mathVal === '-' || mathVal === 'None' || mathVal === 'N/A') ? '' : mathVal;
+        
+        $('#editAcademicModal').modal('show');
+    }
+
+    function saveAcademicInfo(event) {
+        event.preventDefault();
+        const submitBtn = document.getElementById('editAcademicSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+        
+        const form = document.getElementById('editAcademicForm');
+        const formData = new FormData(form);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch("{% url 'api_update_board_info' %}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i> Save Changes';
+            
+            if (data.success) {
+                $('#editAcademicModal').modal('hide');
+                toastr.success(data.message || 'Academic credentials updated successfully!');
+                
+                const level = formData.get('level');
+                const levelL = level.toLowerCase();
+                
+                // 1. Reset verified status badge and checkmarks in the DOM immediately
+                document.getElementById(`${levelL}_verify_status_badge`).innerHTML = '<span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i> Unverified</span>';
+                
+                // Hide all checkmark icons inside this academic level card (either SSC or HSC card)
+                if (level === 'SSC') {
+                    $('#academic .col-md-6:first-child i.fa-check-circle').hide();
+                } else {
+                    $('#academic .col-md-6:nth-child(2) i.fa-check-circle').hide();
+                }
+                
+                // 2. Update text values
+                if (level === 'SSC') {
+                    document.getElementById('display_ssc_school').innerText = formData.get('school_college') || '';
+                } else {
+                    document.getElementById('display_hsc_college').innerText = formData.get('school_college') || '';
+                }
+                document.getElementById(`display_${levelL}_board`).innerText = formData.get('board') || '';
+                document.getElementById(`display_${levelL}_year`).innerText = formData.get('year') || '';
+                document.getElementById(`display_${levelL}_roll`).innerText = formData.get('roll') || '';
+                document.getElementById(`display_${levelL}_reg`).innerText = formData.get('reg') || 'N/A';
+                
+                // GPA Badge
+                const gpaVal = parseFloat(formData.get('gpa'));
+                document.getElementById(`display_${levelL}_gpa`).innerText = isNaN(gpaVal) ? 'None' : gpaVal.toFixed(2);
+                
+                // Subject GPAs
+                const physicsVal = parseFloat(formData.get('physics'));
+                const chemistryVal = parseFloat(formData.get('chemistry'));
+                const mathVal = parseFloat(formData.get('math'));
+                
+                const gpaToGl = (gpa) => {
+                    if (isNaN(gpa) || gpa === null) return '-';
+                    if (gpa >= 5.0) return 'A+';
+                    if (gpa >= 4.0) return 'A';
+                    if (gpa >= 3.5) return 'A-';
+                    if (gpa >= 3.0) return 'B';
+                    if (gpa >= 2.0) return 'C';
+                    if (gpa >= 1.0) return 'D';
+                    return 'F';
+                };
+                
+                document.getElementById(`display_${levelL}_physics`).innerText = isNaN(physicsVal) ? '-' : physicsVal.toFixed(2);
+                document.getElementById(`display_${levelL}_physics_gl`).innerText = gpaToGl(physicsVal);
+                
+                document.getElementById(`display_${levelL}_chemistry`).innerText = isNaN(chemistryVal) ? '-' : chemistryVal.toFixed(2);
+                document.getElementById(`display_${levelL}_chemistry_gl`).innerText = gpaToGl(chemistryVal);
+                
+                document.getElementById(`display_${levelL}_math`).innerText = isNaN(mathVal) ? '-' : mathVal.toFixed(2);
+                document.getElementById(`display_${levelL}_math_gl`).innerText = gpaToGl(mathVal);
+                
+                // 3. Update the Board parameter in Verify with Board button dynamically
+                const verifyBtn = document.getElementById(`btn_verify_${levelL}`);
+                if (verifyBtn) {
+                    verifyBtn.setAttribute('onclick', `openVerificationModal('${level}', '${formData.get('student_id')}', '${formData.get('board')}')`);
+                }
+            } else {
+                document.getElementById('editAcademicErrorMsg').innerText = data.error || 'Failed to update credentials.';
+                document.getElementById('editAcademicError').classList.remove('d-none');
+            }
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i> Save Changes';
+            document.getElementById('editAcademicErrorMsg').innerText = 'Network error: ' + err.message;
+            document.getElementById('editAcademicError').classList.remove('d-none');
+            console.error(err);
+        });
+    }
+
 
     function openVerificationModal(type, sid, boardName) {
         lastProfileVerificationResult = null;

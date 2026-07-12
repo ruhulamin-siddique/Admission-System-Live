@@ -53,6 +53,7 @@ urlpatterns = [
     path('api/hall-distribution/', views.api_hall_distribution, name='api_hall_distribution'),
     path('api/board-captcha/', views.api_get_board_captcha, name='api_get_board_captcha'),
     path('api/verify-board-result/', views.api_verify_board_result, name='api_verify_board_result'),
+    path('api/update-board-info/', views.api_update_board_info, name='api_update_board_info'),
     
     # Reports & Dynamic Exports
     path('reports/center/', views.reports_center, name='reports_center'),

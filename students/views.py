@@ -5487,3 +5487,74 @@ def download_academic_patch_template(request):
     )
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+@login_required
+@require_access('students', 'edit_profile')
+def api_update_board_info(request):
+    """API endpoint to update SSC or HSC board verification info directly."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+    student_id = request.POST.get('student_id')
+    level = request.POST.get('level')  # 'SSC' or 'HSC'
+    if not student_id or not level:
+        return JsonResponse({'success': False, 'error': 'Missing student_id or level.'})
+
+    try:
+        from .models import Student
+        student = Student.objects.get(student_id=student_id)
+    except Student.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Student not found.'})
+
+    if level == 'SSC':
+        student.ssc_school = request.POST.get('school_college', '').strip()
+        student.ssc_board = request.POST.get('board', '').strip()
+        student.ssc_year = request.POST.get('year', '').strip()
+        student.ssc_roll = request.POST.get('roll', '').strip()
+        student.ssc_reg = request.POST.get('reg', '').strip()
+        
+        gpa_str = request.POST.get('gpa', '').strip()
+        student.ssc_gpa = float(gpa_str) if gpa_str else None
+        
+        physics_str = request.POST.get('physics', '').strip()
+        student.ssc_physics = float(physics_str) if physics_str else None
+        
+        chemistry_str = request.POST.get('chemistry', '').strip()
+        student.ssc_chemistry = float(chemistry_str) if chemistry_str else None
+        
+        math_str = request.POST.get('math', '').strip()
+        student.ssc_math = float(math_str) if math_str else None
+
+        student.ssc_verified = False
+        
+    elif level == 'HSC':
+        student.hsc_college = request.POST.get('school_college', '').strip()
+        student.hsc_board = request.POST.get('board', '').strip()
+        student.hsc_year = request.POST.get('year', '').strip()
+        student.hsc_roll = request.POST.get('roll', '').strip()
+        student.hsc_reg = request.POST.get('reg', '').strip()
+        
+        gpa_str = request.POST.get('gpa', '').strip()
+        student.hsc_gpa = float(gpa_str) if gpa_str else None
+
+        physics_str = request.POST.get('physics', '').strip()
+        student.hsc_physics = float(physics_str) if physics_str else None
+        
+        chemistry_str = request.POST.get('chemistry', '').strip()
+        student.hsc_chemistry = float(chemistry_str) if chemistry_str else None
+        
+        math_str = request.POST.get('math', '').strip()
+        student.hsc_math = float(math_str) if math_str else None
+
+        student.hsc_verified = False
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid level.'})
+
+    student.save()
+    
+    from core.utils import log_activity
+    log_activity(request, 'UPDATE', 'students', f'Updated {level} board credentials for {student.student_name}', object_id=student.student_id)
+
+    return JsonResponse({'success': True, 'message': f'{level} board credentials updated successfully.'})
+

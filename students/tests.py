@@ -1269,6 +1269,86 @@ class StudentDirectoryTests(TestCase):
         self.assertEqual(stud_ref['type'], "Student")
         self.assertIn("CSE202699999", stud_ref['student_info'])
 
+    def test_api_update_board_info(self):
+        """Test direct updating of SSC/HSC board verification details."""
+        from django.urls import reverse
+        
+        student = self.inactive_student
+        student.ssc_verified = True
+        student.hsc_verified = True
+        student.save()
+        
+        url = reverse('api_update_board_info')
+        
+        # 1. Non-privileged user should be denied
+        self.client.force_login(self.scoped_user)
+        response = self.client.post(url, {
+            'student_id': student.student_id,
+            'level': 'SSC',
+            'school_college': 'New SSC School',
+            'board': 'Dhaka',
+            'year': '2020',
+            'roll': '123456',
+            'reg': '654321',
+            'gpa': '5.0',
+        })
+        self.assertRedirects(response, reverse('user_profile'))
+        
+        # 2. Privileged user (superuser) should succeed for SSC
+        self.client.force_login(self.superuser)
+        response = self.client.post(url, {
+            'student_id': student.student_id,
+            'level': 'SSC',
+            'school_college': 'New SSC School',
+            'board': 'Dhaka',
+            'year': '2020',
+            'roll': '123456',
+            'reg': '654321',
+            'gpa': '5.00',
+            'physics': '5.00',
+            'chemistry': '4.50',
+            'math': '4.00',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        
+        # Verify db updates and unverified status
+        student.refresh_from_db()
+        self.assertEqual(student.ssc_school, 'New SSC School')
+        self.assertEqual(student.ssc_board, 'Dhaka')
+        self.assertEqual(student.ssc_year, '2020')
+        self.assertEqual(student.ssc_roll, '123456')
+        self.assertEqual(student.ssc_reg, '654321')
+        self.assertEqual(student.ssc_gpa, 5.0)
+        self.assertEqual(student.ssc_physics, 5.0)
+        self.assertEqual(student.ssc_chemistry, 4.5)
+        self.assertEqual(student.ssc_math, 4.0)
+        self.assertFalse(student.ssc_verified) # Reset verified flag
+        
+        # 3. Privileged user should succeed for HSC
+        response = self.client.post(url, {
+            'student_id': student.student_id,
+            'level': 'HSC',
+            'school_college': 'New HSC College',
+            'board': 'Rajshahi',
+            'year': '2022',
+            'roll': '987654',
+            'reg': '123456',
+            'gpa': '4.80',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        
+        student.refresh_from_db()
+        self.assertEqual(student.hsc_college, 'New HSC College')
+        self.assertEqual(student.hsc_board, 'Rajshahi')
+        self.assertEqual(student.hsc_year, '2022')
+        self.assertEqual(student.hsc_roll, '987654')
+        self.assertEqual(student.hsc_reg, '123456')
+        self.assertEqual(student.hsc_gpa, 4.8)
+        self.assertFalse(student.hsc_verified)
+
+
 
 class ReferenceNodeSystemTests(TestCase):
     def setUp(self):
