@@ -82,6 +82,7 @@ urlpatterns = [
     path('students/mobile-repair/', views.mobile_repair_tool, name='mobile_repair_tool'),
     path('api/bulk-fix-mobile/', views.api_bulk_fix_mobile, name='api_bulk_fix_mobile'),
     path('api/revert-change/<int:history_id>/', views.revert_field_change, name='revert_field_change'),
+    path('api/revert-changes-bulk/', views.bulk_revert_field_changes, name='bulk_revert_field_changes'),
     path('students/references/', views.reference_manage_dashboard, name='reference_manage'),
     path('api/search-references/', views.api_search_references, name='api_search_references'),
     path('api/search-students/', views.api_search_students, name='api_search_students'),

@@ -279,14 +279,33 @@ class Student(models.Model):
         super().save(*args, **kwargs)
 
         if is_update and field_changes:
+            from core.middleware import get_current_request
+            request = get_current_request()
+            
+            ip = None
+            ua = None
             changed_by_user = getattr(self, 'changed_by_user', None)
+            
+            if request:
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                if x_forwarded_for:
+                    ip = x_forwarded_for.split(',')[0].strip()
+                else:
+                    ip = request.META.get('REMOTE_ADDR')
+                ua = request.META.get('HTTP_USER_AGENT')
+                
+                if not changed_by_user and request.user and request.user.is_authenticated:
+                    changed_by_user = request.user
+
             history_objs = [
                 StudentFieldHistory(
                     student=self,
                     field_name=change['field_name'],
                     old_value=change['old_value'],
                     new_value=change['new_value'],
-                    changed_by=changed_by_user
+                    changed_by=changed_by_user,
+                    ip_address=ip,
+                    user_agent=ua
                 ) for change in field_changes
             ]
             StudentFieldHistory.objects.bulk_create(history_objs)
@@ -373,6 +392,8 @@ class StudentFieldHistory(models.Model):
     new_value = models.TextField(null=True, blank=True)
     changed_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='student_field_changes')
     changed_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
     
     # Revert Fields
     reverted = models.BooleanField(default=False)

@@ -1000,6 +1000,7 @@ def cancel_admission(request, student_id):
                 # Update Student
                 student.admission_status = 'Cancelled'
                 student.is_temp_admission_cancel = (reason_cat == 'Temporary')
+                student.changed_by_user = request.user
                 student.save()
                 
                 # Log History
@@ -1041,6 +1042,7 @@ def api_bulk_cancel_admission(request):
                 for student in students:
                     old_status = student.admission_status
                     student.admission_status = 'Cancelled'
+                    student.changed_by_user = request.user
                     student.save()
                     
                     AdmissionStatusHistory.objects.create(
@@ -1688,6 +1690,7 @@ def add_student(request):
                 if photo_path:
                     student.photo_path = photo_path
 
+                student.changed_by_user = request.user
                 student.save()
                 from core.utils import log_activity
                 if is_legacy:
@@ -1909,6 +1912,7 @@ def rectify_student_id(request, student_id):
                         os.rename(old_photo_full, new_photo_full)
                         student.photo_path = new_photo_rel.replace('\\', '/')
 
+                student.changed_by_user = request.user
                 student.save() # Saves as NEW record because PK changed
                 
                 # 3. Update Hard Relations (FKs)
@@ -1985,6 +1989,7 @@ def migrate_hall_residency(request, student_id):
                 # Update student
                 student.hall_residential = new_hall
                 student.is_non_residential = is_non_residential_post
+                student.changed_by_user = request.user
                 student.save()  # Full save to trigger auto_now and other hooks
                 
                 # Activity log
@@ -2266,6 +2271,7 @@ def bulk_photo_upload(request):
                         
                         # Update record
                         student.photo_path = target_path_rel.replace('\\', '/')
+                        student.changed_by_user = request.user
                         student.save()
                         success_count += 1
                     except Student.DoesNotExist:
@@ -2746,6 +2752,36 @@ def student_profile(request, student_id):
             'title': 'Profile Updated',
             'description': log.description,
             'user': log.user.username if log.user else 'System'
+        })
+
+    # 6. Detailed Field History (StudentFieldHistory)
+    from django.utils.safestring import mark_safe
+    from collections import defaultdict
+    from .models import StudentFieldHistory
+    
+    grouped_changes = defaultdict(list)
+    field_changes = StudentFieldHistory.objects.filter(student=student).select_related('changed_by').order_by('changed_at')
+    for change in field_changes:
+        ts_sec = change.changed_at.replace(microsecond=0) if change.changed_at else student.last_updated.replace(microsecond=0)
+        grouped_changes[(ts_sec, change.changed_by)].append(change)
+        
+    for (ts, user), changes in grouped_changes.items():
+        desc_parts = []
+        for c in changes:
+            old_str = f"'{c.old_value}'" if c.old_value is not None else "Empty"
+            new_str = f"'{c.new_value}'" if c.new_value is not None else "Empty"
+            revert_badge = " <span class='badge badge-warning font-weight-bold ml-1'><i class='fas fa-rotate-left mr-1'></i>Reverted</span>" if c.reverted else ""
+            desc_parts.append(f"• <strong>{c.field_name}</strong>: {old_str} → {new_str}{revert_badge}")
+        
+        description = "<br>".join(desc_parts)
+        
+        timeline.append({
+            'timestamp': ts,
+            'icon': 'fas fa-pen-fancy',
+            'badge_class': 'bg-primary-soft text-primary border border-primary',
+            'title': 'Detailed Profile Edits',
+            'description': mark_safe(description),
+            'user': user.username if user else 'System'
         })
 
     # Final Sort: Newest First
@@ -4166,6 +4202,7 @@ def api_verify_board_result(request):
         try:
             from .models import Student
             student = Student.objects.get(student_id=student_id)
+            student.changed_by_user = request.user
             exam = exam_type.upper()
             if exam == 'SSC':
                 board, year, roll, reg = student.ssc_board, student.ssc_year, student.ssc_roll, student.ssc_reg
@@ -4581,6 +4618,7 @@ def api_bulk_fix_mobile(request):
                 
                 if is_valid and new_mobile != old_mobile:
                     student.student_mobile = new_mobile
+                    student.changed_by_user = request.user
                     student.save()
                     
                     # Log to ActivityLog & Unified Timeline
@@ -5048,7 +5086,7 @@ def reference_manage_dashboard(request):
                 category=category
             )
             response = render(request, 'students/references/partials/reference_table.html', {
-                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')[:50]
+                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')
             })
             response['HX-Trigger'] = 'referenceCreated'
             return response
@@ -5069,7 +5107,7 @@ def reference_manage_dashboard(request):
                 
             node.save()
             response = render(request, 'students/references/partials/reference_table.html', {
-                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')[:50]
+                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')
             })
             response['HX-Trigger'] = 'referenceUpdated'
             return response
@@ -5079,7 +5117,7 @@ def reference_manage_dashboard(request):
             node = get_object_or_404(ReferenceNode, id=node_id)
             node.delete()
             response = render(request, 'students/references/partials/reference_table.html', {
-                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')[:50]
+                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')
             })
             response['HX-Trigger'] = 'referenceDeleted'
             return response
@@ -5105,7 +5143,7 @@ def reference_manage_dashboard(request):
             source_node.delete()
             
             response = render(request, 'students/references/partials/reference_table.html', {
-                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')[:50]
+                'references': ReferenceNode.objects.filter(is_verified=True).order_by('-id')
             })
             response['HX-Trigger'] = json.dumps({
                 'referenceMerged': {
@@ -5198,12 +5236,12 @@ def reference_manage_dashboard(request):
     
     if request.headers.get('HX-Request'):
         return render(request, 'students/references/partials/reference_table.html', {
-            'references': queryset[:50],
+            'references': queryset,
             'all_references': all_refs
         })
         
     return render(request, 'students/references/manage.html', {
-        'references': queryset[:50],
+        'references': queryset,
         'all_references': all_refs,
         'total_count': total_count
     })
@@ -5504,6 +5542,7 @@ def api_update_board_info(request):
     try:
         from .models import Student
         student = Student.objects.get(student_id=student_id)
+        student.changed_by_user = request.user
     except Student.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Student not found.'})
 
@@ -5557,4 +5596,115 @@ def api_update_board_info(request):
     log_activity(request, 'UPDATE', 'students', f'Updated {level} board credentials for {student.student_name}', object_id=student.student_id)
 
     return JsonResponse({'success': True, 'message': f'{level} board credentials updated successfully.'})
+
+
+@login_required
+def bulk_revert_field_changes(request):
+    """Secure API view for superadmins to revert multiple student field modifications at once."""
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'Permission Denied. Only superadministrators can revert changes.'}, status=403)
+        
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method. POST required.'}, status=405)
+        
+    import json
+    history_ids = []
+    try:
+        data = json.loads(request.body)
+        history_ids = data.get('history_ids', [])
+    except Exception:
+        # Fallback to standard form POST parameters
+        history_ids = request.POST.getlist('history_ids')
+        
+    if not history_ids:
+        return JsonResponse({'success': False, 'error': 'No changes selected for revert.'})
+        
+    from .models import StudentFieldHistory
+    from core.utils import log_activity
+    from django.utils.dateparse import parse_date
+    from django.db import models, transaction
+    from django.utils import timezone
+    
+    success_count = 0
+    errors = []
+    
+    # Run bulk revert operation atomically
+    with transaction.atomic():
+        history_entries = StudentFieldHistory.objects.filter(
+            id__in=history_ids, 
+            reverted=False
+        ).select_related('student')
+        
+        for history_entry in history_entries:
+            student = history_entry.student
+            field_name = history_entry.field_name
+            old_value_str = history_entry.old_value
+            
+            try:
+                # Inspect the field details on the model
+                field = Student._meta.get_field(field_name)
+                target_value = None
+                
+                if old_value_str is None or old_value_str == 'None' or old_value_str == '':
+                    if field.null:
+                        target_value = None
+                    elif isinstance(field, (models.CharField, models.TextField)):
+                        target_value = ""
+                    elif isinstance(field, (models.IntegerField, models.SmallIntegerField, models.PositiveIntegerField)):
+                        target_value = 0
+                    elif isinstance(field, models.BooleanField):
+                        target_value = False
+                else:
+                    if isinstance(field, models.BooleanField):
+                        target_value = old_value_str.lower() in ('true', '1', 'yes')
+                    elif isinstance(field, (models.IntegerField, models.SmallIntegerField, models.PositiveIntegerField)):
+                        try:
+                            target_value = int(float(old_value_str))
+                        except ValueError:
+                            target_value = 0
+                    elif isinstance(field, (models.FloatField, models.DecimalField)):
+                        try:
+                            target_value = float(old_value_str)
+                        except ValueError:
+                            target_value = 0.0
+                    elif isinstance(field, models.DateField):
+                        target_value = parse_date(old_value_str)
+                    else:
+                        target_value = old_value_str
+                
+                # Restore the old value
+                setattr(student, field_name, target_value)
+                student.changed_by_user = request.user
+                student.save()
+                
+                # Update history log status
+                history_entry.reverted = True
+                history_entry.reverted_by = request.user
+                history_entry.reverted_at = timezone.now()
+                history_entry.save()
+                
+                # Log details in core Activity Log
+                log_activity(
+                    request, 'UPDATE', 'students', 
+                    f"REVERTED bulk modification of {field_name} from '{old_value_str}' for student {student.student_name}", 
+                    object_id=student.student_id
+                )
+                success_count += 1
+                
+            except Exception as e:
+                errors.append(f"Failed to revert change ID {history_entry.id}: {str(e)}")
+                
+    if errors:
+        return JsonResponse({
+            'success': False, 
+            'error': f"Failed to revert some changes: {', '.join(errors[:3])}",
+            'success_count': success_count,
+            'errors': errors
+        })
+        
+    return JsonResponse({
+        'success': True,
+        'message': f"Successfully reverted {success_count} modifications.",
+        'success_count': success_count
+    })
 

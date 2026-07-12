@@ -858,7 +858,7 @@
                                     <span class="time"><i class="far fa-clock"></i> {{ event.timestamp|time }}</span>
                                     <h3 class="timeline-header font-weight-bold">{{ event.title }}</h3>
                                     <div class="timeline-body">
-                                        {{ event.description }}
+                                        {{ event.description|safe }}
                                         <div class="mt-2 small">
                                             <span class="text-muted"><i class="fas fa-user-edit mr-1"></i> Performed by:</span>
                                             <span class="badge badge-light border">{{ event.user }}</span>

@@ -784,3 +784,89 @@ def user_delete(request, user_id):
     from .utils import log_activity
     log_activity(request, 'DELETE', 'security', f'Permanently deleted user account: {username}', object_id=str(user_id))
     return redirect('user_management')
+
+
+@require_access('security', 'manage_roles')
+def export_audit_logs(request):
+    """View to export system activity logs or detailed edits to CSV based on filters."""
+    import csv
+    from django.http import HttpResponse
+    from django.db.models import Q
+    from .models import ActivityLog
+    from students.models import StudentFieldHistory
+    
+    active_tab = request.GET.get('tab', 'activity')
+    query = request.GET.get('q', '').strip()
+    user_filter = request.GET.get('user', '')
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
+    
+    if active_tab == 'fields':
+        field_logs = StudentFieldHistory.objects.select_related('student', 'changed_by', 'reverted_by').all()
+        if query:
+            field_logs = field_logs.filter(
+                Q(field_name__icontains=query) |
+                Q(old_value__icontains=query) |
+                Q(new_value__icontains=query) |
+                Q(student__student_name__icontains=query) |
+                Q(student__student_id__icontains=query)
+            )
+        if user_filter:
+            field_logs = field_logs.filter(changed_by_id=user_filter)
+        if start_date:
+            field_logs = field_logs.filter(changed_at__date__gte=start_date)
+        if end_date:
+            field_logs = field_logs.filter(changed_at__date__lte=end_date)
+            
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="detailed_field_logs.csv"'
+        
+        # Write CSV UTF-8 Byte Order Mark (BOM) for proper Excel parsing
+        response.write(b'\xef\xbb\xbf')
+        writer = csv.writer(response)
+        writer.writerow(['Timestamp', 'Student ID', 'Student Name', 'Staff Member', 'Field', 'Old Value', 'New Value', 'Reverted', 'Reverted By', 'Reverted At', 'IP Address', 'User Agent'])
+        
+        for log in field_logs:
+            writer.writerow([
+                log.changed_at.strftime('%Y-%m-%d %H:%M:%S') if log.changed_at else '',
+                log.student.student_id,
+                log.student.student_name,
+                log.changed_by.username if log.changed_by else 'System',
+                log.field_name,
+                log.old_value or '',
+                log.new_value or '',
+                'Yes' if log.reverted else 'No',
+                log.reverted_by.username if log.reverted_by else '',
+                log.reverted_at.strftime('%Y-%m-%d %H:%M:%S') if log.reverted_at else '',
+                log.ip_address or '',
+                log.user_agent or ''
+            ])
+        return response
+    else:
+        logs = ActivityLog.objects.select_related('user').all()
+        if query:
+            logs = logs.filter(description__icontains=query)
+        if user_filter:
+            logs = logs.filter(user_id=user_filter)
+        if start_date:
+            logs = logs.filter(timestamp__date__gte=start_date)
+        if end_date:
+            logs = logs.filter(timestamp__date__lte=end_date)
+            
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="system_activity_logs.csv"'
+        
+        response.write(b'\xef\xbb\xbf')
+        writer = csv.writer(response)
+        writer.writerow(['Timestamp', 'Staff Member', 'Action Type', 'Module', 'Description', 'IP Address'])
+        
+        for log in logs:
+            writer.writerow([
+                log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '',
+                log.user.username if log.user else 'System',
+                log.action_type,
+                log.module,
+                log.description,
+                log.ip_address or ''
+            ])
+        return response

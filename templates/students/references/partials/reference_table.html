@@ -31,7 +31,17 @@
     </td>
     <td>
         {% if ref.mobile %}
-            <a href="tel:{{ ref.mobile }}" class="text-dark"><i class="fas fa-phone-alt mr-1 text-success small"></i> {{ ref.mobile }}</a>
+            <div class="d-flex align-items-center">
+                <a href="tel:{{ ref.mobile }}" class="text-dark font-weight-bold" title="Call Mobile">
+                    <i class="fas fa-mobile-alt mr-1 text-primary"></i> {{ ref.mobile }}
+                </a>
+                <a href="https://wa.me/{% if ref.mobile|slice:':2' == '88' %}{{ ref.mobile }}{% elif ref.mobile|slice:':1' == '+' and ref.mobile|slice:'1:3' == '88' %}{{ ref.mobile|slice:'1:' }}{% else %}88{{ ref.mobile }}{% endif %}" 
+                   target="_blank" 
+                   class="text-success ml-2" 
+                   title="Message on WhatsApp">
+                    <i class="fab fa-whatsapp font-weight-bold" style="font-size: 1.15rem; vertical-align: middle;"></i>
+                </a>
+            </div>
         {% else %}
             <span class="text-muted">-</span>
         {% endif %}

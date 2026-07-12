@@ -21,6 +21,7 @@ urlpatterns = [
 
     path('security/settings/', views.system_settings, name='system_settings'),
     path('security/audit-logs/', views.audit_logs, name='audit_logs'),
+    path('security/audit-logs/export/', views.export_audit_logs, name='export_audit_logs'),
     path('security/toggle-theme/', views.toggle_theme, name='toggle_theme'),
     path('security/toggle-navbar-pin/', views.toggle_navbar_pin, name='toggle_navbar_pin'),
     path('security/backup/download/', views.download_db_backup, name='download_db_backup'),
