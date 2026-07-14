@@ -4,7 +4,134 @@
 {% block page_title %}Recruitment Source & Influence Nodes Console{% endblock %}
 
 {% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
 <style>
+    /* Select2 Dark/Light Mode Adaptations */
+    .select2-container {
+        width: 100% !important;
+    }
+    
+    .select2-container--default .select2-selection--single {
+        background-color: #ffffff !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        height: 38px !important;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    
+    .dark-mode .select2-container--default .select2-selection--single {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        padding-left: 10px !important;
+    }
+
+    .dark-mode .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #f1f5f9 !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px !important;
+    }
+    
+    .select2-dropdown {
+        background-color: #ffffff !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+        z-index: 9999 !important;
+    }
+    
+    .dark-mode .select2-dropdown {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+    }
+
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        font-size: 0.85rem !important;
+        padding: 6px 12px !important;
+        height: 34px !important;
+        display: block !important;
+        width: 100% !important;
+        outline: none !important;
+    }
+
+    .dark-mode .select2-container--default .select2-search--dropdown .select2-search__field {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+    }
+    
+    .select2-container--default .select2-results__option--highlighted,
+    .select2-container--default .select2-results__option--highlighted[aria-selected],
+    .select2-container--default .select2-results__option[aria-selected="true"]:hover,
+    .select2-container--default .select2-results__option:hover {
+        background-color: #3b82f6 !important;
+        color: #ffffff !important;
+    }
+    
+    .dark-mode .select2-results__option[aria-selected="true"] {
+        background-color: #1e293b !important;
+        color: white !important;
+    }
+    
+    /* Option styling in select2 dropdown list */
+    .select2-results__option {
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    }
+    
+    .dark-mode .select2-results__option {
+        border-bottom-color: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Target Node Dropdown Options Style */
+    .target-node-item {
+        transition: color 0.15s ease;
+        display: block;
+        width: 100%;
+    }
+
+    .target-node-item.is-employee-true {
+        color: #10b981 !important;
+    }
+    
+    .target-node-item.is-employee-false {
+        color: #3b82f6 !important;
+    }
+    
+    .target-node-name {
+        color: inherit !important;
+    }
+    
+    .target-node-info {
+        color: inherit !important;
+        opacity: 0.85;
+        font-size: 0.78rem;
+    }
+
+    .select2-container--default .select2-results__option--highlighted .target-node-item,
+    .select2-container--default .select2-results__option--highlighted[aria-selected] .target-node-item,
+    .select2-container--default .select2-results__option[aria-selected="true"]:hover .target-node-item,
+    .select2-container--default .select2-results__option:hover .target-node-item,
+    .select2-results__option--highlighted .target-node-item,
+    .select2-results__option--highlighted[aria-selected] .target-node-item {
+        color: #ffffff !important;
+    }
     .compact-kpi-card {
         border-radius: 12px;
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -82,9 +209,49 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     $(document).ready(function() {
+        // Initialize Select2 on target-node-select with custom formatters
+        function formatState (state) {
+            if (!state.id) {
+                return state.text;
+            }
+            const element = $(state.element);
+            const category = element.data('category');
+            const isEmployee = (category === 'Employee');
+            
+            const name = state.text.split('(')[0].trim();
+            const bracketMatch = state.text.match(/\(([^)]+)\)/);
+            const extraInfo = bracketMatch ? ` (${bracketMatch[1]})` : '';
+            
+            return $(`
+                <div class="target-node-item is-employee-${isEmployee}">
+                    <strong class="target-node-name">${name}</strong> 
+                    <span class="target-node-info">${extraInfo}</span>
+                </div>
+            `);
+        }
+
+        function formatSelection (state) {
+            if (!state.id) {
+                return state.text;
+            }
+            const element = $(state.element);
+            const category = element.data('category');
+            const isEmployee = (category === 'Employee');
+            const name = state.text.split('(')[0].trim();
+            const color = isEmployee ? '#10b981' : '#3b82f6';
+            
+            return $(`<span style="color: ${color}; font-weight: 700;">${name}</span>`);
+        }
+
+        $('.target-node-select').select2({
+            templateResult: formatState,
+            templateSelection: formatSelection,
+            width: '100%'
+        });
         const rawData = {{ data_json|safe }};
         const references = rawData.references || [];
         
@@ -367,7 +534,9 @@
                                             <select class="form-control form-control-sm target-node-select text-dark" style="height: auto !important; padding: 0.35rem 0.5rem !important; font-weight: 600;">
                                                 <option value="">-- Select Target Reference Node --</option>
                                                 {% for ref in all_references_list %}
-                                                    <option value="{{ ref.id }}">{{ ref.name_en }} ({% if ref.category == 'Employee' %}Employee{% else %}External{% endif %}{% if ref.baust_id %}, {{ ref.baust_id }}{% endif %})</option>
+                                                    <option value="{{ ref.id }}" data-category="{{ ref.category }}" data-designation="{{ ref.designation|default:'' }}" style="color: {% if ref.category == 'Employee' %}#10b981{% else %}#3b82f6{% endif %}; font-weight: 600;">
+                                                        {{ ref.name_en }}{% if ref.designation or ref.baust_id %} ({% if ref.designation %}{{ ref.designation }}{% endif %}{% if ref.designation and ref.baust_id %}, {% endif %}{% if ref.baust_id %}{{ ref.baust_id }}{% endif %}){% endif %}
+                                                    </option>
                                                 {% endfor %}
                                             </select>
                                         </td>

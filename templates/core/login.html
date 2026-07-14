@@ -11,7 +11,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 100vh;
+        min-height: 100vh !important;
+        height: auto !important;
         margin: 0;
         font-family: 'Source Sans Pro', 'Inter', system-ui, -apple-system, sans-serif;
     }
@@ -42,10 +43,96 @@
         text-align: center;
     }
 
-    .login-logo img {
-        height: 90px;
-        margin-bottom: 20px;
-        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+    .logo-wrapper {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        margin: 0 auto;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent !important;
+        padding: 3px;
+        z-index: 1;
+        overflow: hidden;
+    }
+
+    .logo-wrapper::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(
+            transparent, 
+            #3b82f6, 
+            #10b981, 
+            #3b82f6, 
+            transparent 60%
+        );
+        animation: rotate-border 4s linear infinite;
+        z-index: -2;
+    }
+
+    .logo-wrapper::after {
+        content: '';
+        position: absolute;
+        inset: 3px;
+        background: #1e293b;
+        border-radius: 50%;
+        z-index: -1;
+    }
+
+    .logo-glow-effect {
+        position: absolute;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%);
+        animation: pulse-glow 2s ease-in-out infinite alternate;
+        z-index: -3;
+        pointer-events: none;
+        left: 0;
+        top: 0;
+    }
+
+    @keyframes rotate-border {
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes pulse-glow {
+        0% {
+            transform: scale(0.95);
+            opacity: 0.5;
+        }
+        100% {
+            transform: scale(1.2);
+            opacity: 0.9;
+            filter: blur(8px);
+        }
+    }
+
+    .logo-entrance {
+        position: relative;
+        display: inline-block;
+        isolation: isolate;
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 0.1s;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .login-header h2 {
@@ -55,12 +142,21 @@
         margin: 0;
         letter-spacing: -0.025em;
         line-height: 1.2;
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 0.25s;
+        transition: text-shadow 0.3s ease;
+    }
+
+    .login-header h2:hover {
+        text-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
     }
 
     .login-header p {
         color: #94a3b8;
         font-size: 0.9rem;
         margin-top: 8px;
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 0.4s;
     }
 
     .login-body {
@@ -81,17 +177,38 @@
         letter-spacing: 0.05em;
     }
 
-    .input-group {
+    .auth-input-group {
         position: relative;
     }
 
-    .input-group i {
+    .auth-input-group i {
         position: absolute;
         left: 16px;
         top: 50%;
         transform: translateY(-50%);
         color: #64748b;
         font-size: 1.1rem;
+        transition: color 0.2s ease;
+    }
+
+    .form-group:focus-within i {
+        color: #3b82f6;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #64748b;
+        font-size: 1.1rem;
+        z-index: 10;
+        transition: color 0.2s ease;
+    }
+
+    .password-toggle:hover {
+        color: #3b82f6;
     }
 
     .form-control {
@@ -103,6 +220,10 @@
         height: auto !important;
         font-size: 0.95rem !important;
         transition: all 0.2s ease;
+    }
+
+    input[type="password"] {
+        padding-right: 48px !important;
     }
 
     .form-control:focus {
@@ -194,6 +315,12 @@
 
     /* Hide base UI elements */
     .main-header, .main-sidebar, .main-footer, .content-header { display: none !important; }
+    .wrapper, .content-wrapper, .content, .container-fluid {
+        min-height: auto !important;
+        height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
     .content-wrapper { margin-left: 0 !important; background: transparent !important; }
 </style>
 {% endblock %}
@@ -202,12 +329,17 @@
 <div class="login-box">
     <div class="login-card">
         <div class="login-header">
-            <div class="login-logo">
-                {% if sys_settings.logo_url %}
-                    <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo">
-                {% else %}
-                    <i class="fas fa-graduation-cap text-primary fa-4x mb-3"></i>
-                {% endif %}
+            <div class="login-logo" style="margin-bottom: 20px;">
+                <div class="logo-entrance">
+                    <div class="logo-glow-effect"></div>
+                    <div class="logo-wrapper">
+                        {% if sys_settings.logo_url %}
+                            <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo" style="height: 90px; width: 90px; object-fit: contain; z-index: 2; border-radius: 50%;">
+                        {% else %}
+                            <i class="fas fa-graduation-cap text-primary" style="font-size: 3rem; z-index: 2;"></i>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             <h2>Bangladesh Army University of Science and Technology</h2>
             <p>Campus Connect Workspace</p>
@@ -224,7 +356,7 @@
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="id_username">Username / Email</label>
-                    <div class="input-group">
+                    <div class="auth-input-group">
                         <i class="fas fa-user"></i>
                         <input type="text" name="username" class="form-control" placeholder="Enter your username" required id="id_username">
                     </div>
@@ -232,9 +364,10 @@
 
                 <div class="form-group">
                     <label for="id_password">Security Key</label>
-                    <div class="input-group">
+                    <div class="auth-input-group">
                         <i class="fas fa-lock"></i>
                         <input type="password" name="password" class="form-control" placeholder="••••••••" required id="id_password">
+                        <span class="password-toggle"><i class="fas fa-eye-slash"></i></span>
                     </div>
                 </div>
 
@@ -262,5 +395,24 @@
 <script>
     // Add specific body class for login page styling
     document.body.classList.add('login-page');
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('.password-toggle').on('click', function() {
+            const icon = $(this).find('i');
+            const passwordInput = $(this).siblings('input');
+            
+            if (passwordInput.attr('type') === 'password') {
+                passwordInput.attr('type', 'text');
+                icon.removeClass('fa-eye-slash').addClass('fa-eye');
+            } else {
+                passwordInput.attr('type', 'password');
+                icon.removeClass('fa-eye').addClass('fa-eye-slash');
+            }
+        });
+    });
 </script>
 {% endblock %}
