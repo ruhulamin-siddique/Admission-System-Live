@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <title>{% load i18n %}{% translate "Press Release" %} — {{ entry.press_release_no }}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 18mm 15mm 20mm 18mm;
+      @frame header_frame {
+        -pdf-frame-content: header_content;
+        left: 0; top: 0; margin: 0; height: 28mm;
+      }
+      @frame footer_frame {
+        -pdf-frame-content: footer_content;
+        left: 0; bottom: 0; margin: 0; height: 12mm;
+      }
+    }
+
+    body {
+      font-family: Arial, "DejaVu Sans", sans-serif;
+      font-size: 10pt;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+
+    #header_content {
+      text-align: center;
+      border-bottom: 2px solid #1e40af;
+      padding-bottom: 4px;
+    }
+    .institution-name {
+      font-size: 14pt;
+      font-weight: bold;
+      color: #1e40af;
+    }
+    .office-name {
+      font-size: 10pt;
+      color: #475569;
+    }
+
+    #footer_content {
+      text-align: center;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 3px;
+      font-size: 8pt;
+      color: #64748b;
+    }
+    .page-num:before { content: counter(page); }
+    .total-pages:before { content: counter(pages); }
+
+    .pr-header {
+      background-color: #eff6ff;
+      border-left: 4px solid #1e40af;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      border-radius: 4px;
+    }
+    .pr-no {
+      font-size: 9pt;
+      font-weight: bold;
+      color: #1e40af;
+      text-transform: uppercase;
+    }
+    .pr-title {
+      font-size: 14pt;
+      font-weight: bold;
+      color: #0f172a;
+      margin: 4px 0;
+    }
+    .pr-meta {
+      font-size: 9pt;
+      color: #475569;
+    }
+
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-size: 9.5pt;
+    }
+    .meta-table td {
+      padding: 5px 8px;
+      border: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .meta-table .meta-key {
+      width: 35%;
+      font-weight: bold;
+      background-color: #f8fafc;
+      color: #374151;
+    }
+
+    .full-text-section {
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      font-size: 10pt;
+      line-height: 1.85;
+      text-align: justify;
+    }
+
+    .section-h {
+      font-size: 10pt;
+      font-weight: bold;
+      color: #1e40af;
+      border-bottom: 1px solid #bfdbfe;
+      padding-bottom: 3px;
+      margin-bottom: 8px;
+      margin-top: 14px;
+    }
+
+    .cov-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin-bottom: 14px;
+    }
+    .cov-table thead tr {
+      background-color: #1e40af;
+      color: white;
+    }
+    .cov-table thead th {
+      padding: 6px 8px;
+      font-weight: bold;
+      border: 1px solid #1e3a8a;
+    }
+    .cov-table tbody td {
+      padding: 5px 8px;
+      border: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .cov-table tbody tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 8pt;
+      font-weight: bold;
+    }
+    .badge-national { background-color: #dbeafe; color: #1e40af; }
+    .badge-local    { background-color: #dcfce7; color: #166534; }
+    .badge-online   { background-color: #fef9c3; color: #854d0e; }
+
+    .summary-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 4px;
+      padding: 10px 14px;
+      font-size: 9.5pt;
+      margin-bottom: 14px;
+    }
+    .summary-row {
+      display: inline-block;
+      margin-right: 20px;
+    }
+    .summary-num {
+      font-size: 14pt;
+      font-weight: 900;
+      color: #0284c7;
+    }
+  </style>
+</head>
+<body>
+
+<div id="header_content">
+  <div class="institution-name">
+    {{ sys_settings.institution_name|default:"Bangladesh Army University of Science and Technology" }}
+  </div>
+  <div class="office-name">{% translate "Public Relations Office" %}</div>
+</div>
+
+<div id="footer_content">
+  {% translate "Official Press Release — Public Relations Department" %} &nbsp;|&nbsp;
+  {% translate "Page" %} <span class="page-num"></span> / <span class="total-pages"></span>
+</div>
+
+<div class="pr-header">
+  <div class="pr-no">{% translate "PR Number" %}: {{ entry.press_release_no }}</div>
+  <div class="pr-title">{{ entry.event_name }}</div>
+  <div class="pr-meta">{% translate "Date" %}: {{ entry.press_release_date|date:"d F Y" }}
+    {% if entry.department %} &nbsp;|&nbsp; {% translate "Department" %}: {{ entry.department }}{% endif %}
+  </div>
+</div>
+
+<table class="meta-table">
+  <tr>
+    <td class="meta-key">{% translate "Press Release No" %}</td>
+    <td>{{ entry.press_release_no }}</td>
+    <td class="meta-key">{% translate "Date" %}</td>
+    <td>{{ entry.press_release_date|date:"d F Y" }}</td>
+  </tr>
+  <tr>
+    <td class="meta-key">{% translate "Department / Faculty" %}</td>
+    <td>{{ entry.department|default:"—" }}</td>
+    <td class="meta-key">{% translate "Created By" %}</td>
+    <td>{{ entry.created_by.get_full_name|default:entry.created_by.username|default:"—" }}</td>
+  </tr>
+  {% if entry.remarks %}
+  <tr>
+    <td class="meta-key">{% translate "Remarks" %}</td>
+    <td colspan="3">{{ entry.remarks }}</td>
+  </tr>
+  {% endif %}
+</table>
+
+<div class="section-h">{% translate "Full Press Release Text" %}</div>
+<div class="full-text-section">{{ entry.full_text }}</div>
+
+{% if coverages %}
+<div class="section-h">{% translate "Coverage Summary" %}</div>
+<div class="summary-box">
+  <div class="summary-row">
+    <span class="summary-num">{{ entry.coverage_count }}</span><br>
+    <small>{% translate "Total Coverages" %}</small>
+  </div>
+  <div class="summary-row">
+    <span class="summary-num" style="color:#1e40af;">{{ entry.national_count }}</span><br>
+    <small>{% translate "National" %}</small>
+  </div>
+  <div class="summary-row">
+    <span class="summary-num" style="color:#166534;">{{ entry.local_count }}</span><br>
+    <small>{% translate "Local" %}</small>
+  </div>
+  <div class="summary-row">
+    <span class="summary-num" style="color:#854d0e;">{{ entry.online_count }}</span><br>
+    <small>{% translate "Online" %}</small>
+  </div>
+</div>
+
+<div class="section-h">{% translate "Detailed Coverage List" %}</div>
+<table class="cov-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>{% translate "Media House" %}</th>
+      <th>{% translate "Type" %}</th>
+      <th>{% translate "Published Date" %}</th>
+      <th>{% translate "Online Link" %}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for cov in coverages %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>{{ cov.media_house.name }}</td>
+      <td><span class="badge badge-{{ cov.media_house.media_type }}">{{ cov.media_house.get_media_type_display }}</span></td>
+      <td>{{ cov.published_date|date:"d M Y"|default:"—" }}</td>
+      <td style="font-size:8pt;word-break:break-all;">{{ cov.online_link|default:"—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<br>
+<table style="width:100%;margin-top:30px;font-size:9pt;border:none;">
+  <tr>
+    <td style="width:50%;text-align:left;border:none;">
+      {% translate "Prepared by" %}: __________________<br>
+      <small>{% translate "Name & Designation" %}</small>
+    </td>
+    <td style="width:50%;text-align:right;border:none;">
+      {% translate "Director, Public Relations" %}: __________________<br>
+      <small>{% translate "Signature & Seal" %}</small>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-{% load core_tags %}
+{% load core_tags i18n %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,38 +43,75 @@
 
     /* Premium Iconized Sidebar */
     .main-sidebar { transition: width 0.3s ease; }
-    .nav-sidebar .nav-item { margin-bottom: 2px; }
+    .nav-sidebar .nav-item { margin-bottom: 1px; }
     .nav-sidebar .nav-link { 
-      border-radius: 8px !important; 
-      margin: 0 8px; 
-      padding: 10px 12px;
-      transition: all 0.2s;
+      border-radius: 6px !important; 
+      margin: 0 6px; 
+      padding: 6px 10px;
+      font-size: 0.88rem;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       border: 1px solid transparent;
+      position: relative;
+    }
+    .nav-sidebar .nav-link::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 15%;
+      height: 70%;
+      width: 3px;
+      background: transparent;
+      border-radius: 20px;
+      transition: background-color 0.25s ease;
     }
     .nav-sidebar .nav-link:hover {
-      background: rgba(255,255,255,0.05) !important;
-      transform: translateX(5px);
+      background: rgba(59, 130, 246, 0.12) !important;
+      color: #3b82f6 !important;
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+    }
+    .dark-mode .nav-sidebar .nav-link:hover {
+      color: #60a5fa !important;
+    }
+    .nav-sidebar .nav-link:hover::before {
+      background: #3b82f6;
+    }
+    .nav-sidebar .nav-link:hover * {
+      color: inherit !important; /* Ensure icons match text hover color */
     }
     .nav-sidebar .nav-link.active {
-      background: #3b82f6 !important;
-      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+      background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+      font-weight: 700;
+      color: #ffffff !important; /* Crisp white text */
+    }
+    .nav-sidebar .nav-link.active * {
+      color: #ffffff !important; /* Crisp white icons */
+    }
+    .nav-sidebar .nav-link.active::before {
+      background: #ffffff;
     }
     .nav-icon { 
-      font-size: 1.1rem !important; 
-      margin-right: 12px !important; 
-      width: 30px !important;
+      font-size: 0.95rem !important; 
+      margin-right: 8px !important; 
+      width: 22px !important;
       text-align: center;
+      transition: transform 0.25s ease;
+    }
+    .nav-sidebar .nav-link:hover .nav-icon {
+      transform: scale(1.15) rotate(2deg);
     }
     .nav-header {
-      font-size: 0.65rem !important;
+      font-size: 0.62rem !important;
       font-weight: 800;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.2px;
       color: #64748b !important;
-      padding: 20px 20px 10px !important;
+      padding: 10px 16px 4px !important;
       text-transform: uppercase;
+      opacity: 0.8;
     }
     .sidebar-dark-primary { background-color: #0f172a !important; }
-    .brand-link { border-bottom: 1px solid rgba(255,255,255,0.05) !important; padding: 1rem !important; }
+    .brand-link { border-bottom: 1px solid rgba(255,255,255,0.05) !important; padding: 0.75rem 1rem !important; }
     
     /* User Panel Enhancement */
     .user-panel { border-bottom: 1px solid rgba(255,255,255,0.05) !important; }
@@ -233,7 +270,7 @@
                name="search" 
                id="globalSearchInput"
                class="form-control navbar-search-input" 
-               placeholder="Search students..." 
+               placeholder="{% translate 'Search students...' %}" 
                autocomplete="off"
                style="width: 100% !important; border: 2px solid #3b82f6 !important; background: #fff !important;"
                hx-get="{% url 'api_global_search' %}"
@@ -263,6 +300,24 @@
         </a>
       </li>
 
+      <!-- Language Switcher -->
+      <li class="nav-item">
+        <form action="{% url 'set_user_language' %}" method="post" class="form-inline mb-0 ml-2">
+          {% csrf_token %}
+          <input name="next" type="hidden" value="{{ request.get_full_path }}">
+          {% get_current_language as LANGUAGE_CODE %}
+          {% if LANGUAGE_CODE == 'en' %}
+          <button type="submit" name="language" value="bn" class="btn btn-xs btn-outline-primary font-weight-bold" style="border-radius:20px; padding:3px 12px;" title="বাংলায় পরিবর্তন করুন">
+            বাংলা
+          </button>
+          {% else %}
+          <button type="submit" name="language" value="en" class="btn btn-xs btn-outline-primary font-weight-bold" style="border-radius:20px; padding:3px 12px;" title="Switch to English">
+            EN
+          </button>
+          {% endif %}
+        </form>
+      </li>
+
       <!-- Notifications Dropdown Menu -->
       {% if user.profile.role %}
       <li class="nav-item dropdown">
@@ -273,7 +328,9 @@
           {% endif %}
         </a>
         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right shadow-lg border-0" style="border-radius: 12px; width: 320px;">
-          <span class="dropdown-item dropdown-header font-weight-bold">{{ notification_count }} Recent Activities</span>
+          <span class="dropdown-item dropdown-header font-weight-bold">
+            {% blocktranslate %}{{ notification_count }} Recent Activities{% endblocktranslate %}
+          </span>
           <div class="dropdown-divider"></div>
           
           {% for note in recent_notifications %}
@@ -292,7 +349,7 @@
               </div>
               <div style="white-space: normal; line-height: 1.2;">
                 <p class="mb-0 text-sm font-weight-bold text-dark">{{ note.description|truncatechars:60 }}</p>
-                <small class="text-muted">{{ note.timestamp|timesince }} ago by {{ note.user.username }}</small>
+                <small class="text-muted">{% blocktranslate %}{{ note.timestamp|timesince }} ago{% endblocktranslate %} {% translate "by" %} {{ note.user.username }}</small>
               </div>
             </div>
           </a>
@@ -300,11 +357,11 @@
           {% empty %}
           <div class="p-4 text-center">
             <i class="fas fa-bell-slash text-muted mb-2 fa-2x"></i>
-            <p class="text-muted small mb-0">No recent activities found.</p>
+            <p class="text-muted small mb-0">{% translate "No recent activities found." %}</p>
           </div>
           {% endfor %}
           
-          <a href="{% url 'audit_logs' %}" class="dropdown-item dropdown-footer font-weight-bold text-primary">View All System Logs</a>
+          <a href="{% url 'audit_logs' %}" class="dropdown-item dropdown-footer font-weight-bold text-primary">{% translate "View All System Logs" %}</a>
         </div>
       </li>
       {% endif %}
@@ -330,16 +387,16 @@
                 <div class="font-weight-bold text-lg">{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}</div>
                 <div class="small text-white-50">{{ user.profile.role.name|default:"Staff Member" }}</div>
             </div>
-            <div class="user-menu-links">
+             <div class="user-menu-links">
                 <a href="{% url 'user_profile' %}" class="dropdown-item">
-                    <i class="fas fa-user-circle"></i> My Account
+                    <i class="fas fa-user-circle"></i> {% translate "My Account" %}
                 </a>
                 <a href="{% url 'password_change' %}" class="dropdown-item">
-                    <i class="fas fa-key"></i> Change Password
+                    <i class="fas fa-key"></i> {% translate "Change Password" %}
                 </a>
                 {% if user.is_superuser %}
                 <a href="{% url 'admin:index' %}" class="dropdown-item">
-                    <i class="fas fa-tools"></i> System Backend
+                    <i class="fas fa-tools"></i> {% translate "System Backend" %}
                 </a>
                 {% endif %}
             </div>
@@ -347,7 +404,7 @@
                 <form action="{% url 'logout' %}" method="post">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-block btn-sm font-weight-bold">
-                        <i class="fas fa-sign-out-alt mr-2"></i> Log Out
+                        <i class="fas fa-sign-out-alt mr-2"></i> {% translate "Log Out" %}
                     </button>
                 </form>
             </div>
@@ -389,18 +446,18 @@
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column nav-child-indent" data-widget="treeview" role="menu" data-accordion="false">
           
-          <li class="nav-header">MAIN</li>
+          <li class="nav-header">{% translate "MAIN" %}</li>
           {% has_access 'dashboard' 'view' as can_view_db %}
           {% if can_view_db %}
           <li class="nav-item">
             <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
               <i class="nav-icon fas fa-tachometer-alt"></i>
-              <p>Dashboard</p>
+              <p>{% translate "Dashboard" %}</p>
             </a>
           </li>
           {% endif %}
 
-          <li class="nav-header">ADMISSION</li>
+          <li class="nav-header">{% translate "ADMISSION" %}</li>
           {% has_access 'students' 'view_directory' as can_view_students %}
           {% has_access 'students' 'add_student' as can_add_student %}
           {% has_access 'students' 'edit_profile' as can_edit_students %}
@@ -409,7 +466,7 @@
           <li class="nav-item">
             <a href="{% url 'student_list' %}" class="nav-link {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}">
               <i class="nav-icon fas fa-users"></i>
-              <p>Student Directory</p>
+              <p>{% translate "Student Directory" %}</p>
             </a>
           </li>
           {% endif %}
@@ -418,7 +475,7 @@
           <li class="nav-item">
             <a href="{% url 'add_student' %}" class="nav-link {% if request.resolver_match.url_name == 'add_student' %}active{% endif %}">
               <i class="nav-icon fas fa-user-plus"></i>
-              <p>New Admission</p>
+              <p>{% translate "New Admission" %}</p>
             </a>
           </li>
           {% endif %}
@@ -428,7 +485,7 @@
           <li class="nav-item">
             <a href="{% url 'migration_center' %}" class="nav-link {% if request.resolver_match.url_name == 'migration_center' %}active{% endif %}">
               <i class="nav-icon fas fa-exchange-alt"></i>
-              <p>Department Change</p>
+              <p>{% translate "Department Change" %}</p>
             </a>
           </li>
           {% endif %}
@@ -438,7 +495,7 @@
           <li class="nav-item">
             <a href="{% url 'cancellation_hub' %}" class="nav-link {% if request.resolver_match.url_name == 'cancellation_hub' %}active{% endif %}">
               <i class="nav-icon fas fa-user-times"></i>
-              <p>Admission Cancel</p>
+              <p>{% translate "Admission Cancel" %}</p>
             </a>
           </li>
           {% endif %}
@@ -448,7 +505,7 @@
           <li class="nav-item">
             <a href="{% url 'reference_manage' %}" class="nav-link {% if request.resolver_match.url_name == 'reference_manage' %}active{% endif %}">
               <i class="nav-icon fas fa-network-wired"></i>
-              <p>Reference Hub</p>
+              <p>{% translate "Reference Hub" %}</p>
             </a>
           </li>
           {% endif %}
@@ -464,7 +521,7 @@
             <a href="#" class="nav-link {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' or request.resolver_match.url_name == 'academic_data_patch' %}active{% endif %}">
               <i class="nav-icon fas fa-toolbox"></i>
               <p>
-                Administrative Tools
+                {% translate "Administrative Tools" %}
                 <i class="right fas fa-angle-left"></i>
               </p>
             </a>
@@ -473,7 +530,7 @@
               <li class="nav-item">
                 <a href="{% url 'import_students' %}" class="nav-link {% if request.resolver_match.url_name == 'import_students' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Bulk Import</p>
+                  <p>{% translate "Bulk Import" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -481,7 +538,7 @@
               <li class="nav-item">
                 <a href="{% url 'data_integrity' %}" class="nav-link {% if request.resolver_match.url_name == 'data_integrity' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Duplicate Scanner</p>
+                  <p>{% translate "Duplicate Scanner" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -489,7 +546,7 @@
               <li class="nav-item">
                 <a href="{% url 'mobile_repair_tool' %}" class="nav-link {% if request.resolver_match.url_name == 'mobile_repair_tool' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Mobile Repair Tool</p>
+                  <p>{% translate "Mobile Repair Tool" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -497,7 +554,7 @@
               <li class="nav-item">
                 <a href="{% url 'academic_audit_center' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_audit_center' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Academic Audit</p>
+                  <p>{% translate "Academic Audit" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -505,7 +562,7 @@
               <li class="nav-item">
                 <a href="{% url 'academic_data_patch' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_data_patch' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Academic Data Patch</p>
+                  <p>{% translate "Academic Data Patch" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -515,73 +572,73 @@
 
           {% has_access 'reports' 'view_analytics' as can_view_reports %}
           {% if can_view_reports %}
-          <li class="nav-header">ACADEMIC & REPORTS</li>
+          <li class="nav-header">{% translate "ACADEMIC & REPORTS" %}</li>
           <li class="nav-item">
             <a href="{% url 'reports_center' %}" class="nav-link {% if request.resolver_match.url_name == 'reports_center' %}active{% endif %}">
               <i class="nav-icon fas fa-chart-pie"></i>
-              <p>Reports Hub</p>
+              <p>{% translate "Reports Hub" %}</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="{% url 'institutional_report' %}" class="nav-link {% if request.resolver_match.url_name == 'institutional_report' %}active{% endif %}">
               <i class="nav-icon fas fa-university"></i>
-              <p>Feeder Analysis</p>
+              <p>{% translate "Feeder Analysis" %}</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="{% url 'geographic_insights_v2' %}" class="nav-link {% if request.resolver_match.url_name == 'geographic_insights_v2' %}active{% endif %}">
               <i class="nav-icon fas fa-map-marked-alt"></i>
-              <p>Geographic Outreach</p>
+              <p>{% translate "Geographic Outreach" %}</p>
             </a>
           </li>
           <li class="nav-item">
             <a href="{% url 'export_center' %}" class="nav-link {% if 'export' in request.path %}active{% endif %}">
               <i class="nav-icon fas fa-file-excel"></i>
-              <p>Dynamic Export</p>
+              <p>{% translate "Dynamic Export" %}</p>
             </a>
           </li>
           {% endif %}
 
           {% has_access 'exam_billing' 'view_dashboard' as can_view_billing %}
           {% if can_view_billing %}
-          <li class="nav-header">EXAM BILLING</li>
+          <li class="nav-header">{% translate "EXAM BILLING" %}</li>
           <li class="nav-item {% if 'exam-billing' in request.path %}menu-open{% endif %}">
             <a href="#" class="nav-link {% if 'exam-billing' in request.path %}active{% endif %}">
               <i class="nav-icon fas fa-file-invoice-dollar"></i>
               <p>
-                Exam Billing
+                {% translate "Exam Billing" %}
                 <i class="right fas fa-angle-left"></i>
               </p>
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
                 <a href="{% url 'billing_dashboard' %}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i><p>Dashboard</p>
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Dashboard" %}</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="{% url 'billing_exam_list' %}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i><p>Exams</p>
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Exams" %}</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="{% url 'billing_faculty_directory' %}" class="nav-link {% if request.resolver_match.url_name == 'billing_faculty_directory' %}active{% endif %}">
-                  <i class="far fa-circle nav-icon"></i><p>Faculty Directory</p>
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Faculty Directory" %}</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="{% url 'billing_fundamentals_hub' %}" class="nav-link {% if 'fundamentals' in request.path %}active{% endif %}">
-                  <i class="far fa-circle nav-icon"></i><p>Fundamentals</p>
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Fundamentals" %}</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="{% url 'billing_individual_bills_directory' %}" class="nav-link {% if 'individual-bills' in request.path %}active{% endif %}">
-                  <i class="far fa-circle nav-icon"></i><p>Individual Bills</p>
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Individual Bills" %}</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="{% url 'billing_rate_templates' %}" class="nav-link {% if request.resolver_match.url_name == 'billing_rate_templates' %}active{% endif %}">
-                  <i class="far fa-circle nav-icon"></i><p>Bill Settings</p>
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Bill Settings" %}</p>
                 </a>
               </li>
             </ul>
@@ -590,12 +647,55 @@
 
           {% has_access 'ict_wing' 'view_devices' as can_view_ict %}
           {% if can_view_ict %}
-          <li class="nav-header">ICT WING</li>
+          <li class="nav-header">{% translate "ICT WING" %}</li>
           <li class="nav-item">
             <a href="{% url 'manage_devices' %}" class="nav-link {% if 'ict/manage' in request.path %}active{% endif %}">
               <i class="nav-icon fas fa-network-wired"></i>
-              <p>Device Registry</p>
+              <p>{% translate "Device Registry" %}</p>
             </a>
+          </li>
+          {% endif %}
+
+          {% has_access 'public_relations' 'view_dashboard' as can_view_pr %}
+          {% if can_view_pr %}
+          <li class="nav-header">{% translate "PUBLIC RELATIONS" %}</li>
+          <li class="nav-item {% if 'pr/' in request.path %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if 'pr/' in request.path %}active{% endif %}">
+              <i class="nav-icon fas fa-newspaper"></i>
+              <p>
+                {% translate "PR Office" %}
+                <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{% url 'pr_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'pr_dashboard' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "Dashboard" %}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'pr_archive_list' %}" class="nav-link {% if request.resolver_match.url_name == 'pr_archive_list' or request.resolver_match.url_name == 'pr_archive_detail' or request.resolver_match.url_name == 'pr_archive_edit' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "PR Archive" %}</p>
+                </a>
+              </li>
+              {% has_access 'public_relations' 'add_archive' as can_add_pr %}
+              {% if can_add_pr %}
+              <li class="nav-item">
+                <a href="{% url 'pr_archive_create' %}" class="nav-link {% if request.resolver_match.url_name == 'pr_archive_create' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "New Press Release" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              <li class="nav-item">
+                <a href="{% url 'pr_media_houses' %}" class="nav-link {% if request.resolver_match.url_name == 'pr_media_houses' or request.resolver_match.url_name == 'pr_media_house_create' or request.resolver_match.url_name == 'pr_media_house_edit' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "Media Houses" %}</p>
+                </a>
+              </li>
+            </ul>
           </li>
           {% endif %}
 
@@ -605,14 +705,14 @@
           {% has_access 'security' 'manage_settings' as can_manage_global %}
 
           {% if can_manage_users or can_manage_roles or can_manage_academic or can_manage_global %}
-          <li class="nav-header">SYSTEM</li>
+          <li class="nav-header">{% translate "SYSTEM" %}</li>
           
           {% if can_manage_users or can_manage_roles %}
           <li class="nav-item {% if 'security' in request.path and not 'settings' in request.path %}menu-open{% endif %}">
             <a href="#" class="nav-link {% if 'security' in request.path and not 'settings' in request.path %}active{% endif %}">
               <i class="nav-icon fas fa-user-shield"></i>
               <p>
-                Staff & Security
+                {% translate "Staff & Security" %}
                 <i class="right fas fa-angle-left"></i>
               </p>
             </a>
@@ -621,7 +721,7 @@
               <li class="nav-item">
                 <a href="{% url 'user_management' %}" class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Staff Access</p>
+                  <p>{% translate "Staff Access" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -629,13 +729,13 @@
               <li class="nav-item">
                 <a href="{% url 'role_management' %}" class="nav-link {% if request.resolver_match.url_name == 'role_management' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Role Matrix</p>
+                  <p>{% translate "Role Matrix" %}</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="{% url 'audit_logs' %}" class="nav-link {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Security Logs</p>
+                  <p>{% translate "Security Logs" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -644,7 +744,7 @@
               <li class="nav-item">
                 <a href="{% url 'api_client_management' %}" class="nav-link {% if 'external-api' in request.path %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>External API</p>
+                  <p>{% translate "External API" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -656,7 +756,7 @@
           <li class="nav-item">
             <a href="{% url 'academic_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'academic_settings' %}active{% endif %}">
               <i class="nav-icon fas fa-graduation-cap"></i>
-              <p>Academic Settings</p>
+              <p>{% translate "Academic Settings" %}</p>
             </a>
           </li>
           {% endif %}
@@ -665,7 +765,7 @@
           <li class="nav-item">
             <a href="{% url 'system_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'system_settings' %}active{% endif %}">
               <i class="nav-icon fas fa-sliders-h"></i>
-              <p>Global Settings</p>
+              <p>{% translate "Global Settings" %}</p>
             </a>
           </li>
           {% endif %}
@@ -675,14 +775,14 @@
           <li class="nav-item">
             <a href="{% url 'admin:index' %}" class="nav-link">
               <i class="nav-icon fas fa-cogs"></i>
-              <p>Admin Panel</p>
+              <p>{% translate "Admin Panel" %}</p>
             </a>
           </li>
           {% endif %}
           <li class="nav-item">
             <a href="#" class="nav-link" data-toggle="modal" data-target="#systemOfferingsModal">
               <i class="nav-icon fas fa-info-circle text-info"></i>
-              <p>System Overview</p>
+              <p>{% translate "System Overview" %}</p>
             </a>
           </li>
         </ul>
@@ -874,6 +974,28 @@
             } else if (typeof $ !== 'undefined') {
                 $('#modals-here').modal('show');
             }
+        }
+    });
+
+    // Persistent Sidebar Scroll Position
+    document.addEventListener("DOMContentLoaded", function() {
+        const sidebar = document.querySelector('.main-sidebar .sidebar');
+        if (sidebar) {
+            // Restore scroll position
+            const scrollPos = localStorage.getItem('sidebar-scroll');
+            if (scrollPos) {
+                sidebar.scrollTop = parseInt(scrollPos, 10);
+            }
+            // Save scroll position on scroll
+            sidebar.addEventListener('scroll', function() {
+                localStorage.setItem('sidebar-scroll', sidebar.scrollTop);
+            });
+            // Also save scroll position on clicking any link inside the sidebar to ensure we capture the absolute latest position
+            sidebar.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', function() {
+                    localStorage.setItem('sidebar-scroll', sidebar.scrollTop);
+                });
+            });
         }
     });
   </script>

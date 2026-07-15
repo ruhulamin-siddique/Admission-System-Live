@@ -25,6 +25,7 @@ urlpatterns = [
     path('security/toggle-theme/', views.toggle_theme, name='toggle_theme'),
     path('security/toggle-navbar-pin/', views.toggle_navbar_pin, name='toggle_navbar_pin'),
     path('security/backup/download/', views.download_db_backup, name='download_db_backup'),
+    path('security/set-language/', views.set_user_language, name='set_user_language'),
 
     # ── Developer Portfolio (Public — no login required) ──────────────────────
     path('portfolio/', views.developer_portfolio, name='developer_portfolio'),

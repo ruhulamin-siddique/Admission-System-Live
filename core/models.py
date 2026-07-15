@@ -57,6 +57,11 @@ class UserProfile(models.Model):
         choices=[('light', 'Light'), ('dark', 'Dark')]
     )
     navbar_fixed = models.BooleanField(default=True)
+    language = models.CharField(
+        max_length=10, 
+        default='bn', 
+        choices=[('en', 'English'), ('bn', 'Bangla')]
+    )
     photo = models.ImageField(upload_to='staff_photos/', null=True, blank=True)
 
     def __str__(self):

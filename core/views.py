@@ -1100,3 +1100,29 @@ def portfolio_api_reorder(request, section):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+from django.views.decorators.http import require_POST
+from django.http import HttpResponseRedirect
+from django.utils.translation import check_for_language, activate
+
+@require_POST
+def set_user_language(request):
+    """
+    Persists the user's selected language in their UserProfile database record
+    and activates it in the current session.
+    """
+    next_url = request.POST.get('next', '/')
+    language = request.POST.get('language')
+    if language and check_for_language(language):
+        if request.user.is_authenticated and hasattr(request.user, 'profile'):
+            profile = request.user.profile
+            profile.language = language
+            profile.save(update_fields=['language'])
+        
+        # Save in session for Django's LocaleMiddleware to recognize immediately
+        request.session['_language'] = language
+        activate(language)
+        
+    return HttpResponseRedirect(next_url)
+

@@ -1,0 +1,521 @@
+# Bangla translation catalog
+msgid ""
+msgstr ""
+"Project-Id-Version: campus_connect 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-15 19:30+0600\n"
+"PO-Revision-Date: 2026-07-15 19:30+0600\n"
+"Last-Translator: Antigravity\n"
+"Language-Team: Bangla\n"
+"Language: bn\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "PUBLIC RELATIONS"
+msgstr "জনসংযোগ"
+
+msgid "PR Office"
+msgstr "জনসংযোগ দপ্তর"
+
+msgid "PR Dashboard"
+msgstr "পিআর ড্যাশবোর্ড"
+
+msgid "PR Archive"
+msgstr "আর্কাইভ তালিকা"
+
+msgid "New Press Release"
+msgstr "নতুন প্রেস রিলিজ"
+
+msgid "Media Houses"
+msgstr "মিডিয়া হাউস"
+
+msgid "National Newspaper"
+msgstr "জাতীয় পত্রিকা"
+
+msgid "Local Newspaper"
+msgstr "স্থানীয় পত্রিকা"
+
+msgid "Online Portal"
+msgstr "অনলাইন পোর্টাল"
+
+msgid "Photo"
+msgstr "ছবি"
+
+msgid "Video"
+msgstr "ভিডিও"
+
+msgid "Google Drive"
+msgstr "Google Drive"
+
+msgid "YouTube"
+msgstr "YouTube"
+
+msgid "Facebook"
+msgstr "Facebook"
+
+msgid "Media Name"
+msgstr "মিডিয়ার নাম"
+
+msgid "Media Type"
+msgstr "মিডিয়া ধরন"
+
+msgid "Editor"
+msgstr "সম্পাদক"
+
+msgid "Email"
+msgstr "ইমেইল"
+
+msgid "Mobile"
+msgstr "মোবাইল"
+
+msgid "Website"
+msgstr "ওয়েবসাইট"
+
+msgid "WhatsApp"
+msgstr "হোয়াটসঅ্যাপ"
+
+msgid "Media House"
+msgstr "মিডিয়া হাউস"
+
+msgid "Press Release No"
+msgstr "প্রেস রিলিজ নং"
+
+msgid "Press Release Date"
+msgstr "তারিখ"
+
+msgid "Event Title / Headline"
+msgstr "অনুষ্ঠানের নাম / শিরোনাম"
+
+msgid "Department / Faculty"
+msgstr "বিভাগ / অনুষদ"
+
+msgid "Full Body Text"
+msgstr "পূর্ণ বিবরণ"
+
+msgid "PDF Attachment"
+msgstr "PDF সংযুক্তি"
+
+msgid "Remarks"
+msgstr "মন্তব্য"
+
+msgid "Unique serial number, e.g. PRO-2024-001"
+msgstr "অনন্য সিরিয়াল নং, যেমন PRO-2024-001"
+
+msgid "Type the complete press release body text here."
+msgstr "বাংলা বা ইংরেজিতে সম্পূর্ণ প্রেস রিলিজ লিখুন।"
+
+msgid "Published Date"
+msgstr "প্রকাশের তারিখ"
+
+msgid "Newspaper PDF Clipping"
+msgstr "পত্রিকার PDF কাটিং"
+
+msgid "Screenshot"
+msgstr "স্ক্রিনশট"
+
+msgid "Online Link"
+msgstr "অনলাইন নিউজ লিংক"
+
+msgid "Media house is required for a coverage row."
+msgstr "কভারেজ সারির জন্য মিডিয়া হাউস আবশ্যক।"
+
+msgid "Asset Type"
+msgstr "অ্যাসেটের ধরন"
+
+msgid "File Upload"
+msgstr "ফাইল আপলোড"
+
+msgid "External Link"
+msgstr "বাহ্যিক লিংক"
+
+msgid "Year"
+msgstr "সাল"
+
+msgid "Caption"
+msgstr "ক্যাপশন"
+
+msgid "A file or external URL link is required for photos/videos."
+msgstr "ছবি/ভিডিও অ্যাসেটের জন্য ফাইল বা লিংক আবশ্যক।"
+
+msgid "An external link URL is required for this asset type."
+msgstr "এই অ্যাসেট ধরনের জন্য বাহ্যিক লিংক আবশ্যক।"
+
+msgid "Keyword Search"
+msgstr "কীওয়ার্ড অনুসন্ধান"
+
+msgid "Event title, details body, or serial no."
+msgstr "ইভেন্ট নাম, বিবরণ বা প্রেস রিলিজ নং"
+
+msgid "Start Date"
+msgstr "শুরুর তারিখ"
+
+msgid "End Date"
+msgstr "শেষের তারিখ"
+
+msgid "Department"
+msgstr "বিভাগ"
+
+msgid "Enter department name"
+msgstr "বিভাগের নাম লিখুন"
+
+msgid "End date cannot be earlier than start date."
+msgstr "শেষের তারিখ শুরুর তারিখের আগে হতে পারে না।"
+
+msgid "Total Press Releases"
+msgstr "মোট প্রেস রিলিজ"
+
+msgid "Total Coverages"
+msgstr "মোট কভারেজ"
+
+msgid "National Papers"
+msgstr "জাতীয় পত্রিকা"
+
+msgid "Local Papers"
+msgstr "স্থানীয় পত্রিকা"
+
+msgid "Online Portals"
+msgstr "অনলাইন পোর্টাল"
+
+msgid "Media House Split"
+msgstr "মিডিয়া হাউস বিভাজন"
+
+msgid "National"
+msgstr "জাতীয়"
+
+msgid "Local"
+msgstr "স্থানীয়"
+
+msgid "Online"
+msgstr "অনলাইন"
+
+msgid "View All"
+msgstr "সব দেখুন"
+
+msgid "Recent 10 Press Releases"
+msgstr "সাম্প্রতিক ১০টি প্রেস রিলিজ"
+
+msgid "No."
+msgstr "নং"
+
+msgid "Event Title"
+msgstr "অনুষ্ঠানের নাম"
+
+msgid "Coverage"
+msgstr "কভারেজ"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "No press releases found."
+msgstr "কোনো প্রেস রিলিজ পাওয়া যায়নি।"
+
+msgid "Filter Active"
+msgstr "ফিল্টার সক্রিয়"
+
+msgid "New Entry"
+msgstr "নতুন এন্ট্রি"
+
+msgid "Excel"
+msgstr "Excel"
+
+msgid "Search & Filters"
+msgstr "অনুসন্ধান ও ফিল্টার"
+
+msgid "Search"
+msgstr "অনুসন্ধান"
+
+msgid "Reset"
+msgstr "রিসেট"
+
+msgid "results found."
+msgstr "টি ফলাফল পাওয়া গেছে।"
+
+msgid "Filters applied"
+msgstr "ফিল্টার প্রয়োগ করা হয়েছে"
+
+msgid "Page"
+msgstr "পৃষ্ঠা"
+
+msgid "PR Number"
+msgstr "প্রেস রিলিজ নং"
+
+msgid "Details"
+msgstr "বিস্তারিত"
+
+msgid "Edit"
+msgstr "সম্পাদনা"
+
+msgid "PDF"
+msgstr "PDF"
+
+msgid "No records found."
+msgstr "কোনো ফলাফল পাওয়া যায়নি।"
+
+msgid "Clear Filters"
+msgstr "ফিল্টার সরান"
+
+msgid "Go Back"
+msgstr "ফিরে যান"
+
+msgid "Errors found:"
+msgstr "ত্রুটি পাওয়া গেছে:"
+
+msgid "Press Release Information"
+msgstr "প্রেস রিলিজ মূল তথ্য"
+
+msgid "Current file:"
+msgstr "বর্তমান ফাইল:"
+
+msgid "View PDF"
+msgstr "PDF দেখুন"
+
+msgid "Remove"
+msgstr "বাদ দিন"
+
+msgid "Saved"
+msgstr "সংরক্ষিত"
+
+msgid "View"
+msgstr "দেখুন"
+
+msgid "Add Coverage Row"
+msgstr "আরও কভারেজ যোগ করুন"
+
+msgid "Add Asset Row"
+msgstr "আরও অ্যাসেট যোগ করুন"
+
+msgid "Cancel"
+msgstr "বাতিল"
+
+msgid "Save"
+msgstr "সংরক্ষণ করুন"
+
+msgid "Update"
+msgstr "আপডেট করুন"
+
+msgid "Basic Information"
+msgstr "মূল তথ্য"
+
+msgid "Download PDF"
+msgstr "ডাউনলোড করুন"
+
+msgid "Full Press Release Text"
+msgstr "প্রেস রিলিজের পূর্ণ বিবরণ"
+
+msgid "Files"
+msgstr "ফাইল"
+
+msgid "Newspaper PDF"
+msgstr "পত্রিকার PDF কাটিং"
+
+msgid "No assets recorded."
+msgstr "কোনো অ্যাসেট রেকর্ড করা হয়নি।"
+
+msgid "Confirm Delete"
+msgstr "নিশ্চিত করুন"
+
+msgid "Prepared by"
+msgstr "প্রস্তুতকারী"
+
+msgid "Name & Designation"
+msgstr "নাম ও পদবী"
+
+msgid "Director, Public Relations"
+msgstr "পরিচালক, জনসংযোগ দপ্তর"
+
+msgid "Signature & Seal"
+msgstr "স্বাক্ষর ও সিলমোহর"
+
+msgid "Are you sure you want to delete this press release?"
+msgstr "আপনি কি নিশ্চিতভাবে মুছে ফেলতে চান?"
+
+msgid "This will permanently remove the record and all associated coverage details."
+msgstr "এই এন্ট্রির সকল কভারেজ ও অ্যাসেটও মুছে যাবে।"
+
+msgid "New Media House"
+msgstr "নতুন মিডিয়া হাউস"
+
+msgid "All Types"
+msgstr "সব ধরন"
+
+msgid "Name, editor, mobile..."
+msgstr "নাম, সম্পাদক, মোবাইল..."
+
+msgid "No media houses found."
+msgstr "কোনো মিডিয়া হাউস পাওয়া যায়নি।"
+
+msgid "Press Release \"%(no)s\" successfully saved."
+msgstr "প্রেস রিলিজ \"%(no)s\" সফলভাবে সংরক্ষিত হয়েছে।"
+
+msgid "Error while saving: %(err)s"
+msgstr "সংরক্ষণে ত্রুটি হয়েছে: %(err)s"
+
+msgid "There are errors in the form. Please check details below."
+msgstr "ফর্মে কিছু ত্রুটি রয়েছে। নিচে দেখুন।"
+
+msgid "Create Press Release"
+msgstr "নতুন প্রেস রিলিজ তৈরি"
+
+msgid "Press Release: %(no)s"
+msgstr "প্রেস রিলিজ: %(no)s"
+
+msgid "Press Release \"%(no)s\" successfully updated."
+msgstr "প্রেস রিলিজ \"%(no)s\" সফলভাবে আপডেট হয়েছে।"
+
+msgid "Error while updating: %(err)s"
+msgstr "আপডেটে ত্রুটি: %(err)s"
+
+msgid "There are errors in the form."
+msgstr "ফর্মে কিছু ত্রুটি রয়েছে।"
+
+msgid "Edit: %(no)s"
+msgstr "সম্পাদনা: %(no)s"
+
+msgid "Press Release \"%(no)s\" has been deleted."
+msgstr "প্রেস রিলিজ \"%(no)s\" মুছে ফেলা হয়েছে।"
+
+msgid "Media House Directory"
+msgstr "মিডিয়া হাউস ডিরেক্টরি"
+
+msgid "Media House Details"
+msgstr "মিডিয়া হাউসের তথ্য"
+
+msgid "\"%(name)s\" successfully added."
+msgstr "\"%(name)s\" সফলভাবে যোগ করা হয়েছে।"
+
+msgid "\"%(name)s\" updated."
+msgstr "\"%(name)s\" আপডেট হয়েছে।"
+
+msgid "Search students..."
+msgstr "শিক্ষার্থী খুঁজুন..."
+
+msgid "My Account"
+msgstr "আমার অ্যাকাউন্ট"
+
+msgid "Change Password"
+msgstr "পাসওয়ার্ড পরিবর্তন"
+
+msgid "System Backend"
+msgstr "সিস্টেম ব্যাকএন্ড"
+
+msgid "Log Out"
+msgstr "লগ আউট"
+
+msgid "View All System Logs"
+msgstr "সব সিস্টেম লগ দেখুন"
+
+msgid "No recent activities found."
+msgstr "সাম্প্রতিক কোনো তথ্য পাওয়া যায়নি।"
+
+msgid "Recent Activities"
+msgstr "সাম্প্রতিক কার্যক্রম"
+
+msgid "by"
+msgstr "দ্বারা"
+
+msgid "MAIN"
+msgstr "প্রধান সূচি"
+
+msgid "ADMISSION"
+msgstr "ভর্তি কার্যক্রম"
+
+msgid "Student Directory"
+msgstr "শিক্ষার্থী ডিরেক্টরি"
+
+msgid "New Admission"
+msgstr "নতুন ভর্তি"
+
+msgid "Department Change"
+msgstr "বিভাগ পরিবর্তন"
+
+msgid "Admission Cancel"
+msgstr "ভর্তি বাতিল"
+
+msgid "Reference Hub"
+msgstr "রেফারেন্স হাব"
+
+msgid "Administrative Tools"
+msgstr "প্রশাসনিক টুলস"
+
+msgid "Bulk Import"
+msgstr "একত্রিত তথ্য আপলোড"
+
+msgid "Duplicate Scanner"
+msgstr "ডুপ্লিকেট স্ক্যানার"
+
+msgid "Mobile Repair Tool"
+msgstr "মোবাইল নম্বর সংশোধন"
+
+msgid "Academic Audit"
+msgstr "একাডেমিক অডিট"
+
+msgid "Academic Data Patch"
+msgstr "একাডেমিক ডাটা প্যাচ"
+
+msgid "ACADEMIC & REPORTS"
+msgstr "একাডেমিক ও রিপোর্ট"
+
+msgid "Reports Hub"
+msgstr "রিপোর্ট হাব"
+
+msgid "Feeder Analysis"
+msgstr "ফিডার বিশ্লেষণ"
+
+msgid "Geographic Outreach"
+msgstr "ভৌগোলিক বিশ্লেষণ"
+
+msgid "Dynamic Export"
+msgstr "ডায়নামিক এক্সপোর্ট"
+
+msgid "EXAM BILLING"
+msgstr "পরীক্ষা বিলিং"
+
+msgid "Exams"
+msgstr "পরীক্ষাসমূহ"
+
+msgid "Faculty Directory"
+msgstr "শিক্ষক ডিরেক্টরি"
+
+msgid "Fundamentals"
+msgstr "ফান্ডামেন্টালস"
+
+msgid "Individual Bills"
+msgstr "ব্যক্তিগত বিল"
+
+msgid "Bill Settings"
+msgstr "বিল সেটিংস"
+
+msgid "ICT WING"
+msgstr "আইসিটি উইং"
+
+msgid "Device Registry"
+msgstr "ডিভাইস রেজিস্ট্রি"
+
+msgid "SYSTEM"
+msgstr "সিস্টেম সেটিংস"
+
+msgid "Staff & Security"
+msgstr "স্টাফ ও নিরাপত্তা"
+
+msgid "Staff Access"
+msgstr "স্টাফ অ্যাক্সেস"
+
+msgid "Role Matrix"
+msgstr "রোল ম্যাট্রিক্স"
+
+msgid "Security Logs"
+msgstr "নিরাপত্তা লগ"
+
+msgid "Academic Settings"
+msgstr "একাডেমিক সেটিংস"
+
+msgid "Global Settings"
+msgstr "গ্লোবাল সেটিংস"
+
+msgid "Admin Panel"
+msgstr "অ্যাডমিন প্যানেল"
+
+msgid "System Overview"
+msgstr "সিস্টেম পরিচিতি"
+

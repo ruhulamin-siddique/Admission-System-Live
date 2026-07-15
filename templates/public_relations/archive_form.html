@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+{% load core_tags i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-section {
+    border-radius: 16px;
+    border: none;
+    margin-bottom: 1.5rem;
+  }
+  .form-section .card-header {
+    border-radius: 16px 16px 0 0;
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding: 0.9rem 1.4rem;
+    border-bottom: 2px solid rgba(0,0,0,0.06);
+  }
+  .formset-header {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #64748b;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 0.75rem;
+  }
+  .formset-row {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+  .formset-row:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.07); }
+  .dark-mode .formset-row {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+  }
+  .btn-delete-row {
+    position: absolute;
+    top: 8px; right: 10px;
+    font-size: 0.75rem;
+    background: #fee2e2; color: #dc2626;
+    border: none; border-radius: 8px;
+    padding: 3px 10px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-delete-row:hover { background: #fecaca; }
+  label { font-weight: 600; font-size: 0.85rem; color: #374151; margin-bottom: 3px; }
+  .dark-mode label { color: #94a3b8; }
+  .errorlist { color: #dc2626; font-size: 0.8rem; list-style: none; padding: 0; margin: 2px 0; }
+  .required-mark { color: #ef4444; margin-left: 2px; }
+  
+  /* Dynamic GDrive Warning Style */
+  .gdrive-warning-box {
+    display: none;
+    background: #f0f9ff;
+    border-left: 3px solid #0284c7;
+    color: #0369a1;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-top: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  .dark-mode .gdrive-warning-box {
+    background: #0f172a !important;
+    border-left-color: #38bdf8;
+    color: #38bdf8;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2 align-items-center">
+      <div class="col-sm-9">
+        <h1 class="m-0">
+          <i class="fas {% if is_edit %}fa-edit{% else %}fa-plus-circle{% endif %} text-primary mr-2"></i>
+          {{ page_title }}
+        </h1>
+      </div>
+      <div class="col-sm-3 text-right">
+        <a href="{% url 'pr_archive_list' %}" class="btn btn-light btn-sm">
+          <i class="fas fa-arrow-left mr-1"></i> {% translate "Go Back" %}
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="container-fluid">
+
+    <form method="post" enctype="multipart/form-data" id="archiveForm" novalidate>
+      {% csrf_token %}
+
+      {% if archive_form.non_field_errors or coverage_formset.non_form_errors or asset_formset.non_form_errors %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>{% translate "Errors found:" %}</strong>
+        {{ archive_form.non_field_errors }}
+        {{ coverage_formset.non_form_errors }}
+        {{ asset_formset.non_form_errors }}
+        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+      </div>
+      {% endif %}
+
+      <!-- ── Section 1: Archive Metadata ─────────────────────────── -->
+      <div class="card form-section shadow-sm">
+        <div class="card-header" style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;">
+          <i class="fas fa-file-alt mr-2"></i>{% translate "Press Release Information" %}
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <label for="{{ archive_form.press_release_no.id_for_label }}">
+                {{ archive_form.press_release_no.label }} <span class="required-mark">*</span>
+              </label>
+              {{ archive_form.press_release_no }}
+              {% if archive_form.press_release_no.errors %}<ul class="errorlist">{% for e in archive_form.press_release_no.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="col-md-3 mb-3">
+              <label for="{{ archive_form.press_release_date.id_for_label }}">
+                {{ archive_form.press_release_date.label }} <span class="required-mark">*</span>
+              </label>
+              {{ archive_form.press_release_date }}
+              {% if archive_form.press_release_date.errors %}<ul class="errorlist">{% for e in archive_form.press_release_date.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="{{ archive_form.event_name.id_for_label }}">
+                {{ archive_form.event_name.label }} <span class="required-mark">*</span>
+              </label>
+              {{ archive_form.event_name }}
+              {% if archive_form.event_name.errors %}<ul class="errorlist">{% for e in archive_form.event_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="{{ archive_form.department.id_for_label }}">{{ archive_form.department.label }}</label>
+              {{ archive_form.department }}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="{{ archive_form.press_release_pdf.id_for_label }}">{{ archive_form.press_release_pdf.label }}</label>
+              {{ archive_form.press_release_pdf }}
+              <div class="gdrive-warning-box">
+                <i class="fas fa-share-alt mr-1"></i>
+                {% translate "Google Drive link detected! Please verify sharing settings are set to 'Anyone with the link can view'." %}
+              </div>
+              {% if archive_form.press_release_pdf.errors %}<ul class="errorlist">{% for e in archive_form.press_release_pdf.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="{{ archive_form.remarks.id_for_label }}">{{ archive_form.remarks.label }}</label>
+              {{ archive_form.remarks }}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="{{ archive_form.full_text.id_for_label }}">
+              {{ archive_form.full_text.label }} <span class="required-mark">*</span>
+            </label>
+            {{ archive_form.full_text }}
+            {% if archive_form.full_text.errors %}<ul class="errorlist">{% for e in archive_form.full_text.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <small class="text-muted">{{ archive_form.full_text.help_text }}</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 2: Media Coverage Formset ───────────────────── -->
+      <div class="card form-section shadow-sm">
+        <div class="card-header" style="background:linear-gradient(135deg,#166534,#16a34a);color:#fff;">
+          <i class="fas fa-newspaper mr-2"></i>{% translate "Media Coverage" %}
+          <small class="ml-2 opacity-75">({% translate "Newspapers or websites that published this release" %})</small>
+        </div>
+        <div class="card-body">
+
+          {{ coverage_formset.management_form }}
+
+          <div id="coverage-formset-container">
+            {% for form in coverage_formset %}
+            <div class="formset-row coverage-row">
+              <button type="button" class="btn-delete-row" onclick="markDeleted(this, '{{ form.DELETE.id_for_label }}')">
+                <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
+              </button>
+              {% if form.instance.pk %}
+              <span class="badge badge-secondary mb-2" style="font-size:0.75rem;">{% translate "Saved" %}</span>
+              {% endif %}
+              <div class="row">
+                <div class="col-md-3 mb-2">
+                  <label>{{ form.media_house.label }} <span class="required-mark">*</span></label>
+                  {{ form.media_house }}
+                  {% if form.media_house.errors %}<ul class="errorlist">{% for e in form.media_house.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div class="col-md-2 mb-2">
+                  <label>{{ form.published_date.label }}</label>
+                  {{ form.published_date }}
+                </div>
+                <div class="col-md-2 mb-2">
+                  <label>{{ form.newspaper_pdf.label }}</label>
+                  {{ form.newspaper_pdf }}
+                  <div class="gdrive-warning-box">
+                    <i class="fas fa-share-alt mr-1"></i>
+                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
+                  </div>
+                </div>
+                <div class="col-md-2 mb-2">
+                  <label>{{ form.screenshot.label }}</label>
+                  {{ form.screenshot }}
+                  <div class="gdrive-warning-box">
+                    <i class="fas fa-share-alt mr-1"></i>
+                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
+                  </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                  <label>{{ form.online_link.label }}</label>
+                  {{ form.online_link }}
+                  <div class="gdrive-warning-box">
+                    <i class="fas fa-share-alt mr-1"></i>
+                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
+                  </div>
+                </div>
+              </div>
+              <div style="display:none;">{{ form.DELETE }}</div>
+              {% if form.id %}{{ form.id }}{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" class="btn btn-outline-success btn-sm mt-2" id="add-coverage-row">
+            <i class="fas fa-plus mr-1"></i> {% translate "Add Coverage Row" %}
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Section 3: Media Assets Formset ─────────────────────── -->
+      <div class="card form-section shadow-sm">
+        <div class="card-header" style="background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff;">
+          <i class="fas fa-photo-video mr-2"></i>{% translate "Media Assets" %}
+          <small class="ml-2 opacity-75">({% translate "Photos, videos, Google Drive links, YouTube clips, etc." %})</small>
+        </div>
+        <div class="card-body">
+
+          {{ asset_formset.management_form }}
+
+          <div id="asset-formset-container">
+            {% for form in asset_formset %}
+            <div class="formset-row asset-row">
+              <button type="button" class="btn-delete-row" onclick="markDeleted(this, '{{ form.DELETE.id_for_label }}')">
+                <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
+              </button>
+              <div class="row">
+                <div class="col-md-2 mb-2">
+                  <label>{{ form.asset_type.label }}</label>
+                  {{ form.asset_type }}
+                </div>
+                <div class="col-md-2 mb-2">
+                  <label>{{ form.file.label }}</label>
+                  {{ form.file }}
+                  <div class="gdrive-warning-box">
+                    <i class="fas fa-share-alt mr-1"></i>
+                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
+                  </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                  <label>{{ form.link.label }}</label>
+                  {{ form.link }}
+                  <div class="gdrive-warning-box">
+                    <i class="fas fa-share-alt mr-1"></i>
+                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
+                  </div>
+                </div>
+                <div class="col-md-1 mb-2">
+                  <label>{{ form.year.label }}</label>
+                  {{ form.year }}
+                </div>
+                <div class="col-md-3 mb-2">
+                  <label>{{ form.caption.label }}</label>
+                  {{ form.caption }}
+                </div>
+              </div>
+              <div style="display:none;">{{ form.DELETE }}</div>
+              {% if form.id %}{{ form.id }}{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-asset-row">
+            <i class="fas fa-plus mr-1"></i> {% translate "Add Asset Row" %}
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Submit Bar ───────────────────────────────────────────── -->
+      <div class="card shadow-sm" style="border-radius:14px;border:none;">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <a href="{% url 'pr_archive_list' %}" class="btn btn-light px-5">
+            <i class="fas fa-times mr-1"></i> {% translate "Cancel" %}
+          </a>
+          <button type="submit" class="btn btn-primary px-5 font-weight-700">
+            <i class="fas fa-save mr-1"></i>
+            {% if is_edit %}{% translate "Update" %}{% else %}{% translate "Save" %}{% endif %}
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Realtime Google Drive link check logic
+function checkDriveLink(inputElement) {
+  const container = inputElement.closest('div');
+  if (!container) return;
+  const warningBox = container.querySelector('.gdrive-warning-box');
+  if (!warningBox) return;
+
+  const val = inputElement.value.trim();
+  if (val.includes('drive.google.com') || val.includes('docs.google.com')) {
+    warningBox.style.display = 'block';
+  } else {
+    warningBox.style.display = 'none';
+  }
+}
+
+// Global listener setup for URL fields (including dynamically added formset rows)
+document.addEventListener('input', function(e) {
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'url') {
+    checkDriveLink(e.target);
+  }
+});
+
+document.addEventListener('paste', function(e) {
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'url') {
+    // Check after paste settles
+    setTimeout(() => checkDriveLink(e.target), 50);
+  }
+});
+
+// Run check on page load (for edit form views containing preloaded links)
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('input[type="url"]').forEach(input => {
+    checkDriveLink(input);
+  });
+});
+
+function addFormsetRow(containerId, prefix) {
+  const container = document.getElementById(containerId);
+  const rows = container.querySelectorAll('.formset-row');
+  const totalInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+  const newIndex = parseInt(totalInput.value);
+
+  const templateRow = rows[rows.length - 1].cloneNode(true);
+
+  templateRow.querySelectorAll('input, select, textarea').forEach(el => {
+    const oldName = el.name || '';
+    const oldId   = el.id || '';
+    el.name = oldName.replace(/-\d+-/, `-${newIndex}-`);
+    el.id   = oldId.replace(/-\d+-/, `-${newIndex}-`);
+    if (el.type !== 'hidden' || el.name.includes('DELETE')) {
+      el.value = el.type === 'checkbox' ? '' : '';
+      if (el.type === 'checkbox') el.checked = false;
+    }
+    
+    // Hide cloned warning box initially
+    const warningBox = el.closest('div')?.querySelector('.gdrive-warning-box');
+    if (warningBox) warningBox.style.display = 'none';
+  });
+
+  templateRow.querySelectorAll('label').forEach(lbl => {
+    const oldFor = lbl.getAttribute('for') || '';
+    lbl.setAttribute('for', oldFor.replace(/-\d+-/, `-${newIndex}-`));
+  });
+
+  const savedBadge = templateRow.querySelector('.badge-secondary');
+  if (savedBadge) savedBadge.remove();
+
+  container.appendChild(templateRow);
+  totalInput.value = newIndex + 1;
+}
+
+function markDeleted(btn, deleteFieldId) {
+  const row = btn.closest('.formset-row');
+  const deleteCheckbox = document.getElementById(deleteFieldId);
+  if (deleteCheckbox) {
+    deleteCheckbox.checked = true;
+    row.style.opacity = '0.4';
+    row.style.pointerEvents = 'none';
+    btn.textContent = '✓';
+  } else {
+    row.remove();
+    const prefix = deleteFieldId.includes('coverages') ? 'coverages' : 'assets';
+    const totalInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+    if (totalInput) totalInput.value = Math.max(0, parseInt(totalInput.value) - 1);
+  }
+}
+
+document.getElementById('add-coverage-row').addEventListener('click', function() {
+  addFormsetRow('coverage-formset-container', 'coverages');
+});
+
+document.getElementById('add-asset-row').addEventListener('click', function() {
+  addFormsetRow('asset-formset-container', 'assets');
+});
+</script>
+{% endblock %}

@@ -1,7 +1,13 @@
 {% extends 'base.html' %}
 
 {% block title %}Role Matrix | Bangladesh Army University of Science and Technology{% endblock %}
-{% block page_title %}Security & Role Matrix{% endblock %}
+{% block page_title %}Security Identity Hub{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary shadow-sm px-4 rounded-pill font-weight-bold" data-toggle="modal" data-target="#addRoleModal">
+    <i class="fas fa-plus mr-2"></i> Create Security Role
+</button>
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -189,15 +195,9 @@
 {% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-    <div class="mb-3 mb-md-0">
-        <h4 class="font-weight-bold text-dark mb-1"><i class="fas fa-user-shield mr-2 text-primary"></i>Security Identity Hub</h4>
-        <p class="text-muted mb-0 small">Fine-tune institutional access by role. Changes are saved independently per role for safety.</p>
-    </div>
-    <button class="btn btn-primary shadow-sm px-4 rounded-pill font-weight-bold" data-toggle="modal" data-target="#addRoleModal">
-        <i class="fas fa-plus mr-2"></i> Create Security Role
-    </button>
-</div>
+<p class="text-muted small mb-3">
+    <i class="fas fa-info-circle mr-1 text-info"></i> Fine-tune institutional access by role. Changes are saved independently per role for safety.
+</p>
 
 <div class="row mb-4">
     <div class="col-lg-4 col-md-6 mb-3">
@@ -306,20 +306,16 @@
                 <tbody>
                     {% for mod_key, module in registry.items %}
                     <tr class="module-row">
-                        <td colspan="{{ roles|length|add:1 }}" class="py-3 px-4">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="font-weight-bolder text-primary"><i class="{{ module.icon }} mr-2"></i> {{ module.display }}</span>
-                                <div class="d-flex">
-                                    {% for role in roles %}
-                                    <div style="width: 200px;" class="text-center">
-                                        <button type="button" class="btn btn-xs select-all-btn" onclick="toggleAllForModule('{{ role.id }}', '{{ mod_key }}', true)">
-                                            <i class="fas fa-check-double mr-1"></i> All {{ module.display }}
-                                        </button>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
+                        <td class="py-3 px-4 font-weight-bolder text-primary align-middle" style="background-color: #f1f5f9;">
+                            <i class="{{ module.icon }} mr-2"></i> {{ module.display }}
                         </td>
+                        {% for role in roles %}
+                        <td class="text-center align-middle" style="background-color: #f1f5f9; padding: 6px !important;">
+                            <button type="button" class="btn btn-xs select-all-btn" onclick="toggleAllForModule('{{ role.id }}', '{{ mod_key }}')" style="white-space: nowrap;">
+                                <i class="fas fa-check-double mr-1"></i> All {{ module.display }}
+                            </button>
+                        </td>
+                        {% endfor %}
                     </tr>
                     {% for task_key, task_info in module.tasks.items %}
                     <tr>
@@ -467,8 +463,10 @@
         $(`.role-${roleId}`).prop('checked', state);
     }
 
-    function toggleAllForModule(roleId, modKey, state) {
-        $(`.role-${roleId}-mod-${modKey}`).prop('checked', state);
+    function toggleAllForModule(roleId, modKey) {
+        const checkboxes = $(`.role-${roleId}-mod-${modKey}`);
+        const allChecked = checkboxes.filter(':checked').length === checkboxes.length;
+        checkboxes.prop('checked', !allChecked);
     }
 
     // Modal Identity Handlers

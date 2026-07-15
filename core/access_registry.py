@@ -2,6 +2,8 @@
 Central registry defining all modules and their granular tasks for the RBAC system.
 """
 
+from django.utils.translation import gettext_lazy as _
+
 ACCESS_REGISTRY = {
     "dashboard": {
         "display": "Dashboard",
@@ -78,5 +80,19 @@ ACCESS_REGISTRY = {
             "download_backup_json": ("Download Database JSON Backup", "Allows downloading a JSON dump of all system data."),
             "download_backup_sqlite": ("Download Database SQLite Backup", "Allows downloading a pre-compiled SQLite database binary."),
         }
-    }
+    },
+    "public_relations": {
+        "display": _("Public Relations"),
+        "icon": "fas fa-newspaper",
+        "tasks": {
+            "view_dashboard": (_("View PR Dashboard"), _("Access the PR Office dashboard with KPI statistics and recent entries.")),
+            "view_archive": (_("View Press Release Archive"), _("Browse, search, and view individual press release entries.")),
+            "add_archive": (_("Add Press Release"), _("Create new press release archive entries with coverage and asset rows.")),
+            "edit_archive": (_("Edit Press Release"), _("Modify existing press release entries and their media coverage rows.")),
+            "delete_archive": (_("Delete Press Release"), _("Permanently remove press release entries and all linked data.")),
+            "export_data": (_("Export PR Data"), _("Download Excel reports and generate printable PDF press releases.")),
+            "manage_media_houses": (_("Manage Media Houses"), _("Add, edit, and maintain the media outlet directory.")),
+        }
+    },
 }
+

@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% load core_tags i18n %}
+
+{% block title %}{{ entry.press_release_no }} — {% translate "Details" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .detail-card { border-radius:16px; border:none; }
+  .meta-label { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#64748b; margin-bottom:2px; }
+  .meta-value { font-size:0.97rem; font-weight:500; color:#1e293b; }
+  .dark-mode .meta-value { color:#e2e8f0; }
+  .coverage-badge-national { background:#dbeafe; color:#1e40af; }
+  .coverage-badge-local    { background:#dcfce7; color:#166534; }
+  .coverage-badge-online   { background:#fef9c3; color:#854d0e; }
+  .coverage-badge { border-radius:20px; padding:3px 12px; font-size:0.8rem; font-weight:700; display:inline-block; }
+  .asset-card { border-radius:12px; border:1px solid #e2e8f0; overflow:hidden; transition:box-shadow 0.2s; }
+  .asset-card:hover { box-shadow:0 6px 20px rgba(0,0,0,0.1); }
+  .full-text-block {
+    background:#f8fafc; border-radius:10px; padding:1.25rem 1.5rem;
+    border-left:4px solid #3b82f6; font-size:0.95rem; line-height:1.85;
+    white-space:pre-wrap;
+  }
+  .dark-mode .full-text-block { background:#1e293b; border-left-color:#3b82f6; }
+  .section-title {
+    font-size:0.7rem; font-weight:800; letter-spacing:1.8px;
+    text-transform:uppercase; color:#94a3b8; margin-bottom:1rem;
+  }
+  .table-coverage thead th {
+    background:linear-gradient(135deg,#166534,#16a34a);
+    color:#fff; font-size:0.8rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.5px;
+    border:none; padding:10px 14px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2 align-items-center">
+      <div class="col-sm-8">
+        <h1 class="m-0 d-flex align-items-center flex-wrap gap-2">
+          <span class="badge badge-primary" style="font-size:0.85rem;border-radius:8px;padding:6px 14px;">
+            {{ entry.press_release_no }}
+          </span>
+          <span style="font-size:1.1rem;">{{ entry.event_name|truncatechars:70 }}</span>
+        </h1>
+      </div>
+      <div class="col-sm-4 text-right d-flex gap-2 justify-content-end">
+        {% if can_export %}
+        <a href="{% url 'pr_export_pdf' entry.pk %}" target="_blank" class="btn btn-danger btn-sm px-3">
+          <i class="fas fa-file-pdf mr-1"></i> {% translate "PDF" %}
+        </a>
+        {% endif %}
+        {% if can_edit %}
+        <a href="{% url 'pr_archive_edit' entry.pk %}" class="btn btn-warning btn-sm px-3">
+          <i class="fas fa-edit mr-1"></i> {% translate "Edit" %}
+        </a>
+        {% endif %}
+        {% if can_delete %}
+        <button type="button" class="btn btn-outline-danger btn-sm px-3" data-toggle="modal" data-target="#deleteModal">
+          <i class="fas fa-trash mr-1"></i> {% translate "Delete" %}
+        </button>
+        {% endif %}
+        <a href="{% url 'pr_archive_list' %}" class="btn btn-light btn-sm px-3">
+          <i class="fas fa-arrow-left mr-1"></i> {% translate "Back" %}
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="container-fluid">
+    <div class="row">
+
+      <!-- ── Left column: Metadata & Full Text ─────────────────── -->
+      <div class="col-lg-8">
+
+        <!-- Metadata Card -->
+        <div class="card detail-card shadow-sm mb-4">
+          <div class="card-header" style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;border-radius:16px 16px 0 0;">
+            <i class="fas fa-info-circle mr-2"></i>{% translate "Basic Information" %}
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <div class="meta-label">{% translate "PR Number" %}</div>
+                <div class="meta-value">{{ entry.press_release_no }}</div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="meta-label">{% translate "Date" %}</div>
+                <div class="meta-value">{{ entry.press_release_date|date:"d F Y" }}</div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="meta-label">{% translate "Department / Faculty" %}</div>
+                <div class="meta-value">{{ entry.department|default:"—" }}</div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="meta-label">{% translate "Created By" %}</div>
+                <div class="meta-value">{{ entry.created_by.get_full_name|default:entry.created_by.username|default:"—" }}</div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="meta-label">{% translate "Created At" %}</div>
+                <div class="meta-value" style="font-size:0.88rem;">{{ entry.created_at|date:"d M Y, g:i A" }}</div>
+              </div>
+              {% if entry.press_release_pdf %}
+              <div class="col-md-4 mb-3">
+                <div class="meta-label">{% translate "PDF Attachment" %}</div>
+                <a href="{{ entry.press_release_pdf }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1" style="border-radius:20px;">
+                  <i class="fas fa-external-link-alt mr-1"></i> {% translate "Open PDF Link" %}
+                </a>
+              </div>
+              {% endif %}
+            </div>
+            {% if entry.remarks %}
+            <div class="mt-2">
+              <div class="meta-label">{% translate "Remarks" %}</div>
+              <div class="meta-value">{{ entry.remarks }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Full Text Card -->
+        <div class="card detail-card shadow-sm mb-4">
+          <div class="card-header" style="background:transparent;border-bottom:2px solid #e2e8f0;">
+            <div class="section-title mb-0"><i class="fas fa-align-left mr-2 text-primary"></i>{% translate "Full Press Release Text" %}</div>
+          </div>
+          <div class="card-body">
+            <div class="full-text-block">{{ entry.full_text }}</div>
+          </div>
+        </div>
+
+        <!-- Coverage Table -->
+        <div class="card detail-card shadow-sm mb-4">
+          <div class="card-header" style="background:transparent;border-bottom:2px solid #e2e8f0;">
+            <div class="section-title mb-0">
+              <i class="fas fa-newspaper mr-2 text-success"></i>{% translate "Media Coverage" %} ({{ coverages.count }})
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0 table-coverage">
+                <thead>
+                  <tr>
+                    <th>{% translate "Media House" %}</th>
+                    <th>{% translate "Type" %}</th>
+                    <th>{% translate "Published Date" %}</th>
+                    <th class="text-center">{% translate "Links" %}</th>
+                    <th>{% translate "Online Link" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for cov in coverages %}
+                  <tr>
+                    <td class="font-weight-600">{{ cov.media_house.name }}</td>
+                    <td>
+                      <span class="coverage-badge coverage-badge-{{ cov.media_house.media_type }}">
+                        {{ cov.media_house.get_media_type_display }}
+                      </span>
+                    </td>
+                    <td style="white-space:nowrap;">{{ cov.published_date|date:"d M Y"|default:"—" }}</td>
+                    <td class="text-center">
+                      {% if cov.newspaper_pdf %}
+                      <a href="{{ cov.newspaper_pdf }}" target="_blank" class="btn btn-xs btn-outline-danger" title="{% translate 'Newspaper PDF' %}">
+                        <i class="fas fa-file-pdf"></i>
+                      </a>
+                      {% endif %}
+                      {% if cov.screenshot %}
+                      <a href="{{ cov.screenshot }}" target="_blank" class="btn btn-xs btn-outline-info ml-1" title="{% translate 'Screenshot' %}">
+                        <i class="fas fa-image"></i>
+                      </a>
+                      {% endif %}
+                      {% if not cov.newspaper_pdf and not cov.screenshot %}—{% endif %}
+                    </td>
+                    <td>
+                      {% if cov.online_link %}
+                      <a href="{{ cov.online_link }}" target="_blank" class="text-primary" style="font-size:0.85rem;">
+                        <i class="fas fa-external-link-alt mr-1"></i>{% translate "Link" %}
+                      </a>
+                      {% else %}—{% endif %}
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                      <i class="fas fa-newspaper text-muted fa-2x mb-2 d-block"></i>
+                      {% translate "No coverages recorded." %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /col-lg-8 -->
+
+      <!-- ── Right column: Stats + Assets ──────────────────────── -->
+      <div class="col-lg-4">
+
+        <!-- Coverage Stats -->
+        <div class="card detail-card shadow-sm mb-4">
+          <div class="card-header" style="background:transparent;border-bottom:2px solid #e2e8f0;">
+            <div class="section-title mb-0"><i class="fas fa-chart-bar mr-2 text-primary"></i>{% translate "Coverage Summary" %}</div>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3 p-2" style="background:#dbeafe;border-radius:10px;">
+              <span class="font-weight-700 text-primary">{% translate "National Papers" %}</span>
+              <span class="badge badge-primary badge-pill" style="font-size:1rem;min-width:36px;">{{ entry.national_count }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-3 p-2" style="background:#dcfce7;border-radius:10px;">
+              <span class="font-weight-700 text-success">{% translate "Local Papers" %}</span>
+              <span class="badge badge-success badge-pill" style="font-size:1rem;min-width:36px;">{{ entry.local_count }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center p-2" style="background:#fef9c3;border-radius:10px;">
+              <span class="font-weight-700" style="color:#854d0e;">{% translate "Online Portals" %}</span>
+              <span class="badge badge-pill px-3" style="font-size:1rem;min-width:36px;background:#854d0e;color:#fff;">{{ entry.online_count }}</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="font-weight-700">{% translate "Total Coverages" %}</span>
+              <span class="badge badge-dark badge-pill" style="font-size:1.1rem;min-width:40px;">{{ entry.coverage_count }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Media Assets -->
+        <div class="card detail-card shadow-sm">
+          <div class="card-header" style="background:transparent;border-bottom:2px solid #e2e8f0;">
+            <div class="section-title mb-0"><i class="fas fa-photo-video mr-2 text-secondary"></i>{% translate "Media Assets" %} ({{ assets.count }})</div>
+          </div>
+          <div class="card-body">
+            {% for asset in assets %}
+            <div class="asset-card mb-3 p-3">
+              <div class="d-flex align-items-start gap-3">
+                <div style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+                  background:{% if asset.asset_type == 'photo' %}#dbeafe{% elif asset.asset_type == 'video' %}#fee2e2{% elif asset.asset_type == 'youtube' %}#fee2e2{% elif asset.asset_type == 'facebook' %}#dbeafe{% else %}#dcfce7{% endif %};">
+                  <i class="fas {% if asset.asset_type == 'photo' %}fa-image text-primary{% elif asset.asset_type == 'video' %}fa-video text-danger{% elif asset.asset_type == 'youtube' %}fa-brands fa-youtube text-danger{% elif asset.asset_type == 'facebook' %}fa-brands fa-facebook text-primary{% else %}fa-cloud text-success{% endif %}"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="font-weight-700" style="font-size:0.85rem;">{{ asset.get_asset_type_display }}</div>
+                  {% if asset.caption %}<div class="text-muted" style="font-size:0.82rem;">{{ asset.caption }}</div>{% endif %}
+                  <div class="text-muted" style="font-size:0.78rem;">{% translate "Year" %}: {{ asset.year }}</div>
+                  {% if asset.file %}
+                  <a href="{{ asset.file }}" target="_blank" class="btn btn-xs btn-outline-primary mt-1" style="border-radius:20px;">
+                    <i class="fas fa-external-link-alt mr-1"></i>{% translate "Open File Link" %}
+                  </a>
+                  {% endif %}
+                  {% if asset.link %}
+                  <a href="{{ asset.link }}" target="_blank" class="btn btn-xs btn-outline-secondary mt-1" style="border-radius:20px;">
+                    <i class="fas fa-external-link-alt mr-1"></i>{% translate "Link" %}
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center py-3" style="font-size:0.88rem;">
+              <i class="fas fa-photo-video fa-2x d-block mb-2 text-muted"></i>
+              {% translate "No assets recorded." %}
+            </p>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div><!-- /col-lg-4 -->
+    </div><!-- /row -->
+  </div>
+</div>
+
+<!-- ── Delete Confirmation Modal ─────────────────────────────── -->
+{% if can_delete %}
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+      <div class="modal-header" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;">
+        <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i>{% translate "Confirm Delete" %}</h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body py-4 text-center">
+        <p class="mb-1">{% translate "Are you sure you want to delete this press release?" %}</p>
+        <p class="font-weight-700 text-danger">{{ entry.press_release_no }} — {{ entry.event_name|truncatechars:50 }}</p>
+        <small class="text-muted">{% translate "This will permanently remove the record and all associated coverage details." %}</small>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-dismiss="modal">{% translate "Cancel" %}</button>
+        <form method="post" action="{% url 'pr_archive_delete' entry.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger px-4">
+            <i class="fas fa-trash mr-1"></i> {% translate "Delete" %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

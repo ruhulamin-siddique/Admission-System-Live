@@ -65,14 +65,17 @@ INSTALLED_APPS = [
     'external_api',
     'exam_billing',
     'ict_wing',
+    'public_relations',  # PR Office Management Module
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',  # Activates bilingual translation switching
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.UserLanguageMiddleware',  # Restores user-basis language choice from DB after user is authenticated
     'core.middleware.ThreadLocalMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -112,6 +115,11 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', ''),
+        # utf8mb4 ensures Bangla and all Unicode characters store correctly in MySQL.
+        # This setting is safely ignored by SQLite.
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        } if os.environ.get('DB_ENGINE', '') == 'django.db.backends.mysql' else {},
     }
 }
 
@@ -138,13 +146,25 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'bn'  # Default language is Bangla
 
 TIME_ZONE = 'Asia/Dhaka'
 
 USE_I18N = True
 
 USE_TZ = True
+
+# Bilingual choice settings
+LANGUAGES = [
+    ('en', 'English'),
+    ('bn', 'Bangla'),
+]
+
+# Path to the locale directory for translations
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
+
 
 
 # Static files (CSS, JavaScript, Images)

@@ -1,0 +1,388 @@
+# English translation catalog
+msgid ""
+msgstr ""
+"Project-Id-Version: campus_connect 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-15 19:30+0600\n"
+"PO-Revision-Date: 2026-07-15 19:30+0600\n"
+"Last-Translator: Antigravity\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "PUBLIC RELATIONS"
+msgstr "PUBLIC RELATIONS"
+
+msgid "PR Office"
+msgstr "PR Office"
+
+msgid "PR Dashboard"
+msgstr "PR Dashboard"
+
+msgid "PR Archive"
+msgstr "PR Archive"
+
+msgid "New Press Release"
+msgstr "New Press Release"
+
+msgid "Media Houses"
+msgstr "Media Houses"
+
+msgid "National Newspaper"
+msgstr "National Newspaper"
+
+msgid "Local Newspaper"
+msgstr "Local Newspaper"
+
+msgid "Online Portal"
+msgstr "Online Portal"
+
+msgid "Photo"
+msgstr "Photo"
+
+msgid "Video"
+msgstr "Video"
+
+msgid "Google Drive"
+msgstr "Google Drive"
+
+msgid "YouTube"
+msgstr "YouTube"
+
+msgid "Facebook"
+msgstr "Facebook"
+
+msgid "Media Name"
+msgstr "Media Name"
+
+msgid "Media Type"
+msgstr "Media Type"
+
+msgid "Editor"
+msgstr "Editor"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Mobile"
+msgstr "Mobile"
+
+msgid "Website"
+msgstr "Website"
+
+msgid "WhatsApp"
+msgstr "WhatsApp"
+
+msgid "Media House"
+msgstr "Media House"
+
+msgid "Press Release No"
+msgstr "Press Release No"
+
+msgid "Press Release Date"
+msgstr "Press Release Date"
+
+msgid "Event Title / Headline"
+msgstr "Event Title / Headline"
+
+msgid "Department / Faculty"
+msgstr "Department / Faculty"
+
+msgid "Full Body Text"
+msgstr "Full Body Text"
+
+msgid "PDF Attachment"
+msgstr "PDF Attachment"
+
+msgid "Remarks"
+msgstr "Remarks"
+
+msgid "Unique serial number, e.g. PRO-2024-001"
+msgstr "Unique serial number, e.g. PRO-2024-001"
+
+msgid "Type the complete press release body text here."
+msgstr "Type the complete press release body text here."
+
+msgid "Published Date"
+msgstr "Published Date"
+
+msgid "Newspaper PDF Clipping"
+msgstr "Newspaper PDF Clipping"
+
+msgid "Screenshot"
+msgstr "Screenshot"
+
+msgid "Online Link"
+msgstr "Online Link"
+
+msgid "Media house is required for a coverage row."
+msgstr "Media house is required for a coverage row."
+
+msgid "Asset Type"
+msgstr "Asset Type"
+
+msgid "File Upload"
+msgstr "File Upload"
+
+msgid "External Link"
+msgstr "External Link"
+
+msgid "Year"
+msgstr "Year"
+
+msgid "Caption"
+msgstr "Caption"
+
+msgid "A file or external URL link is required for photos/videos."
+msgstr "A file or external URL link is required for photos/videos."
+
+msgid "An external link URL is required for this asset type."
+msgstr "An external link URL is required for this asset type."
+
+msgid "Keyword Search"
+msgstr "Keyword Search"
+
+msgid "Event title, details body, or serial no."
+msgstr "Event title, details body, or serial no."
+
+msgid "Start Date"
+msgstr "Start Date"
+
+msgid "End Date"
+msgstr "End Date"
+
+msgid "Department"
+msgstr "Department"
+
+msgid "Enter department name"
+msgstr "Enter department name"
+
+msgid "End date cannot be earlier than start date."
+msgstr "End date cannot be earlier than start date."
+
+msgid "Total Press Releases"
+msgstr "Total Press Releases"
+
+msgid "Total Coverages"
+msgstr "Total Coverages"
+
+msgid "National Papers"
+msgstr "National Papers"
+
+msgid "Local Papers"
+msgstr "Local Papers"
+
+msgid "Online Portals"
+msgstr "Online Portals"
+
+msgid "Media House Split"
+msgstr "Media House Split"
+
+msgid "National"
+msgstr "National"
+
+msgid "Local"
+msgstr "Local"
+
+msgid "Online"
+msgstr "Online"
+
+msgid "View All"
+msgstr "View All"
+
+msgid "Recent 10 Press Releases"
+msgstr "Recent 10 Press Releases"
+
+msgid "No."
+msgstr "No."
+
+msgid "Event Title"
+msgstr "Event Title"
+
+msgid "Coverage"
+msgstr "Coverage"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "No press releases found."
+msgstr "No press releases found."
+
+msgid "Filter Active"
+msgstr "Filter Active"
+
+msgid "New Entry"
+msgstr "New Entry"
+
+msgid "Excel"
+msgstr "Excel"
+
+msgid "Search & Filters"
+msgstr "Search & Filters"
+
+msgid "Search"
+msgstr "Search"
+
+msgid "Reset"
+msgstr "Reset"
+
+msgid "results found."
+msgstr "results found."
+
+msgid "Filters applied"
+msgstr "Filters applied"
+
+msgid "Page"
+msgstr "Page"
+
+msgid "PR Number"
+msgstr "PR Number"
+
+msgid "Details"
+msgstr "Details"
+
+msgid "Edit"
+msgstr "Edit"
+
+msgid "PDF"
+msgstr "PDF"
+
+msgid "No records found."
+msgstr "No records found."
+
+msgid "Clear Filters"
+msgstr "Clear Filters"
+
+msgid "Go Back"
+msgstr "Go Back"
+
+msgid "Errors found:"
+msgstr "Errors found:"
+
+msgid "Press Release Information"
+msgstr "Press Release Information"
+
+msgid "Current file:"
+msgstr "Current file:"
+
+msgid "View PDF"
+msgstr "View PDF"
+
+msgid "Remove"
+msgstr "Remove"
+
+msgid "Saved"
+msgstr "Saved"
+
+msgid "View"
+msgstr "View"
+
+msgid "Add Coverage Row"
+msgstr "Add Coverage Row"
+
+msgid "Add Asset Row"
+msgstr "Add Asset Row"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Save"
+msgstr "Save"
+
+msgid "Update"
+msgstr "Update"
+
+msgid "Basic Information"
+msgstr "Basic Information"
+
+msgid "Download PDF"
+msgstr "Download PDF"
+
+msgid "Full Press Release Text"
+msgstr "Full Press Release Text"
+
+msgid "Files"
+msgstr "Files"
+
+msgid "Newspaper PDF"
+msgstr "Newspaper PDF"
+
+msgid "No assets recorded."
+msgstr "No assets recorded."
+
+msgid "Confirm Delete"
+msgstr "Confirm Delete"
+
+msgid "Prepared by"
+msgstr "Prepared by"
+
+msgid "Name & Designation"
+msgstr "Name & Designation"
+
+msgid "Director, Public Relations"
+msgstr "Director, Public Relations"
+
+msgid "Signature & Seal"
+msgstr "Signature & Seal"
+
+msgid "Are you sure you want to delete this press release?"
+msgstr "Are you sure you want to delete this press release?"
+
+msgid "This will permanently remove the record and all associated coverage details."
+msgstr "This will permanently remove the record and all associated coverage details."
+
+msgid "New Media House"
+msgstr "New Media House"
+
+msgid "All Types"
+msgstr "All Types"
+
+msgid "Name, editor, mobile..."
+msgstr "Name, editor, mobile..."
+
+msgid "No media houses found."
+msgstr "No media houses found."
+
+msgid "Press Release \"%(no)s\" successfully saved."
+msgstr "Press Release \"%(no)s\" successfully saved."
+
+msgid "Error while saving: %(err)s"
+msgstr "Error while saving: %(err)s"
+
+msgid "There are errors in the form. Please check details below."
+msgstr "There are errors in the form. Please check details below."
+
+msgid "Create Press Release"
+msgstr "Create Press Release"
+
+msgid "Press Release: %(no)s"
+msgstr "Press Release: %(no)s"
+
+msgid "Press Release \"%(no)s\" successfully updated."
+msgstr "Press Release \"%(no)s\" successfully updated."
+
+msgid "Error while updating: %(err)s"
+msgstr "Error while updating: %(err)s"
+
+msgid "There are errors in the form."
+msgstr "There are errors in the form."
+
+msgid "Edit: %(no)s"
+msgstr "Edit: %(no)s"
+
+msgid "Press Release \"%(no)s\" has been deleted."
+msgstr "Press Release \"%(no)s\" has been deleted."
+
+msgid "Media House Directory"
+msgstr "Media House Directory"
+
+msgid "Media House Details"
+msgstr "Media House Details"
+
+msgid "\"%(name)s\" successfully added."
+msgstr "\"%(name)s\" successfully added."
+
+msgid "\"%(name)s\" updated."
+msgstr "\"%(name)s\" updated."

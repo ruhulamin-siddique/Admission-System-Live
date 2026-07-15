@@ -24,7 +24,10 @@ urlpatterns = [
     path('external-api/', include('external_api.urls')),
     path('exam-billing/', include('exam_billing.urls')),
     path('ict/', include('ict_wing.urls')),
+    path('pr/', include('public_relations.urls')),   # PR Office Management
+    path('i18n/', include('django.conf.urls.i18n')), # For runtime language switcher
 ]
+
 
 from django.conf import settings
 from django.conf.urls.static import static

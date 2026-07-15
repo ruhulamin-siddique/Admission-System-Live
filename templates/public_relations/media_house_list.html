@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load core_tags i18n %}
+
+{% block title %}{% translate "Media House Directory" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .house-card {
+    border-radius: 14px; border: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .house-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important; }
+  .badge-national { background:#dbeafe; color:#1e40af; }
+  .badge-local    { background:#dcfce7; color:#166534; }
+  .badge-online   { background:#fef9c3; color:#854d0e; }
+  .table-premium thead th {
+    background: linear-gradient(135deg, #0f172a, #1e40af);
+    color:#fff; font-size:0.8rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.5px;
+    border:none; padding:11px 14px;
+  }
+  .type-stat-pill {
+    border-radius:20px; padding:4px 14px;
+    font-weight:700; font-size:0.85rem; display:inline-block;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2 align-items-center">
+      <div class="col-sm-7">
+        <h1 class="m-0"><i class="fas fa-building text-primary mr-2"></i>{% translate "Media House Directory" %}</h1>
+      </div>
+      <div class="col-sm-5 text-right">
+        {% if can_manage %}
+        <a href="{% url 'pr_media_house_create' %}" class="btn btn-primary btn-sm px-4">
+          <i class="fas fa-plus mr-1"></i> {% translate "New Media House" %}
+        </a>
+        {% endif %}
+        <a href="{% url 'pr_dashboard' %}" class="btn btn-light btn-sm ml-1 px-3">
+          <i class="fas fa-arrow-left mr-1"></i> {% translate "Dashboard" %}
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="container-fluid">
+
+    <!-- Summary Pills -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card" style="border-radius:12px;border:none;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+          <div class="card-body py-3 d-flex gap-4 align-items-center flex-wrap">
+            <span class="type-stat-pill badge-national">{% translate "National" %}: {{ national_count }}</span>
+            <span class="type-stat-pill badge-local">{% translate "Local" %}: {{ local_count }}</span>
+            <span class="type-stat-pill badge-online">{% translate "Online" %}: {{ online_count }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card mb-4" style="border-radius:12px;border:none;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+      <div class="card-body py-3">
+        <form method="get" class="d-flex gap-3 align-items-end flex-wrap">
+          <div>
+            <label class="d-block" style="font-size:0.8rem;font-weight:600;margin-bottom:3px;">{% translate "Media Type" %}</label>
+            <select name="media_type" class="form-control form-control-sm" style="min-width:160px;">
+              <option value="" {% if not selected_media_type %}selected{% endif %}>{% translate "All Types" %}</option>
+              <option value="national" {% if selected_media_type == 'national' %}selected{% endif %}>{% translate "National Newspaper" %}</option>
+              <option value="local"    {% if selected_media_type == 'local' %}selected{% endif %}>{% translate "Local Newspaper" %}</option>
+              <option value="online"   {% if selected_media_type == 'online' %}selected{% endif %}>{% translate "Online Portal" %}</option>
+            </select>
+          </div>
+          <div>
+            <label class="d-block" style="font-size:0.8rem;font-weight:600;margin-bottom:3px;">{% translate "Search" %}</label>
+            <input type="text" name="search" value="{{ search_query }}" class="form-control form-control-sm" placeholder="{% translate 'Name, editor, mobile...' %}" style="min-width:220px;">
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary btn-sm px-4">
+              <i class="fas fa-search mr-1"></i> {% translate "Search" %}
+            </button>
+            <a href="{% url 'pr_media_houses' %}" class="btn btn-light btn-sm ml-1">{% translate "Reset" %}</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card shadow-sm" style="border-radius:16px;border:none;">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-premium mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{% translate "Media Name" %}</th>
+                <th>{% translate "Media Type" %}</th>
+                <th>{% translate "Editor" %}</th>
+                <th>{% translate "Mobile" %}</th>
+                <th>{% translate "Email" %}</th>
+                <th>{% translate "Website" %}</th>
+                {% if can_manage %}<th class="text-center">{% translate "Action" %}</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for house in page_obj %}
+              <tr>
+                <td class="text-muted">{{ forloop.counter }}</td>
+                <td class="font-weight-600">{{ house.name }}</td>
+                <td>
+                  <span class="badge badge-{{ house.media_type }} px-2 py-1" style="border-radius:14px;font-size:0.8rem;">
+                    {{ house.get_media_type_display }}
+                  </span>
+                </td>
+                <td>{{ house.editor|default:"—" }}</td>
+                <td style="font-size:0.88rem;">{{ house.mobile|default:"—" }}</td>
+                <td style="font-size:0.85rem;">
+                  {% if house.email %}<a href="mailto:{{ house.email }}">{{ house.email }}</a>{% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if house.website %}
+                  <a href="{{ house.website }}" target="_blank" class="text-primary">
+                    <i class="fas fa-external-link-alt"></i>
+                  </a>
+                  {% else %}—{% endif %}
+                </td>
+                {% if can_manage %}
+                <td class="text-center">
+                  <a href="{% url 'pr_media_house_edit' house.pk %}" class="btn btn-xs btn-outline-warning" title="{% translate 'Edit' %}">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                </td>
+                {% endif %}
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="{% if can_manage %}8{% else %}7{% endif %}" class="text-center py-5 text-muted">
+                  <i class="fas fa-building fa-2x mb-2 d-block"></i>{% translate "No media houses found." %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% if page_obj.has_other_pages %}
+      <div class="card-footer bg-transparent border-top">
+        <nav>
+          <ul class="pagination pagination-sm justify-content-center mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&media_type={{ selected_media_type }}&search={{ search_query }}"><i class="fas fa-chevron-left"></i></a></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+              {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+              <li class="page-item"><a class="page-link" href="?page={{ num }}&media_type={{ selected_media_type }}&search={{ search_query }}">{{ num }}</a></li>
+              {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&media_type={{ selected_media_type }}&search={{ search_query }}"><i class="fas fa-chevron-right"></i></a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
