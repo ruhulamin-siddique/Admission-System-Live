@@ -2008,6 +2008,87 @@ def migrate_hall_residency(request, student_id):
 
 
 @require_access('students', 'edit_profile')
+def cancel_hall_residency(request, student_id):
+    """
+    Cancels a student's residential hall seat, marking them as non-residential
+    and recording the cancellation history with refund details.
+    """
+    student, _, _ = _resolve_student(student_id)
+    if request.method == 'POST':
+        from master_data.models import Hall, AdmissionYear, Semester
+        from .models import HallSeatCancellation, HallMigrationHistory
+        from django.utils import timezone
+        
+        cancellation_date_str = request.POST.get('cancellation_date')
+        reason_code = request.POST.get('reason', 'VOLUNTARY')
+        notes = request.POST.get('notes', '').strip()
+        refund_applicable = request.POST.get('refund_applicable') in ('on', 'true', '1')
+        refund_amount = request.POST.get('refund_amount', '0.00') or '0.00'
+        
+        try:
+            cancellation_date = timezone.datetime.strptime(cancellation_date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            cancellation_date = timezone.now().date()
+            
+        prev_hall_obj = student.hall_residential
+        if not prev_hall_obj:
+            messages.error(request, "Student is not currently assigned to any residential hall.")
+            return redirect('student_profile', student_id=student_id)
+            
+        try:
+            with transaction.atomic():
+                # Determine active academic year/semester from student if available
+                # BUG 1 FIX: Guard against null admission_year/semester_name to prevent silent FK=NULL
+                student_year = AdmissionYear.objects.filter(year=student.admission_year).first() if student.admission_year else None
+                student_semester = Semester.objects.filter(name=student.semester_name).first() if student.semester_name else None
+                
+                # Create Cancellation Record
+                cancellation = HallSeatCancellation.objects.create(
+                    student=student,
+                    hall=prev_hall_obj,
+                    cancellation_date=cancellation_date,
+                    academic_year=student_year,
+                    semester=student_semester,
+                    reason=reason_code,
+                    notes=notes,
+                    refund_applicable=refund_applicable,
+                    refund_amount=float(refund_amount) if refund_applicable else 0.00,
+                    authorized_by=request.user
+                )
+                
+                # Also log as migration for historical consistency
+                HallMigrationHistory.objects.create(
+                    student=student,
+                    previous_hall=prev_hall_obj,
+                    new_hall=None,
+                    previous_residency_status=student.is_non_residential,
+                    new_residency_status=True,
+                    reason=f"Seat Cancellation: {cancellation.get_reason_display()}. Notes: {notes}",
+                    authorized_by=request.user
+                )
+                
+                # Update Student profile
+                student.hall_residential = None
+                student.is_non_residential = True
+                student.changed_by_user = request.user
+                student.save()
+                
+                # Activity log
+                from core.utils import log_activity
+                log_activity(
+                    request, 'UPDATE', 'students',
+                    f"HALL SEAT CANCELLATION: Seat cancelled in {prev_hall_obj.short_name} for {student_id}. Reason: {cancellation.get_reason_display()}",
+                    object_id=student.student_id
+                )
+                
+                messages.success(request, f"Residency seat cancelled successfully. Student is now marked as Non-Residential.")
+        except Exception as e:
+            messages.error(request, f"Residency cancellation failed: {str(e)}")
+            
+    return redirect('student_profile', student_id=student_id)
+
+
+@require_access('students', 'edit_profile')
 def api_student_ugc_id_preview(request, student_id):
     """
     Calculates and returns the suggested 16-digit UGC ID for an existing student,
@@ -2794,6 +2875,9 @@ def student_profile(request, student_id):
     halls = Hall.objects.all().order_by('full_name', 'short_name')
     years_range = list(range(2015, timezone.localtime(timezone.now()).year + 2))
 
+    # GAP 3 FIX: Pass cancellation reasons dynamically so modal stays in sync with model
+    from .models import HallSeatCancellation as _HSC
+
     return render(request, 'students/profile.html', {
         'student': student,
         'program_history': program_history,
@@ -2802,6 +2886,7 @@ def student_profile(request, student_id):
         'migration_semesters': semesters,
         'migration_halls': halls,
         'migration_years': years_range,
+        'cancellation_reason_choices': _HSC.CANCELLATION_REASONS,
     })
 
 @require_access('reports', 'view_analytics')
@@ -5707,4 +5792,148 @@ def bulk_revert_field_changes(request):
         'message': f"Successfully reverted {success_count} modifications.",
         'success_count': success_count
     })
+
+
+# GAP 2 FIX: Configurable graduating semester string — change here if program structure changes
+HALL_GRADUATING_SEMESTER = 'Level 4 Term II'
+
+
+@require_access('reports', 'view_analytics')
+def hall_reports_dashboard(request):
+    """
+    Dashboard view for Hall Residence capacity, active resident registries,
+    and seat cancellation logs with forecasting capabilities.
+    """
+    from master_data.models import Hall, AdmissionYear, Semester
+    from .models import Student, HallSeatCancellation
+    from django.db.models import Count, Q, Sum
+    from django.utils.dateparse import parse_date
+    
+    # 1. Hall capacity and occupancy stats
+    halls = Hall.objects.annotate(
+        occupied_count=Count('residents', filter=Q(residents__is_non_residential=False))
+    ).order_by('full_name', 'short_name')
+    
+    total_capacity = halls.aggregate(sum_capacity=Sum('capacity'))['sum_capacity'] or 0
+    total_occupied = halls.aggregate(sum_occupied=Sum('occupied_count'))['sum_occupied'] or 0
+    total_vacant = max(0, total_capacity - total_occupied)
+    
+    # 2. Residency Distribution & Analytics
+    occupancy_rate = round((total_occupied / total_capacity * 100), 1) if total_capacity > 0 else 0.0
+    
+    # 3. Active Resident Registry (Report 2) with filters
+    reg_hall_id = request.GET.get('reg_hall')
+    reg_year = request.GET.get('reg_year')
+    reg_batch = request.GET.get('reg_batch')
+    reg_semester = request.GET.get('reg_semester')
+    
+    residents_qs = Student.objects.filter(is_non_residential=False, hall_residential__isnull=False)
+    
+    if reg_hall_id:
+        residents_qs = residents_qs.filter(hall_residential_id=reg_hall_id)
+    if reg_year:
+        residents_qs = residents_qs.filter(admission_year=reg_year)
+    if reg_batch:
+        residents_qs = residents_qs.filter(batch=reg_batch)
+    if reg_semester:
+        residents_qs = residents_qs.filter(semester_name=reg_semester)
+        
+    residents_qs = residents_qs.select_related('hall_residential').order_by('student_id')
+    
+    residents_count = residents_qs.count()
+    residents = residents_qs[:200]  # Limit for UI responsiveness
+    
+    # 4. Seat Cancellation Log (Report 3) with filters
+    cancel_hall_id = request.GET.get('cancel_hall')
+    cancel_reason = request.GET.get('cancel_reason')
+    date_start_str = request.GET.get('date_start')
+    date_end_str = request.GET.get('date_end')
+    
+    cancellations_qs = HallSeatCancellation.objects.select_related('student', 'hall', 'authorized_by')
+    
+    if cancel_hall_id:
+        cancellations_qs = cancellations_qs.filter(hall_id=cancel_hall_id)
+    if cancel_reason:
+        cancellations_qs = cancellations_qs.filter(reason=cancel_reason)
+    if date_start_str:
+        start_date = parse_date(date_start_str)
+        if start_date:
+            cancellations_qs = cancellations_qs.filter(cancellation_date__gte=start_date)
+    if date_end_str:
+        end_date = parse_date(date_end_str)
+        if end_date:
+            cancellations_qs = cancellations_qs.filter(cancellation_date__lte=end_date)
+            
+    cancellations = cancellations_qs.order_by('-cancellation_date')
+    cancellations_count = cancellations.count()
+    
+    # GAP 5 FIX: Aggregate total refund amount from DB (not from JS-visible limited rows)
+    total_refund_amount = cancellations_qs.filter(refund_applicable=True).aggregate(
+        total=Sum('refund_amount')
+    )['total'] or 0
+    
+    # Aggregated cancellation stats for dashboard chart
+    reason_stats_raw = cancellations_qs.values('reason').annotate(count=Count('id'))
+    reason_map = dict(HallSeatCancellation.CANCELLATION_REASONS)
+    cancellation_reasons_stats = [
+        {'label': reason_map.get(stat['reason'], stat['reason']), 'value': stat['count']}
+        for stat in reason_stats_raw
+    ]
+    
+    # 5. Hall Seat Allotment Forecast (Report 4)
+    forecast_data = []
+    total_projected_vacant = 0
+    
+    for h in halls:
+        graduating_count = h.residents.filter(is_non_residential=False, current_semester=HALL_GRADUATING_SEMESTER).count()
+        hall_vacant = h.get_vacant_seats()
+        projected_vacant = hall_vacant + graduating_count
+        total_projected_vacant += projected_vacant
+        
+        forecast_data.append({
+            'hall': h,
+            'current_vacant': hall_vacant,
+            'graduating_count': graduating_count,
+            'projected_vacant': projected_vacant,
+            'safe_allotment_limit': max(0, projected_vacant)
+        })
+        
+    context = {
+        'total_capacity': total_capacity,
+        'total_occupied': total_occupied,
+        'total_vacant': total_vacant,
+        'occupancy_rate': occupancy_rate,
+        'total_projected_vacant': total_projected_vacant,
+        
+        'halls_list': Hall.objects.all().order_by('full_name', 'short_name'),
+        'years_list': AdmissionYear.objects.all().order_by('-year'),
+        'semesters_list': Semester.objects.all().order_by('name'),
+        'batches_list': Student.objects.exclude(batch='').values_list('batch', flat=True).distinct().order_by('batch'),
+        
+        'halls': halls,
+        
+        'residents': residents,
+        'residents_count': residents_count,
+        'selected_reg_hall': int(reg_hall_id) if reg_hall_id else None,
+        'selected_reg_year': int(reg_year) if reg_year else None,
+        'selected_reg_batch': reg_batch,
+        'selected_reg_semester': reg_semester,
+        
+        'cancellations': cancellations,
+        'cancellations_count': cancellations_count,
+        'selected_cancel_hall': int(cancel_hall_id) if cancel_hall_id else None,
+        'selected_cancel_reason': cancel_reason,
+        'date_start': date_start_str,
+        'date_end': date_end_str,
+        'cancellation_reasons_stats': cancellation_reasons_stats,
+        'cancellation_reasons_choices': HallSeatCancellation.CANCELLATION_REASONS,
+        'total_refund_amount': total_refund_amount,  # GAP 5: DB-aggregated total
+        
+        'forecast_data': forecast_data,
+        'graduating_semester_label': HALL_GRADUATING_SEMESTER,  # GAP 2: expose label to template
+        
+        'active_tab': request.GET.get('active_tab', 'overview')
+    }
+    
+    return render(request, 'students/reports/hall_dashboard.html', context)
 

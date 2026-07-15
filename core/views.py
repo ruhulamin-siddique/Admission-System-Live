@@ -870,3 +870,233 @@ def export_audit_logs(request):
                 log.ip_address or ''
             ])
         return response
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Developer Portfolio Views  (public + superuser edit API)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def developer_portfolio(request):
+    """
+    Public portfolio page — no login required.
+    Superusers see an Edit Mode FAB and inline controls.
+    """
+    from .models import DeveloperProfile, Education, Skill, Project, Experience, Achievement
+    from django.db.models import F
+    from collections import defaultdict
+
+    # Auto-seed singleton profile on first ever visit
+    profile, _ = DeveloperProfile.objects.get_or_create(
+        pk=1,
+        defaults={
+            'full_name': 'Ruhulamin Siddique',
+            'title': 'Assistant Software Engineer',
+            'department': 'ICT Wing & Archive',
+            'institution': 'Bangladesh Army University of Science and Technology (BAUST)',
+            'tagline': 'Django Developer | Software Engineer | Researcher',
+            'github_url': 'https://github.com/ruhulamin-siddique',
+            'is_available_for_work': True,
+        }
+    )
+
+    # Increment visit counter atomically
+    DeveloperProfile.objects.filter(pk=profile.pk).update(visit_count=F('visit_count') + 1)
+    profile.refresh_from_db()
+
+    # Prefetch all related data ordered by sort_order
+    education    = profile.education_set.all()
+    experiences  = profile.experiences.all()
+    achievements = profile.achievements.all()
+    projects     = profile.projects.all()
+
+    # Group skills by category for the template
+    skills_raw = profile.skills.all()
+    skills_by_category = defaultdict(list)
+    for s in skills_raw:
+        skills_by_category[s.get_category_display()].append(s)
+    skills_grouped = dict(skills_by_category)
+
+    # Stats for About counters
+    project_count = projects.count()
+    skills_count  = skills_raw.count()
+
+    is_editor = request.user.is_authenticated and request.user.is_superuser
+
+    context = {
+        'profile': profile,
+        'education': education,
+        'experiences': experiences,
+        'achievements': achievements,
+        'projects': projects,
+        'featured_projects': projects.filter(is_featured=True),
+        'regular_projects': projects.filter(is_featured=False),
+        'skills_grouped': skills_grouped,
+        'skills_all': skills_raw,
+        'project_count': project_count,
+        'skills_count': skills_count,
+        'is_editor': is_editor,
+        # Choices for modals
+        'skill_categories': Skill.CATEGORY_CHOICES,
+        'project_statuses': Project.STATUS_CHOICES,
+        'experience_types': Experience.TYPE_CHOICES,
+    }
+    return render(request, 'core/developer_portfolio.html', context)
+
+
+def _superuser_required_json(request):
+    """Returns 403 JsonResponse if not superuser. Used by AJAX APIs."""
+    if not (request.user.is_authenticated and request.user.is_superuser):
+        return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
+    return None
+
+
+def portfolio_api_save_profile(request):
+    """AJAX POST — save main DeveloperProfile fields + photo. Superuser only."""
+    guard = _superuser_required_json(request)
+    if guard:
+        return guard
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
+    from .models import DeveloperProfile
+    profile, _ = DeveloperProfile.objects.get_or_create(pk=1)
+
+    fields = ['full_name', 'title', 'department', 'institution', 'tagline',
+              'bio', 'email', 'phone', 'github_url', 'linkedin_url', 'portfolio_url',
+              'years_of_experience', 'is_available_for_work']
+
+    for field in fields:
+        val = request.POST.get(field)
+        if val is not None:
+            if field == 'is_available_for_work':
+                setattr(profile, field, val in ('true', '1', 'on'))
+            elif field == 'years_of_experience':
+                try:
+                    setattr(profile, field, int(val))
+                except ValueError:
+                    pass
+            else:
+                setattr(profile, field, val)
+
+    if 'profile_photo' in request.FILES:
+        profile.profile_photo = request.FILES['profile_photo']
+
+    profile.save()
+    photo_url = profile.profile_photo.url if profile.profile_photo else ''
+    return JsonResponse({'success': True, 'photo_url': photo_url, 'name': profile.full_name})
+
+
+def portfolio_api_save(request, section):
+    """AJAX POST — create or update a portfolio section item. Superuser only."""
+    guard = _superuser_required_json(request)
+    if guard:
+        return guard
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
+    from .models import DeveloperProfile, Education, Skill, Project, Experience, Achievement
+    profile, _ = DeveloperProfile.objects.get_or_create(pk=1)
+
+    MODEL_MAP = {
+        'education':   Education,
+        'skill':       Skill,
+        'project':     Project,
+        'experience':  Experience,
+        'achievement': Achievement,
+    }
+    Model = MODEL_MAP.get(section)
+    if not Model:
+        return JsonResponse({'success': False, 'error': 'Invalid section'}, status=400)
+
+    item_id = request.POST.get('id')
+    obj = Model.objects.get(pk=int(item_id)) if item_id else Model(developer=profile)
+
+    # Map POST fields to model fields per section
+    FIELD_MAP = {
+        'education':   ['degree', 'institution', 'field_of_study', 'start_year', 'end_year', 'gpa', 'description', 'sort_order'],
+        'skill':       ['name', 'category', 'proficiency', 'icon_class', 'sort_order'],
+        'project':     ['title', 'description', 'tech_stack', 'github_url', 'live_url', 'status', 'is_featured', 'start_date', 'end_date', 'sort_order'],
+        'experience':  ['job_title', 'organization', 'employment_type', 'location', 'description', 'start_date', 'end_date', 'is_current', 'sort_order'],
+        'achievement': ['title', 'description', 'icon_class', 'date_earned', 'issuer', 'link', 'sort_order'],
+    }
+    BOOL_FIELDS = {'is_featured', 'is_current'}
+    INT_FIELDS  = {'start_year', 'end_year', 'proficiency', 'sort_order'}
+    DATE_FIELDS = {'start_date', 'end_date', 'date_earned'}
+
+    for field in FIELD_MAP.get(section, []):
+        val = request.POST.get(field)
+        if val is None:
+            continue
+        if field in BOOL_FIELDS:
+            setattr(obj, field, val in ('true', '1', 'on'))
+        elif field in INT_FIELDS:
+            try:
+                setattr(obj, field, int(val) if val else None)
+            except ValueError:
+                pass
+        elif field in DATE_FIELDS:
+            setattr(obj, field, val if val else None)
+        else:
+            setattr(obj, field, val)
+
+    if section == 'project' and 'cover_image' in request.FILES:
+        obj.cover_image = request.FILES['cover_image']
+
+    obj.save()
+    return JsonResponse({'success': True, 'id': obj.pk})
+
+
+def portfolio_api_delete(request, section, pk):
+    """AJAX POST — delete a portfolio section item by PK. Superuser only."""
+    guard = _superuser_required_json(request)
+    if guard:
+        return guard
+
+    from .models import Education, Skill, Project, Experience, Achievement
+    MODEL_MAP = {
+        'education':   Education,
+        'skill':       Skill,
+        'project':     Project,
+        'experience':  Experience,
+        'achievement': Achievement,
+    }
+    Model = MODEL_MAP.get(section)
+    if not Model:
+        return JsonResponse({'success': False, 'error': 'Invalid section'}, status=400)
+
+    try:
+        obj = Model.objects.get(pk=pk)
+        obj.delete()
+        return JsonResponse({'success': True})
+    except Model.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
+
+
+def portfolio_api_reorder(request, section):
+    """AJAX POST — update sort_order for a list of IDs. Superuser only."""
+    guard = _superuser_required_json(request)
+    if guard:
+        return guard
+
+    from .models import Education, Skill, Project, Experience, Achievement
+    MODEL_MAP = {
+        'education':   Education,
+        'skill':       Skill,
+        'project':     Project,
+        'experience':  Experience,
+        'achievement': Achievement,
+    }
+    Model = MODEL_MAP.get(section)
+    if not Model:
+        return JsonResponse({'success': False, 'error': 'Invalid section'}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        ids = data.get('ids', [])
+        for idx, item_id in enumerate(ids):
+            Model.objects.filter(pk=item_id).update(sort_order=idx)
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

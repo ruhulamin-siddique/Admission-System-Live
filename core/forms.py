@@ -197,7 +197,7 @@ class UserSelfProfileForm(forms.Form):
 
 
 class RegistrationForm(UserCreationForm):
-    first_name = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'First Name'}))
+    first_name = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'First Name', 'autofocus': True}))
     last_name = forms.CharField(max_length=100, required=True, widget=forms.TextInput(attrs={'placeholder': 'Last Name'}))
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'placeholder': 'University Email'}))
     employee_id = forms.CharField(max_length=50, required=True, widget=forms.TextInput(attrs={'placeholder': 'Employee ID'}))
@@ -208,6 +208,11 @@ class RegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ('first_name', 'last_name', 'username', 'email')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'username' in self.fields:
+            self.fields['username'].widget.attrs.pop('autofocus', None)
 
     def clean_email(self):
         email = self.cleaned_data.get('email', '').lower()

@@ -422,3 +422,34 @@ class HallMigrationHistory(models.Model):
 
     def __str__(self):
         return f"Migration for {self.student.student_id} on {self.migration_date}"
+
+
+class HallSeatCancellation(models.Model):
+    CANCELLATION_REASONS = [
+        ('GRADUATION', 'Completed Graduation / Completed Program'),
+        ('VOLUNTARY', 'Voluntary Release (Commuting / Private Mess)'),
+        ('DISCIPLINARY', 'Disciplinary Action'),
+        ('TRANSFER', 'Transfer to Another Campus / Institution'),
+        ('NON_PAYMENT', 'Non-payment of Hall Dues'),
+        ('OTHER', 'Other (Please specify in notes)'),
+    ]
+
+    student = models.ForeignKey('Student', on_delete=models.CASCADE, related_name='seat_cancellations')
+    hall = models.ForeignKey('master_data.Hall', on_delete=models.CASCADE, related_name='cancellations')
+    cancellation_date = models.DateField(default=timezone.now)
+    academic_year = models.ForeignKey('master_data.AdmissionYear', on_delete=models.SET_NULL, null=True)
+    semester = models.ForeignKey('master_data.Semester', on_delete=models.SET_NULL, null=True)
+    reason = models.CharField(max_length=30, choices=CANCELLATION_REASONS, default='VOLUNTARY')
+    notes = models.TextField(blank=True, null=True, help_text="Additional explanation or context")
+    refund_applicable = models.BooleanField(default=False, help_text="Check if student is eligible for caution money/fee refund")
+    refund_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    authorized_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-cancellation_date']
+        verbose_name = "Hall Seat Cancellation"
+        verbose_name_plural = "Hall Seat Cancellations"
+
+    def __str__(self):
+        return f"{self.student.student_id} - {self.hall.short_name} Cancellation"

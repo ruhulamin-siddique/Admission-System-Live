@@ -40,9 +40,16 @@ class Hall(models.Model):
     full_name = models.CharField(max_length=150, unique=True, null=True, blank=True)
     short_name = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=10, help_text="Internal/UGC Hall Code (e.g., 01)")
+    capacity = models.PositiveIntegerField(default=0, help_text="Total physical seat capacity of the hall")
 
     def __str__(self):
         return self.full_name if self.full_name else self.short_name
+
+    def get_vacant_seats(self):
+        occupied = getattr(self, 'occupied_count', None)
+        if occupied is None:
+            occupied = self.residents.filter(is_non_residential=False).count()
+        return max(0, self.capacity - occupied)
 
 class AdmissionYear(models.Model):
     year = models.IntegerField(unique=True)

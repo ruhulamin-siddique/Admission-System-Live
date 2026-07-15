@@ -41,16 +41,27 @@
     }
     .profile-header-actions .profile-back-btn {
         flex-shrink: 0;
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+        border-radius: 8px !important;
     }
     .profile-header-actions .search-wrapper {
         flex-grow: 1;
         max-width: 450px;
         margin: 0 20px;
-        min-width: 280px;
+        min-width: 250px;
     }
     .profile-header-actions .edit-btn-wrapper {
+        display: flex !important;
         flex-shrink: 0;
         margin-left: auto;
+        gap: 6px !important;
+    }
+    .profile-header-actions .edit-btn-wrapper .btn,
+    .profile-header-actions .edit-btn-wrapper .dropdown button {
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+        border-radius: 8px !important;
     }
 
     /* Mobile Responsive Overrides */
@@ -58,28 +69,40 @@
         .profile-header-actions {
             flex-direction: column !important;
             align-items: stretch !important;
-            padding: 15px !important;
+            padding: 12px !important;
+            gap: 10px !important;
         }
         .profile-header-actions .profile-back-btn {
             width: 100% !important;
             text-align: center !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 0 !important;
         }
         .profile-header-actions .search-wrapper {
             width: 100% !important;
             max-width: none !important;
             min-width: 0 !important;
-            margin: 0 0 10px 0 !important;
+            margin: 0 !important;
             order: -1 !important; /* Put search box at the top on mobile */
         }
         .profile-header-actions .edit-btn-wrapper {
+            flex-direction: column !important;
+            align-items: stretch !important;
             width: 100% !important;
             margin-left: 0 !important;
+            gap: 8px !important;
         }
-        .profile-header-actions .edit-btn-wrapper .btn {
+        .profile-header-actions .edit-btn-wrapper .btn,
+        .profile-header-actions .edit-btn-wrapper .dropdown,
+        .profile-header-actions .edit-btn-wrapper .dropdown-toggle {
             width: 100% !important;
             text-align: center !important;
+            margin-right: 0 !important;
         }
+        .profile-header-actions .edit-btn-wrapper .dropdown-menu {
+            width: 100% !important;
+            text-align: left !important;
+        }
+    }
         
         /* Horizontally scrollable tabs on mobile */
         .nav-pills {
@@ -131,13 +154,74 @@
                 </div>
             </div>
             
-            <div class="edit-btn-wrapper d-flex align-items-center">
-                <button type="button" hx-get="{% url 'studentship_preview' student.student_id %}" hx-target="#modals-here" class="btn btn-info font-weight-bold px-4 shadow-sm mr-2" style="border-radius: 10px; white-space: nowrap;">
-                    <i class="fas fa-certificate mr-2 text-warning"></i> Studentship
+            <div class="edit-btn-wrapper d-flex align-items-center" style="gap: 8px;">
+                <!-- Certificate -->
+                <button type="button" hx-get="{% url 'studentship_preview' student.student_id %}" hx-target="#modals-here" class="btn btn-info font-weight-bold px-3 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
+                    <i class="fas fa-certificate mr-1 text-warning"></i> Certificate
                 </button>
-                <a href="{% url 'edit_student' student.student_id %}" class="btn btn-primary font-weight-bold px-4 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
-                    <i class="fas fa-edit mr-2"></i> Edit Profile
+                
+                <!-- Save PDF -->
+                <a href="{% url 'download_master_sheet' student.student_id %}" class="btn btn-outline-danger font-weight-bold px-3 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
+                    <i class="fas fa-file-pdf mr-1"></i> Save PDF
                 </a>
+
+                <!-- Edit Profile -->
+                <a href="{% url 'edit_student' student.student_id %}" class="btn btn-primary font-weight-bold px-3 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
+                    <i class="fas fa-edit mr-1"></i> Edit Profile
+                </a>
+
+                <!-- Unified Dropdown for Admin Tools -->
+                <div class="dropdown">
+                    <button class="btn btn-dark font-weight-bold px-3 shadow-sm dropdown-toggle" type="button" id="adminToolsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 10px; white-space: nowrap;">
+                        <i class="fas fa-tools mr-1"></i> Actions
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right border-0 shadow-lg" aria-labelledby="adminToolsDropdown" style="border-radius: 12px; z-index: 1060;">
+                        <h6 class="dropdown-header font-weight-bold text-muted">Academic Operations</h6>
+                        <a class="dropdown-item py-2" href="{% url 'change_program' student.student_id %}">
+                            <i class="fas fa-exchange-alt mr-2 text-warning"></i> Program Migration
+                        </a>
+                        {% if user.is_superuser %}
+                        <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left w-100" onclick="openUgcMigrationModal()">
+                            <i class="fas fa-arrows-spin mr-2 text-success"></i> UGC 16-Digit Migrate
+                        </button>
+                        {% endif %}
+
+                        <div class="dropdown-divider opacity-50"></div>
+                        <h6 class="dropdown-header font-weight-bold text-muted">Residency Operations</h6>
+                        {% if student.is_non_residential or not student.hall_residential %}
+                            <a class="dropdown-item py-2 disabled text-muted" href="javascript:void(0)">
+                                <i class="fas fa-hotel mr-2 opacity-50"></i> Migrate Hall (Disabled)
+                            </a>
+                            <a class="dropdown-item py-2 disabled text-muted" href="javascript:void(0)">
+                                <i class="fas fa-times-circle mr-2 opacity-50"></i> Cancel Seat (Disabled)
+                            </a>
+                        {% else %}
+                            <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-info w-100" data-toggle="modal" data-target="#migrateResidencyModal">
+                                <i class="fas fa-hotel mr-2"></i> Migrate Hall
+                            </button>
+                            <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-warning w-100" data-toggle="modal" data-target="#cancelResidencyModal">
+                                <i class="fas fa-times-circle mr-2"></i> Cancel Hall Seat
+                            </button>
+                        {% endif %}
+
+                        {% if user.is_superuser %}
+                        <div class="dropdown-divider opacity-50"></div>
+                        <h6 class="dropdown-header font-weight-bold text-muted">Security & Records</h6>
+                        <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-primary w-100" data-toggle="modal" data-target="#rectifyIdModal">
+                            <i class="fas fa-fingerprint mr-2"></i> Change Student ID
+                        </button>
+                        {% endif %}
+
+                        <div class="dropdown-divider opacity-50"></div>
+                        <h6 class="dropdown-header font-weight-bold text-danger">Danger Zone</h6>
+                        <a class="dropdown-item py-2 text-danger" href="{% url 'cancellation_hub' %}?search={{ student.student_id }}">
+                            <i class="fas fa-user-slash mr-2"></i> Cancel Admission
+                        </a>
+                        <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-danger font-weight-bold w-100" data-toggle="modal" data-target="#deleteStudentModal">
+                            <i class="fas fa-trash-alt mr-2"></i> Delete Admission Record
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -239,86 +323,6 @@
             <!-- /.card-body -->
         </div>
         <!-- /.card -->
-
-        <!-- Administrative Toolkit -->
-        <div class="card shadow-sm border-0" style="border-radius: 12px; border-top: 5px solid #343a40;">
-            <div class="card-header border-0 bg-transparent py-2 pt-3">
-                <h5 class="text-dark font-weight-bold mb-0"><i class="fas fa-tools mr-2"></i> Admin Toolkit</h5>
-            </div>
-            <div class="card-body p-3">
-                <div class="row no-gutters mb-2" style="margin-left: -4px; margin-right: -4px; gap: 8px 0;">
-                    <!-- Col 1: PDF and Migration -->
-                    <div class="col-6" style="padding-left: 4px; padding-right: 4px;">
-                        <a href="{% url 'download_master_sheet' student.student_id %}" class="btn btn-block btn-outline-danger font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" title="Save Master PDF">
-                            <i class="fas fa-file-pdf mb-1" style="font-size: 16px;"></i>
-                            <span>Save PDF</span>
-                        </a>
-                    </div>
-                    <div class="col-6" style="padding-left: 4px; padding-right: 4px;">
-                        <a href="{% url 'change_program' student.student_id %}" class="btn btn-block btn-outline-warning text-dark font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" title="Migration Center">
-                            <i class="fas fa-exchange-alt mb-1" style="font-size: 16px;"></i>
-                            <span>Migration</span>
-                        </a>
-                    </div>
-                    
-                    <!-- Col 2: Cancel and ID Change -->
-                    <div class="col-6" style="padding-left: 4px; padding-right: 4px; margin-top: 8px;">
-                        <a href="{% url 'cancellation_hub' %}?search={{ student.student_id }}" class="btn btn-block btn-outline-dark font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" title="Initiate Cancel">
-                            <i class="fas fa-user-slash mb-1" style="font-size: 16px;"></i>
-                            <span>Cancel</span>
-                        </a>
-                    </div>
-                    <div class="col-6" style="padding-left: 4px; padding-right: 4px; margin-top: 8px;">
-                        {% if user.is_superuser %}
-                        <button type="button" class="btn btn-block btn-outline-primary font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" data-toggle="modal" data-target="#rectifyIdModal" title="Change ID">
-                            <i class="fas fa-fingerprint mb-1" style="font-size: 16px;"></i>
-                            <span>Change ID</span>
-                        </button>
-                        {% else %}
-                        <button type="button" class="btn btn-block btn-outline-secondary font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center disabled" style="font-size: 12px; min-height: 58px; opacity: 0.5;" disabled title="Access Restricted">
-                            <i class="fas fa-lock mb-1" style="font-size: 16px;"></i>
-                            <span>Locked</span>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <hr class="my-3 opacity-50">
-                
-                <div class="row no-gutters" style="margin-left: -4px; margin-right: -4px;">
-                    <div class="col-6" style="padding-left: 4px; padding-right: 4px;">
-                        <button type="button" class="btn btn-block btn-danger font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" data-toggle="modal" data-target="#deleteStudentModal" title="Delete Admission">
-                            <i class="fas fa-trash-alt mb-1" style="font-size: 16px;"></i>
-                            <span>Delete</span>
-                        </button>
-                    </div>
-                    <div class="col-6" style="padding-left: 4px; padding-right: 4px;">
-                        {% if user.is_superuser %}
-                        <button type="button" class="btn btn-block btn-success font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" onclick="openUgcMigrationModal()" title="Migrate to 16-Digit UGC ID">
-                            <i class="fas fa-arrows-spin mb-1" style="font-size: 16px;"></i>
-                            <span>UGC Migrate</span>
-                        </button>
-                        {% else %}
-                        <button type="button" class="btn btn-block btn-outline-secondary font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center disabled" style="font-size: 12px; min-height: 58px; opacity: 0.5;" disabled title="Access Restricted">
-                            <i class="fas fa-lock mb-1" style="font-size: 16px;"></i>
-                            <span>Locked</span>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <hr class="my-2 opacity-50">
-
-                <div class="row no-gutters" style="margin-left: -4px; margin-right: -4px;">
-                    <div class="col-12" style="padding-left: 4px; padding-right: 4px;">
-                        <button type="button" class="btn btn-block btn-outline-info font-weight-bold py-2 px-1 text-truncate d-flex flex-column align-items-center justify-content-center" style="font-size: 12px; min-height: 58px;" data-toggle="modal" data-target="#migrateResidencyModal" title="Migrate Hall Residency">
-                            <i class="fas fa-hotel mb-1" style="font-size: 16px;"></i>
-                            <span>Migrate Residency</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
@@ -392,6 +396,69 @@
                     <div class="modal-footer border-0 pb-4 px-4">
                         <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-info rounded-pill px-4 font-weight-bold">Confirm Migration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Residency Modal -->
+    <div class="modal fade" id="cancelResidencyModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="modal-title font-weight-bold text-warning"><i class="fas fa-times-circle mr-2"></i> Cancel Hall Seat</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{% url 'cancel_hall_residency' student.student_id %}" method="POST">
+                    {% csrf_token %}
+                    <div class="modal-body px-4">
+                        <div class="alert alert-warning border-0 small mb-4">
+                            <i class="fas fa-exclamation-triangle mr-1"></i> This will cancel the student's seat allocation in <strong>{% if student.hall_residential %}{{ student.hall_residential.full_name|default:student.hall_residential.short_name }}{% else %}Unspecified{% endif %}</strong>. They will be marked as <strong>Non-Residential</strong>.
+                        </div>
+                        
+                        <!-- Cancellation Date -->
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-bold text-uppercase text-muted">Cancellation Date</label>
+                            <input type="date" name="cancellation_date" class="form-control" required value="{% now 'Y-m-d' %}">
+                        </div>
+                        
+                        <!-- Reason (GAP 3 FIX: dynamic from context) -->
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-bold text-uppercase text-muted">Cancellation Reason</label>
+                            <select name="reason" class="form-control" required>
+                                {% for r_code, r_label in cancellation_reason_choices %}
+                                <option value="{{ r_code }}">{{ r_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Refund Fields -->
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="custom-control custom-switch mt-2">
+                                    <input type="checkbox" name="refund_applicable" class="custom-control-input" id="modal_refund_applicable">
+                                    <label class="custom-control-label font-weight-bold text-dark small" for="modal_refund_applicable">Refund Applicable</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="small font-weight-bold text-uppercase text-muted">Refund Amount (BDT)</label>
+                            <!-- BUG 4 FIX: Use readonly instead of disabled so value IS submitted even if JS fails -->
+                            <input type="number" name="refund_amount" id="modal_refund_amount" class="form-control" min="0" step="0.01" value="0.00" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="form-group mb-0">
+                            <label class="small font-weight-bold text-uppercase text-muted">Additional Notes</label>
+                            <textarea name="notes" class="form-control" rows="3" placeholder="e.g., Caution money refund processed, moving back home, etc."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pb-4 px-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 font-weight-bold text-dark">Confirm Cancellation</button>
                     </div>
                 </form>
             </div>
@@ -1999,6 +2066,15 @@
     $('#modal_is_non_residential').on('change', updateModalResidencyVisibility);
     $('#migrateResidencyModal').on('show.bs.modal', function() {
         updateModalResidencyVisibility();
+    });
+
+    // BUG 4 FIX: Use 'readonly' (not 'disabled') so refund_amount is always submitted with form
+    $('#modal_refund_applicable').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#modal_refund_amount').prop('readonly', false).val('').focus();
+        } else {
+            $('#modal_refund_amount').prop('readonly', true).val('0.00');
+        }
     });
 
     function openUgcMigrationModal() {

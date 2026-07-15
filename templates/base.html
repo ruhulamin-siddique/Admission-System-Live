@@ -588,6 +588,17 @@
           </li>
           {% endif %}
 
+          {% has_access 'ict_wing' 'view_devices' as can_view_ict %}
+          {% if can_view_ict %}
+          <li class="nav-header">ICT WING</li>
+          <li class="nav-item">
+            <a href="{% url 'manage_devices' %}" class="nav-link {% if 'ict/manage' in request.path %}active{% endif %}">
+              <i class="nav-icon fas fa-network-wired"></i>
+              <p>Device Registry</p>
+            </a>
+          </li>
+          {% endif %}
+
           {% has_access 'security' 'manage_users' as can_manage_users %}
           {% has_access 'security' 'manage_roles' as can_manage_roles %}
           {% has_access 'security' 'manage_academic_settings' as can_manage_academic %}
@@ -734,7 +745,9 @@
 
   <footer class="main-footer">
     <div class="float-right d-none d-sm-block">
-      <b>Developed by:</b> <a href="https://github.com/ruhulamin-siddique" target="_blank" class="text-primary font-weight-bold">Ruhulamin Siddique</a>
+      <b>Developed by:</b>
+      <a href="{% url 'developer_portfolio' %}" target="_blank" class="text-primary font-weight-bold" title="View Developer Portfolio">Ruhulamin Siddique</a>
+      <small class="text-muted ml-1">· Asst. Software Engineer, ICT Wing &amp; Archive, BAUST</small>
     </div>
     <strong>Copyright &copy; 2026 Bangladesh Army University of Science and Technology.</strong>
     All rights reserved.

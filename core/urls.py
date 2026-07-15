@@ -25,4 +25,13 @@ urlpatterns = [
     path('security/toggle-theme/', views.toggle_theme, name='toggle_theme'),
     path('security/toggle-navbar-pin/', views.toggle_navbar_pin, name='toggle_navbar_pin'),
     path('security/backup/download/', views.download_db_backup, name='download_db_backup'),
+
+    # ── Developer Portfolio (Public — no login required) ──────────────────────
+    path('portfolio/', views.developer_portfolio, name='developer_portfolio'),
+
+    # Superuser-only AJAX APIs (403 returned to non-superusers internally)
+    path('portfolio/api/save-profile/', views.portfolio_api_save_profile, name='portfolio_api_save_profile'),
+    path('portfolio/api/save/<str:section>/', views.portfolio_api_save, name='portfolio_api_save'),
+    path('portfolio/api/delete/<str:section>/<int:pk>/', views.portfolio_api_delete, name='portfolio_api_delete'),
+    path('portfolio/api/reorder/<str:section>/', views.portfolio_api_reorder, name='portfolio_api_reorder'),
 ]

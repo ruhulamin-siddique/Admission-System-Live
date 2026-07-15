@@ -181,7 +181,7 @@
         position: relative;
     }
 
-    .auth-input-group i {
+    .auth-input-group > i {
         position: absolute;
         left: 16px;
         top: 50%;
@@ -191,7 +191,7 @@
         transition: color 0.2s ease;
     }
 
-    .form-group:focus-within i {
+    .form-group:focus-within > .auth-input-group > i {
         color: #3b82f6;
     }
 
@@ -382,6 +382,15 @@
                 </a>
                 <a href="{% url 'register' %}">
                     <i class="fas fa-user-plus mr-1"></i> Staff Registration
+                </a>
+            </div>
+            
+            <div class="login-footer" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
+                <a href="{% url 'register_device' %}" style="opacity: 0.85;">
+                    <i class="fas fa-wifi mr-1"></i> Register Device MAC
+                </a>
+                <a href="{% url 'check_device_status' %}" style="opacity: 0.85;">
+                    <i class="fas fa-network-wired mr-1"></i> MAC Binding Status
                 </a>
             </div>
         </div>

@@ -1,0 +1,618 @@
+{% extends 'base.html' %}
+
+{% block title %}Hall Capacity & Residence Dashboard | Bangladesh Army University of Science and Technology{% endblock %}
+{% block page_title %}Hall Residence & Capacity Planning{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden;
+        position: relative;
+    }
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    }
+    .kpi-card .card-body {
+        padding: 24px;
+        z-index: 2;
+        position: relative;
+    }
+    .kpi-icon {
+        position: absolute;
+        right: -10px;
+        bottom: -10px;
+        font-size: 5.5rem;
+        opacity: 0.08;
+        transform: rotate(-15deg);
+        transition: all 0.3s ease;
+    }
+    .kpi-card:hover .kpi-icon {
+        transform: rotate(0deg) scale(1.1);
+        opacity: 0.12;
+    }
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    .nav-tabs-custom {
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 24px;
+    }
+    .nav-tabs-custom .nav-link {
+        border: none;
+        color: #64748b;
+        font-weight: 600;
+        padding: 12px 20px;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s ease;
+    }
+    .nav-tabs-custom .nav-link:hover {
+        color: #3b82f6;
+    }
+    .nav-tabs-custom .nav-link.active {
+        color: #2563eb;
+        border-bottom: 2px solid #2563eb;
+        background: transparent;
+    }
+    .hall-gauge-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        background: #ffffff;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+    .hall-gauge-card:hover {
+        transform: translateY(-2px);
+    }
+    .badge-pill-custom {
+        padding: 6px 12px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+    .filter-card {
+        border: none;
+        border-radius: 16px;
+        background: rgba(248, 250, 252, 0.8);
+        border: 1px solid #e2e8f0;
+    }
+    .table-responsive-custom {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+    .table-custom th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        padding: 14px 16px;
+    }
+    .table-custom td {
+        padding: 14px 16px;
+        vertical-align: middle;
+    }
+    
+    @media print {
+        .main-sidebar, .navbar, .btn-print-hide, .filter-card, .nav-tabs-custom {
+            display: none !important;
+        }
+        .content-wrapper {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Top Row Statistics (KPI Cards) -->
+    <div class="row mb-4">
+        <!-- Card 1: Total Capacity -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card kpi-card bg-gradient-dark text-white" style="background: linear-gradient(135deg, #1e293b, #0f172a);">
+                <div class="card-body">
+                    <div class="kpi-icon"><i class="fas fa-hotel"></i></div>
+                    <div class="text-xs text-uppercase font-weight-bold text-slate-400 mb-1" style="opacity: 0.8;">Total Hall Capacity</div>
+                    <div class="h2 mb-2 font-weight-bold">{{ total_capacity }}</div>
+                    <div class="text-xs mb-0 text-white-50">Total physically built seats</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Active Occupied -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card kpi-card text-white" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+                <div class="card-body">
+                    <div class="kpi-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="text-xs text-uppercase font-weight-bold mb-1" style="opacity: 0.8;">Active Occupants</div>
+                    <div class="h2 mb-2 font-weight-bold">{{ total_occupied }}</div>
+                    <div class="progress progress-bar-custom mb-2">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: {{ occupancy_rate }}%"></div>
+                    </div>
+                    <div class="text-xs mb-0 d-flex justify-content-between">
+                        <span>Occupancy Rate: {{ occupancy_rate }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Vacancies -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card kpi-card text-white" style="background: linear-gradient(135deg, #10b981, #047857);">
+                <div class="card-body">
+                    <div class="kpi-icon"><i class="fas fa-bed"></i></div>
+                    <div class="text-xs text-uppercase font-weight-bold mb-1" style="opacity: 0.8;">Current Vacancies</div>
+                    <div class="h2 mb-2 font-weight-bold">{{ total_vacant }}</div>
+                    <div class="text-xs mb-0 text-white-50">Available for immediate allotment</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Forecasted Vacancy -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card kpi-card text-white" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                <div class="card-body">
+                    <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="text-xs text-uppercase font-weight-bold mb-1" style="opacity: 0.8;">Projected Next Term Vacant</div>
+                    <div class="h2 mb-2 font-weight-bold">{{ total_projected_vacant }}</div>
+                    <div class="text-xs mb-0 text-white-50">Includes current vacant + graduating Batch</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs nav-tabs-custom btn-print-hide" id="hallTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'overview' %}active{% endif %}" id="overview-tab" data-toggle="tab" href="#overview" role="tab">
+                <i class="fas fa-columns mr-1"></i> Overview & Allotment Forecast
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'registry' %}active{% endif %}" id="registry-tab" data-toggle="tab" href="#registry" role="tab">
+                <i class="fas fa-users mr-1"></i> Resident Registry
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'cancellations' %}active{% endif %}" id="cancellations-tab" data-toggle="tab" href="#cancellations" role="tab">
+                <i class="fas fa-user-slash mr-1"></i> Seat Cancellations Log
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="hallTabsContent">
+        
+        <!-- Tab 1: Overview & Forecast -->
+        <div class="tab-pane fade {% if active_tab == 'overview' %}show active{% endif %}" id="overview" role="tabpanel">
+            <div class="row">
+                
+                <!-- Left: Hall Status Gauges -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card card-outline card-primary shadow-sm" style="border-radius: 16px;">
+                        <div class="card-header border-0 bg-transparent pt-4 px-4">
+                            <h5 class="card-title font-weight-bold text-dark m-0"><i class="fas fa-university text-primary mr-2"></i> Individual Hall Status</h5>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            {% for h in halls %}
+                            {% with vacant=h.get_vacant_seats occ=h.occupied_count %}
+                            <div class="hall-gauge-card p-3 border">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="font-weight-bold text-dark mb-0">{{ h.full_name|default:h.short_name }} ({{ h.short_name }})</h6>
+                                    <span class="badge badge-secondary">Code: {{ h.code }}</span>
+                                </div>
+                                <div class="row align-items-center">
+                                    <div class="col-8">
+                                        <div class="progress mb-1" style="height: 10px; border-radius: 5px;">
+                                            <div class="progress-bar {% if vacant == 0 %}bg-danger{% else %}bg-primary{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {% if h.capacity > 0 %}{% widthratio occ h.capacity 100 %}{% else %}0{% endif %}%">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            <strong>{{ occ }}</strong> occupied of <strong>{{ h.capacity }}</strong> seats
+                                        </small>
+                                    </div>
+                                    <div class="col-4 text-right">
+                                        {% if vacant > 0 %}
+                                        <span class="badge-pill-custom bg-success text-success bg-opacity-10 d-inline-block">
+                                            {{ vacant }} Vacant
+                                        </span>
+                                        {% else %}
+                                        <span class="badge-pill-custom bg-danger text-danger bg-opacity-10 d-inline-block">
+                                            Full
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Allotment Forecast Planning -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card card-outline card-success shadow-sm" style="border-radius: 16px;">
+                        <div class="card-header border-0 bg-transparent pt-4 px-4">
+                            <h5 class="card-title font-weight-bold text-dark m-0"><i class="fas fa-magic text-success mr-2"></i> Allotment Forecast (Next Semester Intake)</h5>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            <div class="alert alert-success border-0 small mb-4">
+                                <i class="fas fa-lightbulb mr-1"></i> <strong>How this forecast works:</strong> It counts active vacant seats and automatically adds the count of residential students in their final term (<strong>{{ graduating_semester_label }}</strong>) who are expected to graduate and vacate their seats by next semester.
+                            </div>
+                            
+                            <div class="table-responsive-custom">
+                                <table class="table table-custom table-hover m-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Hall</th>
+                                            <th class="text-center">Current Vacant</th>
+                                            <th class="text-center">Graduating (L4T2)</th>
+                                            <th class="text-center">Projected Vacant</th>
+                                            <th class="text-center text-success">Allotment Limit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for forecast in forecast_data %}
+                                        <tr>
+                                            <td><strong>{{ forecast.hall.short_name }}</strong></td>
+                                            <td class="text-center">{{ forecast.current_vacant }}</td>
+                                            <td class="text-center text-muted">{{ forecast.graduating_count }}</td>
+                                            <td class="text-center font-weight-bold">{{ forecast.projected_vacant }}</td>
+                                            <td class="text-center">
+                                                <span class="badge badge-success px-3 py-2 font-weight-bold" style="font-size: 0.85rem; border-radius: 50px;">
+                                                    {{ forecast.safe_allotment_limit }} seats
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Tab 2: Resident Registry -->
+        <div class="tab-pane fade {% if active_tab == 'registry' %}show active{% endif %}" id="registry" role="tabpanel">
+            <!-- Filter Section -->
+            <div class="card filter-card mb-4 btn-print-hide">
+                <div class="card-body">
+                    <form method="GET" action="" id="regFilterForm" class="row">
+                        <input type="hidden" name="active_tab" value="registry">
+                        <div class="col-md-3 mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">Residential Hall</label>
+                            <select name="reg_hall" class="form-control form-control-sm">
+                                <option value="">All Halls</option>
+                                {% for h in halls_list %}
+                                <option value="{{ h.id }}" {% if selected_reg_hall == h.id %}selected{% endif %}>{{ h.short_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">Admission Year</label>
+                            <select name="reg_year" class="form-control form-control-sm">
+                                <option value="">All Years</option>
+                                {% for y in years_list %}
+                                <option value="{{ y.year }}" {% if selected_reg_year == y.year %}selected{% endif %}>{{ y.year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">Semester Name</label>
+                            <select name="reg_semester" class="form-control form-control-sm">
+                                <option value="">All Semesters</option>
+                                {% for s in semesters_list %}
+                                <option value="{{ s.name }}" {% if selected_reg_semester == s.name %}selected{% endif %}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">Batch</label>
+                            <select name="reg_batch" class="form-control form-control-sm">
+                                <option value="">All Batches</option>
+                                {% for b in batches_list %}
+                                <option value="{{ b }}" {% if selected_reg_batch == b %}selected{% endif %}>{{ b }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary btn-sm btn-block"><i class="fas fa-filter mr-1"></i> Apply Filters</button>
+                            <a href="?active_tab=registry" class="btn btn-outline-secondary btn-sm ml-2"><i class="fas fa-undo"></i></a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Active Residents Table -->
+            <div class="card shadow-sm" style="border-radius: 16px;">
+                <div class="card-header border-0 bg-transparent pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title font-weight-bold text-dark m-0">
+                        <i class="fas fa-list text-primary mr-2"></i> Current Residential Students Registry 
+                        <span class="badge badge-info ml-2">{{ residents_count }} found</span>
+                    </h5>
+                    <button class="btn btn-outline-dark btn-sm btn-print-hide" onclick="window.print()"><i class="fas fa-print mr-1"></i> Print Register</button>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    {% if residents %}
+                    <div class="table-responsive-custom">
+                        <table class="table table-custom table-hover m-0">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Student Name</th>
+                                    <th>Hall</th>
+                                    <th>Department</th>
+                                    <th>Batch</th>
+                                    <th>Current Term</th>
+                                    <th class="btn-print-hide" style="width: 80px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in residents %}
+                                <tr>
+                                    <td><code class="font-weight-bold text-dark">{{ s.student_id }}</code></td>
+                                    <td><strong>{{ s.student_name }}</strong></td>
+                                    <td><span class="badge badge-info px-2 py-1">{{ s.hall_residential.short_name }}</span></td>
+                                    <td>{{ s.program }}</td>
+                                    <td>{{ s.batch }}</td>
+                                    <td><small class="badge badge-light border">{{ s.current_semester|default:"Level 1 Term I" }}</small></td>
+                                    <td class="text-center btn-print-hide">
+                                        <a href="{% url 'student_profile' s.student_id %}" class="btn btn-light btn-xs border" title="View Profile"><i class="fas fa-eye text-primary"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if residents_count > 200 %}
+                    <div class="alert alert-light border-0 small text-center text-muted mt-3">
+                        Showing first 200 residents. Please use filters to narrow down the list.
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users-slash text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3 font-weight-bold">No active residential records found matching the filters.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Seat Cancellations -->
+        <div class="tab-pane fade {% if active_tab == 'cancellations' %}show active{% endif %}" id="cancellations" role="tabpanel">
+            <!-- Filter Section -->
+            <div class="card filter-card mb-4 btn-print-hide">
+                <div class="card-body">
+                    <form method="GET" action="" id="cancelFilterForm" class="row">
+                        <input type="hidden" name="active_tab" value="cancellations">
+                        <div class="col-md-3 mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">Residential Hall</label>
+                            <select name="cancel_hall" class="form-control form-control-sm">
+                                <option value="">All Halls</option>
+                                {% for h in halls_list %}
+                                <option value="{{ h.id }}" {% if selected_cancel_hall == h.id %}selected{% endif %}>{{ h.short_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">Cancellation Reason</label>
+                            <select name="cancel_reason" class="form-control form-control-sm">
+                                <option value="">All Reasons</option>
+                                {% for r_code, r_label in cancellation_reasons_choices %}
+                                <option value="{{ r_code }}" {% if selected_cancel_reason == r_code %}selected{% endif %}>{{ r_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">Start Date</label>
+                            <input type="date" name="date_start" class="form-control form-control-sm" value="{{ date_start|default:'' }}">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="small font-weight-bold text-muted text-uppercase">End Date</label>
+                            <input type="date" name="date_end" class="form-control form-control-sm" value="{{ date_end|default:'' }}">
+                        </div>
+                        <div class="col-md-2 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary btn-sm btn-block"><i class="fas fa-filter mr-1"></i> Apply</button>
+                            <a href="?active_tab=cancellations" class="btn btn-outline-secondary btn-sm ml-2"><i class="fas fa-undo"></i></a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cancellations List & Charts Split -->
+            <div class="row">
+                <!-- Left: Cancellation Registry Table -->
+                <div class="col-xl-8 mb-4">
+                    <div class="card shadow-sm" style="border-radius: 16px;">
+                        <div class="card-header border-0 bg-transparent pt-4 px-4 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title font-weight-bold text-dark m-0">
+                                <i class="fas fa-user-slash text-danger mr-2"></i> Seat Cancellations Log
+                                <span class="badge badge-danger ml-2">{{ cancellations_count }} logged</span>
+                            </h5>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            {% if cancellations %}
+                            <div class="table-responsive-custom">
+                                <table class="table table-custom table-hover m-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Student ID</th>
+                                            <th>Student Name</th>
+                                            <th>Hall</th>
+                                            <th>Reason</th>
+                                            <th>Refund</th>
+                                            <th>Authorized By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for c in cancellations %}
+                                        <tr>
+                                            <td><small class="font-weight-bold">{{ c.cancellation_date|date:"Y-m-d" }}</small></td>
+                                            <td><code class="text-dark font-weight-bold">{{ c.student.student_id }}</code></td>
+                                            <td>
+                                                <strong>{{ c.student.student_name }}</strong>
+                                                {% if c.notes %}
+                                                <i class="fas fa-info-circle text-muted ml-1" title="Notes: {{ c.notes }}"></i>
+                                                {% endif %}
+                                            </td>
+                                            <td><span class="badge badge-light border">{{ c.hall.short_name }}</span></td>
+                                            <td><small class="badge badge-warning text-dark font-weight-bold">{{ c.get_reason_display }}</small></td>
+                                            <td>
+                                                {% if c.refund_applicable %}
+                                                <span class="text-success font-weight-bold">৳{{ c.refund_amount }}</span>
+                                                {% else %}
+                                                <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td><small class="text-muted"><i class="fas fa-user-shield mr-1"></i> {{ c.authorized_by.username|default:"System" }}</small></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-calendar-check text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-3 font-weight-bold">No seat cancellation history found matching selected filters.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Chart and statistics -->
+                <div class="col-xl-4 mb-4">
+                    <!-- Reason distribution chart -->
+                    <div class="card shadow-sm mb-4" style="border-radius: 16px;">
+                        <div class="card-header border-0 bg-transparent pt-4 px-4">
+                            <h5 class="card-title font-weight-bold text-dark m-0"><i class="fas fa-chart-pie text-info mr-2"></i> Reasons for Leaving</h5>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            {% if cancellation_reasons_stats %}
+                            <div style="position: relative; height:220px; width:100%">
+                                <canvas id="reasonsChart"></canvas>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4 text-muted small">
+                                No statistics available to display.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Fast Facts Card -->
+                    <div class="card card-outline card-warning shadow-sm" style="border-radius: 16px;">
+                        <div class="card-header border-0 bg-transparent pt-4 px-4">
+                            <h5 class="card-title font-weight-bold text-dark m-0"><i class="fas fa-calculator text-warning mr-2"></i> Financial Implications</h5>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            <div class="p-3 border rounded-lg bg-light mb-3">
+                                <div class="small text-muted text-uppercase font-weight-bold">Total Caution / Seat Refunds</div>
+                                <!-- GAP 5 FIX: Use DB-aggregated total (all records, not just visible 200) -->
+                                <div class="h3 font-weight-black text-success mt-1">৳{{ total_refund_amount|floatformat:2 }}</div>
+                            </div>
+                            <small class="text-muted">
+                                Sum of all processing fees or safety deposit caution money refunded to students during their release from the hall.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Import Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // Tab Persistence logic
+        $('#hallTabs a').on('click', function (e) {
+            e.preventDefault();
+            $(this).tab('show');
+            
+            // Sync active tab in URL for filters
+            const tabId = $(this).attr('href').replace('#', '');
+            $('input[name="active_tab"]').val(tabId);
+        });
+
+        // GAP 5 FIX: Total refund now calculated server-side via DB Sum aggregation — no JS loop needed
+
+        // 2. Cancellation Reason Doughnut Chart
+        {% if cancellation_reasons_stats %}
+        const ctx = document.getElementById('reasonsChart').getContext('2d');
+        const labels = [];
+        const dataValues = [];
+        
+        {% for stat in cancellation_reasons_stats %}
+            labels.push("{{ stat.label }}");
+            dataValues.push({{ stat.value }});
+        {% endfor %}
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: [
+                        '#3b82f6', // blue
+                        '#10b981', // green
+                        '#f59e0b', // amber
+                        '#ef4444', // red
+                        '#8b5cf6', // purple
+                        '#64748b'  // slate
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

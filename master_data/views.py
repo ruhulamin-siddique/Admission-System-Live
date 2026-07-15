@@ -8,10 +8,14 @@ from core.decorators import require_access
 @login_required
 @require_access('security', 'manage_academic_settings')
 def academic_settings(request):
+    from django.db.models import Count, Q
+    halls_annotated = Hall.objects.annotate(
+        occupied_count=Count('residents', filter=Q(residents__is_non_residential=False))
+    ).order_by('full_name', 'short_name')
     context = {
         'clusters': Cluster.objects.all().order_by('name'),
         'programs': Program.objects.all().order_by('name'),
-        'halls': Hall.objects.all().order_by('full_name', 'short_name'),
+        'halls': halls_annotated,
         'years': AdmissionYear.objects.all().order_by('-year'),
         'semesters': Semester.objects.all().order_by('name'),
         'batches': Batch.objects.all().order_by('-admission_year', 'name'),
@@ -42,7 +46,8 @@ def add_master_data(request, model_name):
             Hall.objects.create(
                 full_name=request.POST.get('full_name'),
                 short_name=request.POST.get('short_name'),
-                code=code
+                code=code,
+                capacity=int(request.POST.get('capacity', 0) or 0)
             )
         elif model_name == 'year':
             AdmissionYear.objects.create(year=request.POST.get('year'))
@@ -116,6 +121,7 @@ def edit_master_data(request, model_name, pk):
             new_code = request.POST.get('code')
             obj.full_name = request.POST.get('full_name')
             obj.short_name = request.POST.get('short_name')
+            obj.capacity = int(request.POST.get('capacity', 0) or 0)
             if Hall.objects.filter(code=new_code).exclude(pk=obj.pk).exists():
                 from django.contrib import messages
                 messages.warning(request, f"Warning: A duplicate Hall code '{new_code}' has been detected. The hall was successfully updated, but duplicate codes may impact standard UGC ID assignments.")

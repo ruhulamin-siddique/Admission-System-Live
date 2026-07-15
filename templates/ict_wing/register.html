@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Network Registration — ICT Wing</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* ── Reset & Variable Definitions ───────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg: #0b0f19;
+      --surface: rgba(17, 24, 39, 0.8);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --input-bg: rgba(7, 10, 17, 0.6);
+      --input-border: rgba(255, 255, 255, 0.12);
+      
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-light: #d1d5db;
+      --danger: #f87171;
+      
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Main Container ──────────────────────────────────────────────────── */
+    .register-container {
+      width: 100%;
+      max-width: 600px;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 40px 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Header Styling ─────────────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .ict-logo-icon {
+      width: 60px;
+      height: 60px;
+      background: var(--accent-grad);
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #fff;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+      animation: pulse 3s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #fff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Form Fields ─────────────────────────────────────────────────────── */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group label i {
+      color: var(--accent);
+      font-size: 0.95rem;
+    }
+
+    /* Target inputs created by Django */
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="url"],
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-family: 'Inter', sans-serif;
+      transition: var(--transition);
+    }
+
+    .form-group select {
+      appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 16px;
+      padding-right: 40px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      outline: none;
+      background: rgba(17, 24, 39, 0.9);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .help-text {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Validation Errors ──────────────────────────────────────────────── */
+    .error-msg {
+      background: rgba(248, 113, 113, 0.1);
+      border-left: 3px solid var(--danger);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      color: var(--danger);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* ── Action Buttons ──────────────────────────────────────────────────── */
+    .btn-submit {
+      background: var(--accent-grad);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: var(--transition);
+      margin-top: 10px;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+
+    /* ── Footer ──────────────────────────────────────────────────────────── */
+    .footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Mobile Optimization (Breakpoints) ────────────────────────────────── */
+    @media (max-width: 576px) {
+      .register-container {
+        padding: 30px 20px;
+        border-radius: var(--radius-md);
+      }
+      
+      .title {
+        font-size: 1.5rem;
+      }
+      
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+      }
+      
+      .btn-submit {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="register-container">
+    <div class="header">
+      <div class="ict-logo-icon">
+        <i class="fas fa-network-wired"></i>
+      </div>
+      <h1 class="title">Device Registration</h1>
+      <p class="subtitle">Register your device's physical (MAC) address with the ICT Wing</p>
+    </div>
+
+    <form method="POST">
+      {% csrf_token %}
+      
+      {% for field in form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}">
+            {% if field.name == 'full_name' %}<i class="fas fa-user"></i>
+            {% elif field.name == 'email' %}<i class="fas fa-envelope"></i>
+            {% elif field.name == 'phone' %}<i class="fas fa-phone"></i>
+            {% elif field.name == 'user_type' %}<i class="fas fa-user-tag"></i>
+            {% elif field.name == 'department' %}<i class="fas fa-graduation-cap"></i>
+            {% elif field.name == 'designation_or_roll' %}<i class="fas fa-id-card"></i>
+            {% elif field.name == 'device_type' %}<i class="fas fa-laptop"></i>
+            {% elif field.name == 'device_name_brand' %}<i class="fas fa-mobile-screen-button"></i>
+            {% elif field.name == 'mac_address' %}<i class="fas fa-fingerprint"></i>
+            {% elif field.name == 'reason' %}<i class="fas fa-info-circle"></i>
+            {% endif %}
+            {{ field.label }}
+          </label>
+          {{ field }}
+          {% if field.help_text %}
+            <span class="help-text">{{ field.help_text }}</span>
+          {% endif %}
+          {% if field.errors %}
+            <div class="error-msg">
+              {% for error in field.errors %}
+                <span><i class="fas fa-exclamation-circle"></i> {{ error }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="btn-submit">
+        <i class="fas fa-paper-plane"></i> Submit Registration
+      </button>
+    </form>
+  </div>
+
+  <div class="footer">
+    Developed with &hearts; by ICT Wing & Archive.
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneInput = document.querySelector('input[name="phone"]');
+        const macInput = document.querySelector('input[name="mac_address"]');
+
+        function getOrCreateErrorElement(input, defaultText) {
+            let parent = input.parentElement;
+            let errEl = parent.querySelector('.realtime-error');
+            if (!errEl) {
+                errEl = document.createElement('div');
+                errEl.className = 'realtime-error error-msg';
+                errEl.style.display = 'none';
+                errEl.style.marginTop = '6px';
+                errEl.style.background = 'rgba(248, 113, 113, 0.1)';
+                errEl.style.borderLeft = '3px solid var(--danger)';
+                errEl.style.padding = '8px 12px';
+                errEl.style.borderRadius = '4px';
+                errEl.style.fontSize = '0.82rem';
+                errEl.style.color = 'var(--danger)';
+                errEl.style.alignItems = 'center';
+                errEl.style.gap = '6px';
+                
+                let icon = document.createElement('i');
+                icon.className = 'fas fa-exclamation-circle';
+                
+                let text = document.createElement('span');
+                text.textContent = defaultText;
+                
+                errEl.appendChild(icon);
+                errEl.appendChild(text);
+                
+                let helpText = parent.querySelector('.help-text');
+                if (helpText) {
+                    parent.insertBefore(errEl, helpText.nextSibling);
+                } else {
+                    parent.appendChild(errEl);
+                }
+            }
+            return errEl;
+        }
+
+        const phoneRegex = /^(?:\+?88)?01[3-9]\d{8}$/;
+        const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+
+        function validateField(input, regex, errorEl) {
+            const val = input.value.trim();
+            if (val === '') {
+                errorEl.style.display = 'none';
+                input.style.borderColor = '';
+                input.style.boxShadow = '';
+                return;
+            }
+
+            if (regex.test(val)) {
+                errorEl.style.display = 'none';
+                input.style.borderColor = '#10b981'; 
+                input.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
+            } else {
+                errorEl.style.display = 'flex';
+                input.style.borderColor = 'var(--danger)'; 
+                input.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.2)';
+            }
+        }
+
+        if (phoneInput) {
+            const phoneErr = getOrCreateErrorElement(phoneInput, "Enter a valid Bangladeshi mobile number (e.g. 01712345678)");
+            phoneInput.addEventListener('input', function() {
+                validateField(phoneInput, phoneRegex, phoneErr);
+            });
+        }
+
+        if (macInput) {
+            const macErr = getOrCreateErrorElement(macInput, "Enter a valid MAC address (e.g. 1A:2B:3C:4D:5E:6F)");
+            macInput.addEventListener('input', function() {
+                validateField(macInput, macRegex, macErr);
+            });
+        }
+    });
+  </script>
+</body>
+</html>

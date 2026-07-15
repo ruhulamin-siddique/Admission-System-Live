@@ -181,3 +181,152 @@ def log_user_logout(sender, request, user, **kwargs):
     if user:
         from .utils import log_activity
         log_activity(request, 'LOGOUT', 'security', f'User {user.username} logged out')
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Developer Portfolio Models
+# ──────────────────────────────────────────────────────────────────────────────
+
+class DeveloperProfile(models.Model):
+    """Singleton model — only one row should exist (enforced in view/save)."""
+    full_name            = models.CharField(max_length=255, default="Ruhulamin Siddique")
+    title                = models.CharField(max_length=150, default="Lecturer", help_text="e.g. Lecturer, Senior Developer")
+    department           = models.CharField(max_length=100, default="CSE", help_text="Short dept name, e.g. CSE")
+    institution          = models.CharField(max_length=255, default="Bangladesh Army University of Science and Technology")
+    tagline              = models.CharField(max_length=255, blank=True, help_text="Short animated typing tagline, e.g. 'Django Developer | Researcher | Educator'")
+    bio                  = models.TextField(blank=True, help_text="About Me paragraph shown on portfolio page")
+    profile_photo        = models.ImageField(upload_to='developer/', null=True, blank=True)
+    email                = models.EmailField(blank=True, null=True)
+    phone                = models.CharField(max_length=20, blank=True, null=True)
+    github_url           = models.URLField(blank=True, default="https://github.com/ruhulamin-siddique")
+    linkedin_url         = models.URLField(blank=True, null=True)
+    portfolio_url        = models.URLField(blank=True, null=True, help_text="Optional external personal website")
+    years_of_experience  = models.PositiveIntegerField(default=0)
+    is_available_for_work = models.BooleanField(default=True, help_text="Shows an 'Open to Work' badge on the hero section")
+    visit_count          = models.PositiveIntegerField(default=0, help_text="Auto-incremented on each page view")
+    updated_at           = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Developer Profile — {self.full_name}"
+
+    class Meta:
+        verbose_name = "Developer Profile"
+        verbose_name_plural = "Developer Profile"
+
+
+class Education(models.Model):
+    developer    = models.ForeignKey(DeveloperProfile, on_delete=models.CASCADE, related_name='education_set')
+    degree       = models.CharField(max_length=150, help_text="e.g. B.Sc in Computer Science & Engineering")
+    institution  = models.CharField(max_length=255)
+    field_of_study = models.CharField(max_length=150, blank=True)
+    start_year   = models.IntegerField()
+    end_year     = models.IntegerField(null=True, blank=True, help_text="Leave blank if ongoing")
+    gpa          = models.CharField(max_length=20, blank=True, help_text="e.g. 3.75/4.00")
+    description  = models.TextField(blank=True)
+    sort_order   = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.degree} — {self.institution}"
+
+    class Meta:
+        ordering = ['sort_order', '-start_year']
+        verbose_name_plural = "Education"
+
+
+class Skill(models.Model):
+    CATEGORY_CHOICES = [
+        ('Backend',    'Backend Development'),
+        ('Frontend',   'Frontend Development'),
+        ('Database',   'Database'),
+        ('DevOps',     'DevOps & Cloud'),
+        ('Tools',      'Tools & Software'),
+        ('Soft',       'Soft Skills'),
+        ('Research',   'Research & Academic'),
+        ('Other',      'Other'),
+    ]
+    developer    = models.ForeignKey(DeveloperProfile, on_delete=models.CASCADE, related_name='skills')
+    name         = models.CharField(max_length=100)
+    category     = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='Other')
+    proficiency  = models.IntegerField(default=80, help_text="0–100 percentage for progress bar")
+    icon_class   = models.CharField(max_length=80, blank=True, help_text="Font Awesome class e.g. 'fab fa-python'")
+    sort_order   = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.name} ({self.category})"
+
+    class Meta:
+        ordering = ['sort_order', 'category', 'name']
+
+
+class Project(models.Model):
+    STATUS_CHOICES = [
+        ('live',       'Live'),
+        ('dev',        'In Development'),
+        ('archived',   'Archived'),
+    ]
+    developer    = models.ForeignKey(DeveloperProfile, on_delete=models.CASCADE, related_name='projects')
+    title        = models.CharField(max_length=200)
+    description  = models.TextField()
+    tech_stack   = models.CharField(max_length=500, blank=True, help_text="Comma-separated: Python, Django, PostgreSQL")
+    github_url   = models.URLField(blank=True, null=True)
+    live_url     = models.URLField(blank=True, null=True)
+    status       = models.CharField(max_length=10, choices=STATUS_CHOICES, default='live')
+    is_featured  = models.BooleanField(default=False)
+    cover_image  = models.ImageField(upload_to='developer/projects/', null=True, blank=True)
+    start_date   = models.DateField(null=True, blank=True)
+    end_date     = models.DateField(null=True, blank=True, help_text="Leave blank if ongoing")
+    sort_order   = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.title
+
+    def get_tech_list(self):
+        return [t.strip() for t in self.tech_stack.split(',') if t.strip()]
+
+    class Meta:
+        ordering = ['-is_featured', 'sort_order']
+
+
+class Experience(models.Model):
+    TYPE_CHOICES = [
+        ('fulltime',  'Full-time'),
+        ('parttime',  'Part-time'),
+        ('contract',  'Contract'),
+        ('freelance', 'Freelance'),
+        ('research',  'Research'),
+        ('teaching',  'Teaching'),
+        ('internship','Internship'),
+    ]
+    developer       = models.ForeignKey(DeveloperProfile, on_delete=models.CASCADE, related_name='experiences')
+    job_title       = models.CharField(max_length=200)
+    organization    = models.CharField(max_length=255)
+    employment_type = models.CharField(max_length=15, choices=TYPE_CHOICES, default='fulltime')
+    location        = models.CharField(max_length=150, blank=True)
+    description     = models.TextField(blank=True)
+    start_date      = models.DateField()
+    end_date        = models.DateField(null=True, blank=True)
+    is_current      = models.BooleanField(default=False)
+    sort_order      = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.job_title} @ {self.organization}"
+
+    class Meta:
+        ordering = ['sort_order', '-start_date']
+
+
+class Achievement(models.Model):
+    developer   = models.ForeignKey(DeveloperProfile, on_delete=models.CASCADE, related_name='achievements')
+    title       = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    icon_class  = models.CharField(max_length=80, default='fas fa-trophy', help_text="Font Awesome icon class")
+    date_earned = models.DateField(null=True, blank=True)
+    issuer      = models.CharField(max_length=255, blank=True)
+    link        = models.URLField(blank=True, null=True)
+    sort_order  = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ['sort_order', '-date_earned']

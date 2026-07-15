@@ -23,6 +23,7 @@ urlpatterns = [
     path('settings/', include('master_data.urls')),
     path('external-api/', include('external_api.urls')),
     path('exam-billing/', include('exam_billing.urls')),
+    path('ict/', include('ict_wing.urls')),
 ]
 
 from django.conf import settings

@@ -40,6 +40,8 @@ class AdmissionSecurityMiddleware:
             settings.STATIC_URL,
             settings.MEDIA_URL,
             '/admin/',
+            '/portfolio/',
+            '/ict/',
         ]
 
     def __call__(self, request):

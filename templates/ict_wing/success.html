@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration Submitted — ICT Wing</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* ── Reset & Variable Definitions ───────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg: #0b0f19;
+      --surface: rgba(17, 24, 39, 0.8);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --card-inner: rgba(15, 23, 42, 0.5);
+      --card-inner-border: rgba(255, 255, 255, 0.06);
+      
+      --accent: #10b981;
+      --accent-grad: linear-gradient(135deg, #10b981, #059669);
+      --accent-purple: #6366f1;
+      --accent-purple-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-light: #d1d5db;
+      --warning: #f59e0b;
+      
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(99, 102, 241, 0.1) 0px, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Main Container ──────────────────────────────────────────────────── */
+    .success-container {
+      width: 100%;
+      max-width: 550px;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 40px 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Checkmark Icon Animation ────────────────────────────────────────── */
+    .icon-container {
+      width: 72px;
+      height: 72px;
+      background: var(--accent-grad);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: #fff;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+      animation: scaleUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+
+    @keyframes scaleUp {
+      from { transform: scale(0); }
+      to { transform: scale(1); }
+    }
+
+    .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    /* ── Details Card ────────────────────────────────────────────────────── */
+    .details-card {
+      background: var(--card-inner);
+      border: 1px solid var(--card-inner-border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: left;
+      margin-bottom: 32px;
+    }
+
+    .details-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--card-inner-border);
+      padding-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .details-title i {
+      color: var(--accent-purple);
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+
+    .detail-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .detail-value {
+      color: var(--text-light);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* ── Status Badges ───────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .badge-pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* ── Action Buttons ──────────────────────────────────────────────────── */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn-action {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 12px;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent-purple-grad);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-light);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    /* ── Mobile Optimization (Breakpoints) ────────────────────────────────── */
+    @media (max-width: 576px) {
+      .success-container {
+        padding: 30px 20px;
+        border-radius: var(--radius-md);
+      }
+      
+      .title {
+        font-size: 1.5rem;
+      }
+
+      .details-card {
+        padding: 16px;
+      }
+
+      .detail-row {
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        gap: 2px;
+        margin-bottom: 14px;
+      }
+
+      .detail-value {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="success-container">
+    <div class="icon-container">
+      <i class="fas fa-check"></i>
+    </div>
+    
+    <h1 class="title">Submission Successful!</h1>
+    <p class="subtitle">Your device registration request has been submitted to the ICT Wing.</p>
+
+    <div class="details-card">
+      <div class="details-title">
+        <i class="fas fa-receipt"></i> Registration Details
+      </div>
+      
+      <div class="detail-row">
+        <span class="detail-label">Reference ID</span>
+        <span class="detail-value" style="color: var(--accent-purple);">#DR-{{ device.pk|stringformat:"05d" }}</span>
+      </div>
+      
+      <div class="detail-row">
+        <span class="detail-label">Applicant Name</span>
+        <span class="detail-value">{{ device.full_name }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Department</span>
+        <span class="detail-value">{{ device.department }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Device Info</span>
+        <span class="detail-value">{{ device.get_device_type_display }} ({{ device.device_name_brand }})</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">MAC Address</span>
+        <span class="detail-value" style="font-family: monospace; font-size: 0.95rem;">{{ device.mac_address }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value">
+          <span class="badge badge-pending">
+            <i class="fas fa-clock"></i> {{ device.get_status_display }}
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a href="{% url 'register_device' %}" class="btn-action btn-primary">
+        <i class="fas fa-plus"></i> Register Another Device
+      </a>
+      <a href="/" class="btn-action btn-secondary">
+        <i class="fas fa-home"></i> Back to Home
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>

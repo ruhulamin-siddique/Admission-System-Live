@@ -58,6 +58,14 @@ ACCESS_REGISTRY = {
             "bulk_import_faculty": ("Bulk Import Faculty", "Upload faculty profiles in bulk using Excel templates."),
         }
     },
+    "ict_wing": {
+        "display": "ICT Wing",
+        "icon": "fas fa-network-wired",
+        "tasks": {
+            "view_devices": ("View Registered Devices", "Browse and search user device registrations."),
+            "manage_devices": ("Approve/Bind Devices", "Approve, reject, edit notes, and assign IP addresses to devices."),
+        }
+    },
     "security": {
         "display": "Security & Staff",
         "icon": "fas fa-user-shield",

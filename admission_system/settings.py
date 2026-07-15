@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'master_data',
     'external_api',
     'exam_billing',
+    'ict_wing',
 ]
 
 MIDDLEWARE = [

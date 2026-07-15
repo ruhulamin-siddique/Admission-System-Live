@@ -1,0 +1,1466 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ profile.full_name }} — Portfolio</title>
+
+  <!-- SEO -->
+  <meta name="description" content="{{ profile.bio|truncatechars:160|default:'Professional portfolio and resume of '|add:profile.full_name }}">
+  <meta property="og:title" content="{{ profile.full_name }} | {{ profile.title }}">
+  <meta property="og:description" content="{{ profile.bio|truncatechars:200|default:'Developer Portfolio' }}">
+  {% if profile.profile_photo %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ profile.profile_photo.url }}">{% endif %}
+  <meta property="og:type" content="profile">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- SortableJS for drag-and-drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<style>
+/* ── CSS Variables ─────────────────────────────────────────────────────── */
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+  --accent: #6366f1;
+  --accent2: #8b5cf6;
+  --accent3: #06b6d4;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --radius: 16px;
+  --shadow: 0 4px 24px rgba(99,102,241,.10);
+  --shadow-lg: 0 12px 48px rgba(99,102,241,.18);
+  --transition: all 0.3s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  --shadow: 0 4px 24px rgba(0,0,0,.4);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,.5);
+}
+
+/* ── Base Reset ────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s, color 0.3s;
+  line-height: 1.7;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Scroll Progress Bar ───────────────────────────────────────────────── */
+#scroll-progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  z-index: 9999; transition: width .1s linear;
+}
+
+/* ── Hero Section ──────────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  padding: 100px 24px 80px;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(-45deg, #1e1b4b, #312e81, #1e40af, #0e7490, #065f46, #312e81);
+  background-size: 400% 400%;
+  animation: gradShift 12s ease infinite;
+}
+.hero-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 60% 50%, rgba(99,102,241,.25) 0%, transparent 70%);
+}
+@keyframes gradShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.hero-content {
+  position: relative; z-index: 2;
+  text-align: center; max-width: 800px; width: 100%;
+}
+.hero-avatar {
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid rgba(255,255,255,.3);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  margin-bottom: 24px;
+  transition: transform .4s ease;
+}
+.hero-avatar:hover { transform: scale(1.05); }
+.hero-avatar-placeholder {
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,.05));
+  border: 4px solid rgba(255,255,255,.3);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 56px; color: rgba(255,255,255,.8);
+}
+.hero-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+.hero-title {
+  font-size: clamp(.95rem, 2.5vw, 1.2rem);
+  color: rgba(255,255,255,.85);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.hero-dept {
+  font-size: .95rem;
+  color: rgba(255,255,255,.65);
+  margin-bottom: 20px;
+}
+.hero-tagline {
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
+  color: rgba(255,255,255,.9);
+  font-weight: 500;
+  margin-bottom: 28px;
+  min-height: 1.6em;
+}
+.cursor-blink { border-right: 2px solid rgba(255,255,255,.8); animation: blink .7s infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+.availability-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(16,185,129,.25);
+  border: 1px solid rgba(16,185,129,.5);
+  color: #6ee7b7;
+  font-size: .8rem; font-weight: 600;
+  padding: 5px 14px; border-radius: 999px;
+  margin-bottom: 24px;
+  animation: pulse-green 2s infinite;
+}
+@keyframes pulse-green {
+  0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+}
+.hero-socials {
+  display: flex; justify-content: center; flex-wrap: wrap;
+  gap: 12px; margin-bottom: 28px;
+}
+.hero-socials a {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: .88rem; font-weight: 600;
+  transition: var(--transition);
+  backdrop-filter: blur(6px);
+}
+.hero-socials a:hover {
+  background: rgba(255,255,255,.25);
+  transform: translateY(-2px);
+  text-decoration: none;
+  box-shadow: 0 6px 20px rgba(0,0,0,.2);
+}
+.btn-hero-pdf {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; font-weight: 700; font-size: .9rem;
+  padding: 11px 26px; border-radius: 999px; border: none;
+  cursor: pointer; transition: var(--transition);
+  box-shadow: 0 4px 16px rgba(99,102,241,.4);
+}
+.btn-hero-pdf:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(99,102,241,.5); color:#fff; text-decoration:none; }
+
+/* ── Sticky Nav ────────────────────────────────────────────────────────── */
+.sticky-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  transition: background .3s;
+}
+[data-theme="dark"] .sticky-nav {
+  background: rgba(15,23,42,.85);
+}
+.sticky-nav-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.sticky-nav-links {
+  display: flex; overflow-x: auto; gap: 4px; scrollbar-width: none;
+}
+.sticky-nav-links::-webkit-scrollbar { display: none; }
+.sticky-nav-links a {
+  padding: 14px 16px;
+  font-size: .82rem; font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  transition: var(--transition);
+  text-decoration: none;
+}
+.sticky-nav-links a:hover, .sticky-nav-links a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  text-decoration: none;
+}
+.nav-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+#theme-toggle {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px;
+  cursor: pointer; font-size: 1rem; color: var(--text-muted);
+  transition: var(--transition);
+}
+#theme-toggle:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── Section Wrappers ──────────────────────────────────────────────────── */
+section { padding: 80px 24px; }
+.section-inner { max-width: 1100px; margin: 0 auto; }
+.section-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; font-size: .75rem; font-weight: 700; letter-spacing: 1px;
+  padding: 5px 14px; border-radius: 999px;
+  margin-bottom: 10px;
+}
+.section-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: -.5px;
+}
+.section-sub {
+  color: var(--text-muted);
+  margin-bottom: 48px;
+  font-size: 1.05rem;
+}
+.section-divider {
+  height: 4px; width: 56px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 999px; margin-bottom: 20px;
+}
+
+/* ── Card Base ─────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  position: relative;
+}
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+
+/* ── About Section ─────────────────────────────────────────────────────── */
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+@media(max-width:768px) { .about-grid { grid-template-columns: 1fr; } }
+.about-bio { font-size: 1.05rem; color: var(--text-muted); line-height: 1.9; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.stat-card {
+  background: var(--surface2);
+  border-radius: 12px; padding: 20px;
+  text-align: center;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+.stat-card:hover { border-color: var(--accent); }
+.stat-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.2rem; font-weight: 800;
+  color: var(--accent); line-height: 1;
+}
+.stat-label { font-size: .8rem; color: var(--text-muted); font-weight: 600; margin-top: 4px; }
+
+/* ── Skills Section ────────────────────────────────────────────────────── */
+.skills-categories { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+.skill-cat-btn {
+  padding: 6px 16px; border-radius: 999px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: .8rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition);
+}
+.skill-cat-btn:hover, .skill-cat-btn.active {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.skill-item {
+  background: var(--surface2); border-radius: 12px; padding: 16px 20px;
+  border: 1px solid var(--border); transition: var(--transition);
+}
+.skill-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.skill-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.skill-name { font-weight: 600; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+.skill-name i { color: var(--accent); }
+.skill-pct { font-size: .8rem; font-weight: 700; color: var(--accent); }
+.skill-bar-bg { height: 6px; background: var(--border); border-radius: 999px; overflow: hidden; }
+.skill-bar-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  width: 0%; transition: width 1.2s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Timeline (Experience / Education) ────────────────────────────────── */
+.timeline { position: relative; padding-left: 36px; }
+.timeline::before {
+  content: '';
+  position: absolute; left: 12px; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent), var(--accent2), transparent);
+}
+.timeline-item {
+  position: relative; margin-bottom: 36px;
+  opacity: 0; transform: translateX(-20px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.timeline-item.visible { opacity: 1; transform: translateX(0); }
+.timeline-dot {
+  position: absolute; left: -30px; top: 4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.timeline-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.timeline-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--text); }
+.timeline-org { color: var(--accent); font-weight: 600; font-size: .9rem; }
+.timeline-date { font-size: .78rem; color: var(--text-light); background: var(--surface2); padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.timeline-desc { color: var(--text-muted); font-size: .93rem; margin-top: 8px; }
+.badge-type {
+  display: inline-block; font-size: .7rem; font-weight: 700;
+  padding: 2px 10px; border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; margin-left: 8px; vertical-align: middle;
+}
+.badge-current {
+  background: linear-gradient(135deg, var(--success), #059669);
+}
+
+/* ── Projects Section ──────────────────────────────────────────────────── */
+.featured-project {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border-radius: var(--radius); padding: 32px;
+  margin-bottom: 28px; position: relative; overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.featured-project::before {
+  content: '⭐ Featured';
+  position: absolute; top: 16px; right: 20px;
+  background: rgba(255,255,255,.2);
+  font-size: .75rem; font-weight: 700; color: #fff;
+  padding: 4px 12px; border-radius: 999px;
+}
+.featured-project .proj-title { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; margin-bottom: 10px; }
+.featured-project .proj-desc { color: rgba(255, 255, 255, 0.9); font-size: .95rem; margin-bottom: 20px; }
+.featured-project .status-badge { background: rgba(255, 255, 255, 0.2); color: #fff; border: 1px solid rgba(255, 255, 255, 0.4); }
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.proj-card { display: flex; flex-direction: column; }
+.proj-cover {
+  width: 100%; height: 160px; object-fit: cover;
+  border-radius: 10px; margin-bottom: 16px;
+}
+.proj-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 8px; }
+.proj-desc { color: var(--text-muted); font-size: .88rem; flex: 1; margin-bottom: 14px; }
+.tech-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.tech-pill {
+  font-size: .72rem; font-weight: 700;
+  background: linear-gradient(135deg, rgba(99,102,241,.1), rgba(139,92,246,.1));
+  color: var(--accent);
+  border: 1px solid rgba(99,102,241,.2);
+  padding: 3px 10px; border-radius: 999px;
+}
+.status-badge {
+  font-size: .7rem; font-weight: 700; padding: 2px 10px; border-radius: 999px;
+  margin-left: 6px;
+}
+.status-live    { background: rgba(16,185,129,.15); color: var(--success); border: 1px solid rgba(16,185,129,.3); }
+.status-dev     { background: rgba(245,158,11,.15); color: var(--warning); border: 1px solid rgba(245,158,11,.3); }
+.status-archived{ background: rgba(100,116,139,.15); color: var(--text-muted); border: 1px solid var(--border); }
+.proj-links { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-proj {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .8rem; font-weight: 700;
+  padding: 7px 16px; border-radius: 999px;
+  transition: var(--transition); border: none; cursor: pointer;
+}
+.btn-proj-gh { background: var(--text); color: var(--bg); }
+.btn-proj-gh:hover { opacity: .85; color: var(--bg); text-decoration: none; }
+.btn-proj-live { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+.btn-proj-live:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(99,102,241,.4); color:#fff; text-decoration:none; }
+
+/* ── Achievements Section ──────────────────────────────────────────────── */
+.achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.ach-card { text-align: center; }
+.ach-icon {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; color: #fff;
+  margin: 0 auto 14px;
+  box-shadow: 0 4px 16px rgba(99,102,241,.3);
+}
+.ach-title { font-weight: 700; font-size: .95rem; margin-bottom: 6px; }
+.ach-desc { font-size: .85rem; color: var(--text-muted); margin-bottom: 10px; }
+.ach-meta { font-size: .75rem; color: var(--text-light); }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.pf-footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  text-align: center; padding: 28px 24px;
+  color: var(--text-muted); font-size: .85rem;
+}
+.pf-footer strong { color: var(--accent); }
+.visit-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 4px 14px; border-radius: 999px; font-size: .8rem;
+  color: var(--text-muted); margin-top: 10px;
+}
+
+/* ── Scroll-to-Top ─────────────────────────────────────────────────────── */
+#scroll-top {
+  position: fixed; bottom: 90px; right: 24px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent);
+  color: #fff; border: none; cursor: pointer;
+  font-size: 1rem;
+  box-shadow: 0 4px 16px rgba(99,102,241,.4);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: translateY(10px);
+  transition: var(--transition); z-index: 200;
+}
+#scroll-top.show { opacity: 1; transform: translateY(0); }
+
+/* ── Edit Mode FAB ─────────────────────────────────────────────────────── */
+#edit-fab {
+  position: fixed; bottom: 24px; right: 24px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border: none; border-radius: 999px;
+  padding: 13px 22px; font-weight: 700; font-size: .88rem;
+  cursor: pointer; box-shadow: var(--shadow-lg);
+  display: flex; align-items: center; gap: 8px;
+  transition: var(--transition); z-index: 300;
+}
+#edit-fab:hover { transform: scale(1.05); box-shadow: 0 8px 28px rgba(99,102,241,.5); }
+#edit-fab.active { background: linear-gradient(135deg, var(--danger), #dc2626); }
+.edit-controls { display: none !important; }
+body.edit-mode .edit-controls { display: inline-flex !important; }
+
+/* ── Edit Buttons (inline) ─────────────────────────────────────────────── */
+.edit-btn-group {
+  position: absolute; top: 12px; right: 12px;
+  gap: 6px;
+  align-items: center;
+}
+.edit-btn-group .btn-edit, .edit-btn-group .btn-del {
+  width: 30px; height: 30px; border-radius: 8px; border: none;
+  cursor: pointer; font-size: .8rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.btn-edit { background: rgba(99,102,241,.12); color: var(--accent); }
+.btn-edit:hover { background: var(--accent); color: #fff; }
+.btn-del { background: rgba(239,68,68,.12); color: var(--danger); }
+.btn-del:hover { background: var(--danger); color: #fff; }
+.btn-add-section {
+  display: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border: none; border-radius: 999px;
+  padding: 7px 18px; font-size: .82rem; font-weight: 700;
+  cursor: pointer; gap: 6px; align-items: center;
+  transition: var(--transition);
+}
+body.edit-mode .btn-add-section { display: inline-flex; }
+.btn-add-section:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(99,102,241,.4); }
+
+/* ── Modals ────────────────────────────────────────────────────────────── */
+.pf-modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.pf-modal-overlay.open { opacity: 1; pointer-events: all; }
+.pf-modal {
+  background: var(--surface); border-radius: 20px;
+  width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  padding: 32px; box-shadow: var(--shadow-lg);
+  transform: translateY(20px); transition: transform .3s;
+}
+.pf-modal-overlay.open .pf-modal { transform: translateY(0); }
+.pf-modal h3 { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.3rem; margin-bottom: 20px; }
+.pf-form-group { margin-bottom: 16px; }
+.pf-form-group label { display: block; font-size: .8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; letter-spacing: .3px; }
+.pf-form-group input,
+.pf-form-group select,
+.pf-form-group textarea {
+  width: 100%; padding: 10px 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: .9rem;
+  transition: border-color .2s;
+}
+.pf-form-group input:focus,
+.pf-form-group select:focus,
+.pf-form-group textarea:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+}
+.pf-form-group textarea { min-height: 90px; resize: vertical; }
+.pf-modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.btn-cancel {
+  padding: 10px 22px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text-muted); font-weight: 600;
+  cursor: pointer; transition: var(--transition);
+}
+.btn-save {
+  padding: 10px 26px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border: none; border-radius: 10px;
+  font-weight: 700; cursor: pointer; transition: var(--transition);
+}
+.btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,.4); }
+
+/* ── Toast Notification ────────────────────────────────────────────────── */
+#pf-toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(16px);
+  background: #1e293b; color: #f1f5f9;
+  padding: 12px 24px; border-radius: 10px;
+  font-size: .88rem; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  opacity: 0; transition: all .3s; z-index: 600;
+  white-space: nowrap;
+}
+#pf-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Photo Upload Preview ──────────────────────────────────────────────── */
+.photo-preview-ring {
+  width: 90px; height: 90px; border-radius: 50%;
+  object-fit: cover; border: 3px solid var(--accent);
+  display: block; margin: 0 auto 12px;
+}
+
+/* ── Animate on Scroll ─────────────────────────────────────────────────── */
+.aos-fade-up {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.aos-fade-up.visible { opacity: 1; transform: translateY(0); }
+
+/* ── Print Styles ──────────────────────────────────────────────────────── */
+@media print {
+  body { background: #fff; color: #000; }
+  .sticky-nav, #scroll-progress, #scroll-top, #edit-fab,
+  #pf-toast, .pf-modal-overlay, .hero-socials a:not([href*="github"]),
+  .btn-hero-pdf, .nav-actions, .edit-btn-group, .btn-add-section { display: none !important; }
+  .hero { min-height: auto; padding: 40px 24px; }
+  .hero-bg { background: #1e1b4b !important; animation: none !important; }
+  section { padding: 40px 24px; break-inside: avoid; }
+  .card { box-shadow: none; border: 1px solid #e2e8f0; }
+  .skill-bar-fill { transition: none; }
+}
+
+/* ── Responsive Fixes ──────────────────────────────────────────────────── */
+@media(max-width:600px) {
+  .section-title { font-size: 1.8rem; }
+  .projects-grid { grid-template-columns: 1fr; }
+  .achievements-grid { grid-template-columns: 1fr; }
+  .skills-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  #edit-fab { padding: 12px 16px; font-size: .8rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Scroll Progress -->
+<div id="scroll-progress"></div>
+
+<!-- ──────────────────────────── HERO ──────────────────────────────────── -->
+<section class="hero" id="home">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+
+    {% if is_editor %}
+    <button id="edit-profile-btn" onclick="openProfileModal()" class="edit-controls" style="position:absolute;top:-40px;right:0;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:10px;padding:7px 16px;font-size:.8rem;font-weight:700;cursor:pointer;display:none;align-items:center;gap:6px;backdrop-filter:blur(4px);">
+      <i class="fas fa-edit"></i> Edit Profile
+    </button>
+    {% endif %}
+
+    {% if profile.profile_photo %}
+    <img src="{{ profile.profile_photo.url }}" alt="{{ profile.full_name }}" class="hero-avatar" id="hero-photo">
+    {% else %}
+    <div class="hero-avatar-placeholder" id="hero-photo-placeholder">
+      <i class="fas fa-user"></i>
+    </div>
+    {% endif %}
+
+    <h1 class="hero-name" id="hero-name">{{ profile.full_name }}</h1>
+    <p class="hero-title" id="hero-title-text">{{ profile.title }}{% if profile.department %} · Dept. of {{ profile.department }}{% endif %}</p>
+    <p class="hero-dept" id="hero-inst">{{ profile.institution }}</p>
+    <p class="hero-tagline"><span id="typed-tagline"></span><span class="cursor-blink">|</span></p>
+
+    {% if profile.is_available_for_work %}
+    <div class="availability-badge">
+      <span style="width:8px;height:8px;border-radius:50%;background:#6ee7b7;display:inline-block;"></span>
+      Open to Work / Collaboration
+    </div>
+    {% endif %}
+
+    <div class="hero-socials">
+      {% if profile.github_url %}
+      <a href="{{ profile.github_url }}" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+      {% endif %}
+      {% if profile.linkedin_url %}
+      <a href="{{ profile.linkedin_url }}" target="_blank" rel="noopener"><i class="fab fa-linkedin"></i> LinkedIn</a>
+      {% endif %}
+      {% if profile.email %}
+      <a href="javascript:void(0)" onclick="copyEmail('{{ profile.email }}')" title="Click to copy email"><i class="fas fa-envelope"></i> {{ profile.email }}</a>
+      {% endif %}
+      {% if profile.portfolio_url %}
+      <a href="{{ profile.portfolio_url }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i> Website</a>
+      {% endif %}
+    </div>
+
+    <button class="btn-hero-pdf" onclick="window.print()">
+      <i class="fas fa-file-pdf"></i> Download Resume (PDF)
+    </button>
+  </div>
+</section>
+
+<!-- ──────────────────────────── STICKY NAV ────────────────────────────── -->
+<nav class="sticky-nav">
+  <div class="sticky-nav-inner">
+    <div class="sticky-nav-links">
+      <a href="#about">About</a>
+      <a href="#skills">Skills</a>
+      <a href="#experience">Experience</a>
+      <a href="#education">Education</a>
+      <a href="#projects">Projects</a>
+      <a href="#achievements">Achievements</a>
+    </div>
+    <div class="nav-actions">
+      {% if is_editor %}
+      <a href="{% url 'developer_portfolio' %}" target="_blank" title="View as visitor" style="font-size:.78rem;color:var(--text-muted);font-weight:600;text-decoration:none;display:flex;align-items:center;gap:5px;">
+        <i class="fas fa-eye"></i> <span class="d-none d-sm-inline">Public View</span>
+      </a>
+      {% endif %}
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ──────────────────────────── ABOUT ────────────────────────────────── -->
+<section id="about">
+  <div class="section-inner">
+    <div class="section-tag"><i class="fas fa-user-circle"></i> ABOUT ME</div>
+    <div class="section-divider"></div>
+    <h2 class="section-title">The Developer Behind the System</h2>
+
+    <div class="about-grid">
+      <div>
+        <p class="about-bio" id="about-bio">{{ profile.bio|default:"A passionate developer dedicated to building robust, user-friendly software systems that make real-world impact. Educator, researcher, and open-source enthusiast."|linebreaksbr }}</p>
+      </div>
+      <div>
+        <div class="stats-grid">
+          <div class="stat-card aos-fade-up">
+            <div class="stat-num" data-target="{{ profile.years_of_experience }}">0</div>
+            <div class="stat-label">Years Experience</div>
+          </div>
+          <div class="stat-card aos-fade-up">
+            <div class="stat-num" data-target="{{ project_count }}">0</div>
+            <div class="stat-label">Projects Built</div>
+          </div>
+          <div class="stat-card aos-fade-up">
+            <div class="stat-num" data-target="{{ skills_count }}">0</div>
+            <div class="stat-label">Technologies</div>
+          </div>
+          <div class="stat-card aos-fade-up">
+            <div class="stat-num" data-target="{{ profile.visit_count }}">0</div>
+            <div class="stat-label">Portfolio Views</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────── SKILLS ───────────────────────────────── -->
+<section id="skills" style="background: var(--surface2);">
+  <div class="section-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+      <div>
+        <div class="section-tag"><i class="fas fa-brain"></i> SKILLS & EXPERTISE</div>
+        <div class="section-divider"></div>
+        <h2 class="section-title">Technical Proficiencies</h2>
+      </div>
+      {% if is_editor %}
+      <button class="btn-add-section edit-controls" onclick="openModal('skill')"><i class="fas fa-plus"></i> Add Skill</button>
+      {% endif %}
+    </div>
+    <p class="section-sub">Technologies, tools and soft skills I've mastered over the years.</p>
+
+    <!-- Category filter tabs -->
+    <div class="skills-categories" id="skill-cat-tabs">
+      <button class="skill-cat-btn active" onclick="filterSkills('all', this)">All</button>
+      {% for cat_key, cat_label in skill_categories %}
+      <button class="skill-cat-btn" onclick="filterSkills('{{ cat_key }}', this)">{{ cat_label }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="skills-grid" id="skills-container">
+      {% for skill in skills_all %}
+      <div class="skill-item sortable-skill" data-id="{{ skill.pk }}" data-cat="{{ skill.category }}" style="position:relative;">
+        {% if is_editor %}
+        <div class="edit-btn-group edit-controls" style="position:absolute;top:10px;right:10px;">
+          <button class="btn-edit" onclick="editSkill({{ skill.pk }},'{{ skill.name|escapejs }}','{{ skill.category }}',{{ skill.proficiency }},'{{ skill.icon_class|escapejs }}',{{ skill.sort_order }})"><i class="fas fa-pen"></i></button>
+          <button class="btn-del" onclick="deleteItem('skill',{{ skill.pk }},this.closest('.skill-item'))"><i class="fas fa-trash"></i></button>
+        </div>
+        {% endif %}
+        <div class="skill-header">
+          <div class="skill-name">{% if skill.icon_class %}<i class="{{ skill.icon_class }}"></i>{% endif %} {{ skill.name }}</div>
+          <div class="skill-pct">{{ skill.proficiency }}%</div>
+        </div>
+        <div class="skill-bar-bg"><div class="skill-bar-fill" data-pct="{{ skill.proficiency }}"></div></div>
+      </div>
+      {% empty %}
+      <p class="text-muted" id="no-skills-msg">No skills added yet.{% if is_editor %} Click "Add Skill" to get started.{% endif %}</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────── EXPERIENCE ───────────────────────────── -->
+<section id="experience">
+  <div class="section-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+      <div>
+        <div class="section-tag"><i class="fas fa-briefcase"></i> EXPERIENCE</div>
+        <div class="section-divider"></div>
+        <h2 class="section-title">Work & Research History</h2>
+      </div>
+      {% if is_editor %}
+      <button class="btn-add-section edit-controls" onclick="openModal('experience')"><i class="fas fa-plus"></i> Add Experience</button>
+      {% endif %}
+    </div>
+
+    <div class="timeline" id="experience-container">
+      {% for exp in experiences %}
+      <div class="timeline-item" data-id="{{ exp.pk }}" style="position:relative;">
+        <div class="timeline-dot"></div>
+        <div class="card">
+          {% if is_editor %}
+          <div class="edit-btn-group edit-controls" style="display:none;position:absolute;top:14px;right:14px;">
+            <button class="btn-edit" onclick="editExperience({{ exp.pk }},'{{ exp.job_title|escapejs }}','{{ exp.organization|escapejs }}','{{ exp.employment_type }}','{{ exp.location|escapejs }}',`{{ exp.description|escapejs }}`,'{{ exp.start_date|date:"Y-m-d" }}','{{ exp.end_date|date:"Y-m-d"|default:"" }}',{{ exp.is_current|yesno:"true,false" }},{{ exp.sort_order }})"><i class="fas fa-pen"></i></button>
+            <button class="btn-del" onclick="deleteItem('experience',{{ exp.pk }},this.closest('.timeline-item'))"><i class="fas fa-trash"></i></button>
+          </div>
+          {% endif %}
+          <div class="timeline-header">
+            <div>
+              <span class="timeline-title">{{ exp.job_title }}</span>
+              <span class="badge-type {% if exp.is_current %}badge-current{% endif %}">{{ exp.get_employment_type_display }}{% if exp.is_current %} · Current{% endif %}</span>
+            </div>
+            <span class="timeline-date">
+              {{ exp.start_date|date:"M Y" }} – {% if exp.is_current %}Present{% else %}{{ exp.end_date|date:"M Y"|default:"—" }}{% endif %}
+            </span>
+          </div>
+          <div class="timeline-org"><i class="fas fa-building mr-1" style="font-size:.85rem;"></i> {{ exp.organization }}{% if exp.location %} &nbsp;·&nbsp; <i class="fas fa-map-marker-alt" style="font-size:.8rem;"></i> {{ exp.location }}{% endif %}</div>
+          {% if exp.description %}<p class="timeline-desc">{{ exp.description }}</p>{% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted" id="no-exp-msg">No experience entries yet.{% if is_editor %} Click "Add Experience" to add one.{% endif %}</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────── EDUCATION ────────────────────────────── -->
+<section id="education" style="background: var(--surface2);">
+  <div class="section-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+      <div>
+        <div class="section-tag"><i class="fas fa-graduation-cap"></i> EDUCATION</div>
+        <div class="section-divider"></div>
+        <h2 class="section-title">Academic Background</h2>
+      </div>
+      {% if is_editor %}
+      <button class="btn-add-section edit-controls" onclick="openModal('education')"><i class="fas fa-plus"></i> Add Education</button>
+      {% endif %}
+    </div>
+
+    <div class="timeline" id="education-container">
+      {% for edu in education %}
+      <div class="timeline-item" data-id="{{ edu.pk }}" style="position:relative;">
+        <div class="timeline-dot" style="background: var(--accent2); box-shadow: 0 0 0 2px var(--accent2);"></div>
+        <div class="card">
+          {% if is_editor %}
+          <div class="edit-btn-group edit-controls" style="display:none;position:absolute;top:14px;right:14px;">
+            <button class="btn-edit" onclick="editEducation({{ edu.pk }},'{{ edu.degree|escapejs }}','{{ edu.institution|escapejs }}','{{ edu.field_of_study|escapejs }}',{{ edu.start_year }},'{{ edu.end_year|default:"" }}','{{ edu.gpa|escapejs }}','{{ edu.description|escapejs }}',{{ edu.sort_order }})"><i class="fas fa-pen"></i></button>
+            <button class="btn-del" onclick="deleteItem('education',{{ edu.pk }},this.closest('.timeline-item'))"><i class="fas fa-trash"></i></button>
+          </div>
+          {% endif %}
+          <div class="timeline-header">
+            <div>
+              <span class="timeline-title">{{ edu.degree }}</span>
+            </div>
+            <span class="timeline-date">{{ edu.start_year }} – {{ edu.end_year|default:"Present" }}</span>
+          </div>
+          <div class="timeline-org"><i class="fas fa-university" style="font-size:.85rem;"></i> {{ edu.institution }}</div>
+          {% if edu.field_of_study %}<p class="timeline-desc">{{ edu.field_of_study }}</p>{% endif %}
+          {% if edu.description %}<p class="timeline-desc">{{ edu.description }}</p>{% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted" id="no-edu-msg">No education entries yet.{% if is_editor %} Click "Add Education" to add one.{% endif %}</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────── PROJECTS ─────────────────────────────── -->
+<section id="projects">
+  <div class="section-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+      <div>
+        <div class="section-tag"><i class="fas fa-code"></i> PROJECTS</div>
+        <div class="section-divider"></div>
+        <h2 class="section-title">Work I'm Proud Of</h2>
+      </div>
+      {% if is_editor %}
+      <button class="btn-add-section edit-controls" onclick="openModal('project')"><i class="fas fa-plus"></i> Add Project</button>
+      {% endif %}
+    </div>
+
+    {% for proj in featured_projects %}
+    <div class="featured-project aos-fade-up" data-id="{{ proj.pk }}" style="position:relative;">
+      {% if is_editor %}
+      <div class="edit-btn-group edit-controls" style="display:none;position:absolute;top:14px;left:14px;z-index:2;">
+        <button class="btn-edit" style="background:rgba(255,255,255,.2);color:#fff;" onclick="editProject({{ proj.pk }},'{{ proj.title|escapejs }}','{{ proj.description|escapejs }}','{{ proj.tech_stack|escapejs }}','{{ proj.github_url|default:""|escapejs }}','{{ proj.live_url|default:""|escapejs }}','{{ proj.status|escapejs }}',{{ proj.sort_order }},'{{ proj.start_date|date:"Y-m-d" }}','{{ proj.end_date|date:"Y-m-d"|default:"" }}',{{ proj.is_featured|yesno:"true,false" }})"><i class="fas fa-pen"></i></button>
+        <button class="btn-del" style="background:rgba(239,68,68,.3);color:#fff;" onclick="deleteItem('project',{{ proj.pk }},this.closest('.featured-project'))"><i class="fas fa-trash"></i></button>
+      </div>
+      {% endif %}
+      <div class="proj-title">{{ proj.title }} <span class="status-badge status-{{ proj.status }}">{{ proj.get_status_display }}</span></div>
+      <div class="proj-desc">{{ proj.description }}</div>
+      <div class="tech-pills">{% for t in proj.get_tech_list %}<span class="tech-pill" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3);">{{ t }}</span>{% endfor %}</div>
+      <div class="proj-links">
+        {% if proj.github_url %}<a href="{{ proj.github_url }}" target="_blank" class="btn-proj" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);"><i class="fab fa-github"></i> GitHub</a>{% endif %}
+        {% if proj.live_url %}<a href="{{ proj.live_url }}" target="_blank" class="btn-proj" style="background:rgba(255,255,255,.9);color:var(--accent);font-weight:700;"><i class="fas fa-external-link-alt"></i> Live Demo</a>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="projects-grid" id="projects-container">
+      {% for proj in regular_projects %}
+      <div class="card proj-card aos-fade-up" data-id="{{ proj.pk }}" style="position:relative;">
+        {% if is_editor %}
+        <div class="edit-btn-group edit-controls" style="display:none;">
+          <button class="btn-edit" onclick="editProject({{ proj.pk }},'{{ proj.title|escapejs }}','{{ proj.description|escapejs }}','{{ proj.tech_stack|escapejs }}','{{ proj.github_url|default:""|escapejs }}','{{ proj.live_url|default:""|escapejs }}','{{ proj.status|escapejs }}',{{ proj.sort_order }},'{{ proj.start_date|date:"Y-m-d" }}','{{ proj.end_date|date:"Y-m-d"|default:"" }}',{{ proj.is_featured|yesno:"true,false" }})"><i class="fas fa-pen"></i></button>
+          <button class="btn-del" onclick="deleteItem('project',{{ proj.pk }},this.closest('.proj-card'))"><i class="fas fa-trash"></i></button>
+        </div>
+        {% endif %}
+        {% if proj.cover_image %}<img src="{{ proj.cover_image.url }}" class="proj-cover" alt="{{ proj.title }}">{% endif %}
+        <div class="proj-title">{{ proj.title }} <span class="status-badge status-{{ proj.status }}">{{ proj.get_status_display }}</span></div>
+        <div class="proj-desc">{{ proj.description }}</div>
+        <div class="tech-pills">{% for t in proj.get_tech_list %}<span class="tech-pill">{{ t }}</span>{% endfor %}</div>
+        <div class="proj-links">
+          {% if proj.github_url %}<a href="{{ proj.github_url }}" target="_blank" class="btn-proj btn-proj-gh"><i class="fab fa-github"></i> GitHub</a>{% endif %}
+          {% if proj.live_url %}<a href="{{ proj.live_url }}" target="_blank" class="btn-proj btn-proj-live"><i class="fas fa-external-link-alt"></i> Live</a>{% endif %}
+        </div>
+      </div>
+      {% empty %}
+      {% if not featured_projects %}
+      <p class="text-muted" id="no-proj-msg">No projects added yet.{% if is_editor %} Click "Add Project" to add one.{% endif %}</p>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────── ACHIEVEMENTS ─────────────────────────── -->
+<section id="achievements" style="background: var(--surface2);">
+  <div class="section-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+      <div>
+        <div class="section-tag"><i class="fas fa-trophy"></i> ACHIEVEMENTS</div>
+        <div class="section-divider"></div>
+        <h2 class="section-title">Recognition & Awards</h2>
+      </div>
+      {% if is_editor %}
+      <button class="btn-add-section edit-controls" onclick="openModal('achievement')"><i class="fas fa-plus"></i> Add Achievement</button>
+      {% endif %}
+    </div>
+
+    <div class="achievements-grid" id="achievements-container">
+      {% for ach in achievements %}
+      <div class="card ach-card aos-fade-up" data-id="{{ ach.pk }}" style="position:relative;">
+        {% if is_editor %}
+        <div class="edit-btn-group edit-controls" style="display:none;">
+          <button class="btn-edit" onclick="editAchievement({{ ach.pk }},'{{ ach.title|escapejs }}','{{ ach.description|escapejs }}','{{ ach.icon_class|escapejs }}','{{ ach.date_earned|date:"Y-m-d"|default:"" }}','{{ ach.issuer|escapejs }}','{{ ach.link|default:""|escapejs }}',{{ ach.sort_order }})"><i class="fas fa-pen"></i></button>
+          <button class="btn-del" onclick="deleteItem('achievement',{{ ach.pk }},this.closest('.ach-card'))"><i class="fas fa-trash"></i></button>
+        </div>
+        {% endif %}
+        <div class="ach-icon"><i class="{{ ach.icon_class }}"></i></div>
+        <div class="ach-title">{% if ach.link %}<a href="{{ ach.link }}" target="_blank">{{ ach.title }}</a>{% else %}{{ ach.title }}{% endif %}</div>
+        {% if ach.description %}<div class="ach-desc">{{ ach.description }}</div>{% endif %}
+        <div class="ach-meta">
+          {% if ach.issuer %}<strong>{{ ach.issuer }}</strong>{% endif %}
+          {% if ach.date_earned %}{% if ach.issuer %} · {% endif %}{{ ach.date_earned|date:"M Y" }}{% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted" id="no-ach-msg">No achievements added yet.{% if is_editor %} Click "Add Achievement" to add one.{% endif %}</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────── FOOTER ───────────────────────────────── -->
+<footer class="pf-footer">
+  <p>Crafted with ❤️ by <strong>{{ profile.full_name }}</strong> &nbsp;·&nbsp; {{ profile.title }}, {{ profile.department }}</p>
+  <p style="margin-top:6px;color:var(--text-light);font-size:.8rem;">{{ profile.institution }}</p>
+  <div class="visit-badge"><i class="fas fa-eye"></i> {{ profile.visit_count }} portfolio views</div>
+</footer>
+
+<!-- ──────────────────────────── UI UTILITIES ──────────────────────────── -->
+<button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top"><i class="fas fa-arrow-up"></i></button>
+<div id="pf-toast"></div>
+{% if is_editor %}<button id="edit-fab" onclick="toggleEditMode()"><i class="fas fa-edit"></i> <span id="fab-label">Edit Mode</span></button>{% endif %}
+
+<!-- ─────────────────── MODALS ─────────────────────────────────────────── -->
+
+<!-- Profile Modal -->
+<div class="pf-modal-overlay" id="modal-profile">
+  <div class="pf-modal">
+    <h3><i class="fas fa-id-card" style="color:var(--accent);margin-right:10px;"></i> Edit Profile</h3>
+    <div style="text-align:center;margin-bottom:16px;">
+      <img id="photo-preview" src="{% if profile.profile_photo %}{{ profile.profile_photo.url }}{% endif %}" class="photo-preview-ring" style="{% if not profile.profile_photo %}display:none{% endif %}">
+      <div class="pf-form-group"><label>Profile Photo</label><input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(this)"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="pf-form-group"><label>Full Name</label><input type="text" id="f-fullname" value="{{ profile.full_name }}"></div>
+      <div class="pf-form-group"><label>Title / Designation</label><input type="text" id="f-title" value="{{ profile.title }}"></div>
+      <div class="pf-form-group"><label>Department (Short)</label><input type="text" id="f-dept" value="{{ profile.department }}"></div>
+      <div class="pf-form-group"><label>Years of Experience</label><input type="number" id="f-yoe" value="{{ profile.years_of_experience }}" min="0"></div>
+    </div>
+    <div class="pf-form-group"><label>Institution</label><input type="text" id="f-inst" value="{{ profile.institution }}"></div>
+    <div class="pf-form-group"><label>Tagline (typing animation)</label><input type="text" id="f-tagline" value="{{ profile.tagline }}"></div>
+    <div class="pf-form-group"><label>About Me / Bio</label><textarea id="f-bio">{{ profile.bio }}</textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="pf-form-group"><label>Email</label><input type="email" id="f-email" value="{{ profile.email|default:'' }}"></div>
+      <div class="pf-form-group"><label>Phone</label><input type="text" id="f-phone" value="{{ profile.phone|default:'' }}"></div>
+      <div class="pf-form-group"><label>GitHub URL</label><input type="url" id="f-github" value="{{ profile.github_url }}"></div>
+      <div class="pf-form-group"><label>LinkedIn URL</label><input type="url" id="f-linkedin" value="{{ profile.linkedin_url|default:'' }}"></div>
+    </div>
+    <div class="pf-form-group"><label>External Portfolio URL</label><input type="url" id="f-portfolio" value="{{ profile.portfolio_url|default:'' }}"></div>
+    <div class="pf-form-group">
+      <label><input type="checkbox" id="f-available" {% if profile.is_available_for_work %}checked{% endif %} style="width:auto;margin-right:6px;"> Open to Work / Collaboration</label>
+    </div>
+    <div class="pf-modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-profile')">Cancel</button>
+      <button class="btn-save" onclick="saveProfile()"><i class="fas fa-save" style="margin-right:6px;"></i> Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- Skill Modal -->
+<div class="pf-modal-overlay" id="modal-skill">
+  <div class="pf-modal">
+    <h3><i class="fas fa-brain" style="color:var(--accent);margin-right:10px;"></i> <span id="skill-modal-title">Add Skill</span></h3>
+    <input type="hidden" id="f-skill-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="pf-form-group"><label>Skill Name</label><input type="text" id="f-skill-name" placeholder="e.g. Python"></div>
+      <div class="pf-form-group"><label>Font Awesome Icon Class</label><input type="text" id="f-skill-icon" placeholder="fab fa-python"></div>
+      <div class="pf-form-group">
+        <label>Category</label>
+        <select id="f-skill-cat">
+          {% for cat_key, cat_label in skill_categories %}<option value="{{ cat_key }}">{{ cat_label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="pf-form-group"><label>Proficiency (0–100)</label><input type="number" id="f-skill-pct" min="0" max="100" value="80"></div>
+      <div class="pf-form-group"><label>Sort Order</label><input type="number" id="f-skill-order" value="0"></div>
+    </div>
+    <div class="pf-modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-skill')">Cancel</button>
+      <button class="btn-save" onclick="saveItem('skill')"><i class="fas fa-save" style="margin-right:6px;"></i> Save Skill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Education Modal -->
+<div class="pf-modal-overlay" id="modal-education">
+  <div class="pf-modal">
+    <h3><i class="fas fa-graduation-cap" style="color:var(--accent);margin-right:10px;"></i> <span id="edu-modal-title">Add Education</span></h3>
+    <input type="hidden" id="f-edu-id">
+    <div class="pf-form-group"><label>Degree / Qualification</label><input type="text" id="f-edu-degree" placeholder="B.Sc in Computer Science & Engineering"></div>
+    <div class="pf-form-group"><label>Institution</label><input type="text" id="f-edu-inst"></div>
+    <div class="pf-form-group"><label>Field of Study</label><input type="text" id="f-edu-field"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="pf-form-group"><label>Start Year</label><input type="number" id="f-edu-start" min="1990" max="2099"></div>
+      <div class="pf-form-group"><label>End Year (blank=ongoing)</label><input type="number" id="f-edu-end" min="1990" max="2099" placeholder="e.g. 2024"></div>
+      <div class="pf-form-group"><label>GPA</label><input type="text" id="f-edu-gpa" placeholder="3.75/4.00"></div>
+    </div>
+    <div class="pf-form-group"><label>Notes / Description</label><textarea id="f-edu-desc"></textarea></div>
+    <div class="pf-form-group"><label>Sort Order</label><input type="number" id="f-edu-order" value="0"></div>
+    <div class="pf-modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-education')">Cancel</button>
+      <button class="btn-save" onclick="saveItem('education')"><i class="fas fa-save" style="margin-right:6px;"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Experience Modal -->
+<div class="pf-modal-overlay" id="modal-experience">
+  <div class="pf-modal">
+    <h3><i class="fas fa-briefcase" style="color:var(--accent);margin-right:10px;"></i> <span id="exp-modal-title">Add Experience</span></h3>
+    <input type="hidden" id="f-exp-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="pf-form-group"><label>Job Title</label><input type="text" id="f-exp-title"></div>
+      <div class="pf-form-group"><label>Organization</label><input type="text" id="f-exp-org"></div>
+      <div class="pf-form-group">
+        <label>Employment Type</label>
+        <select id="f-exp-type">
+          {% for t_key, t_label in experience_types %}<option value="{{ t_key }}">{{ t_label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="pf-form-group"><label>Location</label><input type="text" id="f-exp-loc" placeholder="City, Country"></div>
+      <div class="pf-form-group"><label>Start Date</label><input type="date" id="f-exp-start"></div>
+      <div class="pf-form-group"><label>End Date (blank=current)</label><input type="date" id="f-exp-end"></div>
+    </div>
+    <div class="pf-form-group">
+      <label><input type="checkbox" id="f-exp-current" style="width:auto;margin-right:6px;" onchange="document.getElementById('f-exp-end').disabled=this.checked;"> Currently working here</label>
+    </div>
+    <div class="pf-form-group"><label>Description / Responsibilities</label><textarea id="f-exp-desc"></textarea></div>
+    <div class="pf-form-group"><label>Sort Order</label><input type="number" id="f-exp-order" value="0"></div>
+    <div class="pf-modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-experience')">Cancel</button>
+      <button class="btn-save" onclick="saveItem('experience')"><i class="fas fa-save" style="margin-right:6px;"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project Modal -->
+<div class="pf-modal-overlay" id="modal-project">
+  <div class="pf-modal">
+    <h3><i class="fas fa-code" style="color:var(--accent);margin-right:10px;"></i> <span id="proj-modal-title">Add Project</span></h3>
+    <input type="hidden" id="f-proj-id">
+    <div class="pf-form-group"><label>Project Title</label><input type="text" id="f-proj-title"></div>
+    <div class="pf-form-group"><label>Description</label><textarea id="f-proj-desc"></textarea></div>
+    <div class="pf-form-group"><label>Tech Stack (comma-separated)</label><input type="text" id="f-proj-tech" placeholder="Python, Django, PostgreSQL, Bootstrap"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="pf-form-group"><label>GitHub URL</label><input type="url" id="f-proj-github"></div>
+      <div class="pf-form-group"><label>Live URL</label><input type="url" id="f-proj-live"></div>
+      <div class="pf-form-group">
+        <label>Status</label>
+        <select id="f-proj-status">
+          {% for s_key, s_label in project_statuses %}<option value="{{ s_key }}">{{ s_label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="pf-form-group"><label>Sort Order</label><input type="number" id="f-proj-order" value="0"></div>
+      <div class="pf-form-group"><label>Start Date</label><input type="date" id="f-proj-start"></div>
+      <div class="pf-form-group"><label>End Date (blank=ongoing)</label><input type="date" id="f-proj-end"></div>
+    </div>
+    <div class="pf-form-group">
+      <label><input type="checkbox" id="f-proj-featured" style="width:auto;margin-right:6px;"> ⭐ Featured Project (shown prominently)</label>
+    </div>
+    <div class="pf-form-group"><label>Cover Image (optional)</label><input type="file" id="f-proj-cover" accept="image/*"></div>
+    <div class="pf-modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-project')">Cancel</button>
+      <button class="btn-save" onclick="saveItem('project')"><i class="fas fa-save" style="margin-right:6px;"></i> Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Achievement Modal -->
+<div class="pf-modal-overlay" id="modal-achievement">
+  <div class="pf-modal">
+    <h3><i class="fas fa-trophy" style="color:var(--accent);margin-right:10px;"></i> <span id="ach-modal-title">Add Achievement</span></h3>
+    <input type="hidden" id="f-ach-id">
+    <div class="pf-form-group"><label>Title</label><input type="text" id="f-ach-title"></div>
+    <div class="pf-form-group"><label>Description</label><textarea id="f-ach-desc"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="pf-form-group"><label>Font Awesome Icon</label><input type="text" id="f-ach-icon" value="fas fa-trophy" placeholder="fas fa-trophy"></div>
+      <div class="pf-form-group"><label>Issuing Organization</label><input type="text" id="f-ach-issuer"></div>
+      <div class="pf-form-group"><label>Date Earned</label><input type="date" id="f-ach-date"></div>
+      <div class="pf-form-group"><label>Link (optional)</label><input type="url" id="f-ach-link"></div>
+      <div class="pf-form-group"><label>Sort Order</label><input type="number" id="f-ach-order" value="0"></div>
+    </div>
+    <div class="pf-modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-achievement')">Cancel</button>
+      <button class="btn-save" onclick="saveItem('achievement')"><i class="fas fa-save" style="margin-right:6px;"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────── JAVASCRIPT ────────────────────────────────────── -->
+<script>
+// ── CSRF Token ─────────────────────────────────────────────────────────
+function getCookie(name) {
+  const val = `; ${document.cookie}`;
+  const parts = val.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+const csrfToken = getCookie('csrftoken');
+
+// ── Scroll Progress ─────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const pct = (window.scrollY / (doc.scrollHeight - doc.clientHeight)) * 100;
+  document.getElementById('scroll-progress').style.width = pct + '%';
+  // Scroll-to-top button
+  const sTop = document.getElementById('scroll-top');
+  sTop.classList.toggle('show', window.scrollY > 400);
+});
+
+// ── Active Nav Highlight ────────────────────────────────────────────────
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.sticky-nav-links a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
+    }
+  });
+}, { rootMargin: '-40% 0px -55% 0px' });
+sections.forEach(s => observer.observe(s));
+
+// ── Animate on Scroll ───────────────────────────────────────────────────
+const aosObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); aosObserver.unobserve(e.target); } });
+}, { rootMargin: '0px 0px -60px 0px' });
+document.querySelectorAll('.aos-fade-up, .timeline-item').forEach(el => aosObserver.observe(el));
+
+// ── Skill Bar Animation ─────────────────────────────────────────────────
+const barObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.skill-bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.pct + '%';
+      });
+      barObserver.unobserve(e.target);
+    }
+  });
+}, { rootMargin: '0px 0px -80px 0px' });
+document.querySelectorAll('#skills-container').forEach(el => barObserver.observe(el));
+
+// ── Counter Animation ───────────────────────────────────────────────────
+const countObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target.querySelector('.stat-num');
+    if (!el) return;
+    const target = parseInt(el.dataset.target || 0);
+    let current = 0;
+    const step = Math.max(1, Math.ceil(target / 60));
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = current;
+      if (current >= target) clearInterval(timer);
+    }, 20);
+    countObserver.unobserve(e.target);
+  });
+}, { rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.stat-card').forEach(el => countObserver.observe(el));
+
+// ── Typing Animation ────────────────────────────────────────────────────
+const tagline = '{{ profile.tagline|default:"Django Developer | Researcher | Educator"|escapejs }}';
+const phrases = tagline.split('|').map(s => s.trim()).filter(Boolean);
+let phraseIdx = 0, charIdx = 0, deleting = false;
+const typedEl = document.getElementById('typed-tagline');
+function typeWriter() {
+  if (!typedEl) return;
+  const current = phrases[phraseIdx];
+  if (deleting) {
+    typedEl.textContent = current.substring(0, --charIdx);
+    if (charIdx === 0) { deleting = false; phraseIdx = (phraseIdx + 1) % phrases.length; setTimeout(typeWriter, 400); return; }
+  } else {
+    typedEl.textContent = current.substring(0, ++charIdx);
+    if (charIdx === current.length) { setTimeout(() => { deleting = true; typeWriter(); }, 2000); return; }
+  }
+  setTimeout(typeWriter, deleting ? 40 : 80);
+}
+if (phrases.length) typeWriter();
+
+// ── Dark / Light Theme ──────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-toggle').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('pf-theme', isDark ? 'light' : 'dark');
+}
+const savedTheme = localStorage.getItem('pf-theme');
+if (savedTheme) {
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  if (savedTheme === 'dark') document.getElementById('theme-toggle').textContent = '☀️';
+}
+
+// ── Copy Email ──────────────────────────────────────────────────────────
+function copyEmail(email) {
+  navigator.clipboard.writeText(email).then(() => showToast('📋 Email copied to clipboard!'));
+}
+
+// ── Skills Filter ───────────────────────────────────────────────────────
+function filterSkills(cat, btn) {
+  document.querySelectorAll('.skill-cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.skill-item').forEach(el => {
+    el.style.display = (cat === 'all' || el.dataset.cat === cat) ? '' : 'none';
+  });
+}
+
+// ── Toast ───────────────────────────────────────────────────────────────
+function showToast(msg, isError=false) {
+  const t = document.getElementById('pf-toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#ef4444' : '#1e293b';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Edit Mode FAB ───────────────────────────────────────────────────────
+{% if is_editor %}
+function toggleEditMode() {
+  const body = document.body;
+  const fab = document.getElementById('edit-fab');
+  const label = document.getElementById('fab-label');
+  const isOn = body.classList.toggle('edit-mode');
+  fab.classList.toggle('active', isOn);
+  label.textContent = isOn ? 'Exit Edit' : 'Edit Mode';
+
+  // Show/hide edit btn groups
+  document.querySelectorAll('.edit-btn-group').forEach(g => {
+    g.style.display = isOn ? 'flex' : 'none';
+  });
+  // Show profile edit button
+  const peBtn = document.getElementById('edit-profile-btn');
+  if (peBtn) peBtn.style.display = isOn ? 'flex' : 'none';
+}
+
+// ── Modal Open/Close ────────────────────────────────────────────────────
+function openModal(section) {
+  // Reset form for new item
+  const resets = {
+    skill:       () => { document.getElementById('f-skill-id').value=''; document.getElementById('skill-modal-title').textContent='Add Skill'; document.getElementById('f-skill-name').value=''; document.getElementById('f-skill-icon').value=''; document.getElementById('f-skill-pct').value=80; document.getElementById('f-skill-order').value=0; },
+    education:   () => { document.getElementById('f-edu-id').value=''; document.getElementById('edu-modal-title').textContent='Add Education'; ['f-edu-degree','f-edu-inst','f-edu-field','f-edu-gpa','f-edu-desc'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-edu-start').value=''; document.getElementById('f-edu-end').value=''; document.getElementById('f-edu-order').value=0; },
+    experience:  () => { document.getElementById('f-exp-id').value=''; document.getElementById('exp-modal-title').textContent='Add Experience'; ['f-exp-title','f-exp-org','f-exp-loc','f-exp-desc'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-exp-start').value=''; document.getElementById('f-exp-end').value=''; document.getElementById('f-exp-current').checked=false; document.getElementById('f-exp-order').value=0; },
+    project:     () => { document.getElementById('f-proj-id').value=''; document.getElementById('proj-modal-title').textContent='Add Project'; ['f-proj-title','f-proj-desc','f-proj-tech','f-proj-github','f-proj-live'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-proj-featured').checked=false; document.getElementById('f-proj-order').value=0; document.getElementById('f-proj-start').value=''; document.getElementById('f-proj-end').value=''; },
+    achievement: () => { document.getElementById('f-ach-id').value=''; document.getElementById('ach-modal-title').textContent='Add Achievement'; ['f-ach-title','f-ach-desc','f-ach-issuer','f-ach-link'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-ach-icon').value='fas fa-trophy'; document.getElementById('f-ach-date').value=''; document.getElementById('f-ach-order').value=0; },
+  };
+  if (resets[section]) resets[section]();
+  document.getElementById('modal-' + section).classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+// Close on overlay click
+document.querySelectorAll('.pf-modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); });
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.pf-modal-overlay.open').forEach(m => m.classList.remove('open')); });
+
+// ── Edit Helpers ────────────────────────────────────────────────────────
+function editSkill(id, name, cat, pct, icon, order) {
+  document.getElementById('f-skill-id').value = id;
+  document.getElementById('skill-modal-title').textContent = 'Edit Skill';
+  document.getElementById('f-skill-name').value = name;
+  document.getElementById('f-skill-cat').value = cat;
+  document.getElementById('f-skill-pct').value = pct;
+  document.getElementById('f-skill-icon').value = icon;
+  document.getElementById('f-skill-order').value = order;
+  document.getElementById('modal-skill').classList.add('open');
+}
+function editEducation(id, degree, inst, field, start, end, gpa, desc, order) {
+  document.getElementById('f-edu-id').value = id;
+  document.getElementById('edu-modal-title').textContent = 'Edit Education';
+  document.getElementById('f-edu-degree').value = degree;
+  document.getElementById('f-edu-inst').value = inst;
+  document.getElementById('f-edu-field').value = field;
+  document.getElementById('f-edu-start').value = start;
+  document.getElementById('f-edu-end').value = end;
+  document.getElementById('f-edu-gpa').value = gpa;
+  document.getElementById('f-edu-desc').value = desc;
+  document.getElementById('f-edu-order').value = order;
+  document.getElementById('modal-education').classList.add('open');
+}
+function editExperience(id, title, org, type, loc, desc, start, end, isCurrent, order) {
+  document.getElementById('f-exp-id').value = id;
+  document.getElementById('exp-modal-title').textContent = 'Edit Experience';
+  document.getElementById('f-exp-title').value = title;
+  document.getElementById('f-exp-org').value = org;
+  document.getElementById('f-exp-type').value = type;
+  document.getElementById('f-exp-loc').value = loc;
+  document.getElementById('f-exp-desc').value = desc;
+  document.getElementById('f-exp-start').value = start;
+  document.getElementById('f-exp-end').value = end;
+  document.getElementById('f-exp-current').checked = isCurrent === true || isCurrent === 'true';
+  document.getElementById('f-exp-end').disabled = document.getElementById('f-exp-current').checked;
+  document.getElementById('f-exp-order').value = order;
+  document.getElementById('modal-experience').classList.add('open');
+}
+function editProject(id, title, desc, tech, github, live, status, order, start, end, isFeatured) {
+  document.getElementById('f-proj-id').value = id;
+  document.getElementById('proj-modal-title').textContent = 'Edit Project';
+  document.getElementById('f-proj-title').value = title || '';
+  document.getElementById('f-proj-desc').value = desc || '';
+  document.getElementById('f-proj-tech').value = tech || '';
+  document.getElementById('f-proj-github').value = github || '';
+  document.getElementById('f-proj-live').value = live || '';
+  document.getElementById('f-proj-status').value = status || 'live';
+  document.getElementById('f-proj-order').value = order || 0;
+  document.getElementById('f-proj-start').value = start || '';
+  document.getElementById('f-proj-end').value = end || '';
+  document.getElementById('f-proj-featured').checked = isFeatured === true || isFeatured === 'true';
+  document.getElementById('modal-project').classList.add('open');
+}
+function editAchievement(id, title, desc, icon, date, issuer, link, order) {
+  document.getElementById('f-ach-id').value = id;
+  document.getElementById('ach-modal-title').textContent = 'Edit Achievement';
+  document.getElementById('f-ach-title').value = title;
+  document.getElementById('f-ach-desc').value = desc;
+  document.getElementById('f-ach-icon').value = icon;
+  document.getElementById('f-ach-date').value = date;
+  document.getElementById('f-ach-issuer').value = issuer;
+  document.getElementById('f-ach-link').value = link;
+  document.getElementById('f-ach-order').value = order;
+  document.getElementById('modal-achievement').classList.add('open');
+}
+
+// ── Profile Edit ────────────────────────────────────────────────────────
+function openProfileModal() { document.getElementById('modal-profile').classList.add('open'); }
+function previewPhoto(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('photo-preview');
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function saveProfile() {
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', csrfToken);
+  fd.append('full_name', document.getElementById('f-fullname').value);
+  fd.append('title', document.getElementById('f-title').value);
+  fd.append('department', document.getElementById('f-dept').value);
+  fd.append('institution', document.getElementById('f-inst').value);
+  fd.append('tagline', document.getElementById('f-tagline').value);
+  fd.append('bio', document.getElementById('f-bio').value);
+  fd.append('email', document.getElementById('f-email').value);
+  fd.append('phone', document.getElementById('f-phone').value);
+  fd.append('github_url', document.getElementById('f-github').value);
+  fd.append('linkedin_url', document.getElementById('f-linkedin').value);
+  fd.append('portfolio_url', document.getElementById('f-portfolio').value);
+  fd.append('years_of_experience', document.getElementById('f-yoe').value);
+  fd.append('is_available_for_work', document.getElementById('f-available').checked ? '1' : '0');
+  const photoFile = document.getElementById('f-photo').files[0];
+  if (photoFile) fd.append('profile_photo', photoFile);
+
+  fetch('{% url "portfolio_api_save_profile" %}', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        closeModal('modal-profile');
+        showToast('✅ Profile updated! Reloading…');
+        setTimeout(() => location.reload(), 1200);
+      } else { showToast('❌ ' + (data.error || 'Save failed'), true); }
+    });
+}
+
+// ── Save Section Item ───────────────────────────────────────────────────
+function saveItem(section) {
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', csrfToken);
+
+  const map = {
+    skill:       { id:'f-skill-id', fields:{name:'f-skill-name',category:'f-skill-cat',proficiency:'f-skill-pct',icon_class:'f-skill-icon',sort_order:'f-skill-order'} },
+    education:   { id:'f-edu-id',   fields:{degree:'f-edu-degree',institution:'f-edu-inst',field_of_study:'f-edu-field',start_year:'f-edu-start',end_year:'f-edu-end',gpa:'f-edu-gpa',description:'f-edu-desc',sort_order:'f-edu-order'} },
+    experience:  { id:'f-exp-id',   fields:{job_title:'f-exp-title',organization:'f-exp-org',employment_type:'f-exp-type',location:'f-exp-loc',description:'f-exp-desc',start_date:'f-exp-start',end_date:'f-exp-end',sort_order:'f-exp-order'}, checkboxes:{is_current:'f-exp-current'} },
+    project:     { id:'f-proj-id',  fields:{title:'f-proj-title',description:'f-proj-desc',tech_stack:'f-proj-tech',github_url:'f-proj-github',live_url:'f-proj-live',status:'f-proj-status',start_date:'f-proj-start',end_date:'f-proj-end',sort_order:'f-proj-order'}, checkboxes:{is_featured:'f-proj-featured'}, files:{cover_image:'f-proj-cover'} },
+    achievement: { id:'f-ach-id',   fields:{title:'f-ach-title',description:'f-ach-desc',icon_class:'f-ach-icon',date_earned:'f-ach-date',issuer:'f-ach-issuer',link:'f-ach-link',sort_order:'f-ach-order'} },
+  };
+
+  const cfg = map[section];
+  if (!cfg) return;
+  const id = document.getElementById(cfg.id).value;
+  if (id) fd.append('id', id);
+
+  Object.entries(cfg.fields || {}).forEach(([field, elId]) => {
+    const el = document.getElementById(elId);
+    if (el) fd.append(field, el.value);
+  });
+  Object.entries(cfg.checkboxes || {}).forEach(([field, elId]) => {
+    const el = document.getElementById(elId);
+    if (el) fd.append(field, el.checked ? '1' : '0');
+  });
+  Object.entries(cfg.files || {}).forEach(([field, elId]) => {
+    const el = document.getElementById(elId);
+    if (el && el.files[0]) fd.append(field, el.files[0]);
+  });
+
+  fetch(`/core/portfolio/api/save/${section}/`, { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        closeModal('modal-' + section);
+        showToast('✅ Saved! Reloading…');
+        setTimeout(() => location.reload(), 1000);
+      } else { showToast('❌ ' + (data.error || 'Save failed'), true); }
+    });
+}
+
+// ── Delete Item ─────────────────────────────────────────────────────────
+function deleteItem(section, pk, el) {
+  if (!confirm('Delete this item permanently?')) return;
+  fetch(`/core/portfolio/api/delete/${section}/${pk}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      el.style.opacity = '0';
+      el.style.transform = 'scale(.95)';
+      el.style.transition = 'all .3s';
+      setTimeout(() => el.remove(), 300);
+      showToast('🗑️ Deleted');
+    } else { showToast('❌ Delete failed', true); }
+  });
+}
+
+{% endif %} {# end is_editor #}
+</script>
+
+</body>
+</html>
