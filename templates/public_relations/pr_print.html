@@ -6,19 +6,19 @@
   <style>
     @page {
       size: A4 portrait;
-      margin: 18mm 15mm 20mm 18mm;
+      margin: 32mm 15mm 22mm 18mm;
       @frame header_frame {
         -pdf-frame-content: header_content;
-        left: 0; top: 0; margin: 0; height: 28mm;
+        left: 18mm; top: 10mm; right: 15mm; height: 20mm;
       }
       @frame footer_frame {
         -pdf-frame-content: footer_content;
-        left: 0; bottom: 0; margin: 0; height: 12mm;
+        left: 18mm; bottom: 10mm; right: 15mm; height: 10mm;
       }
     }
 
     body {
-      font-family: Arial, "DejaVu Sans", sans-serif;
+      font-family: "DejaVu Sans", Arial, sans-serif;
       font-size: 10pt;
       color: #1e293b;
       line-height: 1.6;
@@ -189,10 +189,10 @@
 
 <table class="meta-table">
   <tr>
-    <td class="meta-key">{% translate "Press Release No" %}</td>
-    <td>{{ entry.press_release_no }}</td>
-    <td class="meta-key">{% translate "Date" %}</td>
-    <td>{{ entry.press_release_date|date:"d F Y" }}</td>
+    <td class="meta-key" style="width: 22%;">{% translate "Press Release No" %}</td>
+    <td style="width: 28%;">{{ entry.press_release_no }}</td>
+    <td class="meta-key" style="width: 22%;">{% translate "Date" %}</td>
+    <td style="width: 28%;">{{ entry.press_release_date|date:"d F Y" }}</td>
   </tr>
   <tr>
     <td class="meta-key">{% translate "Department / Faculty" %}</td>
@@ -209,32 +209,34 @@
 </table>
 
 <div class="section-h">{% translate "Full Press Release Text" %}</div>
-<div class="full-text-section">{{ entry.full_text }}</div>
+<div class="full-text-section">{{ entry.full_text|linebreaks }}</div>
 
 {% if coverages %}
 <div class="section-h">{% translate "Coverage Summary" %}</div>
-<div class="summary-box">
-  <div class="summary-row">
-    <span class="summary-num">{{ entry.coverage_count }}</span><br>
-    <small>{% translate "Total Coverages" %}</small>
-  </div>
-  <div class="summary-row">
-    <span class="summary-num" style="color:#1e40af;">{{ entry.national_count }}</span><br>
-    <small>{% translate "National" %}</small>
-  </div>
-  <div class="summary-row">
-    <span class="summary-num" style="color:#166534;">{{ entry.local_count }}</span><br>
-    <small>{% translate "Local" %}</small>
-  </div>
-  <div class="summary-row">
-    <span class="summary-num" style="color:#854d0e;">{{ entry.online_count }}</span><br>
-    <small>{% translate "Online" %}</small>
-  </div>
-  <div class="summary-row">
-    <span class="summary-num" style="color:#0f766e;">{{ entry.tv_count }}</span><br>
-    <small>{% translate "TV" %}</small>
-  </div>
-</div>
+<table class="summary-table" style="width: 100%; border-collapse: collapse; margin-bottom: 14px; background-color: #f0f9ff; border: 1px solid #bae6fd; text-align: center;">
+  <tr>
+    <td style="width: 20%; padding: 10px 5px; border: none;">
+      <span class="summary-num">{{ entry.coverage_count }}</span><br>
+      <small style="color: #475569;">{% translate "Total Coverages" %}</small>
+    </td>
+    <td style="width: 20%; padding: 10px 5px; border: none;">
+      <span class="summary-num" style="color:#1e40af;">{{ entry.national_count }}</span><br>
+      <small style="color: #475569;">{% translate "National" %}</small>
+    </td>
+    <td style="width: 20%; padding: 10px 5px; border: none;">
+      <span class="summary-num" style="color:#166534;">{{ entry.local_count }}</span><br>
+      <small style="color: #475569;">{% translate "Local" %}</small>
+    </td>
+    <td style="width: 20%; padding: 10px 5px; border: none;">
+      <span class="summary-num" style="color:#854d0e;">{{ entry.online_count }}</span><br>
+      <small style="color: #475569;">{% translate "Online" %}</small>
+    </td>
+    <td style="width: 20%; padding: 10px 5px; border: none;">
+      <span class="summary-num" style="color:#0f766e;">{{ entry.tv_count }}</span><br>
+      <small style="color: #475569;">{% translate "TV" %}</small>
+    </td>
+  </tr>
+</table>
 
 <div class="section-h">{% translate "Detailed Coverage List" %}</div>
 <table class="cov-table">
@@ -261,19 +263,20 @@
 </table>
 {% endif %}
 
-<br>
-<table style="width:100%;margin-top:30px;font-size:9pt;border:none;">
-  <tr>
-    <td style="width:50%;text-align:left;border:none;">
-      {% translate "Prepared by" %}: __________________<br>
-      <small>{% translate "Name & Designation" %}</small>
-    </td>
-    <td style="width:50%;text-align:right;border:none;">
-      {% translate "Director, Public Relations" %}: __________________<br>
-      <small>{% translate "Signature & Seal" %}</small>
-    </td>
-  </tr>
-</table>
+<div style="page-break-inside: avoid; margin-top: 30px;">
+  <table style="width:100%;font-size:9pt;border:none;">
+    <tr>
+      <td style="width:50%;text-align:left;border:none;">
+        {% translate "Prepared by" %}: __________________<br>
+        <small>{% translate "Name & Designation" %}</small>
+      </td>
+      <td style="width:50%;text-align:right;border:none;">
+        {% translate "Director, Public Relations" %}: __________________<br>
+        <small>{% translate "Signature & Seal" %}</small>
+      </td>
+    </tr>
+  </table>
+</div>
 
 </body>
 </html>

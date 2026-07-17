@@ -117,7 +117,7 @@ class PublicRelationsArchiveForm(forms.ModelForm):
             'remarks':                _('Remarks'),
         }
         help_texts = {
-            'press_release_no': _('Unique serial number, e.g. PRO-2024-001'),
+            'press_release_no': _('Unique serial number, e.g. PRO-2024-001. Leave blank to auto-generate.'),
             'full_text':        _('Type the complete press release body text here.'),
         }
 
@@ -142,9 +142,10 @@ class PublicRelationsArchiveForm(forms.ModelForm):
                 next_num = 1
 
             self.fields['press_release_no'].initial = f"{prefix}{next_num:04d}"
+            self.fields['press_release_date'].initial = datetime.date.today()
 
-        self.fields['press_release_no'].widget.attrs['readonly'] = 'readonly'
         self.fields['press_release_no'].widget.attrs['class'] = 'form-control pr-number-field'
+        self.fields['press_release_no'].widget.attrs['placeholder'] = _('Leave blank to auto-generate')
 
     def clean_press_release_no(self):
         return self.cleaned_data['press_release_no'].strip()
@@ -183,6 +184,12 @@ class MediaCoverageForm(forms.ModelForm):
             'screenshot_file':    _('Screenshot'),
             'online_link':        _('Online Link'),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            import datetime
+            self.fields['published_date'].initial = datetime.date.today()
 
     def clean(self):
         cleaned = super().clean()

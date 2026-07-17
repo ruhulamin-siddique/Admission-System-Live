@@ -187,7 +187,7 @@
           <div class="row">
             <div class="col-md-3 mb-3">
               <label for="{{ archive_form.press_release_no.id_for_label }}">
-                {{ archive_form.press_release_no.label }} <span class="required-mark">*</span>
+                {{ archive_form.press_release_no.label }}
               </label>
               {{ archive_form.press_release_no }}
               {% if archive_form.press_release_no.errors %}<ul class="errorlist">{% for e in archive_form.press_release_no.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}

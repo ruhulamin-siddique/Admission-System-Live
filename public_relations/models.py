@@ -98,10 +98,12 @@ class PublicRelationsArchive(models.Model):
     press_release_no   = models.CharField(
         max_length=50,
         unique=True,
+        blank=True,
         verbose_name=_("Press Release No"),
         help_text=_("Unique identifier, e.g. PRO-2024-001")
     )
     press_release_date = models.DateField(
+        default=datetime.date.today,
         verbose_name=_("Press Release Date")
     )
     event_name         = models.CharField(
