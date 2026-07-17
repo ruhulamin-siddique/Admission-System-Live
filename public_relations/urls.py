@@ -19,6 +19,8 @@ urlpatterns = [
     path('archive/<int:pk>/',         views.archive_detail,      name='pr_archive_detail'),
     path('archive/<int:pk>/edit/',    views.archive_edit,        name='pr_archive_edit'),
     path('archive/<int:pk>/delete/',  views.archive_delete,      name='pr_archive_delete'),
+    path('api/next-pr-number/',       views.get_next_pr_number,  name='api_next_pr_number'),
+    path('api/check-pr-duplicate/',   views.check_pr_duplicate,  name='api_check_pr_duplicate'),
 
     # ── Media Houses ─────────────────────────────────────────────────────
     path('media-houses/',             views.media_house_list,    name='pr_media_houses'),

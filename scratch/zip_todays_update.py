@@ -9,10 +9,11 @@ def main():
     files_to_zip = [
         'public_relations/forms.py',
         'public_relations/models.py',
+        'public_relations/views.py',
+        'public_relations/urls.py',
         'templates/public_relations/archive_form.html',
-        'templates/public_relations/pr_print.html',
-        'public_relations/migrations/0007_alter_publicrelationsarchive_press_release_no.py',
-        'public_relations/migrations/0008_alter_publicrelationsarchive_press_release_date.py',
+        'public_relations/migrations/0009_alter_publicrelationsarchive_press_release_no.py',
+        'public_relations/migrations/0010_auto_20260718_0328.py',
     ]
     
     print(f"Creating todays_update.zip at: {zip_path}")

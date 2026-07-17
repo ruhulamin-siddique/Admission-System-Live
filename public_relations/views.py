@@ -553,3 +553,46 @@ def pr_portal(request):
     }
     return render(request, 'public_relations/portal.html', context)
 
+
+# ============================================================================
+# API Endpoint: Next PR Number
+# ============================================================================
+
+@require_access('public_relations', 'view_archive')
+def get_next_pr_number(request):
+    from django.http import JsonResponse
+    import datetime
+    
+    date_str = request.GET.get('date', '').strip()
+    if not date_str:
+        return JsonResponse({'error': 'Date parameter is required'}, status=400)
+        
+    try:
+        date_val = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD'}, status=400)
+        
+    next_no = PublicRelationsArchive.get_next_pr_number(date_val)
+    return JsonResponse({'pr_number': next_no})
+
+
+# ============================================================================
+# API Endpoint: Check PR Number Duplicate
+# ============================================================================
+
+@require_access('public_relations', 'view_archive')
+def check_pr_duplicate(request):
+    from django.http import JsonResponse
+    pr_number = request.GET.get('pr_number', '').strip()
+    exclude_id = request.GET.get('exclude_id', '').strip()
+    
+    if not pr_number:
+        return JsonResponse({'exists': False})
+        
+    queryset = PublicRelationsArchive.objects.filter(press_release_no__iexact=pr_number)
+    if exclude_id and exclude_id.isdigit():
+        queryset = queryset.exclude(pk=int(exclude_id))
+        
+    exists = queryset.exists()
+    return JsonResponse({'exists': exists})
+

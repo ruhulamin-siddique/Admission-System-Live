@@ -117,7 +117,7 @@ class PublicRelationsArchiveForm(forms.ModelForm):
             'remarks':                _('Remarks'),
         }
         help_texts = {
-            'press_release_no': _('Unique serial number, e.g. PRO-2024-001. Leave blank to auto-generate.'),
+            'press_release_no': _('Unique serial number, e.g. PR/2026/07/01. Leave blank to auto-generate.'),
             'full_text':        _('Type the complete press release body text here.'),
         }
 
@@ -126,29 +126,26 @@ class PublicRelationsArchiveForm(forms.ModelForm):
         self.fields['press_release_no'].required = False
         if not self.instance.pk:
             import datetime
-            year = datetime.date.today().year
-            prefix = f"PRO-{year}-"
-            latest = self._meta.model.objects.filter(
-                press_release_no__startswith=prefix
-            ).order_by('-press_release_no').first()
-
-            if latest:
-                try:
-                    last_num = int(latest.press_release_no.split('-')[-1])
-                    next_num = last_num + 1
-                except ValueError:
-                    next_num = 1
-            else:
-                next_num = 1
-
-            self.fields['press_release_no'].initial = f"{prefix}{next_num:04d}"
-            self.fields['press_release_date'].initial = datetime.date.today()
+            today = datetime.date.today()
+            self.fields['press_release_date'].initial = today
+            self.fields['press_release_no'].initial = self._meta.model.get_next_pr_number(today)
 
         self.fields['press_release_no'].widget.attrs['class'] = 'form-control pr-number-field'
         self.fields['press_release_no'].widget.attrs['placeholder'] = _('Leave blank to auto-generate')
 
     def clean_press_release_no(self):
-        return self.cleaned_data['press_release_no'].strip()
+        val = self.cleaned_data['press_release_no'].strip()
+        if val:
+            import re
+            if not re.match(r'^PR/\d{4}/\d{2}/\d{2,}$', val):
+                raise forms.ValidationError(_("Invalid format. The PR number must be in the format 'PR/YYYY/MM/NN' (e.g. PR/2026/07/01)."))
+            
+            queryset = self._meta.model.objects.filter(press_release_no__iexact=val)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            if queryset.exists():
+                raise forms.ValidationError(_("This Press Release No already exists. Please select a unique number."))
+        return val
 
     def clean_event_name(self):
         return self.cleaned_data['event_name'].strip()

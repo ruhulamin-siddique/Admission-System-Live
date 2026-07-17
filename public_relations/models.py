@@ -100,7 +100,7 @@ class PublicRelationsArchive(models.Model):
         unique=True,
         blank=True,
         verbose_name=_("Press Release No"),
-        help_text=_("Unique identifier, e.g. PRO-2024-001")
+        help_text=_("Unique identifier, e.g. PR/2026/07/01")
     )
     press_release_date = models.DateField(
         default=datetime.date.today,
@@ -151,24 +151,40 @@ class PublicRelationsArchive(models.Model):
     def __str__(self):
         return f"[{self.press_release_no}] {self.event_name}"
 
+    @classmethod
+    def get_next_pr_number(cls, date_val):
+        if not date_val:
+            date_val = datetime.date.today()
+        # Ensure it is a date object (not a string) if passed from forms or similar
+        if isinstance(date_val, str):
+            try:
+                date_val = datetime.datetime.strptime(date_val, "%Y-%m-%d").date()
+            except ValueError:
+                date_val = datetime.date.today()
+        
+        year = date_val.year
+        month = date_val.month
+        prefix = f"PR/{year}/{month:02d}/"
+        
+        latest = cls.objects.filter(
+            press_release_no__startswith=prefix
+        ).order_by('-press_release_no').first()
+
+        if latest:
+            try:
+                parts = latest.press_release_no.split('/')
+                last_num = int(parts[-1])
+                next_num = last_num + 1
+            except (ValueError, IndexError):
+                next_num = 1
+        else:
+            next_num = 1
+
+        return f"{prefix}{next_num:02d}"
+
     def save(self, *args, **kwargs):
         if not self.press_release_no:
-            year = self.press_release_date.year if self.press_release_date else datetime.date.today().year
-            prefix = f"PRO-{year}-"
-            latest = PublicRelationsArchive.objects.filter(
-                press_release_no__startswith=prefix
-            ).order_by('-press_release_no').first()
-
-            if latest:
-                try:
-                    last_num = int(latest.press_release_no.split('-')[-1])
-                    next_num = last_num + 1
-                except ValueError:
-                    next_num = 1
-            else:
-                next_num = 1
-
-            self.press_release_no = f"{prefix}{next_num:04d}"
+            self.press_release_no = self.get_next_pr_number(self.press_release_date)
         super().save(*args, **kwargs)
 
     @property

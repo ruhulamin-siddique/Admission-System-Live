@@ -89,7 +89,6 @@
     color: #1e40af !important;
     font-weight: 700 !important;
     letter-spacing: 0.5px;
-    cursor: not-allowed;
   }
   .dark-mode .pr-number-field {
     background-color: #172554 !important;
@@ -147,6 +146,11 @@
     font-size: inherit;
   }
 
+  @keyframes pulseHighlight {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  }
 
 </style>
 {% endblock %}
@@ -190,6 +194,8 @@
                 {{ archive_form.press_release_no.label }}
               </label>
               {{ archive_form.press_release_no }}
+              <div id="pr-no-validation-feedback" class="text-danger font-weight-bold mt-1 d-none" style="font-size: 0.8rem;">
+              </div>
               {% if archive_form.press_release_no.errors %}<ul class="errorlist">{% for e in archive_form.press_release_no.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
             </div>
             <div class="col-md-3 mb-3">
@@ -207,6 +213,13 @@
               {% if archive_form.event_name.errors %}<ul class="errorlist">{% for e in archive_form.event_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
             </div>
           </div>
+
+          <!-- Dynamic PR Number Sync Notice -->
+          <div id="pr-number-sync-alert" class="alert alert-warning py-2 px-3 mb-3 d-none align-items-center" style="border-radius: 10px; font-size: 0.88rem; border-left: 4px solid #f59e0b;">
+            <i class="fas fa-exclamation-triangle mr-2 text-warning" style="font-size: 1.1rem;"></i>
+            <div id="pr-number-sync-message"></div>
+          </div>
+
           <div class="row">
             <div class="col-md-4 mb-3">
               <label for="{{ archive_form.department.id_for_label }}">{{ archive_form.department.label }}</label>
@@ -398,7 +411,7 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
+{% block extra_js %}
 <script>
 // ── Custom file input label update ─────────────────────────────────────────
 document.addEventListener('change', function(e) {
@@ -475,6 +488,123 @@ document.getElementById('add-coverage-row').addEventListener('click', function()
 });
 document.getElementById('add-asset-row').addEventListener('click', function() {
   addFormsetRow('asset-formset-container', 'assets');
+});
+
+// ── Dynamic PR Number Sync ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const dateInput = document.getElementById('{{ archive_form.press_release_date.id_for_label }}');
+  const prNoInput = document.getElementById('{{ archive_form.press_release_no.id_for_label }}');
+  const syncAlert = document.getElementById('pr-number-sync-alert');
+  const syncMsg   = document.getElementById('pr-number-sync-message');
+  
+  if (dateInput && prNoInput) {
+    const feedback = document.getElementById('pr-no-validation-feedback');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const excludeId = '{% if is_edit %}{{ archive_form.instance.pk }}{% else %}{% endif %}';
+
+    function checkPrValidity() {
+      const prNo = prNoInput.value.trim();
+      if (!prNo) {
+        prNoInput.classList.remove('is-invalid');
+        if (feedback) {
+          feedback.classList.add('d-none');
+          feedback.innerHTML = '';
+        }
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+
+      // 1. Format check: regex matches PR/YYYY/MM/NN
+      const formatRegex = /^PR\/\d{4}\/\d{2}\/\d{2,}$/;
+      if (!formatRegex.test(prNo)) {
+        prNoInput.classList.add('is-invalid');
+        if (feedback) {
+          feedback.innerHTML = '⚠️ প্রেস বিজ্ঞপ্তি নম্বরটির ফরম্যাট সঠিক নয়! সঠিক ফরম্যাট: <strong>PR/YYYY/MM/NN</strong> (যেমন: PR/2026/07/01)';
+          feedback.classList.remove('d-none');
+        }
+        if (submitBtn) submitBtn.disabled = true;
+        return;
+      }
+
+      // 2. Uniqueness check via API
+      fetch('{% url "api_check_pr_duplicate" %}?pr_number=' + encodeURIComponent(prNo) + '&exclude_id=' + excludeId)
+        .then(response => response.json())
+        .then(data => {
+          if (data.exists) {
+            prNoInput.classList.add('is-invalid');
+            if (feedback) {
+              feedback.innerHTML = '⚠️ এই প্রেস বিজ্ঞপ্তি নম্বরটি ইতিমধ্যে ব্যবহৃত হয়েছে! অনুগ্রহ করে অন্য নম্বর দিন।';
+              feedback.classList.remove('d-none');
+            }
+            if (submitBtn) submitBtn.disabled = true;
+          } else {
+            prNoInput.classList.remove('is-invalid');
+            if (feedback) {
+              feedback.classList.add('d-none');
+              feedback.innerHTML = '';
+            }
+            if (submitBtn) submitBtn.disabled = false;
+          }
+        })
+        .catch(err => console.error('Error checking duplicate:', err));
+    }
+
+    function updatePrNumber() {
+      const selectedDate = dateInput.value;
+      if (!selectedDate) return;
+      
+      console.log("Fetching next PR number for date:", selectedDate);
+      fetch('{% url "api_next_pr_number" %}?date=' + selectedDate)
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to fetch next PR number');
+          return response.json();
+        })
+        .then(data => {
+          if (data.pr_number) {
+            console.log("New PR Number:", data.pr_number);
+            prNoInput.value = data.pr_number;
+            
+            // Check validity instantly after auto-generation
+            checkPrValidity();
+            
+            if (syncAlert && syncMsg) {
+              const dateParts = selectedDate.split('-');
+              let displayDate = selectedDate;
+              if (dateParts.length === 3) {
+                const monthsBn = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+                const day = parseInt(dateParts[2]);
+                const monthIdx = parseInt(dateParts[1]) - 1;
+                const year = dateParts[0];
+                displayDate = `${day} ${monthsBn[monthIdx]} ${year}`;
+              }
+              
+              syncMsg.innerHTML = `<strong>তারিখ পরিবর্তনের কারণে নতুন প্রেস বিজ্ঞপ্তি নম্বর জেনারেট করা হয়েছে:</strong> <span class="badge badge-warning px-2 py-1 mx-1" style="font-size:0.95rem;color:#000;">${data.pr_number}</span> (তারিখ: ${displayDate})। অনুগ্রহ করে নিশ্চিত করুন যে এটি সঠিক কি না এবং পুনরায় যাচাই করুন।`;
+              syncAlert.classList.remove('d-none');
+              syncAlert.classList.add('d-flex');
+              
+              // Trigger pulse animation
+              syncAlert.style.animation = 'none';
+              syncAlert.offsetHeight; // trigger reflow
+              syncAlert.style.animation = 'pulseHighlight 0.6s ease-out';
+            }
+          }
+        })
+        .catch(err => console.error('Error fetching PR number:', err));
+    }
+
+    // Listen to both change (calendar select) and input (typing/scrolling) events on date picker
+    dateInput.addEventListener('change', updatePrNumber);
+    dateInput.addEventListener('input', updatePrNumber);
+
+    // Listen to input and change events on PR number field for validation
+    prNoInput.addEventListener('input', checkPrValidity);
+    prNoInput.addEventListener('change', checkPrValidity);
+    
+    // Run initial validation check if field has value
+    if (prNoInput.value.trim()) {
+      checkPrValidity();
+    }
+  }
 });
 </script>
 {% endblock %}
