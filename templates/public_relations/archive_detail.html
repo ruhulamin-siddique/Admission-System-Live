@@ -34,42 +34,35 @@
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="content-header">
-  <div class="container-fluid">
-    <div class="row mb-2 align-items-center">
-      <div class="col-sm-8">
-        <h1 class="m-0 d-flex align-items-center flex-wrap gap-2">
-          <span class="badge badge-primary" style="font-size:0.85rem;border-radius:8px;padding:6px 14px;">
-            {{ entry.press_release_no }}
-          </span>
-          <span style="font-size:1.1rem;">{{ entry.event_name|truncatechars:70 }}</span>
-        </h1>
-      </div>
-      <div class="col-sm-4 text-right d-flex gap-2 justify-content-end">
-        {% if can_export %}
-        <a href="{% url 'pr_export_pdf' entry.pk %}" target="_blank" class="btn btn-danger btn-sm px-3">
-          <i class="fas fa-file-pdf mr-1"></i> {% translate "PDF" %}
-        </a>
-        {% endif %}
-        {% if can_edit %}
-        <a href="{% url 'pr_archive_edit' entry.pk %}" class="btn btn-warning btn-sm px-3">
-          <i class="fas fa-edit mr-1"></i> {% translate "Edit" %}
-        </a>
-        {% endif %}
-        {% if can_delete %}
-        <button type="button" class="btn btn-outline-danger btn-sm px-3" data-toggle="modal" data-target="#deleteModal">
-          <i class="fas fa-trash mr-1"></i> {% translate "Delete" %}
-        </button>
-        {% endif %}
-        <a href="{% url 'pr_archive_list' %}" class="btn btn-light btn-sm px-3">
-          <i class="fas fa-arrow-left mr-1"></i> {% translate "Back" %}
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
+{% block page_title %}
+<span class="badge badge-primary" style="font-size:0.85rem;border-radius:8px;padding:6px 14px;">
+  {{ entry.press_release_no }}
+</span>
+<span style="font-size:1.1rem; margin-left:10px;">{{ entry.event_name|truncatechars:70 }}</span>
+{% endblock %}
 
+{% block page_actions %}
+  {% if can_export %}
+  <a href="{% url 'pr_export_pdf' entry.pk %}" target="_blank" class="btn btn-danger btn-sm px-3">
+    <i class="fas fa-file-pdf mr-1"></i> {% translate "PDF" %}
+  </a>
+  {% endif %}
+  {% if can_edit %}
+  <a href="{% url 'pr_archive_edit' entry.pk %}" class="btn btn-warning btn-sm px-3">
+    <i class="fas fa-edit mr-1"></i> {% translate "Edit" %}
+  </a>
+  {% endif %}
+  {% if can_delete %}
+  <button type="button" class="btn btn-outline-danger btn-sm px-3" data-toggle="modal" data-target="#deleteModal">
+    <i class="fas fa-trash mr-1"></i> {% translate "Delete" %}
+  </button>
+  {% endif %}
+  <a href="{% url 'pr_archive_list' %}" class="btn btn-light btn-sm px-3">
+    <i class="fas fa-arrow-left mr-1"></i> {% translate "Back" %}
+  </a>
+{% endblock %}
+
+{% block content %}
 <div class="content">
   <div class="container-fluid">
     <div class="row">

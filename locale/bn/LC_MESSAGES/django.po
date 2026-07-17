@@ -519,3 +519,93 @@ msgstr "অ্যাডমিন প্যানেল"
 msgid "System Overview"
 msgstr "সিস্টেম পরিচিতি"
 
+msgid "TV Channel"
+msgstr "টিভি চ্যানেল"
+
+msgid "TV Channels"
+msgstr "টিভি চ্যানেল"
+
+msgid "TV"
+msgstr "টিভি"
+
+msgid "Published News (PDF)"
+msgstr "প্রকাশিত সংবাদ (PDF)"
+
+msgid "Published News (Screenshot)"
+msgstr "প্রকাশিত সংবাদ (screenshot)"
+
+msgid "Online News/Link"
+msgstr "অনলাইন নিউজ/লিংক"
+
+msgid "Department / Office Related"
+msgstr "বিভাগ/দপ্তর সম্পর্কিত"
+
+msgid "Press Release (PDF)"
+msgstr "প্রেস রিলিজ (Pdf)"
+
+msgid "Or Upload PDF File"
+msgstr "অথবা পিডিএফ ফাইল আপলোড"
+
+msgid "Or Upload Screenshot Image"
+msgstr "অথবা স্ক্রিনশট ইমেজ আপলোড"
+
+msgid "Or Upload Direct File"
+msgstr "অথবা সরাসরি ফাইল আপলোড"
+
+msgid "Press Release PDF"
+msgstr "প্রেস রিলিজ পিডিএফ"
+
+msgid "News PDF"
+msgstr "সংবাদ পিডিএফ"
+
+msgid "Screenshot"
+msgstr "স্ক্রিনশট"
+
+msgid "Asset File"
+msgstr "অ্যাসেট ফাইল"
+
+msgid "Upload"
+msgstr "আপলোড"
+
+msgid "Link"
+msgstr "লিংক"
+
+msgid "PR Showcase"
+msgstr "পিআর শোকেস"
+
+msgid "A clean feed view of all press releases, attachments, and coverage reports."
+msgstr "সকল প্রেস রিলিজ, সংযুক্তি এবং মিডিয়া কভারেজের একটি সুন্দর সংকলন।"
+
+msgid "Search by headline, PR number, body text..."
+msgstr "শিরোনাম, পিআর নম্বর বা বডি টেক্সট দিয়ে খুঁজুন..."
+
+msgid "Showing results for:"
+msgstr "অনুসন্ধানের ফলাফল:"
+
+msgid "Clear"
+msgstr "মুছুন"
+
+msgid "ATTACHMENTS & COVERAGES"
+msgstr "সংযুক্তি এবং কভারেজসমূহ"
+
+msgid "Release PDF"
+msgstr "রিলিজ পিডিএফ"
+
+msgid "News Coverages"
+msgstr "মিডিয়া কভারেজ"
+
+msgid "View Details"
+msgstr "বিস্তারিত দেখুন"
+
+msgid "Print PDF"
+msgstr "পিডিএফ প্রিন্ট"
+
+msgid "No press releases found."
+msgstr "কোন প্রেস রিলিজ পাওয়া যায়নি।"
+
+msgid "Try resetting search keyword or create a new entry."
+msgstr "অনুগ্রহ করে আপনার অনুসন্ধানের শব্দ পরিবর্তন করুন বা নতুন এন্ট্রি তৈরি করুন।"
+
+
+
+

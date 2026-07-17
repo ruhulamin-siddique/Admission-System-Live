@@ -12,24 +12,17 @@
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="content-header">
-  <div class="container-fluid">
-    <div class="row mb-2 align-items-center">
-      <div class="col">
-        <h1 class="m-0">
-          <i class="fas {% if is_edit %}fa-edit{% else %}fa-plus{% endif %} text-primary mr-2"></i>{{ page_title }}
-        </h1>
-      </div>
-      <div class="col-auto">
-        <a href="{% url 'pr_media_houses' %}" class="btn btn-light btn-sm">
-          <i class="fas fa-arrow-left mr-1"></i> {% translate "Go Back" %}
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
+{% block page_title %}
+<i class="fas {% if is_edit %}fa-edit{% else %}fa-plus{% endif %} text-primary mr-2"></i>{{ page_title }}
+{% endblock %}
 
+{% block page_actions %}
+  <a href="{% url 'pr_media_houses' %}" class="btn btn-light btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> {% translate "Go Back" %}
+  </a>
+{% endblock %}
+
+{% block content %}
 <div class="content">
   <div class="container-fluid">
     <div class="row justify-content-center">

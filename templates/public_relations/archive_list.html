@@ -8,48 +8,46 @@
   .filter-card { border-radius: 14px; border: none; }
   .table-premium thead th {
     background: linear-gradient(135deg, #1e40af, #3b82f6);
-    color: #fff; font-weight: 600; font-size: 0.82rem;
+    color: #fff; font-weight: 600; font-size: 0.95rem;
     text-transform: uppercase; letter-spacing: 0.5px;
     border: none; padding: 12px 14px; white-space: nowrap;
   }
+  .table-premium tbody td {
+    font-size: 0.95rem;
+    padding: 12px 14px;
+    vertical-align: middle;
+  }
   .table-premium tbody tr:hover { background-color: #f0f7ff; }
-  .badge-national  { background: #dbeafe; color: #1e40af; border-radius: 20px; }
-  .badge-local     { background: #dcfce7; color: #166534; border-radius: 20px; }
-  .badge-online    { background: #fef9c3; color: #854d0e; border-radius: 20px; }
+  .badge-national  { background: #dbeafe; color: #1e40af; border-radius: 20px; font-size: 0.85rem; padding: 4px 10px; }
+  .badge-local     { background: #dcfce7; color: #166534; border-radius: 20px; font-size: 0.85rem; padding: 4px 10px; }
+  .badge-online    { background: #fef9c3; color: #854d0e; border-radius: 20px; font-size: 0.85rem; padding: 4px 10px; }
   .search-active-pill {
     background: #fef9c3; color: #92400e;
     border-radius: 20px; padding: 3px 10px;
-    font-size: 0.78rem; font-weight: 600;
+    font-size: 0.85rem; font-weight: 600;
   }
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="content-header">
-  <div class="container-fluid">
-    <div class="row mb-2 align-items-center">
-      <div class="col-sm-7">
-        <h1 class="m-0">
-          <i class="fas fa-archive text-primary mr-2"></i>{% translate "Press Release Archive" %}
-          {% if applied %}<span class="search-active-pill ml-2">{% translate "Filter Active" %}</span>{% endif %}
-        </h1>
-      </div>
-      <div class="col-sm-5 text-right">
-        {% if can_add %}
-        <a href="{% url 'pr_archive_create' %}" class="btn btn-primary btn-sm px-4">
-          <i class="fas fa-plus mr-1"></i> {% translate "New Entry" %}
-        </a>
-        {% endif %}
-        {% if can_export %}
-        <a href="{% url 'pr_export_excel' %}?{{ get_params }}" class="btn btn-success btn-sm px-4 ml-1">
-          <i class="fas fa-file-excel mr-1"></i> {% translate "Excel" %}
-        </a>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
+{% block page_title %}
+<i class="fas fa-archive text-primary mr-2"></i>{% translate "Press Release Archive" %}
+{% if applied %}<span class="search-active-pill ml-2">{% translate "Filter Active" %}</span>{% endif %}
+{% endblock %}
 
+{% block page_actions %}
+  {% if can_add %}
+  <a href="{% url 'pr_archive_create' %}" class="btn btn-primary btn-sm px-4">
+    <i class="fas fa-plus mr-1"></i> {% translate "New Entry" %}
+  </a>
+  {% endif %}
+  {% if can_export %}
+  <a href="{% url 'pr_export_excel' %}?{{ get_params }}" class="btn btn-success btn-sm px-4 ml-1">
+    <i class="fas fa-file-excel mr-1"></i> {% translate "Excel" %}
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
 <div class="content">
   <div class="container-fluid">
 
@@ -136,22 +134,22 @@
             <tbody>
               {% for entry in page_obj %}
               <tr>
-                <td class="text-muted" style="font-size:0.85rem;">
+                <td class="text-muted">
                   {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
                 </td>
                 <td>
-                  <span class="badge badge-primary" style="border-radius:8px;font-size:0.8rem;">{{ entry.press_release_no }}</span>
+                  <span class="badge badge-primary" style="border-radius:8px;font-size:0.9rem;padding: 4px 8px;">{{ entry.press_release_no }}</span>
                 </td>
-                <td style="white-space:nowrap;font-size:0.88rem;">{{ entry.press_release_date|date:"d M Y" }}</td>
+                <td style="white-space:nowrap;">{{ entry.press_release_date|date:"d M Y" }}</td>
                 <td>
                   <a href="{% url 'pr_archive_detail' entry.pk %}" class="text-dark font-weight-600">
                     {{ entry.event_name|truncatechars:65 }}
                   </a>
                 </td>
-                <td class="text-muted" style="font-size:0.85rem;">{{ entry.department|default:"—" }}</td>
-                <td class="text-center"><span class="badge badge-national px-2">{{ entry.national_count }}</span></td>
-                <td class="text-center"><span class="badge badge-local px-2">{{ entry.local_count }}</span></td>
-                <td class="text-center"><span class="badge badge-online px-2">{{ entry.online_count }}</span></td>
+                <td class="text-muted">{{ entry.department|default:"—" }}</td>
+                <td class="text-center"><span class="badge badge-national">{{ entry.national_count }}</span></td>
+                <td class="text-center"><span class="badge badge-local">{{ entry.local_count }}</span></td>
+                <td class="text-center"><span class="badge badge-online">{{ entry.online_count }}</span></td>
                 <td class="text-center" style="white-space:nowrap;">
                   <a href="{% url 'pr_archive_detail' entry.pk %}" class="btn btn-xs btn-outline-primary mr-1" title="{% translate 'Details' %}">
                     <i class="fas fa-eye"></i>

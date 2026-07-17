@@ -41,6 +41,7 @@ def dashboard(request):
     national_count     = MediaCoverage.objects.filter(media_house__media_type='national').count()
     local_count        = MediaCoverage.objects.filter(media_house__media_type='local').count()
     online_count       = MediaCoverage.objects.filter(media_house__media_type='online').count()
+    tv_count           = MediaCoverage.objects.filter(media_house__media_type='tv').count()
     total_media_houses = MediaHouse.objects.count()
 
     recent_entries = (
@@ -54,6 +55,7 @@ def dashboard(request):
         'national': MediaHouse.objects.filter(media_type='national').count(),
         'local':    MediaHouse.objects.filter(media_type='local').count(),
         'online':   MediaHouse.objects.filter(media_type='online').count(),
+        'tv':       MediaHouse.objects.filter(media_type='tv').count(),
     }
 
     context = {
@@ -63,6 +65,7 @@ def dashboard(request):
         'national_count':      national_count,
         'local_count':         local_count,
         'online_count':        online_count,
+        'tv_count':            tv_count,
         'total_media_houses':  total_media_houses,
         'recent_entries':      recent_entries,
         'media_houses_by_type': media_houses_by_type,
@@ -356,6 +359,7 @@ def media_house_list(request):
         'national_count':      MediaHouse.objects.filter(media_type='national').count(),
         'local_count':         MediaHouse.objects.filter(media_type='local').count(),
         'online_count':        MediaHouse.objects.filter(media_type='online').count(),
+        'tv_count':            MediaHouse.objects.filter(media_type='tv').count(),
     }
     return render(request, 'public_relations/media_house_list.html', context)
 
@@ -415,6 +419,42 @@ def media_house_edit(request, pk):
         'house':      house,
         'is_edit':    True,
     })
+
+
+# ============================================================================
+# Media House Delete
+# ============================================================================
+
+@require_access('public_relations', 'manage_media_houses')
+def media_house_delete(request, pk):
+    house = get_object_or_404(MediaHouse, pk=pk)
+
+    if request.method == 'POST':
+        coverage_count = house.coverages.count()
+        if coverage_count > 0:
+            messages.error(
+                request,
+                _('"%(name)s" cannot be deleted because it has %(count)s linked coverage record(s). '
+                  'Remove those coverage rows first.') % {
+                      'name': house.name,
+                      'count': coverage_count,
+                  }
+            )
+        else:
+            name = house.name
+            house.delete()
+            log_activity(
+                request, 'DELETE', 'public_relations',
+                f'Media house deleted: {name}',
+                object_id=str(pk),
+            )
+            messages.success(request, _('"%(name)s" has been deleted.') % {'name': name})
+        return redirect('pr_media_houses')
+
+    # GET — not used (delete is done via inline modal POST), but guard it
+    return redirect('pr_media_houses')
+
+
 
 
 # ============================================================================
@@ -478,3 +518,38 @@ def _get_params_without_page(request):
     params = request.GET.copy()
     params.pop('page', None)
     return params.urlencode()
+
+
+# ============================================================================
+# Press Release Showcase / Portal View
+# ============================================================================
+
+@require_access('public_relations', 'view_archive')
+def pr_portal(request):
+    search_query = request.GET.get('q', '').strip()
+    queryset = (
+        PublicRelationsArchive.objects
+        .select_related('created_by')
+        .prefetch_related('coverages__media_house', 'assets')
+        .order_by('-press_release_date', '-created_at')
+    )
+
+    if search_query:
+        queryset = queryset.filter(
+            Q(press_release_no__icontains=search_query) |
+            Q(event_name__icontains=search_query)       |
+            Q(full_text__icontains=search_query)        |
+            Q(department__icontains=search_query)
+        ).distinct()
+
+    paginator = Paginator(queryset, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_title': _('PR Showcase'),
+        'page_obj': page_obj,
+        'search_query': search_query,
+    }
+    return render(request, 'public_relations/portal.html', context)
+

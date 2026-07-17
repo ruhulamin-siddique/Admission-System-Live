@@ -2,8 +2,7 @@
 public_relations/forms.py
 =========================
 Bilingual ModelForms and inline formset factories.
-All upload widgets are configured as URLInput to support external links
-such as Google Drive.
+All fields use direct file upload only (no external link fields).
 """
 
 from django import forms
@@ -29,6 +28,7 @@ _TEXTAREA     = forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
 _SELECT       = forms.Select(attrs={'class': 'form-control'})
 _DATE_INPUT   = forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
 _NUMBER_INPUT = forms.NumberInput(attrs={'class': 'form-control'})
+_FILE_INPUT   = forms.ClearableFileInput(attrs={'class': 'form-control-file'})
 
 
 # ---------------------------------------------------------------------------
@@ -95,32 +95,56 @@ class PublicRelationsArchiveForm(forms.ModelForm):
             'event_name',
             'department',
             'full_text',
-            'press_release_pdf',
+            'press_release_pdf_file',
             'remarks',
         ]
         widgets = {
-            'press_release_no':   _TEXT_INPUT,
-            'press_release_date': _DATE_INPUT,
-            'event_name':         _TEXT_INPUT,
-            'department':         _TEXT_INPUT,
-            'full_text':          forms.Textarea(attrs={'class': 'form-control', 'rows': 6}),
-            'press_release_pdf':  _URL_INPUT,
-            'remarks':            _TEXTAREA,
+            'press_release_no':       _TEXT_INPUT,
+            'press_release_date':     _DATE_INPUT,
+            'event_name':             _TEXT_INPUT,
+            'department':             _TEXT_INPUT,
+            'full_text':              forms.Textarea(attrs={'class': 'form-control', 'rows': 6}),
+            'press_release_pdf_file': _FILE_INPUT,
+            'remarks':                _TEXTAREA,
         }
         labels = {
-            'press_release_no':   _('Press Release No'),
-            'press_release_date': _('Date'),
-            'event_name':         _('Event Title / Headline'),
-            'department':         _('Department / Faculty'),
-            'full_text':          _('Full Body Text'),
-            'press_release_pdf':  _('Press Release Link (e.g. Google Drive)'),
-            'remarks':            _('Remarks'),
+            'press_release_no':       _('Press Release No'),
+            'press_release_date':     _('Date'),
+            'event_name':             _('Event Title / Headline'),
+            'department':             _('Department / Office Related'),
+            'full_text':              _('Full Body Text'),
+            'press_release_pdf_file': _('Press Release PDF'),
+            'remarks':                _('Remarks'),
         }
         help_texts = {
             'press_release_no': _('Unique serial number, e.g. PRO-2024-001'),
             'full_text':        _('Type the complete press release body text here.'),
-            'press_release_pdf': _('Paste the public Google Drive file view link here.'),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['press_release_no'].required = False
+        if not self.instance.pk:
+            import datetime
+            year = datetime.date.today().year
+            prefix = f"PRO-{year}-"
+            latest = self._meta.model.objects.filter(
+                press_release_no__startswith=prefix
+            ).order_by('-press_release_no').first()
+
+            if latest:
+                try:
+                    last_num = int(latest.press_release_no.split('-')[-1])
+                    next_num = last_num + 1
+                except ValueError:
+                    next_num = 1
+            else:
+                next_num = 1
+
+            self.fields['press_release_no'].initial = f"{prefix}{next_num:04d}"
+
+        self.fields['press_release_no'].widget.attrs['readonly'] = 'readonly'
+        self.fields['press_release_no'].widget.attrs['class'] = 'form-control pr-number-field'
 
     def clean_press_release_no(self):
         return self.cleaned_data['press_release_no'].strip()
@@ -141,23 +165,23 @@ class MediaCoverageForm(forms.ModelForm):
         fields = [
             'media_house',
             'published_date',
-            'newspaper_pdf',
-            'screenshot',
+            'newspaper_pdf_file',
+            'screenshot_file',
             'online_link',
         ]
         widgets = {
-            'media_house':    _SELECT,
-            'published_date': _DATE_INPUT,
-            'newspaper_pdf':  _URL_INPUT,
-            'screenshot':     _URL_INPUT,
-            'online_link':    _URL_INPUT,
+            'media_house':        _SELECT,
+            'published_date':     _DATE_INPUT,
+            'newspaper_pdf_file': _FILE_INPUT,
+            'screenshot_file':    forms.ClearableFileInput(attrs={'class': 'form-control-file', 'accept': 'image/*'}),
+            'online_link':        _URL_INPUT,
         }
         labels = {
-            'media_house':    _('Media House'),
-            'published_date': _('Published Date'),
-            'newspaper_pdf':  _('Newspaper PDF Link (e.g. Google Drive)'),
-            'screenshot':     _('Screenshot Link (e.g. Google Drive)'),
-            'online_link':    _('Online Link'),
+            'media_house':        _('Media House'),
+            'published_date':     _('Published Date'),
+            'newspaper_pdf_file': _('News PDF'),
+            'screenshot_file':    _('Screenshot'),
+            'online_link':        _('Online Link'),
         }
 
     def clean(self):
@@ -165,8 +189,8 @@ class MediaCoverageForm(forms.ModelForm):
         media_house = cleaned.get('media_house')
         if not media_house and any([
             cleaned.get('published_date'),
-            cleaned.get('newspaper_pdf'),
-            cleaned.get('screenshot'),
+            cleaned.get('newspaper_pdf_file'),
+            cleaned.get('screenshot_file'),
             cleaned.get('online_link'),
         ]):
             self.add_error('media_house', _('Media house is required for a coverage row.'))
@@ -182,33 +206,40 @@ class MediaAssetForm(forms.ModelForm):
 
     class Meta:
         model  = MediaAsset
-        fields = ['asset_type', 'file', 'link', 'year', 'caption']
+        fields = ['asset_type', 'file_upload', 'link', 'year', 'caption']
         widgets = {
-            'asset_type': _SELECT,
-            'file':       _URL_INPUT,
-            'link':       _URL_INPUT,
-            'year':       _NUMBER_INPUT,
-            'caption':    _TEXT_INPUT,
+            'asset_type':  _SELECT,
+            'file_upload': _FILE_INPUT,
+            'link':        _URL_INPUT,
+            'year':        _NUMBER_INPUT,
+            'caption':     _TEXT_INPUT,
         }
         labels = {
-            'asset_type': _('Asset Type'),
-            'file':       _('Asset Link / File URL (e.g. Google Drive)'),
-            'link':       _('External Link'),
-            'year':       _('Year'),
-            'caption':    _('Caption'),
+            'asset_type':  _('Asset Type'),
+            'file_upload': _('Upload File'),
+            'link':        _('External Link (YouTube / Drive / Facebook)'),
+            'year':        _('Year'),
+            'caption':     _('Caption'),
         }
 
     def clean(self):
-        cleaned = super().clean()
+        cleaned    = super().clean()
         asset_type = cleaned.get('asset_type')
-        file_val   = cleaned.get('file', '').strip()
-        link_val   = cleaned.get('link', '').strip()
+        file_upload = cleaned.get('file_upload')
+        link_val   = cleaned.get('link', '').strip() if cleaned.get('link') else ''
 
-        if asset_type in ('photo', 'video') and not file_val:
-            if not link_val:
-                self.add_error('file', _('An asset file URL or external URL link is required.'))
+        # Photo: file upload required
+        if asset_type == 'photo' and not file_upload:
+            self.add_error('file_upload', _('A photo file upload is required.'))
+
+        # Video: external link required (no direct upload for large video files)
+        if asset_type == 'video' and not link_val:
+            self.add_error('link', _('An external link is required for video assets.'))
+
+        # Drive / YouTube / Facebook: link required
         if asset_type in ('drive', 'youtube', 'facebook') and not link_val:
             self.add_error('link', _('An external link URL is required for this asset type.'))
+
         return cleaned
 
 
@@ -222,7 +253,7 @@ MediaCoverageFormSet = inlineformset_factory(
     form=MediaCoverageForm,
     extra=1,
     can_delete=True,
-    fields=['media_house', 'published_date', 'newspaper_pdf', 'screenshot', 'online_link'],
+    fields=['media_house', 'published_date', 'newspaper_pdf_file', 'screenshot_file', 'online_link'],
 )
 
 MediaAssetFormSet = inlineformset_factory(
@@ -231,7 +262,7 @@ MediaAssetFormSet = inlineformset_factory(
     form=MediaAssetForm,
     extra=1,
     can_delete=True,
-    fields=['asset_type', 'file', 'link', 'year', 'caption'],
+    fields=['asset_type', 'file_upload', 'link', 'year', 'caption'],
 )
 
 
@@ -267,6 +298,7 @@ class PRSearchForm(forms.Form):
             ('national', _('National Newspaper')),
             ('local',    _('Local Newspaper')),
             ('online',   _('Online Portal')),
+            ('tv',       _('TV Channel')),
         ],
         widget=_SELECT,
     )

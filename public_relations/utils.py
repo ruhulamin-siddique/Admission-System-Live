@@ -110,7 +110,7 @@ def export_archive_to_excel(queryset):
 
     headers1 = [
         'ক্রমিক', 'প্রেস রিলিজ নং', 'তারিখ', 'অনুষ্ঠানের নাম',
-        'বিভাগ', 'মোট কভারেজ', 'জাতীয়', 'স্থানীয়', 'অনলাইন',
+        'বিভাগ', 'মোট কভারেজ', 'জাতীয়', 'স্থানীয়', 'অনলাইন', 'টিভি',
         'মন্তব্য', 'তৈরি করেছেন', 'তৈরির সময়',
     ]
     for col_idx, header in enumerate(headers1, start=1):
@@ -130,6 +130,7 @@ def export_archive_to_excel(queryset):
             entry.national_count,
             entry.local_count,
             entry.online_count,
+            entry.tv_count,
             _safe(entry.remarks),
             creator,
             _safe(entry.created_at),
@@ -139,7 +140,7 @@ def export_archive_to_excel(queryset):
         style_data_row(ws1, row_idx, len(headers1))
 
     # Auto-fit column widths (approximate)
-    col_widths1 = [6, 18, 14, 45, 20, 12, 10, 10, 10, 30, 20, 20]
+    col_widths1 = [6, 18, 14, 45, 20, 12, 10, 10, 10, 10, 30, 20, 20]
     for i, w in enumerate(col_widths1, start=1):
         ws1.column_dimensions[get_column_letter(i)].width = w
     ws1.row_dimensions[1].height = 30
@@ -150,7 +151,7 @@ def export_archive_to_excel(queryset):
 
     headers2 = [
         'ক্রমিক', 'প্রেস রিলিজ নং', 'অনুষ্ঠান', 'মিডিয়া হাউস',
-        'মিডিয়া ধরন', 'প্রকাশের তারিখ', 'অনলাইন লিংক',
+        'মিডিয়া ধরন', 'প্রকাশের তারিখ', 'প্রকাশিত সংবাদ (PDF)', 'প্রকাশিত সংবাদ (screenshot)', 'অনলাইন লিংক',
     ]
     for col_idx, header in enumerate(headers2, start=1):
         ws2.cell(row=1, column=col_idx, value=header)
@@ -168,13 +169,15 @@ def export_archive_to_excel(queryset):
                 _safe(cov.media_house.name),
                 cov.media_house.get_media_type_display(),
                 _safe(cov.published_date),
+                _safe(cov.newspaper_pdf_url),
+                _safe(cov.screenshot_url),
                 _safe(cov.online_link),
             ]
             for col_idx, val in enumerate(data, start=1):
                 ws2.cell(row=row_idx, column=col_idx, value=val)
             style_data_row(ws2, row_idx, len(headers2))
 
-    col_widths2 = [6, 18, 40, 30, 16, 14, 45]
+    col_widths2 = [6, 18, 40, 30, 16, 14, 35, 35, 45]
     for i, w in enumerate(col_widths2, start=1):
         ws2.column_dimensions[get_column_letter(i)].width = w
     ws2.row_dimensions[1].height = 30

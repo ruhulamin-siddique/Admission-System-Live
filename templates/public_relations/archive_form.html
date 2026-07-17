@@ -34,9 +34,9 @@
     margin-bottom: 0.75rem;
     border: 1px solid #e2e8f0;
     position: relative;
-    transition: box-shadow 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .formset-row:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.07); }
+  .formset-row:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
   .dark-mode .formset-row {
     background: #1e293b !important;
     border-color: #334155 !important;
@@ -56,46 +56,112 @@
   .errorlist { color: #dc2626; font-size: 0.8rem; list-style: none; padding: 0; margin: 2px 0; }
   .required-mark { color: #ef4444; margin-left: 2px; }
   
-  /* Dynamic GDrive Warning Style */
-  .gdrive-warning-box {
-    display: none;
-    background: #f0f9ff;
-    border-left: 3px solid #0284c7;
-    color: #0369a1;
-    border-radius: 4px;
-    padding: 6px 12px;
-    font-size: 0.78rem;
+
+
+  /* Premium Form Controls Styling */
+  .form-control {
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.88rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+  .form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    transform: translateY(-1px);
+  }
+  .dark-mode .form-control {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f1f5f9 !important;
+  }
+  .dark-mode .form-control:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+  }
+
+  /* Read-only field design */
+  .pr-number-field {
+    background-color: #eff6ff !important;
+    border-color: #bfdbfe !important;
+    color: #1e40af !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+    cursor: not-allowed;
+  }
+  .dark-mode .pr-number-field {
+    background-color: #172554 !important;
+    border-color: #1e3a8a !important;
+    color: #93c5fd !important;
+  }
+
+
+
+  /* Custom File upload UI button */
+  .file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    width: 100%;
+  }
+  .file-input-custom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #cbd5e1;
+    background: #f8fafc;
+    color: #64748b;
+    padding: 0.45rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
     font-weight: 600;
-    margin-top: 5px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    transition: all 0.25s ease;
+    text-align: center;
   }
-  .dark-mode .gdrive-warning-box {
-    background: #0f172a !important;
-    border-left-color: #38bdf8;
-    color: #38bdf8;
+  .file-input-wrapper:hover .file-input-custom-btn {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #2563eb;
   }
+  .dark-mode .file-input-custom-btn {
+    background: #1e293b;
+    border-color: #475569;
+    color: #94a3b8;
+  }
+  .dark-mode .file-input-wrapper:hover .file-input-custom-btn {
+    border-color: #3b82f6;
+    background: #0f172a;
+    color: #3b82f6;
+  }
+  .file-input-wrapper input[type=file] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    font-size: inherit;
+  }
+
+
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="content-header">
-  <div class="container-fluid">
-    <div class="row mb-2 align-items-center">
-      <div class="col-sm-9">
-        <h1 class="m-0">
-          <i class="fas {% if is_edit %}fa-edit{% else %}fa-plus-circle{% endif %} text-primary mr-2"></i>
-          {{ page_title }}
-        </h1>
-      </div>
-      <div class="col-sm-3 text-right">
-        <a href="{% url 'pr_archive_list' %}" class="btn btn-light btn-sm">
-          <i class="fas fa-arrow-left mr-1"></i> {% translate "Go Back" %}
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
+{% block page_title %}
+<i class="fas {% if is_edit %}fa-edit{% else %}fa-plus-circle{% endif %} text-primary mr-2"></i>{{ page_title }}
+{% endblock %}
 
+{% block page_actions %}
+  <a href="{% url 'pr_archive_list' %}" class="btn btn-light btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> {% translate "Go Back" %}
+  </a>
+{% endblock %}
+
+{% block content %}
 <div class="content">
   <div class="container-fluid">
 
@@ -147,13 +213,20 @@
               {{ archive_form.department }}
             </div>
             <div class="col-md-4 mb-3">
-              <label for="{{ archive_form.press_release_pdf.id_for_label }}">{{ archive_form.press_release_pdf.label }}</label>
-              {{ archive_form.press_release_pdf }}
-              <div class="gdrive-warning-box">
-                <i class="fas fa-share-alt mr-1"></i>
-                {% translate "Google Drive link detected! Please verify sharing settings are set to 'Anyone with the link can view'." %}
+              <label for="{{ archive_form.press_release_pdf_file.id_for_label }}">
+                <i class="fas fa-file-pdf text-danger mr-1"></i>{{ archive_form.press_release_pdf_file.label }}
+              </label>
+              <div class="file-input-wrapper">
+                <div class="file-input-custom-btn">
+                  <i class="fas fa-cloud-upload-alt mr-2 text-primary"></i>
+                  <span class="file-name-label">{% translate "Select PDF File..." %}</span>
+                </div>
+                {{ archive_form.press_release_pdf_file }}
               </div>
-              {% if archive_form.press_release_pdf.errors %}<ul class="errorlist">{% for e in archive_form.press_release_pdf.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+              {% if archive_form.instance.press_release_pdf_file %}
+                <div class="mt-2"><small class="text-success"><i class="fas fa-file-pdf mr-1"></i> {% translate "Current:" %} <a href="{{ archive_form.instance.press_release_pdf_file.url }}" target="_blank">{% translate "View PDF" %}</a></small></div>
+              {% endif %}
+              {% if archive_form.press_release_pdf_file.errors %}<ul class="errorlist">{% for e in archive_form.press_release_pdf_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
             </div>
             <div class="col-md-4 mb-3">
               <label for="{{ archive_form.remarks.id_for_label }}">{{ archive_form.remarks.label }}</label>
@@ -162,7 +235,7 @@
           </div>
           <div class="mb-3">
             <label for="{{ archive_form.full_text.id_for_label }}">
-              {{ archive_form.full_text.label }} <span class="required-mark">*</span>
+              {{ archive_form.full_text.label }} {% if archive_form.full_text.field.required %}<span class="required-mark">*</span>{% endif %}
             </label>
             {{ archive_form.full_text }}
             {% if archive_form.full_text.errors %}<ul class="errorlist">{% for e in archive_form.full_text.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
@@ -190,7 +263,7 @@
               {% if form.instance.pk %}
               <span class="badge badge-secondary mb-2" style="font-size:0.75rem;">{% translate "Saved" %}</span>
               {% endif %}
-              <div class="row">
+              <div class="row align-items-end">
                 <div class="col-md-3 mb-2">
                   <label>{{ form.media_house.label }} <span class="required-mark">*</span></label>
                   {{ form.media_house }}
@@ -201,28 +274,37 @@
                   {{ form.published_date }}
                 </div>
                 <div class="col-md-2 mb-2">
-                  <label>{{ form.newspaper_pdf.label }}</label>
-                  {{ form.newspaper_pdf }}
-                  <div class="gdrive-warning-box">
-                    <i class="fas fa-share-alt mr-1"></i>
-                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
+                  <label><i class="fas fa-file-pdf text-danger mr-1"></i>{{ form.newspaper_pdf_file.label }}</label>
+                  <div class="file-input-wrapper">
+                    <div class="file-input-custom-btn" style="padding:0.35rem 0.5rem;font-size:0.75rem;">
+                      <i class="fas fa-file-pdf mr-1 text-success"></i>
+                      <span class="file-name-label">{% translate "PDF..." %}</span>
+                    </div>
+                    {{ form.newspaper_pdf_file }}
                   </div>
+                  {% if form.instance.newspaper_pdf_file %}
+                    <div class="mt-1"><small class="text-success"><a href="{{ form.instance.newspaper_pdf_file.url }}" target="_blank"><i class="fas fa-eye mr-1"></i>{% translate "View" %}</a></small></div>
+                  {% endif %}
+                  {% if form.newspaper_pdf_file.errors %}<ul class="errorlist">{% for e in form.newspaper_pdf_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
                 <div class="col-md-2 mb-2">
-                  <label>{{ form.screenshot.label }}</label>
-                  {{ form.screenshot }}
-                  <div class="gdrive-warning-box">
-                    <i class="fas fa-share-alt mr-1"></i>
-                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
+                  <label><i class="fas fa-image text-info mr-1"></i>{{ form.screenshot_file.label }}</label>
+                  <div class="file-input-wrapper">
+                    <div class="file-input-custom-btn" style="padding:0.35rem 0.5rem;font-size:0.75rem;">
+                      <i class="fas fa-image mr-1 text-info"></i>
+                      <span class="file-name-label">{% translate "Image..." %}</span>
+                    </div>
+                    {{ form.screenshot_file }}
                   </div>
+                  {% if form.instance.screenshot_file %}
+                    <div class="mt-1"><small class="text-success"><a href="{{ form.instance.screenshot_file.url }}" target="_blank"><i class="fas fa-eye mr-1"></i>{% translate "View" %}</a></small></div>
+                  {% endif %}
+                  {% if form.screenshot_file.errors %}<ul class="errorlist">{% for e in form.screenshot_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
                 <div class="col-md-3 mb-2">
-                  <label>{{ form.online_link.label }}</label>
+                  <label><i class="fas fa-link text-primary mr-1"></i>{{ form.online_link.label }}</label>
                   {{ form.online_link }}
-                  <div class="gdrive-warning-box">
-                    <i class="fas fa-share-alt mr-1"></i>
-                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
-                  </div>
+                  {% if form.online_link.errors %}<ul class="errorlist">{% for e in form.online_link.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
               </div>
               <div style="display:none;">{{ form.DELETE }}</div>
@@ -241,7 +323,7 @@
       <div class="card form-section shadow-sm">
         <div class="card-header" style="background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff;">
           <i class="fas fa-photo-video mr-2"></i>{% translate "Media Assets" %}
-          <small class="ml-2 opacity-75">({% translate "Photos, videos, Google Drive links, YouTube clips, etc." %})</small>
+          <small class="ml-2 opacity-75">({% translate "Photos, videos, YouTube clips, Google Drive links, etc." %})</small>
         </div>
         <div class="card-body">
 
@@ -253,26 +335,29 @@
               <button type="button" class="btn-delete-row" onclick="markDeleted(this, '{{ form.DELETE.id_for_label }}')">
                 <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
               </button>
-              <div class="row">
+              <div class="row align-items-end">
                 <div class="col-md-2 mb-2">
                   <label>{{ form.asset_type.label }}</label>
                   {{ form.asset_type }}
                 </div>
-                <div class="col-md-2 mb-2">
-                  <label>{{ form.file.label }}</label>
-                  {{ form.file }}
-                  <div class="gdrive-warning-box">
-                    <i class="fas fa-share-alt mr-1"></i>
-                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
+                <div class="col-md-3 mb-2 asset-file-section">
+                  <label><i class="fas fa-cloud-upload-alt mr-1 text-purple"></i>{{ form.file_upload.label }}</label>
+                  <div class="file-input-wrapper">
+                    <div class="file-input-custom-btn" style="padding:0.35rem 0.5rem;font-size:0.75rem;">
+                      <i class="fas fa-cloud-upload-alt mr-1 text-purple"></i>
+                      <span class="file-name-label">{% translate "File..." %}</span>
+                    </div>
+                    {{ form.file_upload }}
                   </div>
+                  {% if form.instance.file_upload %}
+                    <div class="mt-1"><small class="text-success"><a href="{{ form.instance.file_upload.url }}" target="_blank"><i class="fas fa-eye mr-1"></i>{% translate "View" %}</a></small></div>
+                  {% endif %}
+                  {% if form.file_upload.errors %}<ul class="errorlist">{% for e in form.file_upload.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
-                <div class="col-md-4 mb-2">
-                  <label>{{ form.link.label }}</label>
+                <div class="col-md-3 mb-2">
+                  <label><i class="fas fa-link mr-1 text-primary"></i>{{ form.link.label }}</label>
                   {{ form.link }}
-                  <div class="gdrive-warning-box">
-                    <i class="fas fa-share-alt mr-1"></i>
-                    {% translate "Verify link is set to 'Anyone with the link can view'." %}
-                  </div>
+                  {% if form.link.errors %}<ul class="errorlist">{% for e in form.link.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
                 <div class="col-md-1 mb-2">
                   <label>{{ form.year.label }}</label>
@@ -315,72 +400,55 @@
 
 {% block extra_scripts %}
 <script>
-// Realtime Google Drive link check logic
-function checkDriveLink(inputElement) {
-  const container = inputElement.closest('div');
-  if (!container) return;
-  const warningBox = container.querySelector('.gdrive-warning-box');
-  if (!warningBox) return;
-
-  const val = inputElement.value.trim();
-  if (val.includes('drive.google.com') || val.includes('docs.google.com')) {
-    warningBox.style.display = 'block';
-  } else {
-    warningBox.style.display = 'none';
-  }
-}
-
-// Global listener setup for URL fields (including dynamically added formset rows)
-document.addEventListener('input', function(e) {
-  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'url') {
-    checkDriveLink(e.target);
+// ── Custom file input label update ─────────────────────────────────────────
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.type === 'file') {
+    const wrapper = e.target.closest('.file-input-wrapper');
+    if (!wrapper) return;
+    const label = wrapper.querySelector('.file-name-label');
+    const btn   = wrapper.querySelector('.file-input-custom-btn');
+    if (e.target.files && e.target.files.length > 0) {
+      if (label) label.textContent = e.target.files[0].name;
+      if (btn) { btn.style.borderColor = '#22c55e'; btn.style.color = '#15803d'; btn.style.background = '#f0fdf4'; }
+    } else {
+      if (label) label.textContent = 'Select File...';
+      if (btn)   { btn.style.borderColor = ''; btn.style.color = ''; btn.style.background = ''; }
+    }
   }
 });
 
-document.addEventListener('paste', function(e) {
-  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'url') {
-    // Check after paste settles
-    setTimeout(() => checkDriveLink(e.target), 50);
-  }
-});
-
-// Run check on page load (for edit form views containing preloaded links)
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('input[type="url"]').forEach(input => {
-    checkDriveLink(input);
-  });
-});
-
+// ── Formset row cloning ─────────────────────────────────────────────────────
 function addFormsetRow(containerId, prefix) {
-  const container = document.getElementById(containerId);
-  const rows = container.querySelectorAll('.formset-row');
-  const totalInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
-  const newIndex = parseInt(totalInput.value);
-
+  const container  = document.getElementById(containerId);
+  const rows       = container.querySelectorAll('.formset-row');
+  const totalInput = document.getElementById('id_' + prefix + '-TOTAL_FORMS');
+  const newIndex   = parseInt(totalInput.value);
   const templateRow = rows[rows.length - 1].cloneNode(true);
 
-  templateRow.querySelectorAll('input, select, textarea').forEach(el => {
-    const oldName = el.name || '';
-    const oldId   = el.id || '';
-    el.name = oldName.replace(/-\d+-/, `-${newIndex}-`);
-    el.id   = oldId.replace(/-\d+-/, `-${newIndex}-`);
-    if (el.type !== 'hidden' || el.name.includes('DELETE')) {
-      el.value = el.type === 'checkbox' ? '' : '';
+  templateRow.querySelectorAll('input, select, textarea').forEach(function(el) {
+    if (el.name) el.name = el.name.replace(/-\d+-/, '-' + newIndex + '-');
+    if (el.id)   el.id   = el.id.replace(/-\d+-/,   '-' + newIndex + '-');
+    if (el.type !== 'hidden') {
       if (el.type === 'checkbox') el.checked = false;
+      else if (el.type !== 'file') el.value = '';
     }
-    
-    // Hide cloned warning box initially
-    const warningBox = el.closest('div')?.querySelector('.gdrive-warning-box');
-    if (warningBox) warningBox.style.display = 'none';
+  });
+  templateRow.querySelectorAll('label[for]').forEach(function(lbl) {
+    lbl.setAttribute('for', lbl.getAttribute('for').replace(/-\d+-/, '-' + newIndex + '-'));
   });
 
-  templateRow.querySelectorAll('label').forEach(lbl => {
-    const oldFor = lbl.getAttribute('for') || '';
-    lbl.setAttribute('for', oldFor.replace(/-\d+-/, `-${newIndex}-`));
+  // Reset file input labels
+  templateRow.querySelectorAll('.file-name-label').forEach(function(span) {
+    span.textContent = 'Select File...';
   });
-
-  const savedBadge = templateRow.querySelector('.badge-secondary');
-  if (savedBadge) savedBadge.remove();
+  templateRow.querySelectorAll('.file-input-custom-btn').forEach(function(btn) {
+    btn.style.borderColor = ''; btn.style.color = ''; btn.style.background = '';
+  });
+  // Remove "View" links for existing files in cloned row
+  templateRow.querySelectorAll('.mt-1').forEach(function(el) { el.remove(); });
+  // Remove saved badge
+  const badge = templateRow.querySelector('.badge-secondary');
+  if (badge) badge.remove();
 
   container.appendChild(templateRow);
   totalInput.value = newIndex + 1;
@@ -396,18 +464,18 @@ function markDeleted(btn, deleteFieldId) {
     btn.textContent = '✓';
   } else {
     row.remove();
-    const prefix = deleteFieldId.includes('coverages') ? 'coverages' : 'assets';
-    const totalInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
-    if (totalInput) totalInput.value = Math.max(0, parseInt(totalInput.value) - 1);
+    const pfx = deleteFieldId.includes('coverages') ? 'coverages' : 'assets';
+    const ti  = document.getElementById('id_' + pfx + '-TOTAL_FORMS');
+    if (ti) ti.value = Math.max(0, parseInt(ti.value) - 1);
   }
 }
 
 document.getElementById('add-coverage-row').addEventListener('click', function() {
   addFormsetRow('coverage-formset-container', 'coverages');
 });
-
 document.getElementById('add-asset-row').addEventListener('click', function() {
   addFormsetRow('asset-formset-container', 'assets');
 });
 </script>
 {% endblock %}
+

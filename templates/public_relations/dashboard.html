@@ -6,101 +6,92 @@
 {% block extra_css %}
 <style>
   .pr-stat-card {
-    border-radius: 16px;
+    border-radius: 12px;
     border: none;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     overflow: hidden;
-    position: relative;
   }
   .pr-stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1) !important;
   }
-  .pr-stat-card .card-body { padding: 1.5rem; }
+  .pr-stat-card .card-body { padding: 0.75rem 1rem; }
   .stat-icon-wrap {
-    width: 60px; height: 60px;
-    border-radius: 14px;
+    width: 38px; height: 38px;
+    border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.6rem;
-    opacity: 0.95;
+    font-size: 1rem;
+    flex-shrink: 0;
   }
   .pr-stat-value {
-    font-size: 2.4rem;
+    font-size: 1.6rem;
     font-weight: 800;
     line-height: 1;
     color: #0f172a;
   }
   .dark-mode .pr-stat-value { color: #f1f5f9; }
   .pr-stat-label {
-    font-size: 0.82rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     color: #64748b;
+    margin-top: 2px;
   }
   .recent-table thead th {
     background: linear-gradient(135deg, #1e40af, #3b82f6);
     color: #fff;
     font-weight: 600;
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border: none;
-    padding: 12px 14px;
+    padding: 9px 12px;
   }
   .badge-national  { background: #dbeafe; color: #1e40af; }
   .badge-local     { background: #dcfce7; color: #166534; }
   .badge-online    { background: #fef9c3; color: #854d0e; }
+  .badge-tv        { background: #ccfbf1; color: #0f766e; }
   .section-header {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 800;
-    letter-spacing: 1.8px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
     color: #94a3b8;
-    margin-bottom: 1rem;
+    margin-bottom: 0.6rem;
   }
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="content-header">
-  <div class="container-fluid">
-    <div class="row mb-2 align-items-center">
-      <div class="col-sm-7">
-        <h1 class="m-0 d-flex align-items-center gap-3">
-          <span class="stat-icon-wrap" style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;display:inline-flex;">
-            <i class="fas fa-newspaper"></i>
-          </span>
-          <span>{% translate "PR Office" %} <small class="d-block" style="font-size:0.55em;color:#64748b;font-weight:500;">{% translate "Public Relations Office Dashboard" %}</small></span>
-        </h1>
-      </div>
-      <div class="col-sm-5 text-right">
-        {% has_access 'public_relations' 'add_archive' as can_add %}
-        {% if can_add %}
-        <a href="{% url 'pr_archive_create' %}" class="btn btn-primary btn-sm shadow-sm px-4">
-          <i class="fas fa-plus mr-1"></i> {% translate "New Press Release" %}
-        </a>
-        {% endif %}
-        <a href="{% url 'pr_archive_list' %}" class="btn btn-outline-secondary btn-sm px-4 ml-2">
-          <i class="fas fa-list mr-1"></i> {% translate "Archive" %}
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
+{% block page_title %}
+{% translate "PR Office" %} <span style="font-size:0.75rem; color:#64748b; font-weight:500; margin-left:10px;">| {% translate "Public Relations Office Dashboard" %}</span>
+{% endblock %}
 
+{% block page_actions %}
+  {% has_access 'public_relations' 'add_archive' as can_add %}
+  {% if can_add %}
+  <a href="{% url 'pr_archive_create' %}" class="btn btn-primary btn-sm px-3">
+    <i class="fas fa-plus mr-1"></i> {% translate "New Press Release" %}
+  </a>
+  {% endif %}
+  <a href="{% url 'pr_archive_list' %}" class="btn btn-outline-secondary btn-sm px-3 ml-1">
+    <i class="fas fa-list mr-1"></i> {% translate "Archive" %}
+  </a>
+{% endblock %}
+
+{% block content %}
 <div class="content">
   <div class="container-fluid">
 
-    <!-- ── KPI Stat Cards ────────────────────────────────────────────── -->
-    <div class="row">
+    <!-- ── KPI Stat Cards: Row 1 (4 Cards) ─────────────────────── -->
+    <div class="row mb-2">
 
-      <div class="col-xl-2 col-md-4 col-6 mb-4">
+      <div class="col-lg-3 col-md-6 col-6 mb-2">
         <div class="card pr-stat-card shadow-sm" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex justify-content-between align-items-center">
               <div>
                 <div class="pr-stat-value">{{ total_releases }}</div>
-                <div class="pr-stat-label mt-1">{% translate "Total Press Releases" %}</div>
+                <div class="pr-stat-label">{% translate "Total Press Releases" %}</div>
               </div>
               <div class="stat-icon-wrap" style="background:#1e40af;color:#fff;">
                 <i class="fas fa-file-alt"></i>
@@ -110,13 +101,13 @@
         </div>
       </div>
 
-      <div class="col-xl-2 col-md-4 col-6 mb-4">
+      <div class="col-lg-3 col-md-6 col-6 mb-2">
         <div class="card pr-stat-card shadow-sm" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex justify-content-between align-items-center">
               <div>
                 <div class="pr-stat-value" style="color:#166534;">{{ total_coverage }}</div>
-                <div class="pr-stat-label mt-1">{% translate "Total Coverages" %}</div>
+                <div class="pr-stat-label">{% translate "Total Coverages" %}</div>
               </div>
               <div class="stat-icon-wrap" style="background:#16a34a;color:#fff;">
                 <i class="fas fa-broadcast-tower"></i>
@@ -126,13 +117,13 @@
         </div>
       </div>
 
-      <div class="col-xl-2 col-md-4 col-6 mb-4">
+      <div class="col-lg-3 col-md-6 col-6 mb-2">
         <div class="card pr-stat-card shadow-sm" style="background:linear-gradient(135deg,#fff1f2,#ffe4e6);">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex justify-content-between align-items-center">
               <div>
                 <div class="pr-stat-value" style="color:#9f1239;">{{ national_count }}</div>
-                <div class="pr-stat-label mt-1">{% translate "National Papers" %}</div>
+                <div class="pr-stat-label">{% translate "National Papers" %}</div>
               </div>
               <div class="stat-icon-wrap" style="background:#e11d48;color:#fff;">
                 <i class="fas fa-flag"></i>
@@ -142,13 +133,13 @@
         </div>
       </div>
 
-      <div class="col-xl-2 col-md-4 col-6 mb-4">
+      <div class="col-lg-3 col-md-6 col-6 mb-2">
         <div class="card pr-stat-card shadow-sm" style="background:linear-gradient(135deg,#fffbeb,#fef9c3);">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex justify-content-between align-items-center">
               <div>
                 <div class="pr-stat-value" style="color:#854d0e;">{{ local_count }}</div>
-                <div class="pr-stat-label mt-1">{% translate "Local Papers" %}</div>
+                <div class="pr-stat-label">{% translate "Local Papers" %}</div>
               </div>
               <div class="stat-icon-wrap" style="background:#d97706;color:#fff;">
                 <i class="fas fa-map-marker-alt"></i>
@@ -158,13 +149,18 @@
         </div>
       </div>
 
-      <div class="col-xl-2 col-md-4 col-6 mb-4">
+    </div><!-- /row KPI Row 1 -->
+
+    <!-- ── KPI Stat Cards: Row 2 (3 Cards) ─────────────────────── -->
+    <div class="row mb-2">
+
+      <div class="col-lg-4 col-md-4 col-6 mb-2">
         <div class="card pr-stat-card shadow-sm" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex justify-content-between align-items-center">
               <div>
                 <div class="pr-stat-value" style="color:#5b21b6;">{{ online_count }}</div>
-                <div class="pr-stat-label mt-1">{% translate "Online Portals" %}</div>
+                <div class="pr-stat-label">{% translate "Online Portals" %}</div>
               </div>
               <div class="stat-icon-wrap" style="background:#7c3aed;color:#fff;">
                 <i class="fas fa-globe"></i>
@@ -174,13 +170,29 @@
         </div>
       </div>
 
-      <div class="col-xl-2 col-md-4 col-6 mb-4">
+      <div class="col-lg-4 col-md-4 col-6 mb-2">
+        <div class="card pr-stat-card shadow-sm" style="background:linear-gradient(135deg,#f0fdfa,#ccfbf1);">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="pr-stat-value" style="color:#0f766e;">{{ tv_count }}</div>
+                <div class="pr-stat-label">{% translate "TV Channels" %}</div>
+              </div>
+              <div class="stat-icon-wrap" style="background:#0d9488;color:#fff;">
+                <i class="fas fa-tv"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4 col-md-4 col-12 mb-2">
         <div class="card pr-stat-card shadow-sm" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex justify-content-between align-items-center">
               <div>
                 <div class="pr-stat-value" style="color:#0c4a6e;">{{ total_media_houses }}</div>
-                <div class="pr-stat-label mt-1">{% translate "Media Houses" %}</div>
+                <div class="pr-stat-label">{% translate "Media Houses" %}</div>
               </div>
               <div class="stat-icon-wrap" style="background:#0284c7;color:#fff;">
                 <i class="fas fa-building"></i>
@@ -190,7 +202,7 @@
         </div>
       </div>
 
-    </div><!-- /row KPI -->
+    </div><!-- /row KPI Row 2 -->
 
     <!-- ── Media House Distribution Bar ─────────────────────────────── -->
     <div class="row mb-4">
@@ -203,6 +215,7 @@
                 <span><span class="badge badge-national px-3 py-2 mr-1" style="border-radius:20px;">{{ media_houses_by_type.national }}</span>{% translate "National" %}</span>
                 <span><span class="badge badge-local px-3 py-2 mr-1" style="border-radius:20px;">{{ media_houses_by_type.local }}</span>{% translate "Local" %}</span>
                 <span><span class="badge badge-online px-3 py-2 mr-1" style="border-radius:20px;">{{ media_houses_by_type.online }}</span>{% translate "Online" %}</span>
+                <span><span class="badge badge-tv px-3 py-2 mr-1" style="border-radius:20px;">{{ media_houses_by_type.tv }}</span>{% translate "TV Channel" %}</span>
               </div>
               {% has_access 'public_relations' 'view_dashboard' as can_view %}
               {% if can_view %}

@@ -386,3 +386,93 @@ msgstr "\"%(name)s\" successfully added."
 
 msgid "\"%(name)s\" updated."
 msgstr "\"%(name)s\" updated."
+
+msgid "TV Channel"
+msgstr "TV Channel"
+
+msgid "TV Channels"
+msgstr "TV Channels"
+
+msgid "TV"
+msgstr "TV"
+
+msgid "Published News (PDF)"
+msgstr "Published News (PDF)"
+
+msgid "Published News (Screenshot)"
+msgstr "Published News (Screenshot)"
+
+msgid "Online News/Link"
+msgstr "Online News/Link"
+
+msgid "Department / Office Related"
+msgstr "Department / Office Related"
+
+msgid "Press Release (PDF)"
+msgstr "Press Release (PDF)"
+
+msgid "Or Upload PDF File"
+msgstr "Or Upload PDF File"
+
+msgid "Or Upload Screenshot Image"
+msgstr "Or Upload Screenshot Image"
+
+msgid "Or Upload Direct File"
+msgstr "Or Upload Direct File"
+
+msgid "Press Release PDF"
+msgstr "Press Release PDF"
+
+msgid "News PDF"
+msgstr "News PDF"
+
+msgid "Screenshot"
+msgstr "Screenshot"
+
+msgid "Asset File"
+msgstr "Asset File"
+
+msgid "Upload"
+msgstr "Upload"
+
+msgid "Link"
+msgstr "Link"
+
+msgid "PR Showcase"
+msgstr "PR Showcase"
+
+msgid "A clean feed view of all press releases, attachments, and coverage reports."
+msgstr "A clean feed view of all press releases, attachments, and coverage reports."
+
+msgid "Search by headline, PR number, body text..."
+msgstr "Search by headline, PR number, body text..."
+
+msgid "Showing results for:"
+msgstr "Showing results for:"
+
+msgid "Clear"
+msgstr "Clear"
+
+msgid "ATTACHMENTS & COVERAGES"
+msgstr "ATTACHMENTS & COVERAGES"
+
+msgid "Release PDF"
+msgstr "Release PDF"
+
+msgid "News Coverages"
+msgstr "News Coverages"
+
+msgid "View Details"
+msgstr "View Details"
+
+msgid "Print PDF"
+msgstr "Print PDF"
+
+msgid "No press releases found."
+msgstr "No press releases found."
+
+msgid "Try resetting search keyword or create a new entry."
+msgstr "Try resetting search keyword or create a new entry."
+
+
+

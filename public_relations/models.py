@@ -2,8 +2,7 @@
 public_relations/models.py
 ==========================
 Bilingual schema using Django's gettext_lazy translation functions.
-All media files (PDFs, screenshots, assets) are stored as URLs
-(e.g., Google Drive links) to save server storage and bandwidth.
+Media files (PDFs, screenshots, assets) are stored as direct file uploads.
 """
 
 from django.db import models
@@ -21,6 +20,7 @@ MEDIA_TYPE_CHOICES = [
     ('national', _('National Newspaper')),
     ('local',    _('Local Newspaper')),
     ('online',   _('Online Portal')),
+    ('tv',       _('TV Channel')),
 ]
 
 ASSET_TYPE_CHOICES = [
@@ -115,14 +115,15 @@ class PublicRelationsArchive(models.Model):
         help_text=_("Associated department or program")
     )
     full_text          = models.TextField(
+        blank=True,
         verbose_name=_("Press Release Full Body"),
         help_text=_("The complete text of the press release")
     )
-    press_release_pdf  = models.URLField(
-        max_length=1000,
+    press_release_pdf_file = models.FileField(
+        upload_to='pr/pdfs/',
         blank=True,
         null=True,
-        verbose_name=_("Press Release Link (e.g. Google Drive)")
+        verbose_name=_("Press Release PDF File")
     )
     remarks            = models.TextField(
         blank=True,
@@ -148,6 +149,32 @@ class PublicRelationsArchive(models.Model):
     def __str__(self):
         return f"[{self.press_release_no}] {self.event_name}"
 
+    def save(self, *args, **kwargs):
+        if not self.press_release_no:
+            year = self.press_release_date.year if self.press_release_date else datetime.date.today().year
+            prefix = f"PRO-{year}-"
+            latest = PublicRelationsArchive.objects.filter(
+                press_release_no__startswith=prefix
+            ).order_by('-press_release_no').first()
+
+            if latest:
+                try:
+                    last_num = int(latest.press_release_no.split('-')[-1])
+                    next_num = last_num + 1
+                except ValueError:
+                    next_num = 1
+            else:
+                next_num = 1
+
+            self.press_release_no = f"{prefix}{next_num:04d}"
+        super().save(*args, **kwargs)
+
+    @property
+    def pdf_url(self):
+        if self.press_release_pdf_file:
+            return self.press_release_pdf_file.url
+        return ''
+
     @property
     def coverage_count(self):
         return self.coverages.count()
@@ -163,6 +190,10 @@ class PublicRelationsArchive(models.Model):
     @property
     def online_count(self):
         return self.coverages.filter(media_house__media_type='online').count()
+
+    @property
+    def tv_count(self):
+        return self.coverages.filter(media_house__media_type='tv').count()
 
 
 # ---------------------------------------------------------------------------
@@ -189,17 +220,17 @@ class MediaCoverage(models.Model):
         null=True,
         verbose_name=_("Published Date")
     )
-    newspaper_pdf  = models.URLField(
-        max_length=1000,
+    newspaper_pdf_file = models.FileField(
+        upload_to='coverage/pdfs/',
         blank=True,
         null=True,
-        verbose_name=_("Newspaper PDF Link (e.g. Google Drive)")
+        verbose_name=_("Published News PDF File")
     )
-    screenshot     = models.URLField(
-        max_length=1000,
+    screenshot_file = models.ImageField(
+        upload_to='coverage/screenshots/',
         blank=True,
         null=True,
-        verbose_name=_("Screenshot Link (e.g. Google Drive)")
+        verbose_name=_("Published News Screenshot")
     )
     online_link    = models.URLField(
         max_length=1000,
@@ -235,11 +266,11 @@ class MediaAsset(models.Model):
         choices=ASSET_TYPE_CHOICES,
         verbose_name=_("Asset Type")
     )
-    file          = models.URLField(
-        max_length=1000,
+    file_upload = models.FileField(
+        upload_to='assets/',
         blank=True,
         null=True,
-        verbose_name=_("Asset Link / File URL (e.g. Google Drive)")
+        verbose_name=_("Asset File Upload")
     )
     link          = models.URLField(
         max_length=1000,
@@ -268,6 +299,12 @@ class MediaAsset(models.Model):
 
     def __str__(self):
         return f"{self.get_asset_type_display()} — {self.archive_entry.press_release_no}"
+
+    @property
+    def file_url(self):
+        if self.file_upload:
+            return self.file_upload.url
+        return self.link or ''
 
     @property
     def is_file_asset(self):

@@ -680,6 +680,12 @@
                   <p>{% translate "PR Archive" %}</p>
                 </a>
               </li>
+              <li class="nav-item">
+                <a href="{% url 'pr_portal' %}" class="nav-link {% if request.resolver_match.url_name == 'pr_portal' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "PR Showcase" %}</p>
+                </a>
+              </li>
               {% has_access 'public_relations' 'add_archive' as can_add_pr %}
               {% if can_add_pr %}
               <li class="nav-item">

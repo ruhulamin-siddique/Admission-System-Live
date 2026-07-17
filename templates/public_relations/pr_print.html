@@ -144,6 +144,7 @@
     .badge-national { background-color: #dbeafe; color: #1e40af; }
     .badge-local    { background-color: #dcfce7; color: #166534; }
     .badge-online   { background-color: #fef9c3; color: #854d0e; }
+    .badge-tv       { background-color: #ccfbf1; color: #0f766e; }
 
     .summary-box {
       background: #f0f9ff;
@@ -228,6 +229,10 @@
   <div class="summary-row">
     <span class="summary-num" style="color:#854d0e;">{{ entry.online_count }}</span><br>
     <small>{% translate "Online" %}</small>
+  </div>
+  <div class="summary-row">
+    <span class="summary-num" style="color:#0f766e;">{{ entry.tv_count }}</span><br>
+    <small>{% translate "TV" %}</small>
   </div>
 </div>
 
