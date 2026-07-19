@@ -203,3 +203,6 @@ SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', str(not DEBUG)) == '
 
 # External API security. Keep local development usable, require HTTPS in production.
 EXTERNAL_API_REQUIRE_HTTPS = os.environ.get('EXTERNAL_API_REQUIRE_HTTPS', str(not DEBUG)) == 'True'
+
+# Allow loading local files (PDFs, screenshots) inside iframe previews
+X_FRAME_OPTIONS = 'SAMEORIGIN'

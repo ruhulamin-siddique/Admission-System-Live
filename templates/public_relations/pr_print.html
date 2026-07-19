@@ -256,7 +256,17 @@
       <td>{{ cov.media_house.name }}</td>
       <td><span class="badge badge-{{ cov.media_house.media_type }}">{{ cov.media_house.get_media_type_display }}</span></td>
       <td>{{ cov.published_date|date:"d M Y"|default:"—" }}</td>
-      <td style="font-size:8pt;word-break:break-all;">{{ cov.online_link|default:"—" }}</td>
+      <td style="font-size:8pt;word-break:break-all;">
+        {% if cov.online_links_list %}
+          {% for link in cov.online_links_list %}
+            <div style="margin-bottom:2px;">
+              <a href="{{ link }}" target="_blank" style="color:#2563eb; text-decoration:underline;">{{ link }}</a>
+            </div>
+          {% endfor %}
+        {% else %}
+          —
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
   </tbody>

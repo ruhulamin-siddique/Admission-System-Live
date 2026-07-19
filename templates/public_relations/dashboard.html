@@ -204,6 +204,41 @@
 
     </div><!-- /row KPI Row 2 -->
 
+    <!-- ── Dashboard Analytical Charts ───────────────────────────────── -->
+    <div class="row mb-4">
+      <div class="col-lg-8 mb-3">
+        <div class="card shadow-sm h-100" style="border-radius:16px; border:none; box-shadow:0 4px 15px rgba(0,0,0,0.03) !important;">
+          <div class="card-header bg-transparent border-bottom py-3">
+            <span class="section-header mb-0" style="color:#1e40af; font-size:0.75rem;">
+              <i class="fas fa-chart-line mr-2 text-primary"></i>
+              {% translate "Monthly Press Release Trends" %} ({{ current_year }})
+            </span>
+          </div>
+          <div class="card-body">
+            <div style="height:260px; position:relative;">
+              <canvas id="monthlyTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-4 mb-3">
+        <div class="card shadow-sm h-100" style="border-radius:16px; border:none; box-shadow:0 4px 15px rgba(0,0,0,0.03) !important;">
+          <div class="card-header bg-transparent border-bottom py-3">
+            <span class="section-header mb-0" style="color:#166534; font-size:0.75rem;">
+              <i class="fas fa-chart-pie mr-2 text-success"></i>
+              {% translate "Coverage Share by Media Type" %}
+            </span>
+          </div>
+          <div class="card-body d-flex align-items-center justify-content-center">
+            <div style="height:240px; width:240px; position:relative;">
+              <canvas id="mediaTypeChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Media House Distribution Bar ─────────────────────────────── -->
     <div class="row mb-4">
       <div class="col-12">
@@ -293,4 +328,82 @@
 
   </div><!-- /container-fluid -->
 </div><!-- /content -->
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Monthly Trend Chart
+  const trendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+  new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: [
+        "{% translate 'Jan' %}", "{% translate 'Feb' %}", "{% translate 'Mar' %}", "{% translate 'Apr' %}", 
+        "{% translate 'May' %}", "{% translate 'Jun' %}", "{% translate 'Jul' %}", "{% translate 'Aug' %}", 
+        "{% translate 'Sep' %}", "{% translate 'Oct' %}", "{% translate 'Nov' %}", "{% translate 'Dec' %}"
+      ],
+      datasets: [{
+        label: "{% translate 'Press Releases Sent' %}",
+        data: {{ monthly_counts|safe }},
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+        fill: true,
+        tension: 0.35,
+        borderWidth: 3,
+        pointBackgroundColor: '#2563eb',
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: '#64748b' },
+          grid: { color: 'rgba(0,0,0,0.05)' }
+        },
+        x: {
+          ticks: { color: '#64748b' },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // Media Type Share Doughnut Chart
+  const shareCtx = document.getElementById('mediaTypeChart').getContext('2d');
+  new Chart(shareCtx, {
+    type: 'doughnut',
+    data: {
+      labels: [
+        "{% translate 'National' %}", "{% translate 'Local' %}", 
+        "{% translate 'Online' %}", "{% translate 'TV Channel' %}"
+      ],
+      datasets: [{
+        data: [{{ national_count }}, {{ local_count }}, {{ online_count }}, {{ tv_count }}],
+        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#0d9488'],
+        borderWidth: 2,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { boxWidth: 12, padding: 15, font: { size: 11 }, color: '#64748b' }
+        }
+      },
+      cutout: '65%'
+    }
+  });
+});
+</script>
 {% endblock %}

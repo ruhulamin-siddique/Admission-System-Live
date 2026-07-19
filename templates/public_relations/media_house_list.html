@@ -100,6 +100,7 @@
                 <th>{% translate "Media Name" %}</th>
                 <th>{% translate "Media Type" %}</th>
                 <th>{% translate "Editor" %}</th>
+                <th class="text-center">{% translate "Quick Contact" %}</th>
                 <th>{% translate "Mobile" %}</th>
                 <th>{% translate "Email" %}</th>
                 <th>{% translate "Website" %}</th>
@@ -117,6 +118,30 @@
                   </span>
                 </td>
                 <td>{{ house.editor|default:"—" }}</td>
+                <td class="text-center">
+                  <div class="d-flex justify-content-center gap-2">
+                    {% if house.whatsapp %}
+                    <a href="https://wa.me/{% if house.whatsapp|slice:":1" == "0" %}88{% else %}880{% endif %}{{ house.whatsapp }}" target="_blank" class="btn btn-xs btn-outline-success p-1 d-flex align-items-center justify-content-center" style="width:26px; height:26px; border-radius:50%; transition:all 0.2s;" title="{% translate 'Chat on WhatsApp' %}" onmouseover="this.style.background='#25d366'; this.style.color='#fff';" onmouseout="this.style.background=''; this.style.color='';">
+                      <i class="fab fa-whatsapp" style="font-size:0.9rem;"></i>
+                    </a>
+                    {% endif %}
+                    {% if house.email %}
+                    <a href="mailto:{{ house.email }}" class="btn btn-xs btn-outline-primary p-1 d-flex align-items-center justify-content-center" style="width:26px; height:26px; border-radius:50%; transition:all 0.2s;" title="{% translate 'Send Email' %}" onmouseover="this.style.background='#3b82f6'; this.style.color='#fff';" onmouseout="this.style.background=''; this.style.color='';">
+                      <i class="far fa-envelope" style="font-size:0.85rem;"></i>
+                    </a>
+                    {% endif %}
+                    {% if house.mobile %}
+                    <a href="tel:{{ house.mobile }}" class="btn btn-xs btn-outline-secondary p-1 d-flex align-items-center justify-content-center" style="width:26px; height:26px; border-radius:50%; transition:all 0.2s;" title="{% translate 'Call Mobile' %}" onmouseover="this.style.background='#64748b'; this.style.color='#fff';" onmouseout="this.style.background=''; this.style.color='';">
+                      <i class="fas fa-phone-alt" style="font-size:0.8rem;"></i>
+                    </a>
+                    {% endif %}
+                    {% if house.website %}
+                    <a href="{{ house.website }}" target="_blank" class="btn btn-xs btn-outline-info p-1 d-flex align-items-center justify-content-center" style="width:26px; height:26px; border-radius:50%; transition:all 0.2s;" title="{% translate 'Visit Website' %}" onmouseover="this.style.background='#0ea5e9'; this.style.color='#fff';" onmouseout="this.style.background=''; this.style.color='';">
+                      <i class="fas fa-globe" style="font-size:0.85rem;"></i>
+                    </a>
+                    {% endif %}
+                  </div>
+                </td>
                 <td>{{ house.mobile|default:"—" }}</td>
                 <td>
                   {% if house.email %}<a href="mailto:{{ house.email }}">{{ house.email }}</a>{% else %}—{% endif %}
@@ -144,7 +169,7 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="{% if can_manage %}8{% else %}7{% endif %}" class="text-center py-5 text-muted">
+                <td colspan="{% if can_manage %}9{% else %}8{% endif %}" class="text-center py-5 text-muted">
                   <i class="fas fa-building fa-2x mb-2 d-block"></i>{% translate "No media houses found." %}
                 </td>
               </tr>
@@ -213,7 +238,7 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
+{% block extra_js %}
 <script>
 function confirmDelete(url, name) {
   document.getElementById('deleteForm').action = url;

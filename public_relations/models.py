@@ -88,6 +88,17 @@ class MediaHouse(models.Model):
         return f"{self.name} ({self.get_media_type_display()})"
 
 
+def _sanitize_file_field(file_field):
+    if file_field and file_field.name:
+        import os
+        import uuid
+        name = os.path.basename(file_field.name)
+        if not name.isascii():
+            ext = name.split('.')[-1] if '.' in name else ''
+            new_name = f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
+            dir_name = os.path.dirname(file_field.name)
+            file_field.name = os.path.join(dir_name, new_name).replace('\\', '/')
+
 # ---------------------------------------------------------------------------
 # Model 2: PublicRelationsArchive
 # ---------------------------------------------------------------------------
@@ -185,6 +196,7 @@ class PublicRelationsArchive(models.Model):
     def save(self, *args, **kwargs):
         if not self.press_release_no:
             self.press_release_no = self.get_next_pr_number(self.press_release_date)
+        _sanitize_file_field(self.press_release_pdf_file)
         super().save(*args, **kwargs)
 
     @property
@@ -250,17 +262,40 @@ class MediaCoverage(models.Model):
         null=True,
         verbose_name=_("Published News Screenshot")
     )
-    online_link    = models.URLField(
-        max_length=1000,
+    online_link    = models.TextField(
         blank=True,
-        verbose_name=_("Online News Link")
+        verbose_name=_("Online News Link(s)"),
+        help_text=_("Multiple links can be stored (one per line)")
     )
+
+    @property
+    def online_links_list(self):
+        if self.online_link:
+            return [line.strip() for line in self.online_link.split('\n') if line.strip()]
+        return []
 
     class Meta:
         verbose_name        = _("Media Coverage")
         verbose_name_plural = _("Media Coverages")
         ordering            = ['-published_date']
         unique_together     = ('archive_entry', 'media_house')
+
+    def save(self, *args, **kwargs):
+        _sanitize_file_field(self.newspaper_pdf_file)
+        _sanitize_file_field(self.screenshot_file)
+        super().save(*args, **kwargs)
+
+    @property
+    def newspaper_pdf_url(self):
+        if self.newspaper_pdf_file:
+            return self.newspaper_pdf_file.url
+        return ''
+
+    @property
+    def screenshot_url(self):
+        if self.screenshot_file:
+            return self.screenshot_file.url
+        return ''
 
     def __str__(self):
         return f"{self.media_house.name} → {self.archive_entry.press_release_no}"
@@ -315,6 +350,10 @@ class MediaAsset(models.Model):
         verbose_name_plural = _("Media Assets")
         ordering            = ['-year', 'asset_type']
 
+    def save(self, *args, **kwargs):
+        _sanitize_file_field(self.file_upload)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.get_asset_type_display()} — {self.archive_entry.press_release_no}"
 
@@ -322,6 +361,20 @@ class MediaAsset(models.Model):
     def file_url(self):
         if self.file_upload:
             return self.file_upload.url
+        return self.link or ''
+
+    @property
+    def embed_url(self):
+        if self.asset_type == 'youtube' and self.link:
+            import re
+            match = re.search(r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})', self.link)
+            if match:
+                return f"https://www.youtube.com/embed/{match.group(1)}"
+        elif self.asset_type == 'drive' and self.link:
+            import re
+            match = re.search(r'/file/d/([a-zA-Z0-9_-]+)', self.link)
+            if match:
+                return f"https://drive.google.com/file/d/{match.group(1)}/preview"
         return self.link or ''
 
     @property

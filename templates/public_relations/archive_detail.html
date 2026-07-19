@@ -31,6 +31,44 @@
     text-transform:uppercase; letter-spacing:0.5px;
     border:none; padding:10px 14px;
   }
+
+  /* Previews and Animations styling */
+  .animated-pulse-btn {
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s ease !important;
+  }
+  .animated-pulse-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(59, 130, 246, 0.35);
+  }
+  .preview-image {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), filter 0.25s;
+    cursor: pointer;
+  }
+  .preview-image:hover {
+    transform: scale(1.04);
+    filter: brightness(0.96);
+  }
+  .embed-preview {
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    overflow: hidden;
+    transition: all 0.25s ease;
+  }
+  .embed-preview:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08) !important;
+    border-color: #3b82f6;
+  }
+  .dark-mode .embed-preview {
+    background: #0f172a !important;
+    border-color: #334155;
+  }
+  .dark-mode .embed-preview:hover {
+    border-color: #3b82f6;
+  }
 </style>
 {% endblock %}
 
@@ -97,12 +135,31 @@
                 <div class="meta-label">{% translate "Created At" %}</div>
                 <div class="meta-value" style="font-size:0.88rem;">{{ entry.created_at|date:"d M Y, g:i A" }}</div>
               </div>
-              {% if entry.press_release_pdf %}
-              <div class="col-md-4 mb-3">
+              {% if entry.press_release_pdf_file %}
+              <div class="col-md-12 mb-3">
                 <div class="meta-label">{% translate "PDF Attachment" %}</div>
-                <a href="{{ entry.press_release_pdf }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1" style="border-radius:20px;">
-                  <i class="fas fa-external-link-alt mr-1"></i> {% translate "Open PDF Link" %}
-                </a>
+                <div class="card p-3 border mb-2 d-flex flex-row align-items-center" style="border-radius:12px; background:#f8fafc; border-color:#cbd5e1 !important;">
+                  <div class="mr-3" style="font-size:2.5rem; color:#ef4444; line-height:1;">
+                    <i class="fas fa-file-pdf"></i>
+                  </div>
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="font-weight-700 text-truncate" style="font-size:0.9rem; color:#1e293b;" title="{{ entry.press_release_pdf_file.name }}">
+                      {{ entry.press_release_pdf_file.name }}
+                    </div>
+                    <small class="text-muted">{% translate "PDF Document" %}</small>
+                  </div>
+                  <div class="ml-3 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary px-3 mr-2" style="border-radius:20px;" onclick="loadInlinePdf(this, '{{ entry.pdf_url }}')">
+                      <i class="fas fa-eye mr-1"></i> {% translate "View Inline" %}
+                    </button>
+                    <a href="{{ entry.pdf_url }}" target="_blank" class="btn btn-sm btn-primary animated-pulse-btn px-3" style="border-radius:20px;">
+                      <i class="fas fa-external-link-alt mr-1"></i> {% translate "Open in New Tab" %}
+                    </a>
+                  </div>
+                </div>
+                <div class="pdf-inline-container mb-2" style="display:none; height:450px; border-radius:12px; overflow:hidden; border:1px solid #cbd5e1;">
+                  <!-- PDF iframe will be loaded here dynamically -->
+                </div>
               </div>
               {% endif %}
             </div>
@@ -155,23 +212,25 @@
                     </td>
                     <td style="white-space:nowrap;">{{ cov.published_date|date:"d M Y"|default:"—" }}</td>
                     <td class="text-center">
-                      {% if cov.newspaper_pdf %}
-                      <a href="{{ cov.newspaper_pdf }}" target="_blank" class="btn btn-xs btn-outline-danger" title="{% translate 'Newspaper PDF' %}">
+                      {% if cov.newspaper_pdf_file %}
+                      <a href="{{ cov.newspaper_pdf_url }}" target="_blank" class="btn btn-xs btn-outline-danger" title="{% translate 'Newspaper PDF' %}">
                         <i class="fas fa-file-pdf"></i>
                       </a>
                       {% endif %}
-                      {% if cov.screenshot %}
-                      <a href="{{ cov.screenshot }}" target="_blank" class="btn btn-xs btn-outline-info ml-1" title="{% translate 'Screenshot' %}">
+                      {% if cov.screenshot_file %}
+                      <a href="{{ cov.screenshot_url }}" target="_blank" class="btn btn-xs btn-outline-info ml-1" title="{% translate 'Screenshot' %}">
                         <i class="fas fa-image"></i>
                       </a>
                       {% endif %}
-                      {% if not cov.newspaper_pdf and not cov.screenshot %}—{% endif %}
+                      {% if not cov.newspaper_pdf_file and not cov.screenshot_file %}—{% endif %}
                     </td>
                     <td>
-                      {% if cov.online_link %}
-                      <a href="{{ cov.online_link }}" target="_blank" class="text-primary" style="font-size:0.85rem;">
-                        <i class="fas fa-external-link-alt mr-1"></i>{% translate "Link" %}
-                      </a>
+                      {% if cov.online_links_list %}
+                        {% for link in cov.online_links_list %}
+                        <a href="{{ link }}" target="_blank" class="text-primary d-block mb-1" style="font-size:0.85rem; word-break: break-all;">
+                          <i class="fas fa-external-link-alt mr-1"></i>{% translate "Link" %} {% if cov.online_links_list|length > 1 %}#{{ forloop.counter }}{% endif %}
+                        </a>
+                        {% endfor %}
                       {% else %}—{% endif %}
                     </td>
                   </tr>
@@ -186,6 +245,66 @@
                 </tbody>
               </table>
             </div>
+            
+            <!-- Coverage Files Preview Grid -->
+            {% if entry.coverages.all %}
+            <div id="coverage-previews-box" class="p-3 border-top bg-light" style="border-radius:0 0 16px 16px; display:none;">
+              <div class="font-weight-700 mb-3" style="font-size:0.88rem; color:#475569; letter-spacing:0.5px; text-transform:uppercase;">
+                <i class="fas fa-eye mr-1 text-success"></i> {% translate "Coverage Visual Previews" %}
+              </div>
+              <div class="row" id="coverage-previews-row">
+                {% for cov in coverages %}
+                  {% if cov.newspaper_pdf_file or cov.screenshot_file %}
+                    {% if cov.newspaper_pdf_file %}
+                    <div class="col-md-6 mb-3">
+                      <div class="card embed-preview shadow-sm h-100 p-2 position-relative">
+                        <div class="font-weight-700 mb-1" style="font-size:0.8rem; color:#3b82f6;">
+                          <i class="fas fa-file-pdf mr-1 text-danger"></i> {{ cov.media_house.name }} ({% translate "PDF Cutting" %})
+                        </div>
+                        <div class="pdf-placeholder-card p-3 text-center border mb-2" style="border-radius:8px; background:#f8fafc; height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                          <i class="fas fa-file-pdf text-danger fa-3x mb-2"></i>
+                          <button type="button" class="btn btn-xs btn-outline-danger px-3" style="border-radius:20px;" onclick="toggleCoveragePdf(this, '{{ cov.newspaper_pdf_url }}')">
+                            <i class="fas fa-eye mr-1"></i> {% translate "View Cutting" %}
+                          </button>
+                        </div>
+                        <div class="pdf-iframe-container" style="display:none; height:180px; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; position:relative;">
+                          <button type="button" class="btn btn-xs btn-light position-absolute" style="top:5px; right:5px; z-index:10; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; padding:0; border:1px solid #cbd5e1; box-shadow:0 2px 5px rgba(0,0,0,0.15);" onclick="toggleCoveragePdf(this, '')">
+                            <i class="fas fa-times" style="font-size:0.75rem;"></i>
+                          </button>
+                          <div class="pdf-iframe-wrapper" style="width:100%; height:100%;"></div>
+                        </div>
+                        <div class="mt-2 d-flex justify-content-between align-items-center">
+                          <small class="text-muted">{{ cov.published_date|date:"d M Y" }}</small>
+                          <a href="{{ cov.newspaper_pdf_url }}" target="_blank" class="btn btn-xs btn-primary animated-pulse-btn px-3" style="border-radius:20px;">
+                            <i class="fas fa-expand mr-1"></i> {% translate "Open Full PDF" %}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
+                    {% if cov.screenshot_file %}
+                    <div class="col-md-6 mb-3">
+                      <div class="card embed-preview shadow-sm h-100 p-2 position-relative">
+                        <div class="font-weight-700 mb-1" style="font-size:0.8rem; color:#10b981;">
+                          <i class="fas fa-image mr-1 text-success"></i> {{ cov.media_house.name }} ({% translate "Screenshot" %})
+                        </div>
+                        <div style="height:180px; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; background:#f1f5f9;">
+                          <img src="{{ cov.screenshot_url }}" class="preview-image" style="max-width:100%; max-height:100%; object-fit:contain;">
+                        </div>
+                        <div class="mt-2 d-flex justify-content-between align-items-center">
+                          <small class="text-muted">{{ cov.published_date|date:"d M Y" }}</small>
+                          <a href="{{ cov.screenshot_url }}" target="_blank" class="btn btn-xs btn-primary animated-pulse-btn px-3" style="border-radius:20px;">
+                            <i class="fas fa-expand-arrows-alt mr-1"></i> {% translate "Open Image" %}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
           </div>
         </div>
 
@@ -227,27 +346,53 @@
           </div>
           <div class="card-body">
             {% for asset in assets %}
-            <div class="asset-card mb-3 p-3">
-              <div class="d-flex align-items-start gap-3">
+            <div class="asset-card mb-4 p-3 embed-preview">
+              <div class="d-flex align-items-center gap-3 mb-2">
                 <div style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
                   background:{% if asset.asset_type == 'photo' %}#dbeafe{% elif asset.asset_type == 'video' %}#fee2e2{% elif asset.asset_type == 'youtube' %}#fee2e2{% elif asset.asset_type == 'facebook' %}#dbeafe{% else %}#dcfce7{% endif %};">
                   <i class="fas {% if asset.asset_type == 'photo' %}fa-image text-primary{% elif asset.asset_type == 'video' %}fa-video text-danger{% elif asset.asset_type == 'youtube' %}fa-brands fa-youtube text-danger{% elif asset.asset_type == 'facebook' %}fa-brands fa-facebook text-primary{% else %}fa-cloud text-success{% endif %}"></i>
                 </div>
                 <div class="flex-grow-1">
-                  <div class="font-weight-700" style="font-size:0.85rem;">{{ asset.get_asset_type_display }}</div>
-                  {% if asset.caption %}<div class="text-muted" style="font-size:0.82rem;">{{ asset.caption }}</div>{% endif %}
+                  <div class="font-weight-700" style="font-size:0.9rem;">{{ asset.get_asset_type_display }}</div>
+                  {% if asset.caption %}<div class="text-muted" style="font-size:0.82rem; font-weight: 500;">{{ asset.caption }}</div>{% endif %}
                   <div class="text-muted" style="font-size:0.78rem;">{% translate "Year" %}: {{ asset.year }}</div>
-                  {% if asset.file %}
-                  <a href="{{ asset.file }}" target="_blank" class="btn btn-xs btn-outline-primary mt-1" style="border-radius:20px;">
-                    <i class="fas fa-external-link-alt mr-1"></i>{% translate "Open File Link" %}
-                  </a>
-                  {% endif %}
-                  {% if asset.link %}
-                  <a href="{{ asset.link }}" target="_blank" class="btn btn-xs btn-outline-secondary mt-1" style="border-radius:20px;">
-                    <i class="fas fa-external-link-alt mr-1"></i>{% translate "Link" %}
-                  </a>
-                  {% endif %}
                 </div>
+              </div>
+
+              <!-- Inline Preview Element -->
+              <div class="media-preview-box mb-2" style="border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;">
+                {% if asset.asset_type == 'photo' and asset.file_upload %}
+                  <div style="height:160px; display:flex; align-items:center; justify-content:center; background:#f1f5f9;">
+                    <img src="{{ asset.file_url }}" class="preview-image" style="max-width:100%; max-height:100%; object-fit:contain;">
+                  </div>
+                {% elif asset.asset_type == 'youtube' and asset.link %}
+                  <div style="height:160px;">
+                    <iframe src="{{ asset.embed_url }}" width="100%" height="100%" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border:none;"></iframe>
+                  </div>
+                {% elif asset.asset_type == 'drive' and asset.link %}
+                  <div style="height:160px;">
+                    <iframe src="{{ asset.embed_url }}" width="100%" height="100%" allow="autoplay" style="border:none;"></iframe>
+                  </div>
+                {% else %}
+                  <div class="p-3 text-center text-muted" style="background:#f8fafc; font-size:0.8rem;">
+                    <i class="fas fa-external-link-alt fa-2x mb-2 text-secondary"></i>
+                    <div>{% translate "External Link Resource" %}</div>
+                    <div class="text-truncate text-primary" style="font-size:0.75rem;">{{ asset.link|default:asset.file_url }}</div>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Action Link -->
+              <div class="text-right">
+                {% if asset.file_upload %}
+                <a href="{{ asset.file_url }}" target="_blank" class="btn btn-xs btn-primary animated-pulse-btn px-3" style="border-radius:20px;">
+                  <i class="fas fa-external-link-alt mr-1"></i>{% translate "Open Full View" %}
+                </a>
+                {% elif asset.link %}
+                <a href="{{ asset.link }}" target="_blank" class="btn btn-xs btn-secondary animated-pulse-btn px-3" style="border-radius:20px;">
+                  <i class="fas fa-external-link-alt mr-1"></i>{% translate "Open Link" %}
+                </a>
+                {% endif %}
               </div>
             </div>
             {% empty %}
@@ -291,5 +436,46 @@
   </div>
 </div>
 {% endif %}
+<script>
+function loadInlinePdf(btn, url) {
+  const container = btn.closest('.col-md-12').querySelector('.pdf-inline-container');
+  if (!container) return;
+  
+  if (container.style.display === 'none') {
+    container.innerHTML = `<iframe src="${url}" width="100%" height="100%" style="border:none;"></iframe>`;
+    container.style.display = 'block';
+    btn.innerHTML = `<i class="fas fa-eye-slash mr-1"></i> {% translate "Hide Preview" %}`;
+  } else {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    btn.innerHTML = `<i class="fas fa-eye mr-1"></i> {% translate "View Inline" %}`;
+  }
+}
 
+function toggleCoveragePdf(btn, url) {
+  const parent = btn.closest('.card');
+  const card = parent.querySelector('.pdf-placeholder-card');
+  const container = parent.querySelector('.pdf-iframe-container');
+  const wrapper = parent.querySelector('.pdf-iframe-wrapper');
+  if (!card || !container || !wrapper) return;
+  
+  if (container.style.display === 'none') {
+    card.style.display = 'none';
+    wrapper.innerHTML = `<iframe src="${url}" width="100%" height="100%" style="border:none;"></iframe>`;
+    container.style.display = 'block';
+  } else {
+    container.style.display = 'none';
+    wrapper.innerHTML = '';
+    card.style.display = 'flex';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const previewsRow = document.getElementById('coverage-previews-row');
+  if (previewsRow && previewsRow.children.length > 0) {
+    const box = document.getElementById('coverage-previews-box');
+    if (box) box.style.display = 'block';
+  }
+});
+</script>
 {% endblock %}

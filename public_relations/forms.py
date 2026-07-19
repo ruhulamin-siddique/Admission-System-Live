@@ -21,14 +21,30 @@ from .models import (
 # Shared widget helpers
 # ---------------------------------------------------------------------------
 
+class PremiumClearableFileInput(forms.ClearableFileInput):
+    template_name = 'public_relations/widgets/premium_clearable_file.html'
+
+    def __init__(self, attrs=None):
+        default_attrs = {'class': 'form-control-file'}
+        if attrs:
+            default_attrs.update(attrs)
+        super().__init__(attrs=default_attrs)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        from django.template.loader import render_to_string
+        from django.utils.safestring import mark_safe
+        context = self.get_context(name, value, attrs)
+        html = render_to_string(self.template_name, context)
+        return mark_safe(html)
+
 _TEXT_INPUT   = forms.TextInput(attrs={'class': 'form-control'})
 _EMAIL_INPUT  = forms.EmailInput(attrs={'class': 'form-control'})
 _URL_INPUT    = forms.URLInput(attrs={'class': 'form-control', 'type': 'url'})
 _TEXTAREA     = forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
 _SELECT       = forms.Select(attrs={'class': 'form-control'})
-_DATE_INPUT   = forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+_DATE_INPUT   = forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'})
 _NUMBER_INPUT = forms.NumberInput(attrs={'class': 'form-control'})
-_FILE_INPUT   = forms.ClearableFileInput(attrs={'class': 'form-control-file'})
+_FILE_INPUT   = PremiumClearableFileInput()
 
 
 # ---------------------------------------------------------------------------
@@ -171,8 +187,8 @@ class MediaCoverageForm(forms.ModelForm):
             'media_house':        _SELECT,
             'published_date':     _DATE_INPUT,
             'newspaper_pdf_file': _FILE_INPUT,
-            'screenshot_file':    forms.ClearableFileInput(attrs={'class': 'form-control-file', 'accept': 'image/*'}),
-            'online_link':        _URL_INPUT,
+            'screenshot_file':    PremiumClearableFileInput(attrs={'accept': 'image/*'}),
+            'online_link':        forms.Textarea(attrs={'class': 'form-control d-none', 'rows': 2}),
         }
         labels = {
             'media_house':        _('Media House'),
@@ -187,6 +203,21 @@ class MediaCoverageForm(forms.ModelForm):
         if not self.instance.pk:
             import datetime
             self.fields['published_date'].initial = datetime.date.today()
+
+    def clean_online_link(self):
+        val = self.cleaned_data.get('online_link', '').strip()
+        if val:
+            from django.core.validators import URLValidator
+            validate_url = URLValidator()
+            # Normalize newlines and split into separate URL strings
+            lines = [line.strip() for line in val.replace('\r\n', '\n').replace('\r', '\n').split('\n') if line.strip()]
+            for line in lines:
+                try:
+                    validate_url(line)
+                except Exception:
+                    raise forms.ValidationError(_("Invalid URL: %(url)s") % {'url': line})
+            return '\n'.join(lines)
+        return val
 
     def clean(self):
         cleaned = super().clean()
@@ -255,7 +286,7 @@ MediaCoverageFormSet = inlineformset_factory(
     PublicRelationsArchive,
     MediaCoverage,
     form=MediaCoverageForm,
-    extra=1,
+    extra=0,
     can_delete=True,
     fields=['media_house', 'published_date', 'newspaper_pdf_file', 'screenshot_file', 'online_link'],
 )
@@ -264,7 +295,7 @@ MediaAssetFormSet = inlineformset_factory(
     PublicRelationsArchive,
     MediaAsset,
     form=MediaAssetForm,
-    extra=1,
+    extra=0,
     can_delete=True,
     fields=['asset_type', 'file_upload', 'link', 'year', 'caption'],
 )

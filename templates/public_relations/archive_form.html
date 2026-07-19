@@ -98,6 +98,26 @@
 
 
 
+  /* Premium File Widget */
+  .premium-file-widget {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .file-current-badge {
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .file-current-badge a:hover {
+    color: #1d4ed8 !important;
+  }
+  .clear-file-btn:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    transform: scale(1.1);
+  }
+
   /* Custom File upload UI button */
   .file-input-wrapper {
     position: relative;
@@ -150,6 +170,20 @@
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
     50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  }
+  /* Dynamic links animation & styles */
+  .link-row {
+    animation: slideDownFade 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes slideDownFade {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .add-link-btn:hover {
+    transform: scale(1.1) rotate(90deg);
+  }
+  .remove-link-btn:hover {
+    transform: scale(1.1);
   }
 
 </style>
@@ -229,16 +263,7 @@
               <label for="{{ archive_form.press_release_pdf_file.id_for_label }}">
                 <i class="fas fa-file-pdf text-danger mr-1"></i>{{ archive_form.press_release_pdf_file.label }}
               </label>
-              <div class="file-input-wrapper">
-                <div class="file-input-custom-btn">
-                  <i class="fas fa-cloud-upload-alt mr-2 text-primary"></i>
-                  <span class="file-name-label">{% translate "Select PDF File..." %}</span>
-                </div>
-                {{ archive_form.press_release_pdf_file }}
-              </div>
-              {% if archive_form.instance.press_release_pdf_file %}
-                <div class="mt-2"><small class="text-success"><i class="fas fa-file-pdf mr-1"></i> {% translate "Current:" %} <a href="{{ archive_form.instance.press_release_pdf_file.url }}" target="_blank">{% translate "View PDF" %}</a></small></div>
-              {% endif %}
+              {{ archive_form.press_release_pdf_file }}
               {% if archive_form.press_release_pdf_file.errors %}<ul class="errorlist">{% for e in archive_form.press_release_pdf_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
             </div>
             <div class="col-md-4 mb-3">
@@ -268,6 +293,39 @@
           {{ coverage_formset.management_form }}
 
           <div id="coverage-formset-container">
+            <!-- Hidden template row for cloning -->
+            <div id="coverage-empty-row" style="display: none;">
+              <div class="formset-row coverage-row">
+                <button type="button" class="btn-delete-row" onclick="markDeleted(this, 'id_coverages-__prefix__-DELETE')">
+                  <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
+                </button>
+                <div class="row align-items-end">
+                  <div class="col-md-3 mb-2">
+                    <label>{{ coverage_formset.empty_form.media_house.label }} <span class="required-mark">*</span></label>
+                    {{ coverage_formset.empty_form.media_house }}
+                  </div>
+                  <div class="col-md-2 mb-2">
+                    <label>{{ coverage_formset.empty_form.published_date.label }}</label>
+                    {{ coverage_formset.empty_form.published_date }}
+                  </div>
+                  <div class="col-md-2 mb-2">
+                    <label><i class="fas fa-file-pdf text-danger mr-1"></i>{{ coverage_formset.empty_form.newspaper_pdf_file.label }}</label>
+                    {{ coverage_formset.empty_form.newspaper_pdf_file }}
+                  </div>
+                  <div class="col-md-2 mb-2">
+                    <label><i class="fas fa-image text-info mr-1"></i>{{ coverage_formset.empty_form.screenshot_file.label }}</label>
+                    {{ coverage_formset.empty_form.screenshot_file }}
+                  </div>
+                  <div class="col-md-3 mb-2">
+                    <label><i class="fas fa-link text-primary mr-1"></i>{{ coverage_formset.empty_form.online_link.label }}</label>
+                    {{ coverage_formset.empty_form.online_link }}
+                    <div class="multi-links-wrapper px-1" data-field-id="{{ coverage_formset.empty_form.online_link.id_for_label }}"></div>
+                  </div>
+                </div>
+                <div style="display:none;">{{ coverage_formset.empty_form.DELETE }}</div>
+              </div>
+            </div>
+
             {% for form in coverage_formset %}
             <div class="formset-row coverage-row">
               <button type="button" class="btn-delete-row" onclick="markDeleted(this, '{{ form.DELETE.id_for_label }}')">
@@ -288,35 +346,18 @@
                 </div>
                 <div class="col-md-2 mb-2">
                   <label><i class="fas fa-file-pdf text-danger mr-1"></i>{{ form.newspaper_pdf_file.label }}</label>
-                  <div class="file-input-wrapper">
-                    <div class="file-input-custom-btn" style="padding:0.35rem 0.5rem;font-size:0.75rem;">
-                      <i class="fas fa-file-pdf mr-1 text-success"></i>
-                      <span class="file-name-label">{% translate "PDF..." %}</span>
-                    </div>
-                    {{ form.newspaper_pdf_file }}
-                  </div>
-                  {% if form.instance.newspaper_pdf_file %}
-                    <div class="mt-1"><small class="text-success"><a href="{{ form.instance.newspaper_pdf_file.url }}" target="_blank"><i class="fas fa-eye mr-1"></i>{% translate "View" %}</a></small></div>
-                  {% endif %}
+                  {{ form.newspaper_pdf_file }}
                   {% if form.newspaper_pdf_file.errors %}<ul class="errorlist">{% for e in form.newspaper_pdf_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
                 <div class="col-md-2 mb-2">
                   <label><i class="fas fa-image text-info mr-1"></i>{{ form.screenshot_file.label }}</label>
-                  <div class="file-input-wrapper">
-                    <div class="file-input-custom-btn" style="padding:0.35rem 0.5rem;font-size:0.75rem;">
-                      <i class="fas fa-image mr-1 text-info"></i>
-                      <span class="file-name-label">{% translate "Image..." %}</span>
-                    </div>
-                    {{ form.screenshot_file }}
-                  </div>
-                  {% if form.instance.screenshot_file %}
-                    <div class="mt-1"><small class="text-success"><a href="{{ form.instance.screenshot_file.url }}" target="_blank"><i class="fas fa-eye mr-1"></i>{% translate "View" %}</a></small></div>
-                  {% endif %}
+                  {{ form.screenshot_file }}
                   {% if form.screenshot_file.errors %}<ul class="errorlist">{% for e in form.screenshot_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
                 <div class="col-md-3 mb-2">
                   <label><i class="fas fa-link text-primary mr-1"></i>{{ form.online_link.label }}</label>
                   {{ form.online_link }}
+                  <div class="multi-links-wrapper px-1" data-field-id="{{ form.online_link.id_for_label }}"></div>
                   {% if form.online_link.errors %}<ul class="errorlist">{% for e in form.online_link.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
               </div>
@@ -343,6 +384,38 @@
           {{ asset_formset.management_form }}
 
           <div id="asset-formset-container">
+            <!-- Hidden template row for cloning -->
+            <div id="asset-empty-row" style="display: none;">
+              <div class="formset-row asset-row">
+                <button type="button" class="btn-delete-row" onclick="markDeleted(this, 'id_assets-__prefix__-DELETE')">
+                  <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
+                </button>
+                <div class="row align-items-end">
+                  <div class="col-md-2 mb-2">
+                    <label>{{ asset_formset.empty_form.asset_type.label }}</label>
+                    {{ asset_formset.empty_form.asset_type }}
+                  </div>
+                  <div class="col-md-3 mb-2 asset-file-section">
+                    <label><i class="fas fa-cloud-upload-alt mr-1 text-purple"></i>{{ asset_formset.empty_form.file_upload.label }}</label>
+                    {{ asset_formset.empty_form.file_upload }}
+                  </div>
+                  <div class="col-md-3 mb-2">
+                    <label><i class="fas fa-link mr-1 text-primary"></i>{{ asset_formset.empty_form.link.label }}</label>
+                    {{ asset_formset.empty_form.link }}
+                  </div>
+                  <div class="col-md-1 mb-2">
+                    <label>{{ asset_formset.empty_form.year.label }}</label>
+                    {{ asset_formset.empty_form.year }}
+                  </div>
+                  <div class="col-md-3 mb-2">
+                    <label>{{ asset_formset.empty_form.caption.label }}</label>
+                    {{ asset_formset.empty_form.caption }}
+                  </div>
+                </div>
+                <div style="display:none;">{{ asset_formset.empty_form.DELETE }}</div>
+              </div>
+            </div>
+
             {% for form in asset_formset %}
             <div class="formset-row asset-row">
               <button type="button" class="btn-delete-row" onclick="markDeleted(this, '{{ form.DELETE.id_for_label }}')">
@@ -355,16 +428,7 @@
                 </div>
                 <div class="col-md-3 mb-2 asset-file-section">
                   <label><i class="fas fa-cloud-upload-alt mr-1 text-purple"></i>{{ form.file_upload.label }}</label>
-                  <div class="file-input-wrapper">
-                    <div class="file-input-custom-btn" style="padding:0.35rem 0.5rem;font-size:0.75rem;">
-                      <i class="fas fa-cloud-upload-alt mr-1 text-purple"></i>
-                      <span class="file-name-label">{% translate "File..." %}</span>
-                    </div>
-                    {{ form.file_upload }}
-                  </div>
-                  {% if form.instance.file_upload %}
-                    <div class="mt-1"><small class="text-success"><a href="{{ form.instance.file_upload.url }}" target="_blank"><i class="fas fa-eye mr-1"></i>{% translate "View" %}</a></small></div>
-                  {% endif %}
+                  {{ form.file_upload }}
                   {% if form.file_upload.errors %}<ul class="errorlist">{% for e in form.file_upload.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
                 </div>
                 <div class="col-md-3 mb-2">
@@ -413,6 +477,23 @@
 
 {% block extra_js %}
 <script>
+function toggleClearState(chk) {
+  const badge = chk.closest('.file-current-badge');
+  const label = badge.querySelector('.clear-file-btn');
+  const filename = badge.querySelector('a');
+  if (chk.checked) {
+    label.style.background = '#ef4444';
+    label.style.color = '#ffffff';
+    if (filename) filename.style.textDecoration = 'line-through';
+    badge.style.opacity = '0.5';
+  } else {
+    label.style.background = '#fee2e2';
+    label.style.color = '#ef4444';
+    if (filename) filename.style.textDecoration = 'underline';
+    badge.style.opacity = '1';
+  }
+}
+
 // ── Custom file input label update ─────────────────────────────────────────
 document.addEventListener('change', function(e) {
   if (e.target && e.target.type === 'file') {
@@ -433,38 +514,43 @@ document.addEventListener('change', function(e) {
 // ── Formset row cloning ─────────────────────────────────────────────────────
 function addFormsetRow(containerId, prefix) {
   const container  = document.getElementById(containerId);
-  const rows       = container.querySelectorAll('.formset-row');
   const totalInput = document.getElementById('id_' + prefix + '-TOTAL_FORMS');
   const newIndex   = parseInt(totalInput.value);
-  const templateRow = rows[rows.length - 1].cloneNode(true);
+  
+  // Clone from the empty row template
+  const emptyRowContainer = prefix === 'coverages' ? document.getElementById('coverage-empty-row') : document.getElementById('asset-empty-row');
+  const templateRow = emptyRowContainer.querySelector('.formset-row').cloneNode(true);
 
+  // Replace __prefix__ with the new index in all names, ids, and labels
   templateRow.querySelectorAll('input, select, textarea').forEach(function(el) {
-    if (el.name) el.name = el.name.replace(/-\d+-/, '-' + newIndex + '-');
-    if (el.id)   el.id   = el.id.replace(/-\d+-/,   '-' + newIndex + '-');
-    if (el.type !== 'hidden') {
-      if (el.type === 'checkbox') el.checked = false;
-      else if (el.type !== 'file') el.value = '';
-    }
+    if (el.name) el.name = el.name.replace(/__prefix__/g, newIndex);
+    if (el.id)   el.id   = el.id.replace(/__prefix__/g,   newIndex);
   });
   templateRow.querySelectorAll('label[for]').forEach(function(lbl) {
-    lbl.setAttribute('for', lbl.getAttribute('for').replace(/-\d+-/, '-' + newIndex + '-'));
+    lbl.setAttribute('for', lbl.getAttribute('for').replace(/__prefix__/g, newIndex));
   });
 
-  // Reset file input labels
-  templateRow.querySelectorAll('.file-name-label').forEach(function(span) {
-    span.textContent = 'Select File...';
+  // Update data-field-id on the cloned multi-links-wrapper
+  templateRow.querySelectorAll('.multi-links-wrapper').forEach(function(wrapper) {
+    const origId = wrapper.getAttribute('data-field-id');
+    if (origId) {
+      wrapper.setAttribute('data-field-id', origId.replace(/__prefix__/g, newIndex));
+    }
   });
-  templateRow.querySelectorAll('.file-input-custom-btn').forEach(function(btn) {
-    btn.style.borderColor = ''; btn.style.color = ''; btn.style.background = '';
-  });
-  // Remove "View" links for existing files in cloned row
-  templateRow.querySelectorAll('.mt-1').forEach(function(el) { el.remove(); });
-  // Remove saved badge
-  const badge = templateRow.querySelector('.badge-secondary');
-  if (badge) badge.remove();
+
+  // Update delete button onclick attribute to target the correct delete field ID
+  const delBtn = templateRow.querySelector('.btn-delete-row');
+  if (delBtn) {
+    delBtn.setAttribute('onclick', `markDeleted(this, 'id_${prefix}-${newIndex}-DELETE')`);
+  }
 
   container.appendChild(templateRow);
   totalInput.value = newIndex + 1;
+
+  // Initialize multi-links for the new row
+  templateRow.querySelectorAll('.multi-links-wrapper').forEach(function(wrapper) {
+    initMultiLinks(wrapper);
+  });
 }
 
 function markDeleted(btn, deleteFieldId) {
@@ -489,6 +575,120 @@ document.getElementById('add-coverage-row').addEventListener('click', function()
 document.getElementById('add-asset-row').addEventListener('click', function() {
   addFormsetRow('asset-formset-container', 'assets');
 });
+
+// ── Dynamic Multi-Links Widget ──────────────────────────────────────────────
+function initMultiLinks(wrapper) {
+  const targetId = wrapper.getAttribute('data-field-id');
+  const hiddenTextarea = document.getElementById(targetId);
+  if (!hiddenTextarea) return;
+
+  function renderLinks() {
+    const rawVal = hiddenTextarea.value || '';
+    const links = rawVal.split('\n').map(l => l.trim());
+    
+    // Default to at least one empty input
+    if (links.length === 0 || (links.length === 1 && links[0] === '')) {
+      links.length = 0;
+      links.push('');
+    }
+
+    wrapper.innerHTML = ''; // Clear current inputs
+
+    links.forEach((link, idx) => {
+      const row = document.createElement('div');
+      row.className = 'd-flex align-items-center mb-1 link-row';
+      
+      const input = document.createElement('input');
+      input.type = 'url';
+      input.className = 'form-control form-control-sm url-input-item';
+      input.value = link;
+      input.placeholder = 'https://...';
+      input.style.borderRadius = '8px';
+      input.style.fontSize = '0.82rem';
+      
+      // Update the hidden textarea whenever user types in the input
+      input.addEventListener('input', () => {
+        updateHiddenValue();
+      });
+
+      row.appendChild(input);
+
+      if (idx === 0) {
+        // Plus button (with animation on hover)
+        const plusBtn = document.createElement('button');
+        plusBtn.type = 'button';
+        plusBtn.className = 'btn btn-sm btn-success ml-1 add-link-btn';
+        plusBtn.style.borderRadius = '8px';
+        plusBtn.style.width = '30px';
+        plusBtn.style.height = '30px';
+        plusBtn.style.minWidth = '30px';
+        plusBtn.style.display = 'flex';
+        plusBtn.style.alignItems = 'center';
+        plusBtn.style.justifyContent = 'center';
+        plusBtn.style.transition = 'all 0.2s';
+        plusBtn.title = 'Add Link';
+        plusBtn.innerHTML = '<i class="fas fa-plus" style="font-size:0.75rem;"></i>';
+        
+        plusBtn.addEventListener('click', () => {
+          // Add a new empty input link
+          const currentLinks = getInputsValues();
+          currentLinks.push('');
+          hiddenTextarea.value = currentLinks.join('\n');
+          renderLinks();
+          
+          // Focus the newly created row's input
+          setTimeout(() => {
+            const inputs = wrapper.querySelectorAll('.url-input-item');
+            if (inputs.length > 0) {
+              const lastInput = inputs[inputs.length - 1];
+              lastInput.focus();
+            }
+          }, 50);
+        });
+
+        row.appendChild(plusBtn);
+      } else {
+        // Minus button to remove this row
+        const minusBtn = document.createElement('button');
+        minusBtn.type = 'button';
+        minusBtn.className = 'btn btn-sm btn-danger ml-1 remove-link-btn';
+        minusBtn.style.borderRadius = '8px';
+        minusBtn.style.width = '30px';
+        minusBtn.style.height = '30px';
+        minusBtn.style.minWidth = '30px';
+        minusBtn.style.display = 'flex';
+        minusBtn.style.alignItems = 'center';
+        minusBtn.style.justifyContent = 'center';
+        minusBtn.style.transition = 'all 0.2s';
+        minusBtn.title = 'Remove';
+        minusBtn.innerHTML = '<i class="fas fa-minus" style="font-size:0.75rem;"></i>';
+
+        minusBtn.addEventListener('click', () => {
+          const currentLinks = getInputsValues();
+          currentLinks.splice(idx, 1);
+          hiddenTextarea.value = currentLinks.join('\n');
+          renderLinks();
+        });
+
+        row.appendChild(minusBtn);
+      }
+
+      wrapper.appendChild(row);
+    });
+  }
+
+  function getInputsValues() {
+    const inputs = wrapper.querySelectorAll('.url-input-item');
+    return Array.from(inputs).map(inp => inp.value.trim());
+  }
+
+  function updateHiddenValue() {
+    const vals = getInputsValues();
+    hiddenTextarea.value = vals.join('\n');
+  }
+
+  renderLinks();
+}
 
 // ── Dynamic PR Number Sync ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
@@ -605,6 +805,13 @@ document.addEventListener('DOMContentLoaded', function() {
       checkPrValidity();
     }
   }
+
+  // Initialize multi-links for existing rows on page load
+  document.querySelectorAll('.multi-links-wrapper').forEach(function(wrapper) {
+    if (!wrapper.closest('#coverage-empty-row')) {
+      initMultiLinks(wrapper);
+    }
+  });
 });
 </script>
 {% endblock %}

@@ -58,6 +58,25 @@ def dashboard(request):
         'tv':       MediaHouse.objects.filter(media_type='tv').count(),
     }
 
+    import datetime
+    from django.db.models.functions import ExtractMonth
+    from django.db.models import Count
+
+    current_year = datetime.date.today().year
+    monthly_data = (
+        PublicRelationsArchive.objects
+        .filter(press_release_date__year=current_year)
+        .annotate(month=ExtractMonth('press_release_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    monthly_counts = [0] * 12
+    for item in monthly_data:
+        if item['month']:
+            monthly_counts[item['month'] - 1] = item['count']
+
     context = {
         'page_title':          _('PR Dashboard'),
         'total_releases':      total_releases,
@@ -69,6 +88,8 @@ def dashboard(request):
         'total_media_houses':  total_media_houses,
         'recent_entries':      recent_entries,
         'media_houses_by_type': media_houses_by_type,
+        'monthly_counts':      monthly_counts,
+        'current_year':        current_year,
     }
     return render(request, 'public_relations/dashboard.html', context)
 

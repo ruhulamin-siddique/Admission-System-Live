@@ -1,0 +1,38 @@
+{% load i18n %}
+<div class="premium-file-widget" style="width:100%;">
+  {% if widget.is_initial %}
+  <div class="file-current-badge mb-1 d-flex align-items-center justify-content-between p-2 border rounded" style="background:#eff6ff; border-color:#bfdbfe; font-size:0.72rem; width:100%; box-sizing:border-box;">
+    <div class="text-truncate mr-2" style="max-width:calc(100% - 90px);">
+      <i class="fas fa-file-alt text-primary mr-1"></i>
+      <a href="{{ widget.value.url }}" target="_blank" class="font-weight-600 text-primary" style="text-decoration:underline;">
+        {% if widget.value.name %}
+          {{ widget.value.name|stringformat:"s"|truncatechars:18 }}
+        {% else %}
+          {% translate "View File" %}
+        {% endif %}
+      </a>
+    </div>
+    {% if not widget.required %}
+    <div class="custom-control custom-checkbox m-0 p-0 d-flex align-items-center">
+      <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}" class="custom-control-input d-none" {% if widget.checkbox_checked %}checked{% endif %} onchange="toggleClearState(this)">
+      <label class="clear-file-btn cursor-pointer d-flex align-items-center justify-content-center" for="{{ widget.checkbox_id }}" title="{% translate "Remove attached file" %}" style="width:20px; height:20px; border-radius:50%; background:#fee2e2; color:#ef4444; transition:all 0.2s; border:none; font-size:0.7rem; line-height:1;">
+        <i class="fas fa-times"></i>
+      </label>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  <div class="file-input-wrapper">
+    <div class="file-input-custom-btn" style="padding:0.35rem 0.5rem; font-size:0.75rem; border-radius:10px;">
+      <i class="fas fa-cloud-upload-alt mr-1 text-primary"></i>
+      <span class="file-name-label">
+        {% if widget.is_initial %}
+          {% translate "Change..." %}
+        {% else %}
+          {% translate "Upload..." %}
+        {% endif %}
+      </span>
+    </div>
+    <input type="{{ widget.type }}" name="{{ widget.name }}"{% for key, val in widget.attrs.items %} {{ key }}="{% if val is True %}{{ key }}{% else %}{{ val }}{% endif %}"{% endfor %}>
+  </div>
+</div>
