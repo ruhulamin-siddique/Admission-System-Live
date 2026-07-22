@@ -33,6 +33,6 @@
         {% endif %}
       </span>
     </div>
-    <input type="{{ widget.type }}" name="{{ widget.name }}"{% for key, val in widget.attrs.items %} {{ key }}="{% if val is True %}{{ key }}{% else %}{{ val }}{% endif %}"{% endfor %}>
+    <input type="{{ widget.type }}" name="{{ widget.name }}"{% for key, val in widget.attrs.items %}{% if val is True %} {{ key }}="{{ key }}"{% elif val is not False and val is not None %} {{ key }}="{{ val }}"{% endif %}{% endfor %}>
   </div>
 </div>
