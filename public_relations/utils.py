@@ -205,32 +205,13 @@ def export_archive_to_excel(queryset):
 
 def render_archive_pdf(request, archive_pk):
     """
-    Render a single PublicRelationsArchive entry as a printable PDF document.
-
-    Uses xhtml2pdf to convert a Django HTML template
-    (`public_relations/pr_print.html`) into a binary PDF stream.
-
-    Parameters
-    ----------
-    request     : HttpRequest  – needed for template context (branding etc.)
-    archive_pk  : int          – primary key of the archive entry to render
-
-    Returns
-    -------
-    HttpResponse with content_type='application/pdf'
+    Render a single PublicRelationsArchive entry as a printable document.
+    Renders clean HTML print layout for 100% perfect Bangla font & unicode support.
     """
-    try:
-        from xhtml2pdf import pisa
-    except ImportError:
-        return HttpResponse(
-            "xhtml2pdf is not installed. Run: pip install xhtml2pdf",
-            status=500
-        )
-
     from django.shortcuts import get_object_or_404
     from core.models import SystemSettings
 
-    entry    = get_object_or_404(
+    entry = get_object_or_404(
         PublicRelationsArchive.objects.prefetch_related('coverages__media_house', 'assets'),
         pk=archive_pk
     )
@@ -243,23 +224,4 @@ def render_archive_pdf(request, archive_pk):
         'sys_settings': settings,
     }, request=request)
 
-    buffer = io.BytesIO()
-    pisa_status = pisa.CreatePDF(
-        html_string,
-        dest=buffer,
-        encoding='utf-8',
-    )
-
-    if pisa_status.err:
-        return HttpResponse(
-            f"PDF রেন্ডারিং ব্যর্থ হয়েছে। (xhtml2pdf error: {pisa_status.err})",
-            status=500
-        )
-
-    buffer.seek(0)
-    safe_no  = entry.press_release_no.replace('/', '-').replace(' ', '_')
-    filename = f"PR_{safe_no}.pdf"
-
-    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="{filename}"'
-    return response
+    return HttpResponse(html_string)

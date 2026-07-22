@@ -5,6 +5,7 @@ Bilingual view functions using Django's i18n support.
 """
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, JsonResponse
 from django.db import transaction
 from django.db.models import Q
 from django.contrib import messages
@@ -176,28 +177,14 @@ def archive_list(request):
 @require_access('public_relations', 'add_archive')
 def archive_create(request):
     if request.method == 'POST':
-        archive_form    = PublicRelationsArchiveForm(request.POST, request.FILES)
-        coverage_formset = MediaCoverageFormSet(request.POST, request.FILES, prefix='coverages')
-        asset_formset    = MediaAssetFormSet(request.POST, request.FILES, prefix='assets')
+        archive_form = PublicRelationsArchiveForm(request.POST, request.FILES)
 
-        all_valid = (
-            archive_form.is_valid() and
-            coverage_formset.is_valid() and
-            asset_formset.is_valid()
-        )
-
-        if all_valid:
+        if archive_form.is_valid():
             try:
                 with transaction.atomic():
                     archive = archive_form.save(commit=False)
                     archive.created_by = request.user
                     archive.save()
-
-                    coverage_formset.instance = archive
-                    coverage_formset.save()
-
-                    asset_formset.instance = archive
-                    asset_formset.save()
 
                 log_activity(
                     request, 'CREATE', 'public_relations',
@@ -207,7 +194,7 @@ def archive_create(request):
                 )
                 messages.success(
                     request,
-                    _('Press Release "%(no)s" successfully saved.') % {'no': archive.press_release_no}
+                    _('Press Release "%(no)s" successfully created.') % {'no': archive.press_release_no}
                 )
                 return redirect('pr_archive_detail', pk=archive.pk)
 
@@ -217,18 +204,121 @@ def archive_create(request):
             messages.error(request, _('There are errors in the form. Please check details below.'))
 
     else:
-        archive_form     = PublicRelationsArchiveForm()
-        coverage_formset = MediaCoverageFormSet(prefix='coverages')
-        asset_formset    = MediaAssetFormSet(prefix='assets')
+        archive_form = PublicRelationsArchiveForm()
 
     context = {
-        'page_title':        _('Create Press Release'),
-        'archive_form':      archive_form,
-        'coverage_formset':  coverage_formset,
-        'asset_formset':     asset_formset,
-        'is_edit':           False,
+        'page_title':   _('Create Press Release'),
+        'archive_form': archive_form,
+        'is_edit':      False,
     }
     return render(request, 'public_relations/archive_form.html', context)
+
+
+# ============================================================================
+# Add Coverages & Assets (Search PR & Attach Media Coverages)
+# ============================================================================
+
+@require_access('public_relations', 'add_archive')
+def add_coverages(request):
+    selected_pr = None
+    pr_id = request.GET.get('pr_id') or request.POST.get('selected_pr_id')
+    
+    if pr_id:
+        selected_pr = get_object_or_404(PublicRelationsArchive, pk=pr_id)
+
+    if request.method == 'POST':
+        if not selected_pr:
+            messages.error(request, _('Please search and select a Press Release before submitting coverages.'))
+            return redirect('pr_add_coverages')
+
+        coverage_formset = MediaCoverageFormSet(request.POST, request.FILES, instance=selected_pr, prefix='coverages')
+        asset_formset    = MediaAssetFormSet(request.POST, request.FILES, instance=selected_pr, prefix='assets')
+
+        if coverage_formset.is_valid() and asset_formset.is_valid():
+            try:
+                with transaction.atomic():
+                    coverage_formset.save()
+                    asset_formset.save()
+
+                log_activity(
+                    request, 'UPDATE', 'public_relations',
+                    f'Media coverages and assets updated for PR: {selected_pr.press_release_no}',
+                    object_id=str(selected_pr.pk),
+                )
+                messages.success(
+                    request,
+                    _('Media coverages and assets for Press Release "%(no)s" successfully saved.') % {'no': selected_pr.press_release_no}
+                )
+                return redirect('pr_archive_detail', pk=selected_pr.pk)
+            except Exception as exc:
+                messages.error(request, _('Error while saving coverages: %(err)s') % {'err': str(exc)})
+        else:
+            messages.error(request, _('There are errors in the media coverage/assets section.'))
+    else:
+        if selected_pr:
+            coverage_formset = MediaCoverageFormSet(instance=selected_pr, prefix='coverages')
+            asset_formset    = MediaAssetFormSet(instance=selected_pr, prefix='assets')
+        else:
+            coverage_formset = None
+            asset_formset    = None
+
+    from django.db.models import Count
+    uncovered_prs = (
+        PublicRelationsArchive.objects
+        .annotate(num_coverages=Count('coverages'))
+        .filter(num_coverages=0)
+        .order_by('-press_release_date', '-created_at')[:50]
+    )
+    uncovered_count = (
+        PublicRelationsArchive.objects
+        .annotate(num_coverages=Count('coverages'))
+        .filter(num_coverages=0)
+        .count()
+    )
+
+    context = {
+        'page_title':        _('Add Media Coverages & Assets'),
+        'selected_pr':       selected_pr,
+        'coverage_formset':  coverage_formset,
+        'asset_formset':     asset_formset,
+        'uncovered_prs':     uncovered_prs,
+        'uncovered_count':   uncovered_count,
+    }
+    return render(request, 'public_relations/add_coverages.html', context)
+
+
+@require_access('public_relations', 'view_archive')
+def api_search_prs(request):
+    q = request.GET.get('q', '').strip()
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+
+    qs = PublicRelationsArchive.objects.all().order_by('-press_release_date', '-created_at')
+
+    if q:
+        qs = qs.filter(
+            Q(press_release_no__icontains=q) |
+            Q(event_name__icontains=q) |
+            Q(department__icontains=q)
+        )
+    if start_date:
+        qs = qs.filter(press_release_date__gte=start_date)
+    if end_date:
+        qs = qs.filter(press_release_date__lte=end_date)
+
+    results = []
+    for item in qs[:30]:
+        results.append({
+            'id': item.pk,
+            'press_release_no': item.press_release_no,
+            'event_name': item.event_name,
+            'press_release_date': item.press_release_date.strftime('%d %b %Y') if item.press_release_date else '',
+            'department': item.department or '',
+            'coverages_count': item.coverages.count(),
+            'assets_count': item.assets.count(),
+        })
+
+    return JsonResponse({'status': 'ok', 'results': results})
 
 
 # ============================================================================
@@ -568,7 +658,7 @@ def pr_portal(request):
     page_obj = paginator.get_page(page_number)
 
     context = {
-        'page_title': _('PR Showcase'),
+        'page_title': _('News Gallery'),
         'page_obj': page_obj,
         'search_query': search_query,
     }

@@ -73,9 +73,14 @@
 {% endblock %}
 
 {% block page_title %}
-<span class="badge badge-primary" style="font-size:0.85rem;border-radius:8px;padding:6px 14px;">
-  {{ entry.press_release_no }}
-</span>
+<div class="d-inline-flex align-items-center">
+  <span class="badge badge-primary" style="font-size:0.85rem;border-radius:8px;padding:6px 14px;">
+    {{ entry.press_release_no }}
+  </span>
+  <button type="button" class="btn btn-xs ml-2 px-2 py-1 text-muted" style="background:transparent; border:none; box-shadow:none; cursor:pointer;" onclick="copyPRNumber('{{ entry.press_release_no|escapejs }}', this)" title="{% translate 'Copy PR Number' %}">
+    <i class="far fa-copy"></i>
+  </button>
+</div>
 <span style="font-size:1.1rem; margin-left:10px;">{{ entry.event_name|truncatechars:70 }}</span>
 {% endblock %}
 
@@ -85,6 +90,9 @@
     <i class="fas fa-file-pdf mr-1"></i> {% translate "PDF" %}
   </a>
   {% endif %}
+  <a href="{% url 'pr_add_coverages' %}?pr_id={{ entry.pk }}" class="btn btn-success btn-sm px-3 font-weight-bold">
+    <i class="fas fa-plus-circle mr-1"></i> {% translate "Add Coverages" %}
+  </a>
   {% if can_edit %}
   <a href="{% url 'pr_archive_edit' entry.pk %}" class="btn btn-warning btn-sm px-3">
     <i class="fas fa-edit mr-1"></i> {% translate "Edit" %}
@@ -133,7 +141,7 @@
               </div>
               <div class="col-md-4 mb-3">
                 <div class="meta-label">{% translate "Created At" %}</div>
-                <div class="meta-value" style="font-size:0.88rem;">{{ entry.created_at|date:"d M Y, g:i A" }}</div>
+                <div class="meta-value" style="font-size:0.88rem;">{{ entry.created_at|date:"d F Y, h:i A" }}</div>
               </div>
               {% if entry.press_release_pdf_file %}
               <div class="col-md-12 mb-3">
@@ -210,7 +218,7 @@
                         {{ cov.media_house.get_media_type_display }}
                       </span>
                     </td>
-                    <td style="white-space:nowrap;">{{ cov.published_date|date:"d M Y"|default:"—" }}</td>
+                    <td style="white-space:nowrap;">{{ cov.published_date|date:"d F Y"|default:"—" }}</td>
                     <td class="text-center">
                       {% if cov.newspaper_pdf_file %}
                       <a href="{{ cov.newspaper_pdf_url }}" target="_blank" class="btn btn-xs btn-outline-danger" title="{% translate 'Newspaper PDF' %}">
@@ -274,7 +282,7 @@
                           <div class="pdf-iframe-wrapper" style="width:100%; height:100%;"></div>
                         </div>
                         <div class="mt-2 d-flex justify-content-between align-items-center">
-                          <small class="text-muted">{{ cov.published_date|date:"d M Y" }}</small>
+                          <small class="text-muted">{{ cov.published_date|date:"d F Y" }}</small>
                           <a href="{{ cov.newspaper_pdf_url }}" target="_blank" class="btn btn-xs btn-primary animated-pulse-btn px-3" style="border-radius:20px;">
                             <i class="fas fa-expand mr-1"></i> {% translate "Open Full PDF" %}
                           </a>
@@ -292,7 +300,7 @@
                           <img src="{{ cov.screenshot_url }}" class="preview-image" style="max-width:100%; max-height:100%; object-fit:contain;">
                         </div>
                         <div class="mt-2 d-flex justify-content-between align-items-center">
-                          <small class="text-muted">{{ cov.published_date|date:"d M Y" }}</small>
+                          <small class="text-muted">{{ cov.published_date|date:"d F Y" }}</small>
                           <a href="{{ cov.screenshot_url }}" target="_blank" class="btn btn-xs btn-primary animated-pulse-btn px-3" style="border-radius:20px;">
                             <i class="fas fa-expand-arrows-alt mr-1"></i> {% translate "Open Image" %}
                           </a>

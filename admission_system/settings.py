@@ -154,6 +154,13 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Application-wide Date & Time Formatting
+DATE_FORMAT = 'd F Y'                # e.g., 22 July 2026 / ২২ জুলাই ২০২৬
+DATETIME_FORMAT = 'd F Y, h:i A'     # e.g., 22 July 2026, 10:54 AM / ২২ জুলাই ২০২৬, ১০:৫৪ এএম
+SHORT_DATE_FORMAT = 'd F Y'
+SHORT_DATETIME_FORMAT = 'd F Y, h:i A'
+TIME_FORMAT = 'h:i A'
+
 # Bilingual choice settings
 LANGUAGES = [
     ('en', 'English'),

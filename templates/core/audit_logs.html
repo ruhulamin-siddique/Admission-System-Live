@@ -172,13 +172,13 @@
                             {% endif %}
                         </td>
                         <td class="pl-2 align-middle">
-                            <div class="font-weight-bold text-dark">{{ log.changed_at|date:"d M Y" }}</div>
-                            <div class="small text-muted">{{ log.changed_at|date:"H:i:s" }}</div>
+                            <div class="font-weight-bold text-dark">{{ log.changed_at|date:"d F Y" }}</div>
+                            <div class="small text-muted">{{ log.changed_at|date:"h:i:s A" }}</div>
                         </td>
                         {% else %}
                         <td class="pl-4 align-middle">
-                            <div class="font-weight-bold text-dark">{{ log.changed_at|date:"d M Y" }}</div>
-                            <div class="small text-muted">{{ log.changed_at|date:"H:i:s" }}</div>
+                            <div class="font-weight-bold text-dark">{{ log.changed_at|date:"d F Y" }}</div>
+                            <div class="small text-muted">{{ log.changed_at|date:"h:i:s A" }}</div>
                         </td>
                         {% endif %}
                         <td class="align-middle">
@@ -206,7 +206,7 @@
                         </td>
                         <td class="pr-4 text-right align-middle" id="action-cell-{{ log.id }}">
                             {% if log.reverted %}
-                                <span class="badge badge-warning py-1 px-2 font-weight-bold" title="Reverted on {{ log.reverted_at|date:'d M Y H:i' }} by {{ log.reverted_by.username }}">
+                                <span class="badge badge-warning py-1 px-2 font-weight-bold" title="Reverted on {{ log.reverted_at|date:'d F Y, h:i A' }} by {{ log.reverted_by.username }}">
                                     <i class="fas fa-rotate-left mr-1"></i> Reverted
                                 </span>
                             {% else %}
@@ -248,8 +248,8 @@
                     {% for log in page_obj %}
                     <tr class="log-entry-row">
                         <td class="pl-4">
-                            <div class="font-weight-bold text-dark">{{ log.timestamp|date:"d M Y" }}</div>
-                            <div class="small text-muted">{{ log.timestamp|date:"H:i:s" }}</div>
+                            <div class="font-weight-bold text-dark">{{ log.timestamp|date:"d F Y" }}</div>
+                            <div class="small text-muted">{{ log.timestamp|date:"h:i:s A" }}</div>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">

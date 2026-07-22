@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load core_tags i18n %}
 
-{% block title %}{% translate "PR Showcase" %}{% endblock %}
+{% block title %}{% translate "News Gallery" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -143,7 +143,7 @@
 {% endblock %}
 
 {% block page_title %}
-<i class="fas fa-newspaper text-primary mr-2"></i>{% translate "PR News Portal" %}
+<i class="fas fa-newspaper text-primary mr-2"></i>{% translate "News Gallery" %}
 {% endblock %}
 
 {% block page_actions %}
@@ -186,7 +186,7 @@
           <!-- Card Header -->
           <div class="showcase-header d-flex justify-content-between align-items-center">
             <span class="showcase-badge">{{ entry.press_release_no }}</span>
-            <span class="showcase-date"><i class="far fa-calendar-alt mr-1"></i>{{ entry.press_release_date|date:"d M Y" }}</span>
+            <span class="showcase-date"><i class="far fa-calendar-alt mr-1"></i>{{ entry.press_release_date|date:"d F Y" }}</span>
           </div>
 
           <!-- Card Body -->

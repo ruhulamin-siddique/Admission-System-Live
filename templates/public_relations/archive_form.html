@@ -277,11 +277,31 @@
             </label>
             {{ archive_form.full_text }}
             {% if archive_form.full_text.errors %}<ul class="errorlist">{% for e in archive_form.full_text.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            <small class="text-muted">{{ archive_form.full_text.help_text }}</small>
-          </div>
         </div>
       </div>
 
+      {% if not is_edit %}
+      <div class="card shadow-sm border-0 mb-4" style="border-radius:14px; background:linear-gradient(135deg, #1e3a8a, #2563eb); color:#ffffff;">
+        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="mr-3" style="width:44px; height:44px; border-radius:12px; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <i class="fas fa-info-circle text-warning fa-lg"></i>
+            </div>
+            <div>
+              <h6 class="font-weight-bold text-white mb-1" style="font-size:0.95rem;">{% translate "Media Coverages & Assets Notice" %}</h6>
+              <p class="mb-0" style="font-size:0.88rem; color:#e0f2fe !important;">
+                {% translate "You are creating the core Press Release Information. After saving, you can attach Media Coverages & Assets via the 'Add Coverages' page." %}
+              </p>
+            </div>
+          </div>
+          <a href="{% url 'pr_add_coverages' %}" class="btn btn-warning btn-sm font-weight-bold rounded-pill px-4 shadow-sm ml-3 text-nowrap" style="color:#0f172a;">
+            <i class="fas fa-plus-circle mr-1"></i>{% translate "Add Coverages" %}
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if coverage_formset %}
       <!-- ── Section 2: Media Coverage Formset ───────────────────── -->
       <div class="card form-section shadow-sm">
         <div class="card-header" style="background:linear-gradient(135deg,#166534,#16a34a);color:#fff;">
@@ -456,6 +476,7 @@
           </button>
         </div>
       </div>
+      {% endif %}
 
       <!-- ── Submit Bar ───────────────────────────────────────────── -->
       <div class="card shadow-sm" style="border-radius:14px;border:none;">

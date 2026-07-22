@@ -1,0 +1,591 @@
+{% extends "base.html" %}
+{% load core_tags i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-section {
+    border-radius: 16px;
+    border: none;
+    margin-bottom: 1.5rem;
+  }
+  .form-section .card-header {
+    border-radius: 16px 16px 0 0;
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding: 0.9rem 1.4rem;
+    border-bottom: 2px solid rgba(0,0,0,0.06);
+  }
+  .formset-row {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .formset-row:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+  .dark-mode .formset-row {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+  }
+  .btn-delete-row {
+    position: absolute;
+    top: 8px; right: 10px;
+    font-size: 0.75rem;
+    background: #fee2e2; color: #dc2626;
+    border: none; border-radius: 8px;
+    padding: 3px 10px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-delete-row:hover { background: #fecaca; }
+  label { font-weight: 600; font-size: 0.85rem; color: #374151; margin-bottom: 3px; }
+  .dark-mode label { color: #94a3b8; }
+  .errorlist { color: #dc2626; font-size: 0.8rem; list-style: none; padding: 0; margin: 2px 0; }
+  .required-mark { color: #ef4444; margin-left: 2px; }
+
+  /* Premium Form Controls */
+  .form-control {
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.88rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+
+  .pr-select-card {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: #fff;
+    border-radius: 16px;
+    border: none;
+  }
+  .pr-result-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .pr-result-item:hover {
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  }
+  .dark-mode .pr-result-item {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+</style>
+{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-newspaper text-primary mr-2"></i>{% translate "Add Media Coverages & Assets" %}
+{% endblock %}
+
+{% block page_actions %}
+  <button type="button" class="btn btn-warning btn-sm font-weight-bold rounded-pill px-3 mr-2 shadow-sm" data-toggle="modal" data-target="#uncoveredPRsModal">
+    <i class="fas fa-exclamation-triangle mr-1"></i>{% translate "Pending Coverages" %}
+    <span class="badge badge-dark ml-1">{{ uncovered_count }}</span>
+  </button>
+  <a href="{% url 'pr_archive_list' %}" class="btn btn-light btn-sm">
+    <i class="fas fa-arrow-left mr-1"></i> {% translate "Archive List" %}
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+  <div class="container-fluid">
+
+    <!-- ── Step 1: Search & Select Press Release ─────────────────── -->
+    <div class="card pr-select-card shadow-lg mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="font-weight-bold text-white mb-1">
+              <i class="fas fa-search-location text-warning mr-2"></i>{% translate "Step 1: Search & Select Press Release" %}
+            </h5>
+            <p class="small mb-0" style="color:#cbd5e1 !important;">{% translate "Search by PR Number, Title, or Date Range to attach media coverage cuttings and digital assets." %}</p>
+          </div>
+          <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-warning btn-sm font-weight-bold rounded-pill px-3 mr-2 shadow-sm" data-toggle="modal" data-target="#uncoveredPRsModal">
+              <i class="fas fa-list text-dark mr-1"></i>{% translate "Pending Coverages List" %}
+              <span class="badge badge-dark ml-1">{{ uncovered_count }}</span>
+            </button>
+            {% if selected_pr %}
+            <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="toggleSearchBox()">
+              <i class="fas fa-exchange-alt mr-1"></i>{% translate "Change Selected PR" %}
+            </button>
+            {% endif %}
+          </div>
+        </div>
+
+        <div id="prSearchControls" {% if selected_pr %}style="display:none;"{% endif %}>
+          <div class="row align-items-end">
+            <div class="col-md-5 mb-2">
+              <label class="text-light">{% translate "PR Number / Keyword" %}</label>
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
+                </div>
+                <input type="text" id="prSearchInput" class="form-control border-0" placeholder="{% translate 'Type PR number or title (e.g. PR/2026/07/01)...' %}">
+              </div>
+            </div>
+            <div class="col-md-3 mb-2">
+              <label class="text-light">{% translate "From Date" %}</label>
+              <input type="date" id="prStartDate" class="form-control border-0">
+            </div>
+            <div class="col-md-3 mb-2">
+              <label class="text-light">{% translate "To Date" %}</label>
+              <input type="date" id="prEndDate" class="form-control border-0">
+            </div>
+            <div class="col-md-1 mb-2">
+              <button type="button" class="btn btn-primary btn-block font-weight-bold" onclick="performPRSearch(true)">
+                <i class="fas fa-filter"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Search Results Dropdown/Container -->
+          <div id="prSearchResults" class="mt-3" style="display:none; max-height: 280px; overflow-y: auto;">
+          </div>
+        </div>
+
+        <!-- Selected PR Banner -->
+        {% if selected_pr %}
+        <div class="bg-dark p-3 rounded-lg border border-secondary mt-2 d-flex justify-content-between align-items-center" id="selectedPRBanner">
+          <div>
+            <div class="d-inline-flex align-items-center">
+              <span class="badge badge-primary px-3 py-1 font-weight-bold" style="font-size:0.85rem; border-radius:8px;">{{ selected_pr.press_release_no }}</span>
+              <button type="button" class="btn btn-xs ml-1 px-1 py-0 text-muted" style="background:transparent; border:none; box-shadow:none; cursor:pointer;" onclick="copyPRNumber('{{ selected_pr.press_release_no|escapejs }}', this)" title="{% translate 'Copy PR Number' %}">
+                <i class="far fa-copy" style="font-size:0.8rem;"></i>
+              </button>
+            </div>
+            <h6 class="font-weight-bold text-white d-inline-block ml-2 mb-0">{{ selected_pr.event_name }}</h6>
+            <div class="text-muted small mt-1">
+              <i class="far fa-calendar-alt mr-1"></i>{{ selected_pr.press_release_date|date:"d F Y" }}
+              {% if selected_pr.department %} &nbsp;|&nbsp; <i class="fas fa-building mr-1"></i>{{ selected_pr.department }}{% endif %}
+              &nbsp;|&nbsp; <span class="text-info font-weight-bold">{{ selected_pr.coverages.count }} {% translate "Coverages" %}</span>, <span class="text-purple font-weight-bold">{{ selected_pr.assets.count }} {% translate "Assets" %}</span>
+            </div>
+          </div>
+          <a href="{% url 'pr_archive_detail' selected_pr.pk %}" target="_blank" class="btn btn-xs btn-outline-info rounded-pill px-3">
+            <i class="fas fa-external-link-alt mr-1"></i>{% translate "View PR Details" %}
+          </a>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- ── Step 2: Media Coverages & Assets Form ─────────────────── -->
+    {% if selected_pr %}
+    <form method="post" enctype="multipart/form-data" id="coveragesForm" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="selected_pr_id" value="{{ selected_pr.pk }}">
+
+      {% if coverage_formset.non_form_errors or asset_formset.non_form_errors %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>{% translate "Errors found:" %}</strong>
+        {{ coverage_formset.non_form_errors }}
+        {{ asset_formset.non_form_errors }}
+        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+      </div>
+      {% endif %}
+
+      <!-- Section 1: Media Coverage Formset -->
+      <div class="card form-section shadow-sm">
+        <div class="card-header" style="background:linear-gradient(135deg,#166534,#16a34a);color:#fff;">
+          <i class="fas fa-newspaper mr-2"></i>{% translate "Step 2: Media Coverage Records" %}
+          <small class="ml-2 opacity-75">({% translate "Record newspaper cuttings, TV news clips, online portal coverage links" %})</small>
+        </div>
+        <div class="card-body">
+          {{ coverage_formset.management_form }}
+
+          <div id="coverage-formset-container">
+            <!-- Hidden empty template row -->
+            <div id="coverage-empty-row" style="display: none;">
+              <div class="formset-row coverage-row">
+                <button type="button" class="btn-delete-row" onclick="markDeleted(this, 'id_coverages-__prefix__-DELETE')">
+                  <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
+                </button>
+                <div class="row align-items-end">
+                  <div class="col-md-3 mb-2">
+                    <label>{{ coverage_formset.empty_form.media_house.label }} <span class="required-mark">*</span></label>
+                    {{ coverage_formset.empty_form.media_house }}
+                  </div>
+                  <div class="col-md-2 mb-2">
+                    <label>{{ coverage_formset.empty_form.published_date.label }}</label>
+                    {{ coverage_formset.empty_form.published_date }}
+                  </div>
+                  <div class="col-md-2 mb-2">
+                    <label><i class="fas fa-file-pdf text-danger mr-1"></i>{{ coverage_formset.empty_form.newspaper_pdf_file.label }}</label>
+                    {{ coverage_formset.empty_form.newspaper_pdf_file }}
+                  </div>
+                  <div class="col-md-2 mb-2">
+                    <label><i class="fas fa-image text-info mr-1"></i>{{ coverage_formset.empty_form.screenshot_file.label }}</label>
+                    {{ coverage_formset.empty_form.screenshot_file }}
+                  </div>
+                  <div class="col-md-3 mb-2">
+                    <label><i class="fas fa-link text-primary mr-1"></i>{{ coverage_formset.empty_form.online_link.label }}</label>
+                    {{ coverage_formset.empty_form.online_link }}
+                  </div>
+                </div>
+                <div style="display:none;">{{ coverage_formset.empty_form.DELETE }}</div>
+              </div>
+            </div>
+
+            {% for form in coverage_formset %}
+            <div class="formset-row coverage-row">
+              <button type="button" class="btn-delete-row" onclick="markDeleted(this, '{{ form.DELETE.id_for_label }}')">
+                <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
+              </button>
+              {% if form.instance.pk %}
+              <span class="badge badge-success mb-2" style="font-size:0.75rem;">{% translate "Saved Coverage" %}</span>
+              {% endif %}
+              <div class="row align-items-end">
+                <div class="col-md-3 mb-2">
+                  <label>{{ form.media_house.label }} <span class="required-mark">*</span></label>
+                  {{ form.media_house }}
+                  {% if form.media_house.errors %}<ul class="errorlist">{% for e in form.media_house.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div class="col-md-2 mb-2">
+                  <label>{{ form.published_date.label }}</label>
+                  {{ form.published_date }}
+                </div>
+                <div class="col-md-2 mb-2">
+                  <label><i class="fas fa-file-pdf text-danger mr-1"></i>{{ form.newspaper_pdf_file.label }}</label>
+                  {{ form.newspaper_pdf_file }}
+                  {% if form.newspaper_pdf_file.errors %}<ul class="errorlist">{% for e in form.newspaper_pdf_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div class="col-md-2 mb-2">
+                  <label><i class="fas fa-image text-info mr-1"></i>{{ form.screenshot_file.label }}</label>
+                  {{ form.screenshot_file }}
+                  {% if form.screenshot_file.errors %}<ul class="errorlist">{% for e in form.screenshot_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div class="col-md-3 mb-2">
+                  <label><i class="fas fa-link text-primary mr-1"></i>{{ form.online_link.label }}</label>
+                  {{ form.online_link }}
+                  {% if form.online_link.errors %}<ul class="errorlist">{% for e in form.online_link.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+              </div>
+              <div style="display:none;">{{ form.DELETE }}</div>
+              {% if form.id %}{{ form.id }}{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" class="btn btn-outline-success btn-sm mt-2" id="add-coverage-row">
+            <i class="fas fa-plus mr-1"></i> {% translate "Add Coverage Row" %}
+          </button>
+        </div>
+      </div>
+
+      <!-- Section 2: Media Assets Formset -->
+      <div class="card form-section shadow-sm">
+        <div class="card-header" style="background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff;">
+          <i class="fas fa-photo-video mr-2"></i>{% translate "Media Assets & Attachments" %}
+          <small class="ml-2 opacity-75">({% translate "Photos, video files, YouTube links, Google Drive folders" %})</small>
+        </div>
+        <div class="card-body">
+          {{ asset_formset.management_form }}
+
+          <div id="asset-formset-container">
+            <!-- Hidden empty template row -->
+            <div id="asset-empty-row" style="display: none;">
+              <div class="formset-row asset-row">
+                <button type="button" class="btn-delete-row" onclick="markDeleted(this, 'id_assets-__prefix__-DELETE')">
+                  <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
+                </button>
+                <div class="row align-items-end">
+                  <div class="col-md-2 mb-2">
+                    <label>{{ asset_formset.empty_form.asset_type.label }}</label>
+                    {{ asset_formset.empty_form.asset_type }}
+                  </div>
+                  <div class="col-md-3 mb-2">
+                    <label>{{ asset_formset.empty_form.file_upload.label }}</label>
+                    {{ asset_formset.empty_form.file_upload }}
+                  </div>
+                  <div class="col-md-3 mb-2">
+                    <label>{{ asset_formset.empty_form.external_url.label }}</label>
+                    {{ asset_formset.empty_form.external_url }}
+                  </div>
+                  <div class="col-md-1 mb-2">
+                    <label>{{ asset_formset.empty_form.year.label }}</label>
+                    {{ asset_formset.empty_form.year }}
+                  </div>
+                  <div class="col-md-3 mb-2">
+                    <label>{{ asset_formset.empty_form.caption.label }}</label>
+                    {{ asset_formset.empty_form.caption }}
+                  </div>
+                </div>
+                <div style="display:none;">{{ asset_formset.empty_form.DELETE }}</div>
+              </div>
+            </div>
+
+            {% for form in asset_formset %}
+            <div class="formset-row asset-row">
+              <button type="button" class="btn-delete-row" onclick="markDeleted(this, '{{ form.DELETE.id_for_label }}')">
+                <i class="fas fa-times mr-1"></i> {% translate "Remove" %}
+              </button>
+              {% if form.instance.pk %}
+              <span class="badge badge-purple mb-2" style="font-size:0.75rem; background:#6d28d9; color:#fff;">{% translate "Saved Asset" %}</span>
+              {% endif %}
+              <div class="row align-items-end">
+                <div class="col-md-2 mb-2">
+                  <label>{{ form.asset_type.label }}</label>
+                  {{ form.asset_type }}
+                </div>
+                <div class="col-md-3 mb-2">
+                  <label>{{ form.file_upload.label }}</label>
+                  {{ form.file_upload }}
+                </div>
+                <div class="col-md-3 mb-2">
+                  <label>{{ form.external_url.label }}</label>
+                  {{ form.external_url }}
+                </div>
+                <div class="col-md-1 mb-2">
+                  <label>{{ form.year.label }}</label>
+                  {{ form.year }}
+                </div>
+                <div class="col-md-3 mb-2">
+                  <label>{{ form.caption.label }}</label>
+                  {{ form.caption }}
+                </div>
+              </div>
+              <div style="display:none;">{{ form.DELETE }}</div>
+              {% if form.id %}{{ form.id }}{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-asset-row">
+            <i class="fas fa-plus mr-1"></i> {% translate "Add Asset Row" %}
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit Bar -->
+      <div class="card shadow-sm mb-5" style="border-radius:14px;border:none;">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <a href="{% url 'pr_archive_list' %}" class="btn btn-light px-5">
+            <i class="fas fa-times mr-1"></i> {% translate "Cancel" %}
+          </a>
+          <button type="submit" class="btn btn-success px-5 font-weight-700">
+            <i class="fas fa-save mr-1"></i> {% translate "Save Coverages & Assets" %}
+          </button>
+        </div>
+      </div>
+    </form>
+    {% else %}
+    <!-- Prompt when no PR is selected yet -->
+    <div class="card shadow-sm border-0 text-center py-5 my-3" style="border-radius:16px; background:#f8fafc; border:1px dashed #cbd5e1 !important;">
+      <div class="card-body py-4">
+        <div class="mx-auto mb-3" style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg, #1e3a8a, #3b82f6); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(59,130,246,0.25);">
+          <i class="fas fa-search text-warning fa-2x"></i>
+        </div>
+        <h4 class="font-weight-bold text-dark mb-2">{% translate "Select a Press Release Above" %}</h4>
+        <p class="text-muted max-w-lg mx-auto mb-4" style="max-width:520px; font-size:0.95rem;">
+          {% translate "Use the search box above to find a Press Release by PR number, keyword, or date range. Once selected, you can attach newspaper cuttings, screenshots, and media assets." %}
+        </p>
+        <button type="button" class="btn btn-primary rounded-pill px-4 font-weight-bold shadow-sm" onclick="$('#prSearchInput').focus(); performPRSearch();">
+          <i class="fas fa-filter mr-1"></i>{% translate "Search All Press Releases" %}
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- Modal: PRs Pending Media Coverage -->
+<div class="modal fade" id="uncoveredPRsModal" tabindex="-1" role="dialog" aria-labelledby="uncoveredPRsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:18px; overflow:hidden;">
+      <div class="modal-header text-white" style="background:linear-gradient(135deg, #1e3a8a, #2563eb);">
+        <h5 class="modal-title font-weight-bold" id="uncoveredPRsModalLabel">
+          <i class="fas fa-newspaper text-warning mr-2"></i>{% translate "Press Releases Pending Media Coverage" %}
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto; background:#f8fafc;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <p class="text-muted small mb-0">
+            {% translate "List of Press Releases that currently have 0 media coverages attached." %}
+          </p>
+          <span class="badge badge-warning px-3 py-2 font-weight-bold" style="border-radius:10px; font-size:0.85rem;">
+            {{ uncovered_count }} {% translate "PR(s) Pending" %}
+          </span>
+        </div>
+
+        {% if uncovered_prs %}
+        <div class="table-responsive bg-white rounded-lg shadow-sm border">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th>{% translate "PR Number" %}</th>
+                <th>{% translate "Event Title / Date" %}</th>
+                <th>{% translate "Department" %}</th>
+                <th class="text-right">{% translate "Action" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pr in uncovered_prs %}
+              <tr>
+                <td>
+                  <div class="d-inline-flex align-items-center">
+                    <span class="badge badge-primary px-2 py-1 font-weight-bold" style="border-radius:6px; font-size:0.82rem;">{{ pr.press_release_no }}</span>
+                    <button type="button" class="btn btn-xs ml-1 px-1 py-0 text-muted border-0" style="background:transparent;" onclick="copyPRNumber('{{ pr.press_release_no|escapejs }}', this)" title="{% translate 'Copy PR Number' %}">
+                      <i class="far fa-copy" style="font-size:0.8rem;"></i>
+                    </button>
+                  </div>
+                </td>
+                <td>
+                  <strong class="text-dark d-block" style="font-size:0.92rem;">{{ pr.event_name }}</strong>
+                  <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i>{{ pr.press_release_date|date:"d F Y" }}</small>
+                </td>
+                <td class="small text-muted">
+                  {{ pr.department|default:"—" }}
+                </td>
+                <td class="text-right">
+                  <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-weight-bold shadow-sm" onclick="selectPR('{{ pr.pk }}')">
+                    <i class="fas fa-plus-circle mr-1"></i>{% translate "Select & Add Coverage" %}
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <div class="mx-auto mb-3" style="width:64px; height:64px; border-radius:50%; background:#dcfce7; color:#166534; display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-check-circle fa-2x"></i>
+          </div>
+          <h5 class="font-weight-bold text-dark mb-1">{% translate "All Press Releases Covered!" %}</h5>
+          <p class="text-muted small">{% translate "Great job! All existing Press Releases have media coverages attached." %}</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer bg-light p-3">
+        <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill" data-dismiss="modal">
+          <i class="fas fa-times mr-1"></i>{% translate "Close" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleSearchBox() {
+  $('#prSearchControls').slideToggle(200);
+}
+
+let searchTimer = null;
+
+function performPRSearch(forceAll = false) {
+  const q = $('#prSearchInput').val().trim();
+  const start_date = $('#prStartDate').val();
+  const end_date = $('#prEndDate').val();
+
+  if (!forceAll && !q && !start_date && !end_date) {
+    $('#prSearchResults').hide().empty();
+    return;
+  }
+
+  $('#prSearchResults').html('<div class="text-center py-3 text-light"><i class="fas fa-spinner fa-spin mr-2"></i>{% translate "Searching Press Releases..." %}</div>').show();
+
+  $.ajax({
+    url: "{% url 'api_search_prs' %}",
+    data: { q: q, start_date: start_date, end_date: end_date },
+    success: function(res) {
+      if (res.status === 'ok' && res.results.length > 0) {
+        let html = '';
+        res.results.forEach(function(item) {
+          html += `
+            <div class="pr-result-item" onclick="selectPR('${item.id}')">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge badge-primary px-2 py-1">${item.press_release_no}</span>
+                  <button type="button" class="btn btn-xs btn-outline-secondary ml-1 px-1 py-0 border-0 text-muted" onclick="event.stopPropagation(); copyPRNumber('${item.press_release_no}', this);" title="Copy PR Number">
+                    <i class="far fa-copy" style="font-size:0.8rem;"></i>
+                  </button>
+                  <strong class="ml-2 text-dark">${item.event_name}</strong>
+                  <span class="text-muted small ml-2">(${item.press_release_date})</span>
+                </div>
+                <div>
+                  <span class="badge badge-light border text-muted mr-1">${item.coverages_count} {% translate "Coverages" %}</span>
+                  <span class="btn btn-xs btn-primary font-weight-bold ml-2"><i class="fas fa-check mr-1"></i>{% translate "Select" %}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        $('#prSearchResults').html(html);
+      } else {
+        $('#prSearchResults').html('<div class="alert alert-warning mb-0 text-center py-3"><i class="fas fa-exclamation-triangle mr-2"></i>{% translate "No matching Press Releases found. Try adjusting your search query or date range." %}</div>');
+      }
+    },
+    error: function() {
+      $('#prSearchResults').html('<div class="alert alert-danger mb-0 text-center py-3">{% translate "Error searching Press Releases. Please try again." %}</div>');
+    }
+  });
+}
+
+// Live debounced search input trigger
+$('#prSearchInput').on('input keyup', function(e) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function() { performPRSearch(false); }, 300);
+});
+
+$('#prStartDate, #prEndDate').on('change', function() {
+  performPRSearch(false);
+});
+
+function selectPR(prId) {
+  window.location.href = "{% url 'pr_add_coverages' %}?pr_id=" + prId;
+}
+
+function markDeleted(btn, deleteInputId) {
+  const row = $(btn).closest('.formset-row');
+  const deleteInput = $('#' + deleteInputId);
+  if (deleteInput.length) {
+    deleteInput.val('on');
+    row.fadeOut(300, function() { $(this).css('display', 'none'); });
+  } else {
+    row.fadeOut(300, function() { $(this).remove(); });
+  }
+}
+
+$(document).ready(function() {
+  // Add Coverage Row
+  $('#add-coverage-row').on('click', function() {
+    const totalForms = $('#id_coverages-TOTAL_FORMS');
+    const count = parseInt(totalForms.val());
+    const newRow = $('#coverage-empty-row').html().replace(/__prefix__/g, count);
+    $('#coverage-formset-container').append(newRow);
+    totalForms.val(count + 1);
+  });
+
+  // Add Asset Row
+  $('#add-asset-row').on('click', function() {
+    const totalForms = $('#id_assets-TOTAL_FORMS');
+    const count = parseInt(totalForms.val());
+    const newRow = $('#asset-empty-row').html().replace(/__prefix__/g, count);
+    $('#asset-formset-container').append(newRow);
+    totalForms.val(count + 1);
+  });
+});
+</script>
+{% endblock %}

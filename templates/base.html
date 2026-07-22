@@ -683,7 +683,7 @@
               <li class="nav-item">
                 <a href="{% url 'pr_portal' %}" class="nav-link {% if request.resolver_match.url_name == 'pr_portal' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>{% translate "PR Showcase" %}</p>
+                  <p>{% translate "News Gallery" %}</p>
                 </a>
               </li>
               {% has_access 'public_relations' 'add_archive' as can_add_pr %}
@@ -692,6 +692,12 @@
                 <a href="{% url 'pr_archive_create' %}" class="nav-link {% if request.resolver_match.url_name == 'pr_archive_create' %}active{% endif %}">
                   <i class="far fa-circle nav-icon"></i>
                   <p>{% translate "New Press Release" %}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'pr_add_coverages' %}" class="nav-link {% if request.resolver_match.url_name == 'pr_add_coverages' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "Add Coverages" %}</p>
                 </a>
               </li>
               {% endif %}
@@ -849,14 +855,16 @@
     {% endif %}
   </script>
 
-  <footer class="main-footer">
-    <div class="float-right d-none d-sm-block">
+  <footer class="main-footer d-sm-flex justify-content-sm-between align-items-sm-center">
+    <div>
+      <strong>Copyright &copy; 2026 Bangladesh Army University of Science and Technology.</strong>
+      All rights reserved.
+    </div>
+    <div class="mt-1 mt-sm-0 text-sm-right">
       <b>Developed by:</b>
       <a href="{% url 'developer_portfolio' %}" target="_blank" class="text-primary font-weight-bold" title="View Developer Portfolio">Ruhulamin Siddique</a>
       <small class="text-muted ml-1">· Asst. Software Engineer, ICT Wing &amp; Archive, BAUST</small>
     </div>
-    <strong>Copyright &copy; 2026 Bangladesh Army University of Science and Technology.</strong>
-    All rights reserved.
   </footer>
 
 </div>
@@ -872,6 +880,52 @@
 
 {% block extra_js %}{% endblock %}
   <script>
+    function copyPRNumber(text, btn) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text);
+      } else {
+        let textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+
+      if (btn) {
+        const $btn = $(btn);
+        const originalHtml = $btn.html();
+        $btn.addClass('text-success').removeClass('text-muted text-primary').html('<i class="fas fa-check" style="font-size:0.85rem;"></i>');
+        setTimeout(function() {
+          $btn.removeClass('text-success').addClass('text-muted').html(originalHtml);
+        }, 1500);
+      }
+
+      if (typeof Swal !== 'undefined') {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true,
+          background: '#ffffff',
+          color: '#0f172a',
+          iconColor: '#16a34a',
+          customClass: {
+            popup: 'shadow-md border border-light rounded-lg'
+          }
+        });
+        Toast.fire({
+          icon: 'success',
+          title: '<span style="font-weight:700; font-size:0.9rem;">{% translate "PR Number copied to clipboard!" %}</span>',
+          html: '<span class="badge badge-primary px-2 py-1 mt-1 font-weight-bold" style="font-size:0.85rem; border-radius:6px;">' + text + '</span>'
+        });
+      }
+    }
+
     function toggleDarkMode() {
         const body = document.body;
         const icon = document.getElementById('theme-icon');

@@ -74,14 +74,31 @@ def link_callback(uri, rel):
 
     return uri
 
-def render_to_pdf(template_src, context_dict={}):
+def render_to_pdf(template_src, context_dict={}, request=None):
     template = get_template(template_src)
-    html = template.render(context_dict)
-    result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=link_callback)
-    if not pdf.err:
-        return HttpResponse(result.getvalue(), content_type='application/pdf')
-    return None
+    html_content = template.render(context_dict, request=request)
+    
+    if "window.print()" not in html_content:
+        print_script = """
+        <style>
+          @media print { .no-print { display: none !important; } }
+        </style>
+        <div class="no-print" style="position:fixed;top:12px;right:20px;z-index:99999;background:#ffffff;padding:10px 18px;border-radius:30px;box-shadow:0 10px 30px rgba(0,0,0,0.25);font-family:sans-serif;display:flex;align-items:center;gap:12px;border:1px solid #cbd5e1;">
+          <span style="font-weight:bold;color:#0f172a;font-size:14px;">📄 Ready to Print / Save as PDF</span>
+          <button onclick="window.print()" style="background:#1e40af;color:#fff;border:none;padding:6px 16px;border-radius:20px;font-weight:bold;cursor:pointer;font-size:13px;">🖨️ Print / Save as PDF</button>
+          <button onclick="window.close()" style="background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:6px 14px;border-radius:20px;font-weight:bold;cursor:pointer;font-size:13px;">Close</button>
+        </div>
+        <script>
+          window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() { window.print(); }, 500);
+          });
+        </script>
+        """
+        if "</body>" in html_content:
+            html_content = html_content.replace("</body>", f"{print_script}</body>")
+        else:
+            html_content += print_script
+    return HttpResponse(html_content)
 
 @require_access('students', 'view_directory')
 def print_blank_form(request):
@@ -2438,7 +2455,7 @@ def academic_audit_center(request):
                 ts_str = log.get('timestamp', '')
                 try:
                     dt = datetime.fromisoformat(ts_str)
-                    formatted_time = dt.strftime('%d %b, %I:%M %p')
+                    formatted_time = dt.strftime('%d %B %Y, %I:%M %p')
                 except Exception:
                     formatted_time = ts_str
 

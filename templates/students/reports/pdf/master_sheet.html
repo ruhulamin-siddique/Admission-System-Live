@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=Kalpurush&display=swap" rel="stylesheet">
     <style>
         @page {
             size: A4;
@@ -18,7 +20,7 @@
             color: #495057;
         }
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-family: 'Noto Serif Bengali', 'Kalpurush', 'SolaimanLipi', 'Helvetica', 'Arial', sans-serif;
             font-size: 10pt;
             line-height: 1.35;
             color: #222;
@@ -88,7 +90,7 @@
         <table style="width: 100%; border: none;">
             <tr>
                 <td style="border: none; text-align: left; font-size: 8pt; vertical-align: bottom; padding: 0;">
-                    BAUST Bangladesh Army University of Science and Technology | Generated on {{ today|date:"d M Y H:i" }}
+                    BAUST Bangladesh Army University of Science and Technology | Generated on {{ today|date:"d F Y, h:i A" }}
                     <br>Page <pdf:pagenumber> of <pdf:pagecount>
                 </td>
                 <td style="border: none; text-align: right; width: 250px; padding: 0;">
@@ -155,7 +157,7 @@
         </tr>
         <tr>
             <th>Admission Date</th>
-            <td class="data-value">{{ student.admission_date|date:"d M Y"|default:"---" }}</td>
+            <td class="data-value">{{ student.admission_date|date:"d F Y"|default:"---" }}</td>
             <th>Hall / Residence</th>
             <td class="data-value">{{ student.hall_attached|default:"---" }} {% if student.is_non_residential %}(Non-Res){% endif %}</td>
         </tr>
@@ -189,7 +191,7 @@
             <th>Gender / Religion</th>
             <td class="data-value">{{ student.gender|default:"---" }} / {{ student.religion|default:"---" }}</td>
             <th>Date of Birth</th>
-            <td class="data-value">{{ student.dob|date:"d M Y"|default:"---" }}</td>
+            <td class="data-value">{{ student.dob|date:"d F Y"|default:"---" }}</td>
         </tr>
         <tr>
             <th>Blood Group</th>

@@ -16,11 +16,13 @@ urlpatterns = [
     path('archive/',                  views.archive_list,        name='pr_archive_list'),
     path('portal/',                   views.pr_portal,           name='pr_portal'),
     path('archive/create/',           views.archive_create,      name='pr_archive_create'),
+    path('archive/add-coverages/',    views.add_coverages,       name='pr_add_coverages'),
     path('archive/<int:pk>/',         views.archive_detail,      name='pr_archive_detail'),
     path('archive/<int:pk>/edit/',    views.archive_edit,        name='pr_archive_edit'),
     path('archive/<int:pk>/delete/',  views.archive_delete,      name='pr_archive_delete'),
     path('api/next-pr-number/',       views.get_next_pr_number,  name='api_next_pr_number'),
     path('api/check-pr-duplicate/',   views.check_pr_duplicate,  name='api_check_pr_duplicate'),
+    path('api/search-prs/',           views.api_search_prs,      name='api_search_prs'),
 
     # ── Media Houses ─────────────────────────────────────────────────────
     path('media-houses/',             views.media_house_list,    name='pr_media_houses'),

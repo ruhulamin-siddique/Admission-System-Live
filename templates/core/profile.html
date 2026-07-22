@@ -133,7 +133,7 @@
                     {% endif %}
                     <div class="mr-4 mb-2"><i class="fas fa-user-tag mr-2"></i> Role: {{ user.profile.role.name|default:"General Access" }}</div>
                     <div class="mr-4 mb-2"><i class="fas fa-building mr-2"></i> {{ scope_label }}</div>
-                    <div class="mb-2"><i class="fas fa-calendar-check mr-2"></i> Joined {{ user.date_joined|date:"M d, Y" }}</div>
+                    <div class="mb-2"><i class="fas fa-calendar-check mr-2"></i> Joined {{ user.date_joined|date:"d F Y" }}</div>
                 </div>
             </div>
             <div class="col-md-auto text-center text-md-right mt-4 mt-md-0">
@@ -311,7 +311,7 @@
             <div class="card shadow-sm border-0 rounded-lg bg-light">
                 <div class="card-body">
                     <h6 class="font-weight-bold mb-3"><i class="fas fa-info-circle mr-2 text-primary"></i> Session Info</h6>
-                    <div class="small mb-2"><strong>Last Login:</strong> {{ user.last_login|date:"F d, Y @ H:i" }}</div>
+                    <div class="small mb-2"><strong>Last Login:</strong> {{ user.last_login|date:"d F Y, h:i A" }}</div>
                     <div class="small mb-2"><strong>IP Address:</strong> {{ request.META.REMOTE_ADDR }}</div>
                     <div class="small text-muted border-top pt-2 mt-2">
                         For security concerns, please log out from other devices and rotate your password every 90 days.

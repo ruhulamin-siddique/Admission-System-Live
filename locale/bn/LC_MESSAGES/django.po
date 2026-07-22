@@ -570,8 +570,11 @@ msgstr "আপলোড"
 msgid "Link"
 msgstr "লিংক"
 
+msgid "News Gallery"
+msgstr "সংবাদ গ্যালারী"
+
 msgid "PR Showcase"
-msgstr "পিআর শোকেস"
+msgstr "সংবাদ গ্যালারী"
 
 msgid "A clean feed view of all press releases, attachments, and coverage reports."
 msgstr "সকল প্রেস রিলিজ, সংযুক্তি এবং মিডিয়া কভারেজের একটি সুন্দর সংকলন।"
@@ -605,6 +608,112 @@ msgstr "কোন প্রেস রিলিজ পাওয়া যায়ন�
 
 msgid "Try resetting search keyword or create a new entry."
 msgstr "অনুগ্রহ করে আপনার অনুসন্ধানের শব্দ পরিবর্তন করুন বা নতুন এন্ট্রি তৈরি করুন।"
+
+msgid "Add Coverages"
+msgstr "কাভারেজ যোগ করুন"
+
+msgid "Add Media Coverages & Assets"
+msgstr "মিডিয়া কাভারেজ ও মিডিয়া সম্পদ সংযুক্তকরণ"
+
+msgid "Step 1: Search & Select Press Release"
+msgstr "ধাপ ১: প্রেস রিলিজ খুঁজুন এবং নির্বাচন করুন"
+
+msgid "Search by PR Number, Title, or Date Range to attach media coverage cuttings and digital assets."
+msgstr "প্রেস রিলিজ নম্বর, শিরোনাম বা তারিখ দিয়ে খুঁজে কাভারেজ কাটিং ও ডিজিটাল এসেট যুক্ত করুন।"
+
+msgid "PR Number / Keyword"
+msgstr "পিআর নম্বর / কিওয়ার্ড"
+
+msgid "Type PR number or title (e.g. PR/2026/07/01)..."
+msgstr "পিআর নম্বর বা শিরোনাম টাইপ করুন (যেমন: PR/2026/07/01)..."
+
+msgid "From Date"
+msgstr "তারিখ হতে"
+
+msgid "To Date"
+msgstr "তারিখ পর্যন্ত"
+
+msgid "Change Selected PR"
+msgstr "অন্য প্রেস রিলিজ নির্বাচন করুন"
+
+msgid "View PR Details"
+msgstr "পিআর বিস্তারিত দেখুন"
+
+msgid "Step 2: Media Coverage Records"
+msgstr "ধাপ ২: মিডিয়া কাভারেজ সংক্রান্ত তথ্য"
+
+msgid "Record newspaper cuttings, TV news clips, online portal coverage links"
+msgstr "পত্রিকার কাটিং, টিভি নিউজ ক্লিপ এবং অনলাইন পোর্টালের লিংক যুক্ত করুন"
+
+msgid "Saved Coverage"
+msgstr "সংরক্ষিত কাভারেজ"
+
+msgid "Add Coverage Row"
+msgstr "নতুন কাভারেজ সারি যোগ করুন"
+
+msgid "Media Assets & Attachments"
+msgstr "মিডিয়া এসেট ও সংযুক্তি"
+
+msgid "Photos, video files, YouTube links, Google Drive folders"
+msgstr "ছবি, ভিডিও ফাইল, ইউটিউব লিংক বা গুগল ড্রাইভ ফোল্ডার"
+
+msgid "Saved Asset"
+msgstr "সংরক্ষিত এসেট"
+
+msgid "Add Asset Row"
+msgstr "নতুন এসেট সারি যোগ করুন"
+
+msgid "Save Coverages & Assets"
+msgstr "কাভারেজ ও এসেট সংরক্ষণ করুন"
+
+msgid "Select a Press Release Above"
+msgstr "উপরের ঘর থেকে প্রেস রিলিজ নির্বাচন করুন"
+
+msgid "Use the search box above to find a Press Release by PR number, keyword, or date range. Once selected, you can attach newspaper cuttings, screenshots, and media assets."
+msgstr "পিআর নম্বর, কিওয়ার্ড বা তারিখ দিয়ে প্রেস রিলিজ খুঁজে বের করুন। নির্বাচন করার পর পত্রিকার কাটিং, স্ক্রিনশট ও ডিজিটাল এসেট যুক্ত করতে পারবেন।"
+
+msgid "Search All Press Releases"
+msgstr "সকল প্রেস রিলিজ খুঁজুন"
+
+msgid "Searching Press Releases..."
+msgstr "প্রেস রিলিজ খোঁজা হচ্ছে..."
+
+msgid "No matching Press Releases found. Try adjusting your search query or date range."
+msgstr "কোন প্রেস রিলিজ পাওয়া যায়নি। অনুসন্ধানের তথ্য বা তারিখ পরিবর্তন করে পুনরায় চেষ্টা করুন।"
+
+msgid "Error searching Press Releases. Please try again."
+msgstr "প্রেস রিলিজ খুঁজতে ত্রুটি হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।"
+
+msgid "Media Coverages & Assets Notice"
+msgstr "মিডিয়া কাভারেজ ও ডিজিটাল এসেট নোটিশ"
+
+msgid "You are creating the core Press Release Information. After saving, you can attach Media Coverages & Assets via the 'Add Coverages' page."
+msgstr "আপনি মূল প্রেস রিলিজ তৈরি করছেন। সংরক্ষণের পর 'কাভারেজ যোগ করুন' পেজ থেকে পত্রিকার কাভারেজ ও মিডিয়া এসেট যুক্ত করতে পারবেন।"
+
+msgid "Pending Coverages"
+msgstr "কভারেজবিহীন পিআর"
+
+msgid "Pending Coverages List"
+msgstr "কভারেজবিহীন পিআর তালিকা"
+
+msgid "Press Releases Pending Media Coverage"
+msgstr "কভারেজবিহীন প্রেস রিলিজসমূহ"
+
+msgid "List of Press Releases that currently have 0 media coverages attached."
+msgstr "যেসব প্রেস রিলিজে এখনও কোনো মিডিয়া কভারেজ যুক্ত করা হয়নি তাদের তালিকা।"
+
+msgid "PR(s) Pending"
+msgstr "টি পিআর বাকি"
+
+msgid "Select & Add Coverage"
+msgstr "নির্বাচন ও কভারেজ যুক্ত করুন"
+
+msgid "All Press Releases Covered!"
+msgstr "সকল প্রেস রিলিজে কভারেজ যুক্ত করা হয়েছে!"
+
+msgid "Great job! All existing Press Releases have media coverages attached."
+msgstr "সবকিছু ঠিক আছে! বিদ্যমান সকল প্রেস রিলিজে মিডিয়া কভারেজ যুক্ত রয়েছে।"
+
 
 
 

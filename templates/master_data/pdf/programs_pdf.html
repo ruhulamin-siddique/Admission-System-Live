@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=Kalpurush&display=swap" rel="stylesheet">
     <style>
         @page {
             size: A4 portrait;
@@ -18,7 +20,7 @@
             color: #495057;
         }
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-family: 'Noto Serif Bengali', 'Kalpurush', 'SolaimanLipi', 'Helvetica', 'Arial', sans-serif;
             font-size: 10pt;
             line-height: 1.3;
             color: #000;
@@ -71,7 +73,7 @@
 <body>
     <div id="footerContent">
         <div style="border-top: 1px solid #dee2e6; padding-top: 5px; text-align: right; font-size: 8pt; color: #6c757d;">
-            BAUST Academic Programs Registry | Printed on: {{ current_time|date:"d M Y H:i" }} | Page <pdf:pagenumber> of <pdf:pagecount>
+            BAUST Academic Programs Registry | Printed on: {{ current_time|date:"d F Y, h:i A" }} | Page <pdf:pagenumber> of <pdf:pagecount>
         </div>
     </div>
 

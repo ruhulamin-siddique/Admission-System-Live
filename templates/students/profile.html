@@ -917,12 +917,12 @@
                         <div class="timeline timeline-inverse">
                             {% for event in timeline %}
                             <div class="time-label">
-                                <span class="{{ event.badge_class }}">{{ event.timestamp|date:"d M. Y" }}</span>
+                                <span class="{{ event.badge_class }}">{{ event.timestamp|date:"d F Y" }}</span>
                             </div>
                             <div>
                                 <i class="{{ event.icon }} {{ event.badge_class }}"></i>
                                 <div class="timeline-item shadow-sm">
-                                    <span class="time"><i class="far fa-clock"></i> {{ event.timestamp|time }}</span>
+                                    <span class="time"><i class="far fa-clock"></i> {{ event.timestamp|date:"h:i A" }}</span>
                                     <h3 class="timeline-header font-weight-bold">{{ event.title }}</h3>
                                     <div class="timeline-body">
                                         {{ event.description|safe }}
