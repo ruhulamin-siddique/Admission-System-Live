@@ -1,0 +1,374 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CoE Module — Premium Mobile-First Design System
+   Aesthetics: Sleek Glassmorphism, Fluid Layouts, Modern Touch Components
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
+
+:root {
+  --coe-font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --coe-font-heading: 'Outfit', 'Inter', sans-serif;
+
+  /* Colors */
+  --coe-bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e3a5f 100%);
+  --coe-primary: #4f46e5;
+  --coe-primary-hover: #4338ca;
+  --coe-primary-light: #e0e7ff;
+  --coe-secondary: #0284c7;
+  --coe-accent: #06b6d4;
+  --coe-success: #10b981;
+  --coe-warning: #f59e0b;
+  --coe-danger: #ef4444;
+  --coe-dark: #0f172a;
+  --coe-light: #f8fafc;
+
+  /* Glassmorphism & Shadows */
+  --coe-glass-bg: #ffffff;
+  --coe-glass-border: rgba(226, 232, 240, 0.8);
+  --coe-glass-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+  --coe-card-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  --coe-card-shadow-hover: 0 12px 28px rgba(79, 70, 229, 0.15);
+
+  --coe-radius-sm: 10px;
+  --coe-radius-md: 16px;
+  --coe-radius-lg: 24px;
+}
+
+body.coe-public-body {
+  font-family: var(--coe-font);
+  background: var(--coe-bg-gradient) !important;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  color: #1e293b;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Top Public Navbar
+   ────────────────────────────────────────────────────────────────────────────── */
+.coe-public-nav {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.85rem 1.25rem;
+}
+
+.coe-nav-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.coe-brand-logo {
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+  text-decoration: none !important;
+}
+
+.coe-brand-logo img {
+  height: 44px;
+  margin-right: 0.85rem;
+}
+
+.coe-brand-title {
+  font-family: var(--coe-font-heading);
+  font-weight: 800;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+.coe-brand-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Public Card Container Layout
+   ────────────────────────────────────────────────────────────────────────────── */
+.coe-public-container {
+  max-width: 860px;
+  margin: 1.5rem auto 3rem;
+  padding: 0 0.85rem;
+}
+
+@media (min-width: 576px) {
+  .coe-public-container {
+    margin: 2.5rem auto 4rem;
+    padding: 0 1.25rem;
+  }
+}
+
+.coe-main-card {
+  background: #ffffff;
+  border-radius: var(--coe-radius-lg);
+  box-shadow: var(--coe-glass-shadow);
+  padding: 1.5rem 1.1rem;
+  border: 1px solid #e2e8f0;
+}
+
+@media (min-width: 576px) {
+  .coe-main-card {
+    padding: 2.5rem 2.25rem;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Mobile-First Wizard Stepper Progress Bar
+   ────────────────────────────────────────────────────────────────────────────── */
+.coe-stepper {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin: 1.5rem 0 2.2rem;
+  padding: 0 0.25rem;
+}
+
+.coe-stepper::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 15px;
+  right: 15px;
+  height: 4px;
+  background: #e2e8f0;
+  z-index: 1;
+  border-radius: 4px;
+}
+
+.coe-stepper-progress {
+  position: absolute;
+  top: 18px;
+  left: 15px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--coe-primary), var(--coe-accent));
+  z-index: 2;
+  border-radius: 4px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.coe-step-item {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  flex: 1;
+}
+
+.coe-step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #cbd5e1;
+  color: #64748b;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.35rem;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.coe-step-item.active .coe-step-circle {
+  border-color: var(--coe-primary);
+  background: var(--coe-primary);
+  color: #ffffff;
+  box-shadow: 0 0 0 5px rgba(79, 70, 229, 0.2);
+}
+
+.coe-step-item.completed .coe-step-circle {
+  border-color: var(--coe-success);
+  background: var(--coe-success);
+  color: #ffffff;
+}
+
+.coe-step-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  display: block;
+}
+
+.coe-step-item.active .coe-step-label {
+  color: var(--coe-primary);
+  font-weight: 700;
+}
+
+.coe-step-item.completed .coe-step-label {
+  color: var(--coe-success);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Type Selection Radio Cards (Touch-First Grid)
+   ────────────────────────────────────────────────────────────────────────────── */
+.coe-type-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+@media (min-width: 576px) {
+  .coe-type-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+.coe-type-card {
+  position: relative;
+  border: 2px solid #e2e8f0;
+  border-radius: var(--coe-radius-md);
+  padding: 1.1rem 1rem;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  min-height: 70px;
+  touch-action: manipulation;
+}
+
+.coe-type-card:hover {
+  border-color: #a5b4fc;
+  transform: translateY(-2px);
+  box-shadow: var(--coe-card-shadow-hover);
+}
+
+.coe-type-card.selected {
+  border-color: var(--coe-primary) !important;
+  background: linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%) !important;
+  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.15);
+}
+
+.coe-type-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.coe-type-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-right: 0.85rem;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.coe-type-card.selected .coe-type-icon {
+  background: var(--coe-primary);
+  color: #ffffff;
+}
+
+.coe-type-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.coe-type-check {
+  margin-left: auto;
+  color: var(--coe-primary);
+  font-size: 1.25rem;
+  opacity: 0;
+  transition: all 0.25s ease;
+}
+
+.coe-type-card.selected .coe-type-check {
+  opacity: 1;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Form Inputs & Buttons
+   ────────────────────────────────────────────────────────────────────────────── */
+.coe-form-control {
+  height: 48px;
+  border-radius: var(--coe-radius-sm);
+  border: 1.5px solid #cbd5e1;
+  padding: 0.65rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background: #ffffff;
+  color: #1e293b;
+}
+
+.coe-form-control:focus {
+  border-color: var(--coe-primary);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+  outline: none;
+}
+
+.coe-label {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
+
+.coe-btn {
+  min-height: 48px;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--coe-radius-sm);
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  border: none;
+  touch-action: manipulation;
+  text-decoration: none !important;
+}
+
+.coe-btn-primary {
+  background: linear-gradient(135deg, var(--coe-primary) 0%, var(--coe-secondary) 100%);
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+}
+
+.coe-btn-primary:hover {
+  background: linear-gradient(135deg, var(--coe-primary-hover) 0%, #0369a1 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+}
+
+.coe-btn-secondary {
+  background: #f1f5f9;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1;
+}
+
+.coe-btn-secondary:hover {
+  background: #e2e8f0;
+  color: #1e293b !important;
+}
+
+.coe-btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+@media (max-width: 575px) {
+  .w-100-mobile {
+    width: 100% !important;
+  }
+}

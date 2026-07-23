@@ -77,106 +77,93 @@
         min-width: 118px;
     }
 
-    @media (max-width: 767.98px) {
-        .action-cluster {
-            justify-content: flex-start;
-            flex-wrap: wrap;
-        }
+    /* Staff Access Popover Custom Styling */
+    .popover.staff-access-popover {
+        max-width: 350px !important;
+        width: 340px;
+        border-radius: 14px;
+        border: 0;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+        z-index: 1060;
+    }
+    .popover.staff-access-popover .popover-body {
+        padding: 14px 16px;
+    }
+    .staff-hover-cell {
+        transition: background-color 0.2s ease;
+    }
+    .staff-hover-cell:hover {
+        background-color: rgba(37, 99, 235, 0.05) !important;
+    }
+    .staff-hover-cell:hover .staff-name {
+        color: #2563eb !important;
+    }
+    .staff-hover-cell:hover .access-preview-pill {
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode .popover.staff-access-popover {
+        background-color: #1e293b;
+        color: #f8fafc;
+        border: 1px solid #334155;
+    }
+    body.dark-mode .popover.staff-access-popover .text-dark {
+        color: #f8fafc !important;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
-    <div class="mb-3 mb-md-0">
-        <h4 class="font-weight-bold text-dark mb-1">User Operations Center</h4>
-        <p class="text-muted mb-0">Search staff accounts, assign roles, apply program scope, and keep access changes visible to the team.</p>
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-3 pb-2 border-bottom">
+    <div class="d-flex align-items-center flex-wrap mb-2 mb-lg-0" style="gap: 10px;">
+        <h5 class="font-weight-bold text-dark mb-0"><i class="fas fa-users-cog text-primary mr-2"></i>User Operations Center</h5>
+        <div class="d-flex align-items-center ml-lg-2" style="gap: 6px;">
+            <span class="badge badge-light border text-dark font-weight-bold px-2 py-1" style="font-size: 0.8rem;" title="Total Accounts">
+                <i class="fas fa-users text-primary mr-1"></i> All: <strong>{{ total_users }}</strong>
+            </span>
+            <span class="badge badge-light border text-success font-weight-bold px-2 py-1" style="font-size: 0.8rem; background: #f0fdf4; border-color: #bbf7d0 !important;" title="Active Accounts">
+                <i class="fas fa-user-check mr-1"></i> Active: <strong>{{ active_users }}</strong>
+            </span>
+            <span class="badge badge-light border text-warning font-weight-bold px-2 py-1" style="font-size: 0.8rem; background: #fffbeb; border-color: #fef08a !important; color: #b45309 !important;" title="Scoped Accounts">
+                <i class="fas fa-filter mr-1"></i> Scoped: <strong>{{ scoped_users }}</strong>
+            </span>
+            <span class="badge {% if pending_count > 0 %}badge-danger{% else %}badge-light border text-muted{% endif %} font-weight-bold px-2 py-1" style="font-size: 0.8rem;" title="Pending Approval">
+                <i class="fas fa-user-clock mr-1"></i> Pending: <strong>{{ pending_count }}</strong>
+            </span>
+        </div>
     </div>
-    <div class="d-flex align-items-center" style="gap: 12px;">
-        <a href="{% url 'audit_logs' %}" class="btn btn-outline-dark shadow-sm px-4">
-            <i class="fas fa-history mr-2"></i> System Audit
+    <div class="d-flex align-items-center" style="gap: 8px;">
+        <a href="{% url 'audit_logs' %}" class="btn btn-sm btn-outline-dark px-3 shadow-xs">
+            <i class="fas fa-history mr-1"></i> Audit Logs
         </a>
-        <button class="btn btn-primary shadow-sm px-4" data-toggle="modal" data-target="#addUserModal">
-            <i class="fas fa-user-plus mr-2"></i> Onboard New Staff
+        <button class="btn btn-sm btn-primary px-3 shadow-xs font-weight-bold" data-toggle="modal" data-target="#addUserModal">
+            <i class="fas fa-user-plus mr-1"></i> Onboard Staff
         </button>
     </div>
 </div>
 
-<div class="row mb-4">
-    <div class="col-lg-3 col-sm-6 mb-3">
-        <div class="card security-kpi-card">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="text-muted text-uppercase small font-weight-bold">All Accounts</div>
-                    <div class="h3 mb-0 font-weight-bold">{{ total_users }}</div>
+<div class="card directory-toolbar mb-3 border-0 shadow-sm" style="border-radius: 12px; background: #ffffff;">
+    <div class="card-body p-2">
+        <form method="get" class="m-0">
+            <div class="form-row align-items-center mx-n1">
+                <div class="col-lg-3 col-md-4 col-sm-6 px-1 mb-1 mb-md-0">
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-light border-right-0 text-muted"><i class="fas fa-search"></i></span>
+                        </div>
+                        <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm border-left-0 pl-0" placeholder="Search staff, email, username...">
+                    </div>
                 </div>
-                <div class="security-kpi-icon bg-primary text-white">
-                    <i class="fas fa-users"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-sm-6 mb-3">
-        <div class="card security-kpi-card">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="text-muted text-uppercase small font-weight-bold">Active</div>
-                    <div class="h3 mb-0 font-weight-bold">{{ active_users }}</div>
-                </div>
-                <div class="security-kpi-icon bg-success text-white">
-                    <i class="fas fa-user-check"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-sm-6 mb-3">
-        <div class="card security-kpi-card">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="text-muted text-uppercase small font-weight-bold">Scoped</div>
-                    <div class="h3 mb-0 font-weight-bold">{{ scoped_users }}</div>
-                </div>
-                <div class="security-kpi-icon text-dark" style="background: #fde68a;">
-                    <i class="fas fa-filter"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-sm-6 mb-3">
-        <div class="card security-kpi-card">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="text-muted text-uppercase small font-weight-bold">Pending Approval</div>
-                    <div class="h3 mb-0 font-weight-bold {% if pending_count > 0 %}text-danger{% endif %}">{{ pending_count }}</div>
-                </div>
-                <div class="security-kpi-icon bg-warning text-dark">
-                    <i class="fas fa-user-clock"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card directory-toolbar mb-4">
-    <div class="card-body">
-        <form method="get">
-            <div class="row align-items-end">
-                <div class="col-lg-4 col-md-6 mb-3">
-                    <label class="small font-weight-bold text-muted text-uppercase">Search Staff</label>
-                    <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Name, username, or email">
-                </div>
-                <div class="col-lg-2 col-md-6 mb-3">
-                    <label class="small font-weight-bold text-muted text-uppercase">Role</label>
-                    <select name="role" class="form-control">
+                <div class="col-lg-2 col-md-3 col-sm-6 px-1 mb-1 mb-md-0">
+                    <select name="role" class="form-control form-control-sm custom-select custom-select-sm">
                         <option value="">All Roles</option>
                         {% for role in roles %}
                         <option value="{{ role.id }}" {% if selected_role == role.id|stringformat:"s" %}selected{% endif %}>{{ role.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-lg-2 col-md-4 mb-3">
-                    <label class="small font-weight-bold text-muted text-uppercase">Status</label>
-                    <select name="status" class="form-control">
+                <div class="col-lg-2 col-md-3 col-sm-6 px-1 mb-1 mb-md-0">
+                    <select name="status" class="form-control form-control-sm custom-select custom-select-sm">
                         <option value="">All Statuses</option>
                         <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending Approval</option>
                         <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
@@ -185,24 +172,23 @@
                         <option value="unassigned" {% if selected_status == 'unassigned' %}selected{% endif %}>No Role</option>
                     </select>
                 </div>
-                <div class="col-lg-2 col-md-4 mb-3">
-                    <label class="small font-weight-bold text-muted text-uppercase">Program Scope</label>
-                    <select name="scope" class="form-control">
+                <div class="col-lg-2 col-md-3 col-sm-6 px-1 mb-1 mb-md-0">
+                    <select name="scope" class="form-control form-control-sm custom-select custom-select-sm">
                         <option value="">All Scopes</option>
                         {% for value, label in scope_choices %}
                         <option value="{{ value }}" {% if selected_scope == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-lg-2 col-md-4 mb-3">
-                    <div class="filter-actions">
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-search mr-1"></i> Filter
-                        </button>
-                        <a href="{% url 'user_management' %}" class="btn btn-light border btn-block">
-                            Clear
-                        </a>
-                    </div>
+                <div class="col-lg-3 col-md-3 col-sm-12 px-1 d-flex" style="gap: 4px;">
+                    <button type="submit" class="btn btn-sm btn-primary flex-fill font-weight-bold">
+                        <i class="fas fa-filter mr-1"></i> Filter
+                    </button>
+                    {% if query or selected_role or selected_status or selected_scope %}
+                    <a href="{% url 'user_management' %}" class="btn btn-sm btn-light border flex-fill text-muted" title="Clear Filters">
+                        <i class="fas fa-times mr-1"></i> Clear
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </form>
@@ -237,15 +223,79 @@
             <tbody>
                 {% for u in users %}
                 <tr>
-                    <td>
+                    <td class="staff-hover-cell" data-popover-target="#user-access-popover-{{ u.id }}" style="cursor: pointer;">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm bg-soft-primary text-primary mr-3 rounded-circle d-flex align-items-center justify-content-center font-weight-bold" style="width: 42px; height: 42px; background: #e0e7ff; color: #4338ca;">
                                 {{ u.username|slice:":1"|upper }}
                             </div>
                             <div>
-                                <div class="staff-name">{{ u.display_name }}</div>
+                                <div class="staff-name d-flex align-items-center">
+                                    {{ u.display_name }}
+                                    <span class="badge ml-2 px-1 py-0 access-preview-pill" style="font-size: 0.68rem; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; transition: all 0.2s ease;">
+                                        <i class="fas fa-key mr-1"></i> Access
+                                    </span>
+                                </div>
                                 <div class="staff-meta font-weight-bold text-muted">@{{ u.username }}</div>
                                 <div class="staff-meta">{{ u.email|default:"No email on file" }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden Popover Template for Hover Access Matrix -->
+                        <div class="d-none" id="user-access-popover-{{ u.id }}">
+                            <div class="user-access-popover-content">
+                                <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                                    <div class="avatar-xs text-white rounded-circle d-flex align-items-center justify-content-center font-weight-bold mr-2" style="width: 32px; height: 32px; font-size: 0.85rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+                                        {{ u.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="font-weight-bold text-dark" style="font-size: 0.92rem; line-height: 1.2;">{{ u.display_name }}</div>
+                                        <div class="text-primary small font-weight-bold">@{{ u.username }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-2 d-flex flex-wrap align-items-center" style="gap: 4px;">
+                                    {% if u.profile.role %}
+                                        <span class="badge badge-info px-2 py-1" style="font-size: 0.78rem;">{{ u.profile.role.name }}</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary px-2 py-1" style="font-size: 0.78rem;">No Role Assigned</span>
+                                    {% endif %}
+                                    
+                                    {% if u.profile.department_scope %}
+                                        <span class="badge badge-warning px-2 py-1" style="font-size: 0.78rem; background-color: #fef3c7; color: #d97706; border: 1px solid #fcd34d;"><i class="fas fa-filter mr-1"></i> {{ u.profile.department_scope }}</span>
+                                    {% else %}
+                                        <span class="badge badge-light border text-muted px-2 py-1" style="font-size: 0.78rem;">Global Access</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="font-weight-bold text-uppercase text-muted mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                                    <i class="fas fa-shield-alt text-primary mr-1"></i> Module Access Matrix
+                                </div>
+
+                                {% if u.is_superuser %}
+                                    <div class="p-2 rounded text-danger font-weight-bold small border" style="border-color: #fca5a5 !important; background-color: #fef2f2 !important; font-size: 0.8rem;">
+                                        <i class="fas fa-crown text-warning mr-1"></i> Superuser (Full Access to All Modules)
+                                    </div>
+                                {% elif u.accessible_modules %}
+                                    <div style="max-height: 230px; overflow-y: auto; padding-right: 4px;">
+                                        {% for mod in u.accessible_modules %}
+                                        <div class="mb-2 pb-2 border-bottom" style="border-color: #f1f5f9 !important;">
+                                            <div class="font-weight-bold text-dark small d-flex justify-content-between align-items-center">
+                                                <span><i class="{{ mod.icon }} text-primary mr-1" style="width: 16px; text-align: center;"></i> {{ mod.display }}</span>
+                                                <span class="badge badge-pill badge-light border text-muted" style="font-size: 0.68rem;">{{ mod.tasks|length }} task{{ mod.tasks|length|pluralize }}</span>
+                                            </div>
+                                            <div class="mt-1 d-flex flex-wrap" style="gap: 3px;">
+                                                {% for task in mod.tasks %}
+                                                <span class="badge font-weight-normal" style="font-size: 0.7rem; background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; padding: 2px 6px;">{{ task }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-muted small italic p-2 bg-light rounded text-center" style="font-size: 0.8rem;">
+                                        <i class="fas fa-exclamation-triangle text-warning mr-1"></i> No active modules assigned
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </td>
@@ -543,4 +593,27 @@
         </div>
     </div>
 </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.staff-hover-cell').each(function() {
+        const targetSelector = $(this).data('popover-target');
+        const contentHtml = $(targetSelector).html();
+        
+        $(this).popover({
+            trigger: 'hover',
+            placement: 'right',
+            html: true,
+            container: 'body',
+            template: '<div class="popover staff-access-popover" role="tooltip"><div class="arrow"></div><div class="popover-body"></div></div>',
+            content: function() {
+                return contentHtml;
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

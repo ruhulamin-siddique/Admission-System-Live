@@ -474,5 +474,5 @@ msgstr "No press releases found."
 msgid "Try resetting search keyword or create a new entry."
 msgstr "Try resetting search keyword or create a new entry."
 
-
-
+msgid "CONTROLLER OF EXAMINATIONS"
+msgstr "CONTROLLER OF EXAMINATIONS"

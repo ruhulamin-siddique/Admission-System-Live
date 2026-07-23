@@ -1,0 +1,465 @@
+{% load i18n %}
+{% comment %}Step 2 — Student & Academic Info{% endcomment %}
+
+<div id="wizard-content">
+<h5 class="font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif; color: #0f172a;">
+  <i class="fas fa-user-graduate mr-2 text-primary"></i>
+  {% trans "Step 2: Student & Academic Information" %}
+  <span class="badge badge-light border ml-2 text-muted" style="font-size:0.75rem;">{{ application_type|upper }}</span>
+</h5>
+
+{% if form.errors %}
+<div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 10px;">
+  <h6 class="font-weight-bold mb-2"><i class="fas fa-exclamation-circle mr-2"></i>{% trans "Please fix the following errors to continue:" %}</h6>
+  <ul class="mb-0 pl-3">
+    {% for field in form %}
+      {% for err in field.errors %}
+        <li><strong>{{ field.label }}:</strong> {{ err }}</li>
+      {% endfor %}
+    {% endfor %}
+    {% for err in form.non_field_errors %}
+      <li>{{ err }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post" action="{% url 'coe_submit_step' 2 %}"
+      hx-post="{% url 'coe_submit_step' 2 %}"
+      hx-target="#wizard-content"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+
+  <div class="row">
+    <!-- Student Info -->
+    <div class="col-md-6 mb-3">
+      <label class="coe-label">{% trans "Full Name" %} <span class="text-danger">*</span></label>
+      <input type="text" name="student_name" class="form-control coe-form-control {% if form.student_name.errors %}is-invalid{% endif %}"
+             value="{{ form.student_name.value|default:'' }}" required>
+      {% if form.student_name.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.student_name.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <label class="coe-label">{% trans "BAUST Student ID" %} <span class="text-danger">*</span></label>
+      <input type="text" name="student_id" class="form-control coe-form-control {% if form.student_id.errors %}is-invalid{% endif %}" placeholder="e.g. 08020261101001 or 150101001"
+             value="{{ form.student_id.value|default:'' }}" maxlength="16" inputmode="numeric" required>
+      <div id="coe-student-id-help" class="mt-1"></div>
+      {% if form.student_id.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.student_id.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <label class="coe-label">{% trans "Mobile Number" %} <span class="text-danger">*</span></label>
+      <input type="text" name="mobile_number" class="form-control coe-form-control {% if form.mobile_number.errors %}is-invalid{% endif %}" placeholder="01XXXXXXXXX"
+             value="{{ form.mobile_number.value|default:'' }}" required>
+      <div id="coe-mobile-help" class="mt-1"></div>
+      {% if form.mobile_number.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.mobile_number.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <label class="coe-label">{% trans "Email Address" %}</label>
+      <input type="email" name="email" class="form-control coe-form-control {% if form.email.errors %}is-invalid{% endif %}" placeholder="student@baust.edu.bd"
+             value="{{ form.email.value|default:'' }}">
+      <div id="coe-email-help" class="mt-1"></div>
+      {% if form.email.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.email.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <label class="coe-label">{% trans "Department / Program" %} <span class="text-danger">*</span></label>
+      <select name="department_id" class="form-control coe-form-control {% if form.department_id.errors %}is-invalid{% endif %}" required>
+        <option value="">--- {% trans "Select Program" %} ---</option>
+        {% for p in programs %}
+        <option value="{{ p.pk }}" {% if form.department_id.value|stringformat:"s" == p.pk|stringformat:"s" %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+      {% if form.department_id.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.department_id.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-3 col-6 mb-3">
+      <label class="coe-label">{% trans "Session" %} <span class="text-danger">*</span></label>
+      <input type="text" name="session" class="form-control coe-form-control {% if form.session.errors %}is-invalid{% endif %}" placeholder="e.g. 2019-20"
+             value="{{ form.session.value|default:'' }}" required>
+      {% if form.session.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.session.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-3 col-6 mb-3">
+      <label class="coe-label">{% trans "Admission Batch" %} <span class="text-danger">*</span></label>
+      <input type="text" name="admission_batch" class="form-control coe-form-control {% if form.admission_batch.errors %}is-invalid{% endif %}" placeholder="e.g. 17th"
+             value="{{ form.admission_batch.value|default:'' }}" required>
+      {% if form.admission_batch.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.admission_batch.errors.0 }}</div>{% endif %}
+    </div>
+
+    <!-- Conditional: parent fields for certain types -->
+    {% if application_type in "provisional_transcript,incomplete_transcript,name_correction,parent_name_correction" %}
+    <div class="col-md-4 mb-3">
+      <label class="coe-label">{% trans "Father's Name" %} <span class="text-danger">*</span></label>
+      <input type="text" name="father_name" class="form-control coe-form-control {% if form.father_name.errors %}is-invalid{% endif %}"
+             value="{{ form.father_name.value|default:'' }}" required>
+      {% if form.father_name.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.father_name.errors.0 }}</div>{% endif %}
+    </div>
+    <div class="col-md-4 mb-3">
+      <label class="coe-label">{% trans "Mother's Name" %} <span class="text-danger">*</span></label>
+      <input type="text" name="mother_name" class="form-control coe-form-control {% if form.mother_name.errors %}is-invalid{% endif %}"
+             value="{{ form.mother_name.value|default:'' }}" required>
+      {% if form.mother_name.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.mother_name.errors.0 }}</div>{% endif %}
+    </div>
+    <div class="col-md-4 mb-3">
+      <label class="coe-label">{% trans "Date of Birth" %} <span class="text-danger">*</span></label>
+      <input type="date" name="dob" class="form-control coe-form-control {% if form.dob.errors %}is-invalid{% endif %}"
+             value="{{ form.dob.value|default:'' }}" required>
+      {% if form.dob.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.dob.errors.0 }}</div>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Passing Semester & CGPA -->
+    <div class="col-md-4 col-6 mb-3">
+      <label class="coe-label">{% trans "Passing Semester" %} <span class="text-danger">*</span></label>
+      <input type="text" name="passing_semester" class="form-control coe-form-control {% if form.passing_semester.errors %}is-invalid{% endif %}" placeholder="e.g. 8th"
+             value="{{ form.passing_semester.value|default:'' }}" required>
+      {% if form.passing_semester.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.passing_semester.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-4 col-6 mb-3">
+      <label class="coe-label">{% trans "CGPA" %} <span class="text-danger">*</span></label>
+      <input type="number" name="cgpa" class="form-control coe-form-control {% if form.cgpa.errors %}is-invalid{% endif %}" step="0.01" min="0" max="4" placeholder="3.75"
+             value="{{ form.cgpa.value|default:'' }}" required>
+      {% if form.cgpa.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.cgpa.errors.0 }}</div>{% endif %}
+    </div>
+
+    <div class="col-md-4 mb-3">
+      <label class="coe-label">{% trans "Result Publication Date" %}</label>
+      <input type="date" name="result_date" class="form-control coe-form-control {% if form.result_date.errors %}is-invalid{% endif %}"
+             value="{{ form.result_date.value|default:'' }}">
+      {% if form.result_date.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.result_date.errors.0 }}</div>{% endif %}
+    </div>
+
+    <!-- Type-specific extra fields -->
+    {% if application_type == 'name_correction' %}
+    <div class="col-md-12 mb-3">
+      <label class="coe-label">{% trans "Corrected Full Name" %} <span class="text-danger">*</span></label>
+      <input type="text" name="corrected_name" class="form-control coe-form-control {% if form.corrected_name.errors %}is-invalid{% endif %}"
+             value="{{ form.corrected_name.value|default:'' }}" required>
+      {% if form.corrected_name.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.corrected_name.errors.0 }}</div>{% endif %}
+    </div>
+    {% elif application_type == 'parent_name_correction' %}
+    <div class="col-md-12 mb-3">
+      <label class="coe-label">{% trans "Corrected Parent Name" %} <span class="text-danger">*</span></label>
+      <input type="text" name="corrected_parent_name" class="form-control coe-form-control {% if form.corrected_parent_name.errors %}is-invalid{% endif %}"
+             value="{{ form.corrected_parent_name.value|default:'' }}" required>
+      {% if form.corrected_parent_name.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.corrected_parent_name.errors.0 }}</div>{% endif %}
+    </div>
+    {% elif application_type == 'recommendation_letter' %}
+    <div class="col-md-12 mb-3">
+      <label class="coe-label">{% trans "Purpose / Destination" %} <span class="text-danger">*</span></label>
+      <textarea name="purpose_destination" class="form-control coe-form-control {% if form.purpose_destination.errors %}is-invalid{% endif %}" rows="3" required>{{ form.purpose_destination.value|default:'' }}</textarea>
+      {% if form.purpose_destination.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.purpose_destination.errors.0 }}</div>{% endif %}
+    </div>
+    {% elif application_type == 'grade_sheet' or application_type == 'duplicate_document' %}
+    <div class="col-md-6 mb-3">
+      <label class="coe-label">{% trans "Level / Term" %} <span class="text-danger">*</span></label>
+      <input type="text" name="level_term" class="form-control coe-form-control {% if form.level_term.errors %}is-invalid{% endif %}" placeholder="e.g. 3rd Year, 1st Semester"
+             value="{{ form.level_term.value|default:'' }}" required>
+      {% if form.level_term.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.level_term.errors.0 }}</div>{% endif %}
+    </div>
+    {% if application_type == 'duplicate_document' %}
+    <div class="col-md-6 mb-3">
+      <label class="coe-label">{% trans "Type of Missing Document" %} <span class="text-danger">*</span></label>
+      <input type="text" name="missing_doc_type" class="form-control coe-form-control {% if form.missing_doc_type.errors %}is-invalid{% endif %}"
+             value="{{ form.missing_doc_type.value|default:'' }}" required>
+      {% if form.missing_doc_type.errors %}<div class="invalid-feedback font-weight-semibold">{{ form.missing_doc_type.errors.0 }}</div>{% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="d-flex justify-content-between mt-4 pt-2 border-top">
+    <button type="button" class="coe-btn coe-btn-secondary"
+            hx-get="{% url 'coe_submit_step' 1 %}?back=1"
+            hx-target="#wizard-content"
+            hx-swap="outerHTML">
+      <i class="fas fa-arrow-left mr-2"></i> {% trans "Back" %}
+    </button>
+    <button type="submit" class="coe-btn coe-btn-primary px-5">
+      {% trans "Next: Upload Documents" %} <i class="fas fa-arrow-right ml-2"></i>
+    </button>
+  </div>
+</form>
+</div>
+
+<script>
+(function() {
+    const BD_OPERATORS = {
+        '017': 'Grameenphone',
+        '013': 'Grameenphone (Skitto)',
+        '018': 'Robi',
+        '016': 'Airtel',
+        '019': 'Banglalink',
+        '014': 'Banglalink',
+        '015': 'Teletalk'
+    };
+
+    function attachCoeLiveVerification() {
+        const idInput = document.querySelector('[name="student_id"]');
+        const mobileInput = document.querySelector('[name="mobile_number"]');
+        const emailInput = document.querySelector('[name="email"]');
+        const idHelp = document.getElementById('coe-student-id-help');
+        const mobileHelp = document.getElementById('coe-mobile-help');
+        const emailHelp = document.getElementById('coe-email-help');
+
+        function verifyStudentId(isBlur) {
+            if (!idInput) return true;
+            let raw = idInput.value || '';
+            // Numbers-only auto-strip
+            let digits = raw.replace(/\D/g, '');
+
+            let exceeded = false;
+            if (digits.length > 16) {
+                digits = digits.substring(0, 16);
+                exceeded = true;
+            }
+
+            if (digits !== raw) {
+                idInput.value = digits;
+            }
+
+            const len = digits.length;
+
+            if (len === 0) {
+                idInput.classList.remove('is-valid', 'is-invalid');
+                idInput.style.borderColor = '#cbd5e1';
+                if (idHelp) {
+                    if (isBlur) {
+                        idInput.classList.add('is-invalid');
+                        idInput.style.borderColor = '#dc3545';
+                        idHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-exclamation-circle mr-1"></i> Student ID is required</span>';
+                        return false;
+                    } else {
+                        idHelp.innerHTML = '<span class="small text-muted"><i class="fas fa-id-card mr-1"></i> Max 16 digits (9 digits for legacy or 16 starting with 080)</span>';
+                        return false;
+                    }
+                }
+                return false;
+            }
+
+            if (exceeded) {
+                idInput.classList.add('is-invalid');
+                idInput.classList.remove('is-valid');
+                idInput.style.borderColor = '#dc3545';
+                if (idHelp) idHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-hand-paper mr-1"></i> Maximum 16 digits limit reached (extra digits blocked)</span>';
+                return digits.startsWith('080');
+            }
+
+            if (len >= 3 && len > 9 && !digits.startsWith('080')) {
+                idInput.classList.add('is-invalid');
+                idInput.classList.remove('is-valid');
+                idInput.style.borderColor = '#dc3545';
+                if (idHelp) idHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-times-circle mr-1"></i> 16-digit Student ID must start with 080 (BAUST code)</span>';
+                return false;
+            }
+
+            if (len === 9) {
+                idInput.classList.remove('is-invalid');
+                idInput.classList.add('is-valid');
+                idInput.style.borderColor = '#10b981';
+                if (idHelp) idHelp.innerHTML = '<span class="badge bg-success text-white px-2 py-1" style="background:#10b981 !important;"><i class="fas fa-check-circle mr-1"></i> Verified 9-Digit Legacy Student ID</span>';
+                return true;
+            }
+
+            if (len === 16) {
+                if (!digits.startsWith('080')) {
+                    idInput.classList.add('is-invalid');
+                    idInput.classList.remove('is-valid');
+                    idInput.style.borderColor = '#dc3545';
+                    if (idHelp) idHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-times-circle mr-1"></i> 16-digit Student ID must start with 080</span>';
+                    return false;
+                }
+                idInput.classList.remove('is-invalid');
+                idInput.classList.add('is-valid');
+                idInput.style.borderColor = '#10b981';
+                if (idHelp) idHelp.innerHTML = '<span class="badge bg-success text-white px-2 py-1" style="background:#10b981 !important;"><i class="fas fa-check-circle mr-1"></i> Verified 16-Digit UGC Student ID (BAUST)</span>';
+                return true;
+            }
+
+            if (isBlur) {
+                idInput.classList.add('is-invalid');
+                idInput.classList.remove('is-valid');
+                idInput.style.borderColor = '#dc3545';
+                if (idHelp) idHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-exclamation-triangle mr-1"></i> Student ID must be either 9 or 16 digits (' + len + ' digits entered)</span>';
+                return false;
+            } else {
+                idInput.classList.remove('is-valid', 'is-invalid');
+                idInput.style.borderColor = '#4f46e5';
+                if (idHelp) idHelp.innerHTML = '<span class="badge bg-info text-white px-2 py-1" style="background:#4f46e5 !important;"><i class="fas fa-pen mr-1"></i> Typing Student ID... (' + len + '/16 digits) [Needs 9 or 16]</span>';
+                return false;
+            }
+        }
+
+        if (!mobileInput) return;
+
+        function verifyMobile(isBlur) {
+            let raw = mobileInput.value || '';
+            // Auto strip letters and non-digits as user types
+            let digits = raw.replace(/\D/g, '');
+
+            // Normalise country-code prefix to bare 01XXXXXXXXX
+            if (digits.startsWith('880') && digits.length === 13) {
+                digits = digits.substring(3);   // strip '880'
+            } else if (digits.startsWith('88') && digits.length === 12) {
+                digits = digits.substring(2);   // strip '88'
+            }
+
+            if (digits !== raw) {
+                mobileInput.value = digits;
+            }
+
+            const len = digits.length;
+
+            if (len === 0) {
+                mobileInput.classList.remove('is-valid', 'is-invalid');
+                mobileInput.style.borderColor = '#cbd5e1';
+                if (mobileHelp) {
+                    if (isBlur) {
+                        mobileInput.classList.add('is-invalid');
+                        mobileInput.style.borderColor = '#dc3545';
+                        mobileHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-exclamation-circle mr-1"></i> Mobile number is required</span>';
+                    } else {
+                        mobileHelp.innerHTML = '<span class="small text-muted"><i class="fas fa-mobile-alt mr-1"></i> 11-digit BD mobile required (013-019)</span>';
+                    }
+                }
+                return false;
+            }
+
+            if (!digits.startsWith('01')) {
+                mobileInput.classList.add('is-invalid');
+                mobileInput.classList.remove('is-valid');
+                mobileInput.style.borderColor = '#dc3545';
+                if (mobileHelp) mobileHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-times-circle mr-1"></i> Must start with 01 (Bangladeshi mobile)</span>';
+                return false;
+            }
+
+            const prefix = digits.substring(0, 3);
+            const operator = BD_OPERATORS[prefix];
+
+            if (len >= 3 && !operator) {
+                mobileInput.classList.add('is-invalid');
+                mobileInput.classList.remove('is-valid');
+                mobileInput.style.borderColor = '#dc3545';
+                if (mobileHelp) mobileHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-times-circle mr-1"></i> Invalid operator prefix (' + prefix + '). Allowed: 013-019</span>';
+                return false;
+            }
+
+            if (len < 11) {
+                if (isBlur) {
+                    mobileInput.classList.add('is-invalid');
+                    mobileInput.classList.remove('is-valid');
+                    mobileInput.style.borderColor = '#dc3545';
+                    if (mobileHelp) mobileHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-exclamation-triangle mr-1"></i> Incomplete mobile number (' + len + '/11 digits)</span>';
+                } else {
+                    mobileInput.classList.remove('is-valid', 'is-invalid');
+                    mobileInput.style.borderColor = '#4f46e5';
+                    if (mobileHelp) mobileHelp.innerHTML = '<span class="badge bg-info text-white px-2 py-1" style="background:#4f46e5 !important;"><i class="fas fa-pen mr-1"></i> Typing mobile... (' + len + '/11) [' + (operator || 'Checking operator') + ']</span>';
+                }
+                return false;
+            }
+
+            if (len > 11) {
+                mobileInput.classList.add('is-invalid');
+                mobileInput.classList.remove('is-valid');
+                mobileInput.style.borderColor = '#dc3545';
+                if (mobileHelp) mobileHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-times-circle mr-1"></i> Too many digits (' + len + '). Exactly 11 required</span>';
+                return false;
+            }
+
+            mobileInput.classList.remove('is-invalid');
+            mobileInput.classList.add('is-valid');
+            mobileInput.style.borderColor = '#10b981';
+            if (mobileHelp) mobileHelp.innerHTML = '<span class="badge bg-success text-white px-2 py-1" style="background:#10b981 !important;"><i class="fas fa-check-circle mr-1"></i> Verified BD Mobile (' + operator + ')</span>';
+            return true;
+        }
+
+        function verifyEmail(isBlur) {
+            if (!emailInput) return true;
+            const raw = (emailInput.value || '').trim();
+            const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+
+            if (raw.length === 0) {
+                emailInput.classList.remove('is-valid', 'is-invalid');
+                emailInput.style.borderColor = '#cbd5e1';
+                if (emailHelp) emailHelp.innerHTML = '';
+                return true;
+            }
+
+            if (emailRegex.test(raw)) {
+                emailInput.classList.remove('is-invalid');
+                emailInput.classList.add('is-valid');
+                emailInput.style.borderColor = '#10b981';
+                if (emailHelp) emailHelp.innerHTML = '<span class="badge bg-success text-white px-2 py-1" style="background:#10b981 !important;"><i class="fas fa-check-circle mr-1"></i> Verified Email Format</span>';
+                return true;
+            } else {
+                if (isBlur) {
+                    emailInput.classList.add('is-invalid');
+                    emailInput.classList.remove('is-valid');
+                    emailInput.style.borderColor = '#dc3545';
+                    if (emailHelp) emailHelp.innerHTML = '<span class="badge bg-danger text-white px-2 py-1" style="background:#dc3545 !important;"><i class="fas fa-times-circle mr-1"></i> Invalid email address (e.g. student@baust.edu.bd)</span>';
+                } else {
+                    emailInput.classList.remove('is-valid', 'is-invalid');
+                    emailInput.style.borderColor = '#4f46e5';
+                    if (emailHelp) emailHelp.innerHTML = '<span class="badge bg-info text-white px-2 py-1" style="background:#4f46e5 !important;"><i class="fas fa-pen mr-1"></i> Typing email...</span>';
+                }
+                return false;
+            }
+        }
+
+        ['input', 'keyup', 'paste', 'change'].forEach(function(evt) {
+            if (idInput) idInput.addEventListener(evt, function() { verifyStudentId(false); });
+            mobileInput.addEventListener(evt, function() { verifyMobile(false); });
+            if (emailInput) emailInput.addEventListener(evt, function() { verifyEmail(false); });
+        });
+
+        if (idInput) idInput.addEventListener('blur', function() { verifyStudentId(true); });
+        mobileInput.addEventListener('blur', function() { verifyMobile(true); });
+        if (emailInput) emailInput.addEventListener('blur', function() { verifyEmail(true); });
+
+        // Submit guard — inline error instead of blocking alert()
+        const form = mobileInput.closest('form');
+        if (form) {
+            // Ensure inline error container exists
+            let submitErrBox = document.getElementById('coe-submit-error-box');
+            if (!submitErrBox) {
+                submitErrBox = document.createElement('div');
+                submitErrBox.id = 'coe-submit-error-box';
+                submitErrBox.style.cssText = 'display:none;';
+                form.insertBefore(submitErrBox, form.querySelector('.d-flex.justify-content-between'));
+            }
+            form.addEventListener('submit', function(e) {
+                const idOk = verifyStudentId(true);
+                const mobOk = verifyMobile(true);
+                const emailOk = verifyEmail(true);
+                if (!idOk || !mobOk || !emailOk) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    submitErrBox.innerHTML = '<div class="alert alert-danger border-0 mb-3" style="border-radius:10px;"><i class="fas fa-exclamation-triangle mr-2"></i><strong>Please fix the highlighted fields before continuing:</strong><ul class="mb-0 mt-1 pl-3">' +
+                        (!idOk ? '<li>Student ID must be 9 digits (legacy) or 16 digits starting with 080</li>' : '') +
+                        (!mobOk ? '<li>Mobile number must be a valid 11-digit Bangladeshi number (013–019)</li>' : '') +
+                        (!emailOk ? '<li>Email address format is invalid</li>' : '') +
+                        '</ul></div>';
+                    submitErrBox.style.display = 'block';
+                    if (!idOk) idInput.focus();
+                    else if (!mobOk) mobileInput.focus();
+                    else if (!emailOk) emailInput.focus();
+                    submitErrBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                } else {
+                    submitErrBox.style.display = 'none';
+                }
+            });
+        }
+
+        if (idInput && idInput.value) verifyStudentId(false);
+        if (mobileInput.value) verifyMobile(false);
+        if (emailInput && emailInput.value) verifyEmail(false);
+    }
+
+    // Execute immediately
+    attachCoeLiveVerification();
+})();
+</script>

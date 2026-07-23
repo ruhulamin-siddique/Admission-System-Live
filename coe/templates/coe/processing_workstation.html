@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Processing Workstation" %} | {{ app.application_number }}{% endblock %}
+{% block page_title %}<i class="fas fa-microscope mr-2"></i>{% trans "Processing Workstation" %} — {{ app.application_number }}{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'coe_kanban' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="fas fa-tasks mr-1"></i>{% trans "Back to Assignment Board" %}
+  </a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.workstation-layout { display: grid; grid-template-columns: 1fr 420px; gap: 1.25rem; }
+.panel-card { border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
+.panel-header { background: #1e40af; color: #fff; padding: 0.75rem 1.25rem; font-weight: 700; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+.attachment-preview { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.attachment-preview iframe, .attachment-preview img { width: 100%; max-height: 500px; object-fit: contain; }
+.api-result-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.8rem; max-height: 200px; overflow-y: auto; }
+@media (max-width: 992px) { .workstation-layout { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Status Banner -->
+<div class="alert alert-{{ app.status|yesno:'danger,warning,info,success' }} mb-3 d-flex justify-content-between align-items-center py-2">
+  <div>
+    <span class="badge {{ app.get_status_badge_class }} mr-2" style="font-size:0.9rem;">
+      <i class="{{ app.get_status_icon }} mr-1"></i>{{ app.get_status_display }}
+    </span>
+    <strong>{{ app.student_name }}</strong> · {{ app.get_application_type_display }}
+  </div>
+  <div>
+    {% if app.status == 'in_processing' %}
+    <button class="btn btn-sm btn-warning mr-2"
+            hx-get=""
+            data-toggle="modal" data-target="#reuploadModal">
+      <i class="fas fa-exclamation-circle mr-1"></i>{% trans "Request Re-Upload" %}
+    </button>
+    <form method="post" action="{% url 'coe_mark_ready' app.pk %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-success"
+              onclick="return confirm('{% trans "Mark as Ready for Delivery? OTP will be generated and sent via SMS." %}')">
+        <i class="fas fa-box-open mr-1"></i>{% trans "Mark Ready for Delivery" %}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="workstation-layout">
+  <!-- LEFT PANEL: Student Data + Attachments -->
+  <div>
+    <!-- Student Info -->
+    <div class="panel-card mb-3">
+      <div class="panel-header">
+        <span><i class="fas fa-user mr-2"></i>{% trans "Student Application Data" %}</span>
+        <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-xs btn-light">{% trans "Full Detail" %}</a>
+      </div>
+      <div class="p-3">
+        <table class="table table-sm table-borderless mb-0">
+          <tr><th width="160">{% trans "Student Name" %}</th><td>{{ app.student_name }}</td></tr>
+          <tr><th>{% trans "Student ID" %}</th><td><code>{{ app.student_id }}</code></td></tr>
+          <tr><th>{% trans "Mobile" %}</th><td>{{ app.mobile_number }}</td></tr>
+          <tr><th>{% trans "Department" %}</th><td>{{ app.department }}</td></tr>
+          <tr><th>{% trans "Session/Batch" %}</th><td>{{ app.session }} / {{ app.admission_batch }}</td></tr>
+          <tr><th>{% trans "Passing Semester" %}</th><td>{{ app.passing_semester }}</td></tr>
+          <tr><th>{% trans "CGPA" %}</th><td><strong>{{ app.cgpa }}</strong></td></tr>
+          {% if app.father_name %}<tr><th>{% trans "Father's Name" %}</th><td>{{ app.father_name }}</td></tr>{% endif %}
+          {% if app.mother_name %}<tr><th>{% trans "Mother's Name" %}</th><td>{{ app.mother_name }}</td></tr>{% endif %}
+          {% if app.corrected_name %}<tr><th>{% trans "Corrected Name" %}</th><td class="text-danger">{{ app.corrected_name }}</td></tr>{% endif %}
+          {% if app.corrected_parent_name %}<tr><th>{% trans "Corrected Parent" %}</th><td class="text-danger">{{ app.corrected_parent_name }}</td></tr>{% endif %}
+          {% if app.purpose_destination %}<tr><th>{% trans "Purpose" %}</th><td>{{ app.purpose_destination }}</td></tr>{% endif %}
+        </table>
+      </div>
+    </div>
+
+    <!-- Attachments Viewer -->
+    <div class="panel-card">
+      <div class="panel-header"><i class="fas fa-paperclip mr-2"></i>{% trans "Submitted Attachments" %}</div>
+      <div class="p-3">
+        <div class="row">
+          {% for att in attachments %}
+          <div class="col-md-6 mb-3">
+            <p class="font-weight-semibold mb-1 small">{{ att.get_attachment_type_display }}</p>
+            {% if not att.is_purged %}
+              {% if att.file.name|lower|slice:"-3:" == "pdf" or att.file.name|lower|slice:"-4:" == ".pdf" %}
+              <div class="attachment-preview">
+                <iframe src="{{ att.file.url }}" height="300"></iframe>
+              </div>
+              {% else %}
+              <div class="attachment-preview">
+                <img src="{{ att.file.url }}" alt="{{ att.original_filename }}">
+              </div>
+              {% endif %}
+            {% else %}
+            <div class="alert alert-secondary py-2 small">{% trans "File purged." %}</div>
+            {% endif %}
+          </div>
+          {% empty %}
+          <div class="col"><p class="text-muted">{% trans "No attachments uploaded." %}</p></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: Verification Tools -->
+  <div>
+    <div class="panel-card mb-3">
+      <div class="panel-header"><i class="fas fa-shield-alt mr-2"></i>{% trans "Verification Tools" %}</div>
+      <div class="p-3">
+
+        <!-- Admission DB Lookup -->
+        <h6 class="font-weight-bold mb-2"><i class="fas fa-database mr-2 text-info"></i>{% trans "Admission Record" %}</h6>
+        {% if verification.admission_api_fetched %}
+        <div class="api-result-box mb-2">{{ verification.admission_api_data|pprint }}</div>
+        {% else %}
+        <p class="text-muted small">{% trans "Not fetched yet." %}</p>
+        {% endif %}
+        <form method="post" action="{% url 'coe_fetch_admission' app.pk %}"
+              hx-post="{% url 'coe_fetch_admission' app.pk %}"
+              hx-target="#admissionResult"
+              hx-swap="outerHTML">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-info btn-block">
+            <i class="fas fa-sync mr-1"></i>{% trans "Fetch Admission Record" %}
+          </button>
+        </form>
+        <div id="admissionResult"></div>
+
+        <hr>
+
+        <!-- Board Verification -->
+        <h6 class="font-weight-bold mb-2"><i class="fas fa-university mr-2 text-warning"></i>{% trans "Board Verification (SSC/HSC)" %}</h6>
+        {% if verification.board_api_fetched %}
+        <div class="api-result-box mb-2">{{ verification.board_api_data|pprint }}</div>
+        {% endif %}
+        <form method="post" action="{% url 'coe_fetch_board' app.pk %}"
+              hx-post="{% url 'coe_fetch_board' app.pk %}"
+              hx-target="#boardResult"
+              hx-swap="outerHTML">
+          {% csrf_token %}
+          <div class="form-group mb-2">
+            <input type="text" name="board_roll" class="form-control form-control-sm" placeholder="{% trans 'Board Roll' %}"
+                   value="{{ verification.board_roll }}">
+          </div>
+          <div class="form-group mb-2">
+            <input type="text" name="board_registration" class="form-control form-control-sm" placeholder="{% trans 'Registration No.' %}"
+                   value="{{ verification.board_registration }}">
+          </div>
+          <div class="form-row mb-2">
+            <div class="col">
+              <select name="board_name" class="form-control form-control-sm">
+                <option value="dhaka">{% trans "Dhaka" %}</option>
+                <option value="rajshahi">{% trans "Rajshahi" %}</option>
+                <option value="chittagong">{% trans "Chittagong" %}</option>
+                <option value="sylhet">{% trans "Sylhet" %}</option>
+                <option value="technical">{% trans "Technical" %}</option>
+              </select>
+            </div>
+            <div class="col">
+              <input type="text" name="board_year" class="form-control form-control-sm" placeholder="{% trans 'Year' %}"
+                     value="{{ verification.board_year }}">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-sm btn-warning btn-block">
+            <i class="fas fa-search mr-1"></i>{% trans "Verify Board Result" %}
+          </button>
+        </form>
+        <div id="boardResult"></div>
+
+        <hr>
+
+        <!-- Verification Notes -->
+        <h6 class="font-weight-bold mb-2"><i class="fas fa-sticky-note mr-2"></i>{% trans "Verification Notes" %}</h6>
+        <p class="text-muted small mb-0">{{ verification.verification_notes|default:_("None.") }}</p>
+        {% if verification.verified_by %}
+        <small class="text-muted">{% trans "Last verified by:" %} {{ verification.verified_by.get_full_name }} — {{ verification.verified_at|date:"d M Y" }}</small>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Status Log -->
+    <div class="panel-card">
+      <div class="panel-header"><i class="fas fa-history mr-2"></i>{% trans "Status Log" %}</div>
+      <div class="p-2">
+        {% for log in logs %}
+        <div class="d-flex align-items-start mb-2">
+          <div class="mr-2 mt-1">
+            <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;"></div>
+          </div>
+          <div>
+            <small class="font-weight-bold">{{ log.new_status }}</small>
+            {% if log.note %}<br><small class="text-muted">{{ log.note|truncatechars:80 }}</small>{% endif %}
+            <br><small class="text-muted">{{ log.changed_at|date:"d M, h:i A" }}</small>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Re-upload Request Modal -->
+<div class="modal fade" id="reuploadModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-exclamation-circle mr-2 text-warning"></i>{% trans "Request Student Re-Upload" %}</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning small">
+          {% trans "This will set the application status to 'Action Required' and send an SMS to the student with your message." %}
+        </div>
+        <form method="post" action="{% url 'coe_request_reupload' app.pk %}">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="font-weight-bold">{% trans "Issue Description" %} <span class="text-danger">*</span></label>
+            <textarea name="note" class="form-control" rows="4" required
+                      placeholder="{% trans 'Describe what the student needs to re-upload and why...' %}"></textarea>
+          </div>
+          <div class="d-flex justify-content-end" style="gap:8px;">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Cancel" %}</button>
+            <button type="submit" class="btn btn-warning">
+              <i class="fas fa-sms mr-1"></i>{% trans "Send SMS & Request Re-Upload" %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

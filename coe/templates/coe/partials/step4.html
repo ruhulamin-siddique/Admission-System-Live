@@ -1,0 +1,102 @@
+{% load i18n %}
+{% comment %}Step 4 — Review & Submit{% endcomment %}
+
+<div id="wizard-content">
+<h5 class="font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif; color: #0f172a;">
+  <i class="fas fa-clipboard-check mr-2 text-success"></i>
+  {% trans "Step 4: Review & Submit" %}
+</h5>
+
+{% if error %}
+<div class="alert alert-danger border-0 shadow-sm mb-3" style="border-radius: 10px;">
+  <i class="fas fa-exclamation-circle mr-2"></i>{{ error }}
+</div>
+{% endif %}
+
+<div class="alert alert-warning border-0 shadow-sm mb-4" style="border-radius: 10px;">
+  <i class="fas fa-exclamation-triangle mr-1"></i>
+  {% trans "Please review your information and attached documents carefully before submitting. You will receive a Tracking ID and PIN via SMS." %}
+</div>
+
+<div class="row mb-3">
+  <!-- Academic Summary Card -->
+  <div class="col-md-6 mb-3">
+    <div class="card border shadow-none" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header bg-light py-2">
+        <h6 class="card-title font-weight-bold mb-0 text-dark">
+          <i class="fas fa-user-graduate mr-1 text-primary"></i>{% trans "Academic Summary" %}
+        </h6>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="pl-3" width="40%">{% trans "Application Type" %}</th><td><strong class="text-primary">{{ wizard_data.application_type|upper }}</strong></td></tr>
+            <tr><th class="pl-3">{% trans "Student Name" %}</th><td>{{ wizard_data.student_name }}</td></tr>
+            <tr><th class="pl-3">{% trans "Student ID" %}</th><td><code>{{ wizard_data.student_id }}</code></td></tr>
+            <tr><th class="pl-3">{% trans "Mobile" %}</th><td>{{ wizard_data.mobile_number }}</td></tr>
+            <tr><th class="pl-3">{% trans "Session / Batch" %}</th><td>{{ wizard_data.session }} ({{ wizard_data.admission_batch }})</td></tr>
+            <tr><th class="pl-3">{% trans "Passing / CGPA" %}</th><td>{{ wizard_data.passing_semester }} — <strong>{{ wizard_data.cgpa }}</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Uploaded Documents Card -->
+  <div class="col-md-6 mb-3">
+    <div class="card border shadow-none" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+        <h6 class="card-title font-weight-bold mb-0 text-dark">
+          <i class="fas fa-paperclip mr-1 text-success"></i>{% trans "Uploaded Documents" %}
+        </h6>
+        <button type="button" class="btn btn-link btn-sm p-0 text-primary"
+                hx-get="{% url 'coe_submit_step' 3 %}?back=1"
+                hx-target="#wizard-content"
+                hx-swap="outerHTML">
+          <i class="fas fa-edit mr-1"></i>{% trans "Change Files" %}
+        </button>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for f in files_meta %}
+        <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+          <span style="font-size: 0.88rem;">
+            <i class="fas fa-check-circle text-success mr-2"></i>
+            <strong>{{ f.label|default:f.original_name }}</strong>
+            <small class="text-muted d-block font-italic pl-4">{{ f.original_name }}</small>
+          </span>
+          <span class="badge badge-success px-2 py-1">{{ f.size_kb }} KB</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted text-center py-3">{% trans "No files uploaded yet." %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<form method="post" action="{% url 'coe_submit_step' 4 %}"
+      hx-post="{% url 'coe_submit_step' 4 %}"
+      hx-target="#wizard-content"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+
+  <div class="form-check mt-3 mb-4 p-3 bg-light rounded border">
+    <input type="checkbox" class="form-check-input ml-0" id="confirm_check" required style="width: 18px; height: 18px;">
+    <label class="form-check-label font-weight-semibold text-dark pl-4" for="confirm_check" style="font-size: 0.95rem;">
+      {% trans "I confirm that all information and attached documents provided above are accurate, genuine, and ready for official verification." %}
+    </label>
+  </div>
+
+  <div class="d-flex justify-content-between pt-3 border-top">
+    <button type="button" class="coe-btn coe-btn-secondary"
+            hx-get="{% url 'coe_submit_step' 3 %}?back=1"
+            hx-target="#wizard-content"
+            hx-swap="outerHTML">
+      <i class="fas fa-arrow-left mr-2"></i> {% trans "Back to Uploads" %}
+    </button>
+    <button type="submit" class="coe-btn coe-btn-success px-5 font-weight-bold" style="font-size: 1rem;">
+      <i class="fas fa-paper-plane mr-2"></i>{% trans "Submit Application" %}
+    </button>
+  </div>
+</form>
+</div>

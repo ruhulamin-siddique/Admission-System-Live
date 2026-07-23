@@ -1,0 +1,651 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Officer Assignment Board" %} | CoE{% endblock %}
+{% block page_title %}<i class="fas fa-tasks mr-2 text-indigo"></i>{% trans "CoE Desk — Officer Assignment Board" %}{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-indigo shadow-sm rounded-lg font-weight-semibold px-3" data-toggle="modal" data-target="#workloadModal" style="background:#4f46e5; border:none; color:#ffffff;">
+  <i class="fas fa-users-cog mr-1.5"></i>{% trans "Officer Workloads" %}
+</button>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Premium Officer Assignment Board Styling */
+  .kanban-container {
+    font-family: var(--coe-font, 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  }
+
+  :root {
+    --board-radius: 16px;
+    --card-radius: 12px;
+  }
+
+  /* Header Summary Bar */
+  .board-summary-bar {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .summary-stat-card {
+    flex: 1;
+    min-width: 240px;
+    background: #ffffff;
+    border-radius: var(--card-radius);
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .summary-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  }
+
+  .stat-card-title {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    display: block;
+  }
+
+  .stat-card-number {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin-top: 0.25rem;
+    display: block;
+    line-height: 1.2;
+  }
+
+  .stat-card-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  /* Board Layout Grid */
+  .kanban-wrap {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  /* Columns */
+  .kanban-col {
+    background: #f8fafc;
+    border-radius: var(--board-radius);
+    padding: 1.25rem;
+    min-height: 550px;
+    border: 1px solid #e2e8f0;
+    box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.01);
+  }
+
+  .col-pending { border-top: 4px solid #f59e0b; }
+  .col-processing { border-top: 4px solid #3b82f6; }
+  .col-ready { border-top: 4px solid #10b981; }
+
+  .kanban-col-header {
+    font-family: var(--coe-font-heading, 'Outfit', sans-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px dashed #cbd5e1;
+    color: #1e293b;
+  }
+
+  .col-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .badge-pill-custom {
+    padding: 0.35em 0.8em;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.75rem;
+  }
+
+  /* Cards */
+  .kanban-card {
+    background: #ffffff;
+    border-radius: var(--card-radius);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kanban-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    transform: translateY(-3px);
+  }
+
+  .kanban-card.stalled {
+    border-left: 4px solid #ef4444 !important;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+  }
+
+  .kanban-card .app-type {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+
+  .kanban-card .app-name {
+    font-family: var(--coe-font-heading, 'Outfit', sans-serif);
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    line-height: 1.35;
+  }
+
+  .kanban-card .app-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 0.75rem;
+  }
+
+  .kanban-card .app-badge {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .kanban-card .app-badge-warning {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #b45309;
+  }
+
+  .kanban-card .app-badge-info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+  }
+
+  .kanban-card .app-badge-success {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #047857;
+  }
+
+  .app-date-row {
+    font-size: 0.75rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 0.5rem;
+  }
+
+  .pulse-fire {
+    animation: pulseFire 1.5s infinite alternate;
+  }
+
+  @keyframes pulseFire {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.6)); }
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed #e2e8f0;
+  }
+
+  /* Modals Premium Overrides */
+  .modal-content-premium {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+  }
+
+  .modal-header-premium {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .modal-header-premium .close {
+    color: #ffffff;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+  }
+
+  .modal-header-premium .close:hover {
+    opacity: 1;
+  }
+
+  /* Workload Accordion Styles */
+  .workload-accordion .card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .workload-header {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .workload-header:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1 !important;
+  }
+
+  .workload-body {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 1.25rem;
+  }
+
+  .btn-xs {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    border-radius: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid kanban-container">
+  
+  <!-- Summary Cards -->
+  <div class="board-summary-bar">
+    <div class="summary-stat-card" style="border-left: 4px solid #f59e0b;">
+      <div>
+        <span class="stat-card-title">{% trans "Pending Assignment" %}</span>
+        <span class="stat-card-number text-warning">{{ pending|length }}</span>
+      </div>
+      <div class="stat-card-icon bg-warning-light text-warning" style="background:#fffbeb;">
+        <i class="fas fa-hourglass-half"></i>
+      </div>
+    </div>
+
+    <div class="summary-stat-card" style="border-left: 4px solid #3b82f6;">
+      <div>
+        <span class="stat-card-title">{% trans "In Processing" %}</span>
+        <span class="stat-card-number text-primary">{{ in_processing|length }}</span>
+      </div>
+      <div class="stat-card-icon bg-primary-light text-primary" style="background:#eff6ff;">
+        <i class="fas fa-cogs"></i>
+      </div>
+    </div>
+
+    <div class="summary-stat-card" style="border-left: 4px solid #10b981;">
+      <div>
+        <span class="stat-card-title">{% trans "Ready for Delivery" %}</span>
+        <span class="stat-card-number text-success">{{ ready|length }}</span>
+      </div>
+      <div class="stat-card-icon bg-success-light text-success" style="background:#ecfdf5;">
+        <i class="fas fa-box-open"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Board Columns Grid -->
+  <div class="kanban-wrap">
+
+    <!-- Column 1: Pending Assignment -->
+    <div class="kanban-col col-pending">
+      <div class="kanban-col-header">
+        <span class="col-header-title">
+          <i class="fas fa-clock text-warning"></i>
+          {% trans "Pending Assignment" %}
+        </span>
+        <span class="badge badge-warning text-white badge-pill-custom">{{ pending|length }}</span>
+      </div>
+      
+      {% for app in pending %}
+      <div class="kanban-card {% if app.is_stalled %}stalled{% endif %}">
+        <span class="app-type">{{ app.get_application_type_display|truncatechars:32 }}</span>
+        <h4 class="app-name">{{ app.student_name }}</h4>
+        
+        <div class="app-meta">
+          <span class="app-badge"><i class="fas fa-hashtag text-muted"></i>{{ app.application_number }}</span>
+          <span class="app-badge"><i class="fas fa-university text-muted"></i>{{ app.department.short_name|default:app.department }}</span>
+          
+          {% if app.is_stalled %}
+          <span class="app-badge app-badge-warning"><i class="fas fa-fire mr-1 pulse-fire"></i>{% trans "Stalled" %}</span>
+          {% endif %}
+        </div>
+
+        <div class="app-date-row">
+          <i class="far fa-calendar-alt text-muted"></i>
+          <span>{{ app.submitted_at|date:"d M Y, h:i A" }}</span>
+        </div>
+
+        <div class="card-actions">
+          <button class="btn btn-sm btn-indigo font-weight-semibold px-3 flex-grow-1"
+                  style="background:#4f46e5; color:#ffffff; border:none;"
+                  hx-get="{% url 'coe_assign_officer' app.pk %}"
+                  hx-target="#assignModal .modal-body"
+                  hx-swap="innerHTML"
+                  data-toggle="modal" data-target="#assignModal">
+            <i class="fas fa-user-plus mr-1"></i>{% trans "Assign Officer" %}
+          </button>
+          <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-sm btn-outline-secondary" title="{% trans 'View Details' %}">
+            <i class="fas fa-eye"></i>
+          </a>
+        </div>
+      </div>
+      {% empty %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-check-circle fa-2x mb-2 text-muted opacity-50"></i>
+        <p class="mb-0 font-weight-semibold">{% trans "No applications pending assignment." %}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Column 2: In Processing -->
+    <div class="kanban-col col-processing">
+      <div class="kanban-col-header">
+        <span class="col-header-title">
+          <i class="fas fa-cogs text-primary"></i>
+          {% trans "In Processing" %}
+        </span>
+        <span class="badge badge-primary badge-pill-custom">{{ in_processing|length }}</span>
+      </div>
+      
+      {% for app in in_processing %}
+      <div class="kanban-card {% if app.is_stalled %}stalled{% endif %}">
+        <span class="app-type">{{ app.get_application_type_display|truncatechars:32 }}</span>
+        <h4 class="app-name">{{ app.student_name }}</h4>
+        
+        <div class="app-meta">
+          <span class="app-badge"><i class="fas fa-hashtag text-muted"></i>{{ app.application_number }}</span>
+          <span class="app-badge"><i class="fas fa-university text-muted"></i>{{ app.department.short_name|default:app.department }}</span>
+          
+          {% if app.is_stalled %}
+          <span class="app-badge app-badge-warning"><i class="fas fa-fire mr-1 pulse-fire"></i>{% trans "Stalled" %}</span>
+          {% endif %}
+        </div>
+
+        <div class="app-badge app-badge-info mt-1">
+          <i class="fas fa-user-check mr-1"></i>
+          <span>{{ app.assigned_to.get_full_name|default:app.assigned_to.username|default:"Unassigned" }}</span>
+        </div>
+
+        <div class="card-actions">
+          <a href="{% url 'coe_process' app.pk %}" class="btn btn-sm btn-info font-weight-semibold px-3 flex-grow-1" style="background:#0284c7; border:none; color:#ffffff;">
+            <i class="fas fa-desktop mr-1"></i>{% trans "Workstation" %}
+          </a>
+          <button class="btn btn-sm btn-outline-primary" title="{% trans 'Re-assign Officer' %}"
+                  style="color:#4f46e5; border-color:#cbd5e1;"
+                  hx-get="{% url 'coe_assign_officer' app.pk %}"
+                  hx-target="#assignModal .modal-body"
+                  hx-swap="innerHTML"
+                  data-toggle="modal" data-target="#assignModal">
+            <i class="fas fa-user-cog"></i>
+          </button>
+          <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-sm btn-outline-secondary" title="{% trans 'View Details' %}">
+            <i class="fas fa-eye"></i>
+          </a>
+        </div>
+      </div>
+      {% empty %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-inbox fa-2x mb-2 text-muted opacity-50"></i>
+        <p class="mb-0 font-weight-semibold">{% trans "No applications currently in processing." %}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Column 3: Ready for Delivery -->
+    <div class="kanban-col col-ready">
+      <div class="kanban-col-header">
+        <span class="col-header-title">
+          <i class="fas fa-check-double text-success"></i>
+          {% trans "Ready for Delivery" %}
+        </span>
+        <span class="badge badge-success badge-pill-custom">{{ ready|length }}</span>
+      </div>
+      
+      {% for app in ready %}
+      <div class="kanban-card">
+        <span class="app-type">{{ app.get_application_type_display|truncatechars:32 }}</span>
+        <h4 class="app-name">{{ app.student_name }}</h4>
+        
+        <div class="app-meta">
+          <span class="app-badge"><i class="fas fa-hashtag text-muted"></i>{{ app.application_number }}</span>
+          <span class="app-badge"><i class="fas fa-university text-muted"></i>{{ app.department.short_name|default:app.department }}</span>
+          <span class="app-badge app-badge-success"><i class="fas fa-certificate mr-1"></i>{% trans "Ready" %}</span>
+        </div>
+
+        <div class="app-date-row">
+          <i class="far fa-calendar-check text-muted"></i>
+          <span>{{ app.updated_at|date:"d M Y, h:i A" }}</span>
+        </div>
+
+        <div class="card-actions">
+          <a href="{% url 'coe_verify_otp' app.pk %}" class="btn btn-sm btn-success font-weight-semibold px-3 flex-grow-1" style="background:#10b981; border:none; color:#ffffff;">
+            <i class="fas fa-key mr-1"></i>{% trans "Deliver OTP" %}
+          </a>
+          <button class="btn btn-sm btn-outline-primary" title="{% trans 'Re-assign Officer' %}"
+                  style="color:#4f46e5; border-color:#cbd5e1;"
+                  hx-get="{% url 'coe_assign_officer' app.pk %}"
+                  hx-target="#assignModal .modal-body"
+                  hx-swap="innerHTML"
+                  data-toggle="modal" data-target="#assignModal">
+            <i class="fas fa-user-cog"></i>
+          </button>
+          <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-sm btn-outline-secondary" title="{% trans 'View Details' %}">
+            <i class="fas fa-eye"></i>
+          </a>
+        </div>
+      </div>
+      {% empty %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-box-open fa-2x mb-2 text-muted opacity-50"></i>
+        <p class="mb-0 font-weight-semibold">{% trans "No applications ready for delivery." %}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Assign Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title font-weight-bold"><i class="fas fa-user-plus mr-2"></i>{% trans "Assign Processing Officer" %}</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="text-muted mt-2 mb-0">{% trans "Loading officer list..." %}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Workload Summary Modal (Officer Wise Assignment List) -->
+<div class="modal fade" id="workloadModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-premium">
+      <div class="modal-header modal-header-premium">
+        <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-users-cog mr-2"></i>{% trans "Officer Workloads Summary" %}
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4 bg-light" style="max-height: 80vh; overflow-y: auto;">
+        
+        <p class="text-muted small mb-3">
+          {% trans "Below is a real-time list of processing officers and the active work orders currently assigned to them." %}
+        </p>
+
+        <div class="accordion workload-accordion" id="workloadAccordion">
+          {% for wl in officer_workloads %}
+          <div class="card mb-3 border-0 bg-transparent">
+            <!-- Accordion Header -->
+            <div class="workload-header" id="headingWL{{ wl.officer.id }}" data-toggle="collapse" data-target="#collapseWL{{ wl.officer.id }}" aria-expanded="false">
+              <div class="d-flex align-items-center" style="gap: 12px;">
+                <div class="rounded-circle bg-white shadow-sm d-flex align-items-center justify-content-center" style="width:40px; height:40px; color:#4f46e5; border:1px solid #cbd5e1;">
+                  <i class="fas fa-user-tie"></i>
+                </div>
+                <div>
+                  <div class="font-weight-bold" style="font-size: 0.95rem; color: #1e293b;">
+                    {{ wl.officer.get_full_name|default:wl.officer.username }}
+                  </div>
+                  <div class="text-muted" style="font-size: 0.72rem;">
+                    {{ wl.officer.email|default:"No email address configured" }}
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center" style="gap: 10px;">
+                <span class="badge px-3 py-1.5 text-white font-weight-bold" style="background:#4f46e5; border-radius:30px; font-size:0.75rem;">
+                  {{ wl.count }} {% trans "Tasks Assigned" %}
+                </span>
+                <i class="fas fa-chevron-down text-muted transition-transform"></i>
+              </div>
+            </div>
+
+            <!-- Accordion Body -->
+            <div id="collapseWL{{ wl.officer.id }}" class="collapse" aria-labelledby="headingWL{{ wl.officer.id }}" data-parent="#workloadAccordion">
+              <div class="workload-body">
+                
+                <!-- Stat Badges Breakdown -->
+                <div class="d-flex flex-wrap mb-3" style="gap: 8px;">
+                  <span class="badge border px-2.5 py-1" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; border-radius:6px; font-size:0.72rem;">
+                    <i class="fas fa-cogs mr-1"></i>{% trans "In Processing:" %} <strong>{{ wl.in_processing_count }}</strong>
+                  </span>
+                  <span class="badge border px-2.5 py-1" style="background:#fffbeb; color:#b45309; border-color:#fde68a; border-radius:6px; font-size:0.72rem;">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>{% trans "Action Required:" %} <strong>{{ wl.action_required_count }}</strong>
+                  </span>
+                  <span class="badge border px-2.5 py-1" style="background:#ecfdf5; color:#047857; border-color:#a7f3d0; border-radius:6px; font-size:0.72rem;">
+                    <i class="fas fa-check-double mr-1"></i>{% trans "Ready for Delivery:" %} <strong>{{ wl.ready_count }}</strong>
+                  </span>
+                </div>
+
+                <!-- Assigned works table -->
+                {% if wl.applications %}
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped mb-0" style="font-size: 0.8rem;">
+                    <thead>
+                      <tr class="text-muted" style="background:#f8fafc;">
+                        <th style="width:130px;">{% trans "Ref Number" %}</th>
+                        <th>{% trans "Student Details" %}</th>
+                        <th>{% trans "Request Type" %}</th>
+                        <th style="width:120px;">{% trans "Status" %}</th>
+                        <th class="text-right" style="width:80px;">{% trans "Actions" %}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for app in wl.applications %}
+                      <tr>
+                        <td class="text-monospace font-weight-bold text-dark">{{ app.application_number }}</td>
+                        <td>
+                          <div class="font-weight-bold text-dark" style="font-size:0.82rem;">{{ app.student_name }}</div>
+                          <div class="text-muted" style="font-size:0.7rem;">{{ app.student_id }} • {{ app.department.short_name|default:app.department }}</div>
+                        </td>
+                        <td>{{ app.get_application_type_display }}</td>
+                        <td>
+                          {% if app.status == 'in_processing' %}
+                          <span class="badge badge-pill" style="background:#dbeafe; color:#1e40af; font-size:0.7rem; padding: 2px 6px;">{% trans "Processing" %}</span>
+                          {% elif app.status == 'action_required' %}
+                          <span class="badge badge-pill" style="background:#fef3c7; color:#92400e; font-size:0.7rem; padding: 2px 6px;">{% trans "Action Req." %}</span>
+                          {% elif app.status == 'ready_for_delivery' %}
+                          <span class="badge badge-pill" style="background:#d1fae5; color:#065f46; font-size:0.7rem; padding: 2px 6px;">{% trans "Ready" %}</span>
+                          {% else %}
+                          <span class="badge badge-pill badge-light">{{ app.get_status_display }}</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-right">
+                          <div class="btn-group">
+                            <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-xs btn-outline-secondary" title="{% trans 'View Details' %}" target="_blank">
+                              <i class="fas fa-eye"></i>
+                            </a>
+                            {% if app.status == 'in_processing' %}
+                            <a href="{% url 'coe_process' app.pk %}" class="btn btn-xs btn-outline-primary" style="color:#4f46e5; border-color:#cbd5e1;" title="{% trans 'Workstation' %}" target="_blank">
+                              <i class="fas fa-desktop"></i>
+                            </a>
+                            {% endif %}
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted" style="background:#f8fafc; border-radius:8px;">
+                  <i class="fas fa-check-circle fa-lg mb-1 text-muted opacity-50"></i>
+                  <div class="font-weight-semibold">{% trans "No active tasks assigned." %}</div>
+                </div>
+                {% endif %}
+
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center py-5 text-muted bg-white border rounded" style="border-radius:12px;">
+            <i class="fas fa-users-slash fa-2x mb-2 text-muted opacity-50"></i>
+            <p class="mb-0 font-weight-semibold">{% trans "No active processing officers found." %}</p>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

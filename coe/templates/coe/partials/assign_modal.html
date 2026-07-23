@@ -1,0 +1,24 @@
+{% load i18n %}
+{% comment %}HTMX partial — Officer assignment modal body{% endcomment %}
+
+<form method="post" action="{% url 'coe_assign_officer' app.pk %}"
+      hx-post="{% url 'coe_assign_officer' app.pk %}"
+      hx-target="#assignModal .modal-body"
+      hx-swap="innerHTML">
+  {% csrf_token %}
+  <div class="mb-3">
+    <p class="text-muted mb-1">{% trans "Application" %}: <strong>{{ app.application_number }}</strong></p>
+    <p class="text-muted mb-1">{% trans "Student" %}: <strong>{{ app.student_name }}</strong></p>
+    <p class="text-muted mb-1">{% trans "Type" %}: {{ app.get_application_type_display }}</p>
+  </div>
+  <div class="form-group">
+    <label class="font-weight-bold">{% trans "Select Processing Officer" %} <span class="text-danger">*</span></label>
+    {{ form.officer }}
+  </div>
+  <div class="d-flex justify-content-end" style="gap:8px;">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Cancel" %}</button>
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-user-check mr-1"></i>{% trans "Assign & Forward" %}
+    </button>
+  </div>
+</form>

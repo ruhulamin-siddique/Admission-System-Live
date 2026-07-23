@@ -1,0 +1,59 @@
+{% load i18n %}
+{% comment %}HTMX partial — HoD review modal body{% endcomment %}
+
+<div class="row">
+  <div class="col-md-7">
+    <table class="table table-sm table-borderless">
+      <tr><th width="160">{% trans "Application #" %}</th><td><code>{{ app.application_number }}</code></td></tr>
+      <tr><th>{% trans "Type" %}</th><td><strong>{{ app.get_application_type_display }}</strong></td></tr>
+      <tr><th>{% trans "Student" %}</th><td>{{ app.student_name }}</td></tr>
+      <tr><th>{% trans "Student ID" %}</th><td>{{ app.student_id }}</td></tr>
+      <tr><th>{% trans "Department" %}</th><td>{{ app.department }}</td></tr>
+      <tr><th>{% trans "Session" %}</th><td>{{ app.session }}</td></tr>
+      <tr><th>{% trans "Passing Sem." %}</th><td>{{ app.passing_semester }}</td></tr>
+      <tr><th>{% trans "CGPA" %}</th><td>{{ app.cgpa }}</td></tr>
+      <tr><th>{% trans "Submitted" %}</th><td>{{ app.submitted_at|date:"d F Y, h:i A" }}</td></tr>
+    </table>
+
+    <h6>{% trans "Attachments" %}</h6>
+    <ul class="list-group list-group-flush">
+      {% for att in attachments %}
+      <li class="list-group-item py-1 d-flex justify-content-between align-items-center">
+        <small><i class="fas fa-file mr-2 text-muted"></i>{{ att.get_attachment_type_display }}</small>
+        <a href="{{ att.file.url }}" target="_blank" class="btn btn-xs btn-outline-info">{% trans "View" %}</a>
+      </li>
+      {% empty %}
+      <li class="list-group-item text-muted py-2">{% trans "No attachments." %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="col-md-5">
+    <form method="post" action="{% url 'coe_hod_review' app.pk %}"
+          hx-post="{% url 'coe_hod_review' app.pk %}"
+          hx-target="#reviewModal .modal-body"
+          hx-swap="innerHTML">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="font-weight-bold">{% trans "Action" %} <span class="text-danger">*</span></label>
+        {% for value, label in form.fields.action.choices %}
+        <div class="custom-control custom-radio mb-1">
+          <input type="radio" name="action" value="{{ value }}" id="action_{{ value }}" class="custom-control-input"
+                 {% if forloop.first %}checked{% endif %}>
+          <label class="custom-control-label" for="action_{{ value }}">{{ label }}</label>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="form-group">
+        <label>{% trans "Note / Reason" %}</label>
+        <textarea name="note" class="form-control" rows="4"
+                  placeholder="{% trans 'Optional note or mandatory rejection reason…' %}"></textarea>
+      </div>
+      <div class="d-flex justify-content-end" style="gap:8px;">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save mr-1"></i>{% trans "Submit Review" %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

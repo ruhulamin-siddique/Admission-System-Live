@@ -1,0 +1,58 @@
+{% load i18n %}
+{% comment %}HTMX partial — OTP entry modal body{% endcomment %}
+
+<div class="text-center mb-3">
+  <div class="d-inline-block p-3 rounded-circle bg-success mb-2" style="font-size:2.5rem; color:#fff;">
+    <i class="fas fa-user-check"></i>
+  </div>
+  <h5>{{ app.student_name }}</h5>
+  <p class="text-muted mb-1"><strong>{{ app.application_number }}</strong></p>
+  <p class="text-muted mb-0">{{ app.get_application_type_display }}</p>
+</div>
+
+<div class="alert alert-warning small">
+  <i class="fas fa-id-card mr-1"></i>
+  <strong>{% trans "Identity Check:" %}</strong>
+  {% trans "Verify the student's original NID or Student ID card before entering OTP." %}
+</div>
+
+{% if app.delivery_otp_verified %}
+<div class="alert alert-success text-center">
+  <i class="fas fa-check-circle fa-2x mb-2"></i>
+  <p class="font-weight-bold mb-0">{% trans "OTP Verified!" %}</p>
+</div>
+<form method="post" action="{% url 'coe_mark_delivered' app.pk %}">
+  {% csrf_token %}
+  <div class="form-group">
+    <label>{% trans "Identity Verification Note (optional)" %}</label>
+    <input type="text" name="identity_note" class="form-control" placeholder="{% trans 'e.g. NID checked ✓' %}">
+  </div>
+  <button type="submit" class="btn btn-success btn-block btn-lg">
+    <i class="fas fa-check-circle mr-2"></i>{% trans "Mark as Delivered" %}
+  </button>
+</form>
+{% else %}
+<form method="post" action="{% url 'coe_verify_otp' app.pk %}"
+      hx-post="{% url 'coe_verify_otp' app.pk %}"
+      hx-target="#otpModal .modal-body"
+      hx-swap="innerHTML">
+  {% csrf_token %}
+  <div class="form-group">
+    <label class="font-weight-bold text-center d-block">{% trans "Enter 6-Digit OTP" %}</label>
+    <input type="text" name="otp" maxlength="6" class="form-control form-control-lg text-center"
+           style="font-size:2rem; letter-spacing:1rem; font-weight:900;"
+           placeholder="——————" inputmode="numeric" autocomplete="one-time-code"
+           autofocus>
+    {% if form.otp.errors %}
+    <div class="text-danger mt-1 small">{{ form.otp.errors }}</div>
+    {% endif %}
+    <small class="text-muted d-block mt-1 text-center">{% trans "OTP was sent to the student's registered mobile number." %}</small>
+  </div>
+  <div class="d-flex justify-content-end" style="gap:8px;">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Cancel" %}</button>
+    <button type="submit" class="btn btn-primary btn-lg px-5">
+      <i class="fas fa-check mr-1"></i>{% trans "Verify OTP" %}
+    </button>
+  </div>
+</form>
+{% endif %}

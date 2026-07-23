@@ -1,0 +1,104 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Daily Document Delivery Handover Register" %} — {{ target_date|date:"Y-m-d" }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 2rem; }
+    .register-container { background: #fff; border-radius: 12px; padding: 2rem; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .register-container { border: none; box-shadow: none; padding: 0; }
+      .no-print { display: none !important; }
+      table { font-size: 10pt; }
+    }
+  </style>
+</head>
+<body>
+<div class="register-container">
+  <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <div>
+      <a href="{% url 'coe_delivery_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left mr-1"></i>{% trans "Back to Delivery Desk" %}
+      </a>
+    </div>
+    <div>
+      <form method="get" class="form-inline d-inline-block mr-2">
+        <label class="mr-2 small">{% trans "Select Date:" %}</label>
+        <input type="date" name="date" value="{{ target_date|date:'Y-m-d' }}" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+      </form>
+      <button onclick="window.print()" class="btn btn-primary btn-sm">
+        <i class="fas fa-print mr-1"></i>{% trans "Print Handover Register" %}
+      </button>
+    </div>
+  </div>
+
+  <div class="text-center border-bottom pb-3 mb-4">
+    <h3 class="font-weight-bold text-dark mb-1">{% trans "BAUST Controller of Examinations" %}</h3>
+    <h5 class="text-primary font-weight-bold mb-1">{% trans "Daily Physical Document Delivery Handover Register" %}</h5>
+    <p class="text-muted mb-0">{% trans "Date:" %} <strong>{{ target_date|date:"l, d F Y" }}</strong> | {% trans "Total Handed Over:" %} <strong>{{ count }}</strong></p>
+  </div>
+
+  <table class="table table-bordered table-striped align-middle">
+    <thead class="thead-dark text-center">
+      <tr>
+        <th width="40">#</th>
+        <th>{% trans "Tracking Number" %}</th>
+        <th>{% trans "Student Name" %}</th>
+        <th>{% trans "Student ID" %}</th>
+        <th>{% trans "Document Type" %}</th>
+        <th>{% trans "Mobile Number" %}</th>
+        <th>{% trans "Delivered Time" %}</th>
+        <th>{% trans "Handed Over By" %}</th>
+        <th width="160">{% trans "Student Signature" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in applications %}
+      <tr>
+        <td class="text-center font-weight-bold">{{ forloop.counter }}</td>
+        <td><code>{{ app.application_number }}</code></td>
+        <td><strong>{{ app.student_name }}</strong></td>
+        <td>{{ app.student_id }}</td>
+        <td>{{ app.get_application_type_display }}</td>
+        <td>{{ app.mobile_number }}</td>
+        <td class="text-center">{{ app.delivered_at|date:"h:i A" }}</td>
+        <td>{{ app.delivered_by.get_full_name|default:app.delivered_by.username }}</td>
+        <td class="text-center" style="vertical-align: bottom; height: 45px;">
+          <div style="border-bottom: 1px dashed #64748b; margin-top: 25px;"></div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="text-center text-muted py-4">
+          <i class="fas fa-box-open fa-2x mb-2 text-secondary"></i><br>
+          {% trans "No documents handed over on this date." %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="row mt-5 pt-4">
+    <div class="col-4 text-center">
+      <div style="border-top: 1px solid #000; padding-top: 4px; font-weight: bold;">
+        {% trans "Delivery Clerk Signature" %}
+      </div>
+    </div>
+    <div class="col-4 text-center">
+      <div style="border-top: 1px solid #000; padding-top: 4px; font-weight: bold;">
+        {% trans "Assistant Controller Signature" %}
+      </div>
+    </div>
+    <div class="col-4 text-center">
+      <div style="border-top: 1px solid #000; padding-top: 4px; font-weight: bold;">
+        {% trans "Controller of Examinations" %}
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

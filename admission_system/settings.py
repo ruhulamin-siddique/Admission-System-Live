@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'exam_billing',
     'ict_wing',
     'public_relations',  # PR Office Management Module
+    'coe',               # Controller of Examinations — Academic Document Processing
 ]
 
 MIDDLEWARE = [

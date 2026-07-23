@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 1.2cm; }
+    body { font-family: Helvetica, Arial, sans-serif; color: #0f172a; font-size: 10pt; line-height: 1.3; }
+    .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; }
+    .title { font-size: 14pt; font-weight: bold; color: #0f172a; text-transform: uppercase; }
+    .subtitle { font-size: 9pt; color: #475569; }
+    .section-title { font-size: 10pt; font-weight: bold; background-color: #e2e8f0; padding: 4px 8px; margin-top: 10px; margin-bottom: 6px; border-left: 4px solid #0f172a; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    th, td { padding: 4px 6px; text-align: left; vertical-align: top; border: 1px solid #cbd5e1; font-size: 9pt; }
+    th { background-color: #f8fafc; font-weight: bold; }
+    .checkbox-box { width: 12px; height: 12px; border: 1px solid #000; display: inline-block; margin-right: 4px; }
+    .sig-table { margin-top: 30px; border: none; }
+    .sig-table td { border: none; text-align: center; vertical-align: bottom; height: 50px; font-size: 8pt; }
+    .sig-line { border-top: 1px solid #000; padding-top: 4px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">BAUST Controller of Examinations</div>
+  <div class="subtitle">Official Internal Staff Processing & Routing Slip</div>
+</div>
+
+<table style="border:none;">
+  <tr style="border:none;">
+    <td style="border:none; width:70%;">
+      <div style="font-size:14pt; font-weight:bold; color:#0f172a;">{{ app.application_number }}</div>
+      <div>Document Type: <strong>{{ app.get_application_type_display }}</strong></div>
+      <div>Current Status: <strong>{{ app.get_status_display }}</strong></div>
+    </td>
+    <td style="border:none; text-align:right;">
+      {% if qr_base64 %}
+      <img src="{{ qr_base64 }}" width="75" height="75" alt="QR Code">
+      {% endif %}
+    </td>
+  </tr>
+</table>
+
+<div class="section-title">1. Student & Academic Profile</div>
+<table>
+  <tr><th>Student Name</th><td>{{ app.student_name }}</td><th>BAUST Student ID</th><td>{{ app.student_id }}</td></tr>
+  <tr><th>Department</th><td>{{ app.department }}</td><th>Session / Batch</th><td>{{ app.session }} / {{ app.admission_batch }}</td></tr>
+  <tr><th>Father's Name</th><td>{{ app.father_name|default:"—" }}</td><th>Mother's Name</th><td>{{ app.mother_name|default:"—" }}</td></tr>
+  <tr><th>Passing Semester</th><td>{{ app.passing_semester }}</td><th>CGPA</th><td><strong>{{ app.cgpa }}</strong></td></tr>
+</table>
+
+<div class="section-title">2. Attachment Verification Checklist</div>
+<table>
+  <thead>
+    <tr><th width="30">Check</th><th>Attachment Label</th><th>Original Filename</th><th>Size (KB)</th><th>Hash (SHA-256)</th></tr>
+  </thead>
+  <tbody>
+    {% for att in attachments %}
+    <tr>
+      <td style="text-align:center;"><div class="checkbox-box"></div></td>
+      <td><strong>{{ att.get_attachment_type_display }}</strong></td>
+      <td>{{ att.original_filename }}</td>
+      <td>{{ att.file_size_kb }}</td>
+      <td style="font-family:monospace; font-size:7pt;">{{ att.sha256_hash|slice:":16" }}...</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" style="text-align:center;">No attachments found</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="section-title">3. Automated Verification Status</div>
+<table>
+  <tr>
+    <th width="150">Admission Database</th>
+    <td>{% if verification.admission_api_fetched %}<strong style="color:green;">✓ Verified Match</strong>{% else %}Pending Verification{% endif %}</td>
+  </tr>
+  <tr>
+    <th>Education Board (SSC/HSC)</th>
+    <td>{% if verification.board_api_fetched %}<strong style="color:green;">✓ Scraped Result Matched</strong> (Roll: {{ verification.board_roll }}){% else %}Pending Board Verification{% endif %}</td>
+  </tr>
+</table>
+
+<div class="section-title">4. Processing Audit History</div>
+<table>
+  <thead>
+    <tr><th>Timestamp</th><th>Status Change</th><th>Actor</th><th>Note / Reason</th></tr>
+  </thead>
+  <tbody>
+    {% for log in logs %}
+    <tr>
+      <td>{{ log.changed_at|date:"Y-m-d H:i" }}</td>
+      <td>{{ log.old_status }} ➔ {{ log.new_status }}</td>
+      <td>{{ log.changed_by.username|default:"System/Student" }}</td>
+      <td>{{ log.note }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<table class="sig-table" width="100%">
+  <tr>
+    <td width="30%"><div class="sig-line">Prepared By (Section Officer)</div></td>
+    <td width="35%"><div class="sig-line">Verified By (Assistant Controller)</div></td>
+    <td width="35%"><div class="sig-line">Approved By (Controller of Exams)</div></td>
+  </tr>
+</table>
+
+</body>
+</html>

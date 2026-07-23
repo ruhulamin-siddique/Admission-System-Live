@@ -1,0 +1,185 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% trans "Submit Academic Document Application" %} | BAUST CoE</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <link rel="stylesheet" href="{% static 'coe/css/coe_premium.css' %}">
+
+  <style>
+    /* Critical Fail-Safe Inline Styling for CoE Application Wizard */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap');
+
+    body.coe-public-body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e3a5f 100%) !important;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      color: #1e293b;
+    }
+    .coe-public-nav {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 0.85rem 1.25rem;
+    }
+    .coe-nav-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .coe-brand-logo {
+      display: flex;
+      align-items: center;
+      color: #ffffff;
+      text-decoration: none !important;
+    }
+    .coe-brand-logo img { height: 40px; margin-right: 0.75rem; }
+    .coe-brand-title { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.15rem; color: #ffffff; line-height: 1.2; }
+    .coe-brand-sub { font-size: 0.75rem; color: #94a3b8; }
+    .coe-public-container { max-width: 860px; margin: 2rem auto 4rem; padding: 0 1rem; }
+    .coe-main-card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+      padding: 2.25rem 2rem;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* Stepper Styling */
+    .coe-stepper { display: flex; justify-content: space-between; position: relative; margin: 1.5rem 0 2.2rem; }
+    .coe-stepper::before { content: ''; position: absolute; top: 18px; left: 15px; right: 15px; height: 4px; background: #e2e8f0; z-index: 1; border-radius: 4px; }
+    .coe-stepper-progress { position: absolute; top: 18px; left: 15px; height: 4px; background: linear-gradient(90deg, #4f46e5, #06b6d4); z-index: 2; border-radius: 4px; transition: width 0.4s ease; }
+    .coe-step-item { position: relative; z-index: 3; text-align: center; flex: 1; }
+    .coe-step-circle { width: 40px; height: 40px; border-radius: 50%; background: #ffffff; border: 3px solid #cbd5e1; color: #64748b; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.35rem; font-size: 0.95rem; }
+    .coe-step-item.active .coe-step-circle { border-color: #4f46e5; background: #4f46e5; color: #ffffff; box-shadow: 0 0 0 5px rgba(79, 70, 229, 0.2); }
+    .coe-step-item.completed .coe-step-circle { border-color: #10b981; background: #10b981; color: #ffffff; }
+    .coe-step-label { font-size: 0.78rem; font-weight: 600; color: #64748b; display: block; }
+    .coe-step-item.active .coe-step-label { color: #4f46e5; font-weight: 700; }
+    .coe-step-item.completed .coe-step-label { color: #10b981; }
+
+    /* Type Card Grid */
+    .coe-type-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 575px) { .coe-type-grid { grid-template-columns: 1fr; } .coe-main-card { padding: 1.5rem 1rem; } }
+    .coe-type-card {
+      position: relative;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 1.1rem 1rem;
+      background: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      min-height: 70px;
+      transition: all 0.2s ease;
+    }
+    .coe-type-card:hover { border-color: #a5b4fc; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(79, 70, 229, 0.12); }
+    .coe-type-card.selected { border-color: #4f46e5 !important; background: linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%) !important; box-shadow: 0 8px 22px rgba(79, 70, 229, 0.15); }
+    .coe-type-card input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+    .coe-type-icon { width: 44px; height: 44px; border-radius: 12px; background: #f1f5f9; color: #475569; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-right: 0.85rem; flex-shrink: 0; }
+    .coe-type-card.selected .coe-type-icon { background: #4f46e5; color: #ffffff; }
+    .coe-type-title { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.3; }
+    .coe-type-check { margin-left: auto; color: #4f46e5; font-size: 1.25rem; opacity: 0; }
+    .coe-type-card.selected .coe-type-check { opacity: 1; }
+
+    /* Inputs & Buttons */
+    .coe-form-control { height: 48px; border-radius: 10px; border: 1.5px solid #cbd5e1; padding: 0.65rem 1rem; font-size: 0.95rem; background: #ffffff; color: #1e293b; }
+    .coe-form-control:focus { border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15); outline: none; }
+    .coe-label { font-weight: 600; font-size: 0.88rem; color: #334155; margin-bottom: 0.35rem; }
+    .coe-btn { min-height: 48px; padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; text-decoration: none !important; }
+    .coe-btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #0284c7 100%); color: #ffffff !important; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); }
+    .coe-btn-primary:hover { background: linear-gradient(135deg, #4338ca 0%, #0369a1 100%); transform: translateY(-1px); }
+    .coe-btn-secondary { background: #f1f5f9; color: #475569 !important; border: 1px solid #cbd5e1; }
+    .coe-btn-secondary:hover { background: #e2e8f0; color: #1e293b !important; }
+    .coe-btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff !important; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); }
+    .coe-upload-zone { border: 2.5px dashed #cbd5e1; border-radius: 16px; padding: 1.5rem 1rem; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.2s; }
+    .coe-upload-zone:hover { border-color: #4f46e5; background: #f0f7ff; }
+  </style>
+</head>
+<body class="coe-public-body">
+
+<!-- Public Header Navbar -->
+<nav class="coe-public-nav">
+  <div class="coe-nav-container">
+    <a href="{% url 'coe_submit' %}" class="coe-brand-logo">
+      <img src="https://www.baust.edu.bd/images/logo.png" alt="BAUST" onerror="this.style.display='none'">
+      <div>
+        <div class="coe-brand-title">BAUST CoE Portal</div>
+        <div class="coe-brand-sub">Controller of Examinations</div>
+      </div>
+    </a>
+    <div>
+      <a href="{% url 'coe_track' %}" class="btn btn-outline-light font-weight-bold btn-sm px-3">
+        <i class="fas fa-search mr-1"></i>{% trans "Track Application" %}
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Form Container -->
+<div class="coe-public-container">
+  <div class="coe-main-card">
+
+    <!-- Header & University Branding -->
+    <div class="text-center mb-4 border-bottom pb-3">
+      <h3 class="font-weight-bold text-dark mb-1" style="font-family: 'Outfit', sans-serif; font-size: clamp(1.25rem, 3.5vw, 1.75rem);">
+        {% trans "Academic Document Application" %}
+      </h3>
+      <p class="text-muted small mb-0">{% trans "Office of the Controller of Examinations — BAUST" %}</p>
+    </div>
+
+    <!-- Animated Mobile-First Stepper Progress Bar -->
+    <div class="coe-stepper">
+      <div class="coe-stepper-progress" style="width: {% if step == 1 %}10%{% elif step == 2 %}40%{% elif step == 3 %}70%{% else %}100%{% endif %};"></div>
+
+      {% for s_num, s_label in step_labels %}
+      <div class="coe-step-item {% if step == s_num %}active{% elif step > s_num %}completed{% endif %}">
+        <div class="coe-step-circle">
+          {% if step > s_num %}
+            <i class="fas fa-check"></i>
+          {% else %}
+            {{ s_num }}
+          {% endif %}
+        </div>
+        <span class="coe-step-label">{{ s_label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Dynamic HTMX Step Container -->
+    <div id="wizard-content">
+      {% if step == 1 %}
+        {% include "coe/partials/step1.html" %}
+      {% elif step == 2 %}
+        {% include "coe/partials/step2.html" %}
+      {% elif step == 3 %}
+        {% include "coe/partials/step3.html" %}
+      {% elif step == 4 %}
+        {% include "coe/partials/step4.html" %}
+      {% endif %}
+    </div>
+
+    <!-- Reset Application Link -->
+    <div class="text-center mt-4 pt-3 border-top">
+      <form method="post" action="{% url 'coe_submit' %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reset">
+        <button type="submit" class="btn btn-link text-muted btn-sm">
+          <i class="fas fa-redo-alt mr-1"></i>{% trans "Reset & Start Over" %}
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

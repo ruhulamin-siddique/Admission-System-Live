@@ -22,6 +22,10 @@
   <link rel="icon" type="image/png" href="{{ sys_settings.favicon_url }}">
   {% endif %}
 
+  {% if 'coe/' in request.path %}
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'coe/css/coe_premium.css' %}">
+  {% endif %}
   {% block extra_css %}{% endblock %}
   <!-- SweetAlert2 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -600,8 +604,17 @@
           {% endif %}
 
           {% has_access 'exam_billing' 'view_dashboard' as can_view_billing %}
+          {% has_access 'coe' 'view_all_applications' as can_view_coe %}
+          {% has_access 'coe' 'dept_head_review' as can_hod_review %}
+          {% has_access 'coe' 'coe_desk_assign' as can_coe_assign %}
+          {% has_access 'coe' 'processing_officer' as can_process %}
+          {% has_access 'coe' 'delivery_desk' as can_deliver %}
+          {% has_access 'coe' 'manage_settings' as can_coe_settings %}
+
+          {% if can_view_billing or can_view_coe or can_hod_review or can_coe_assign or can_process or can_deliver %}
+          <li class="nav-header">{% translate "CONTROLLER OF EXAMINATIONS" %}</li>
+
           {% if can_view_billing %}
-          <li class="nav-header">{% translate "EXAM BILLING" %}</li>
           <li class="nav-item {% if 'exam-billing' in request.path %}menu-open{% endif %}">
             <a href="#" class="nav-link {% if 'exam-billing' in request.path %}active{% endif %}">
               <i class="nav-icon fas fa-file-invoice-dollar"></i>
@@ -643,6 +656,61 @@
               </li>
             </ul>
           </li>
+          {% endif %}
+
+          {% if can_view_coe or can_hod_review or can_coe_assign or can_process or can_deliver %}
+          <li class="nav-item {% if 'coe/' in request.path %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if 'coe/' in request.path %}active{% endif %}">
+              <i class="nav-icon fas fa-graduation-cap"></i>
+              <p>
+                {% translate "CoE — Documents" %}
+                <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              {% if can_view_coe %}
+              <li class="nav-item">
+                <a href="{% url 'coe_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'coe_dashboard' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "CoE Dashboard" %}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'coe_application_list' %}" class="nav-link {% if request.resolver_match.url_name == 'coe_application_list' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "All Applications" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_hod_review %}
+              <li class="nav-item">
+                <a href="{% url 'coe_hod_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'coe_hod_dashboard' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "HoD Review" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_coe_assign or can_process %}
+              <li class="nav-item">
+                <a href="{% url 'coe_kanban' %}" class="nav-link {% if request.resolver_match.url_name == 'coe_kanban' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Officer Assignment" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_deliver %}
+              <li class="nav-item">
+                <a href="{% url 'coe_delivery_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'coe_delivery_dashboard' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Delivery Desk" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_coe_settings %}
+              <li class="nav-item">
+                <a href="{% url 'coe_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'coe_settings' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "CoE Settings" %}</p>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </li>
+          {% endif %}
           {% endif %}
 
           {% has_access 'ict_wing' 'view_devices' as can_view_ict %}

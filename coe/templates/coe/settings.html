@@ -1,0 +1,763 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "CoE Settings" %}{% endblock %}
+{% block page_title %}<i class="fas fa-sliders-h mr-2 text-indigo"></i>{% trans "CoE Module Settings" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Premium Scoped Styles for CoE Settings Page */
+  .settings-container {
+    font-family: var(--coe-font, 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  }
+
+  .premium-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .premium-card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.25rem 1.75rem;
+  }
+
+  .premium-card-title {
+    font-family: var(--coe-font-heading, 'Outfit', sans-serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .premium-card-body {
+    padding: 1.75rem;
+  }
+
+  .section-title-premium {
+    font-family: var(--coe-font-heading, 'Outfit', sans-serif);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #4f46e5;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-divider {
+    border-top: 1px dashed #e2e8f0;
+    margin: 1.75rem 0;
+  }
+
+  /* Input Customizations */
+  .premium-input-wrapper {
+    margin-bottom: 1.25rem;
+  }
+
+  .premium-input-wrapper label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #475569;
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  .premium-input-group {
+    display: flex;
+    align-items: stretch;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .premium-input-group-text {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-right: none;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.95rem;
+  }
+
+  .premium-input-group .form-control {
+    border-radius: 0 8px 8px 0 !important;
+    border: 1px solid #cbd5e1;
+    padding: 0.6rem 0.85rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: #1e293b;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .premium-input-group .form-control:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+    outline: none;
+    z-index: 10;
+  }
+
+  .premium-helper-text {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 0.35rem;
+    display: block;
+  }
+
+  .preview-badge-container {
+    margin-top: 0.5rem;
+  }
+
+  .preview-badge {
+    background-color: #f5f3ff;
+    color: #6d28d9;
+    font-family: monospace;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #ddd6fe;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Switch Cards Grid */
+  .switch-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .switch-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .switch-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+  }
+
+  .switch-card:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  }
+
+  .switch-card-info {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex: 1;
+    margin-right: 0.75rem;
+  }
+
+  .switch-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #eef2ff;
+    color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+  }
+
+  .switch-card:hover .switch-card-icon {
+    background: #4f46e5;
+    color: #ffffff;
+    transform: scale(1.05);
+  }
+
+  .switch-card-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .switch-card-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #1e293b;
+    margin-bottom: 0.15rem;
+  }
+
+  .switch-card-desc {
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.25;
+  }
+
+  /* Custom iOS-like Toggles */
+  .custom-switch {
+    padding-left: 2.5rem;
+  }
+
+  .custom-switch .custom-control-label::before {
+    left: -2.5rem;
+    width: 2rem;
+    height: 1.15rem;
+    border-radius: 50rem;
+    border-color: #cbd5e1;
+    background-color: #e2e8f0;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .custom-switch .custom-control-label::after {
+    left: -2.4rem;
+    top: calc(0.125rem + 1px);
+    width: 0.95rem;
+    height: 0.95rem;
+    border-radius: 50rem;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+  }
+
+  .custom-control-input:checked ~ .custom-control-label::after {
+    transform: translateX(0.85rem) !important;
+  }
+
+  /* macOS Terminal card */
+  .terminal-box {
+    background: #0f172a;
+    border-radius: 12px;
+    border: 1px solid #1e293b;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: #1e293b;
+    padding: 0.65rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #0f172a;
+  }
+
+  .terminal-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot-red { background-color: #ef4444; }
+  .dot-yellow { background-color: #f59e0b; }
+  .dot-green { background-color: #10b981; }
+
+  .terminal-title {
+    color: #94a3b8;
+    font-size: 0.72rem;
+    font-family: monospace;
+    font-weight: 600;
+  }
+
+  .terminal-body {
+    padding: 1.25rem;
+    margin: 0;
+  }
+
+  .terminal-pre {
+    background: transparent !important;
+    border: none !important;
+    margin: 0;
+    padding: 0;
+    color: #38bdf8;
+    font-family: 'Fira Code', 'Courier New', Courier, monospace;
+    font-size: 0.82rem;
+    white-space: pre-wrap;
+    line-height: 1.6;
+  }
+
+  .terminal-comment {
+    color: #64748b;
+  }
+
+  .copy-btn {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #94a3b8;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .copy-btn:hover {
+    background: #334155;
+    color: #ffffff;
+    border-color: #64748b;
+  }
+
+  /* Info Note Badge */
+  .info-callout-premium {
+    background-color: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    border-radius: 0 8px 8px 0;
+    padding: 0.85rem 1rem;
+    margin-top: 1rem;
+  }
+
+  /* Footer Controls */
+  .premium-card-footer {
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 1.25rem 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .save-btn {
+    background: #4f46e5;
+    color: #ffffff !important;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.5rem;
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+    cursor: pointer;
+  }
+
+  .save-btn:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(79, 70, 229, 0.3);
+  }
+
+  .status-badge {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 0.35rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid settings-container">
+  <div class="row">
+    <!-- Left Column: Settings Configuration -->
+    <div class="col-lg-8">
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">
+            <i class="fas fa-cog text-indigo"></i>
+            {% trans "Module Configuration" %}
+          </h3>
+        </div>
+        
+        <form method="post" id="coe-settings-form">
+          {% csrf_token %}
+          <div class="premium-card-body">
+            
+            <!-- Section 1: Tracking Number Settings -->
+            <div class="section-header-premium mb-3">
+              <h6 class="section-title-premium">
+                <i class="fas fa-hashtag"></i>
+                {% trans "Tracking Number Settings" %}
+              </h6>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="premium-input-wrapper">
+                  <label for="{{ form.tracking_id_prefix.id_for_label }}">{% trans "Tracking ID Prefix" %}</label>
+                  <div class="premium-input-group">
+                    <span class="premium-input-group-text"><i class="fas fa-tag"></i></span>
+                    {{ form.tracking_id_prefix }}
+                  </div>
+                  <small class="premium-helper-text">
+                    {% trans "Specify prefix for generating tracking codes. Avoid special characters." %}
+                  </small>
+                  <div class="preview-badge-container">
+                    <span class="preview-badge">
+                      <i class="fas fa-eye mr-1"></i>
+                      {% trans "Preview:" %} <span id="prefix-preview">{{ settings_obj.tracking_id_prefix }}-2026-0001</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Section 2: SMS Notification Settings -->
+            <div class="section-header-premium mb-3">
+              <h6 class="section-title-premium">
+                <i class="fas fa-bell"></i>
+                {% trans "SMS Notification Settings" %}
+              </h6>
+            </div>
+            
+            <div class="switch-grid">
+              <!-- Switch Card 1 -->
+              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_submit.id_for_label }}', event)">
+                <div class="switch-card-info">
+                  <div class="switch-card-icon">
+                    <i class="fas fa-paper-plane"></i>
+                  </div>
+                  <div class="switch-card-text">
+                    <span class="switch-card-title">{% trans "SMS on Submission" %}</span>
+                    <span class="switch-card-desc">{% trans "Send SMS confirmation to student upon application submit" %}</span>
+                  </div>
+                </div>
+                <div class="custom-control custom-switch">
+                  {{ form.sms_notify_submit }}
+                  <label class="custom-control-label" for="{{ form.sms_notify_submit.id_for_label }}"></label>
+                </div>
+              </div>
+
+              <!-- Switch Card 2 -->
+              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_approved.id_for_label }}', event)">
+                <div class="switch-card-info">
+                  <div class="switch-card-icon">
+                    <i class="fas fa-user-check"></i>
+                  </div>
+                  <div class="switch-card-text">
+                    <span class="switch-card-title">{% trans "SMS on HoD Approval" %}</span>
+                    <span class="switch-card-desc">{% trans "Notify student when Department Head reviews application" %}</span>
+                  </div>
+                </div>
+                <div class="custom-control custom-switch">
+                  {{ form.sms_notify_approved }}
+                  <label class="custom-control-label" for="{{ form.sms_notify_approved.id_for_label }}"></label>
+                </div>
+              </div>
+
+              <!-- Switch Card 3 -->
+              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_ready.id_for_label }}', event)">
+                <div class="switch-card-info">
+                  <div class="switch-card-icon">
+                    <i class="fas fa-clipboard-check"></i>
+                  </div>
+                  <div class="switch-card-text">
+                    <span class="switch-card-title">{% trans "SMS When Ready" %}</span>
+                    <span class="switch-card-desc">{% trans "Send SMS alert when certificates are prepared for pickup" %}</span>
+                  </div>
+                </div>
+                <div class="custom-control custom-switch">
+                  {{ form.sms_notify_ready }}
+                  <label class="custom-control-label" for="{{ form.sms_notify_ready.id_for_label }}"></label>
+                </div>
+              </div>
+
+              <!-- Switch Card 4 -->
+              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_delivery_otp.id_for_label }}', event)">
+                <div class="switch-card-info">
+                  <div class="switch-card-icon">
+                    <i class="fas fa-key"></i>
+                  </div>
+                  <div class="switch-card-text">
+                    <span class="switch-card-title">{% trans "Verification OTP" %}</span>
+                    <span class="switch-card-desc">{% trans "Enforce one-time-password via SMS to finalize delivery" %}</span>
+                  </div>
+                </div>
+                <div class="custom-control custom-switch">
+                  {{ form.sms_delivery_otp }}
+                  <label class="custom-control-label" for="{{ form.sms_delivery_otp.id_for_label }}"></label>
+                </div>
+              </div>
+
+              <!-- Switch Card 5: Auto Assignment Toggle -->
+              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.enable_auto_assignment.id_for_label }}', event)">
+                <div class="switch-card-info">
+                  <div class="switch-card-icon" style="background: #fdf2f8; color: #db2777;">
+                    <i class="fas fa-robot"></i>
+                  </div>
+                  <div class="switch-card-text">
+                    <span class="switch-card-title">{% trans "Auto-Assign Applications" %}</span>
+                    <span class="switch-card-desc">{% trans "Automatically assign approved applications based on type rules" %}</span>
+                  </div>
+                </div>
+                <div class="custom-control custom-switch">
+                  {{ form.enable_auto_assignment }}
+                  <label class="custom-control-label" for="{{ form.enable_auto_assignment.id_for_label }}"></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- Section 3: File & Retention Settings -->
+            <div class="section-header-premium mb-3">
+              <h6 class="section-title-premium">
+                <i class="fas fa-database"></i>
+                {% trans "File & Retention Settings" %}
+              </h6>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-4">
+                <div class="premium-input-wrapper">
+                  <label for="{{ form.attachment_max_mb.id_for_label }}">{% trans "Max Attachment Size" %}</label>
+                  <div class="premium-input-group">
+                    <span class="premium-input-group-text"><i class="fas fa-file-alt"></i></span>
+                    {{ form.attachment_max_mb }}
+                    <span class="premium-input-group-text bg-white border-left-0 font-weight-bold" style="font-size: 0.8rem; border-color: #cbd5e1;">MB</span>
+                  </div>
+                  <small class="premium-helper-text">
+                    {% trans "Upper limit per uploaded file (1-20 MB)." %}
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="premium-input-wrapper">
+                  <label for="{{ form.rejected_purge_days.id_for_label }}">{% trans "Rejected File Purge" %}</label>
+                  <div class="premium-input-group">
+                    <span class="premium-input-group-text"><i class="fas fa-trash-restore"></i></span>
+                    {{ form.rejected_purge_days }}
+                    <span class="premium-input-group-text bg-white border-left-0 font-weight-bold" style="font-size: 0.8rem; border-color: #cbd5e1;">{% trans "Days" %}</span>
+                  </div>
+                  <small class="premium-helper-text">
+                    {% trans "Purge rejected/cancelled files after N days." %}
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="premium-input-wrapper">
+                  <label for="{{ form.delivered_purge_days.id_for_label }}">{% trans "Delivered File Purge" %}</label>
+                  <div class="premium-input-group">
+                    <span class="premium-input-group-text"><i class="fas fa-archive"></i></span>
+                    {{ form.delivered_purge_days }}
+                    <span class="premium-input-group-text bg-white border-left-0 font-weight-bold" style="font-size: 0.8rem; border-color: #cbd5e1;">{% trans "Days" %}</span>
+                  </div>
+                  <small class="premium-helper-text">
+                    {% trans "Purge files N days after delivery (keeps meta)." %}
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider" id="auto-assign-rules-divider" style="{% if not settings_obj.enable_auto_assignment %}display: none;{% endif %}"></div>
+
+            <!-- Section 4: Auto-Assignment Mappings -->
+            <div id="auto-assign-rules-section" style="{% if not settings_obj.enable_auto_assignment %}display: none;{% endif %}">
+              <div class="section-header-premium mb-3">
+                <h6 class="section-title-premium">
+                  <i class="fas fa-sitemap"></i>
+                  {% trans "Auto-Assignment Mappings" %}
+                </h6>
+              </div>
+              <p class="text-muted small mb-3">
+                {% trans "Configure default processing officers for each application type. If disabled or unmapped, applications require manual assignment." %}
+              </p>
+              
+              <div class="row">
+                {% for rule in app_type_rules %}
+                <div class="col-md-6 mb-3">
+                  <div class="premium-input-wrapper mb-0">
+                    <label for="rule_{{ rule.code }}" style="font-size: 0.82rem; font-weight: 600;">{{ rule.label }}</label>
+                    <div class="premium-input-group">
+                      <span class="premium-input-group-text"><i class="fas fa-user-tie"></i></span>
+                      <select name="rule_{{ rule.code }}" id="rule_{{ rule.code }}" class="form-control">
+                        <option value="">-- {% trans "Manual Assignment" %} --</option>
+                        {% for officer in officers %}
+                        <option value="{{ officer.id }}" {% if officer.id == rule.assigned_officer_id %}selected{% endif %}>
+                          {{ officer.get_full_name|default:officer.username }}
+                        </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Card Footer Actions -->
+          <div class="premium-card-footer">
+            <button type="submit" class="save-btn">
+              <i class="fas fa-save mr-1"></i>
+              {% trans "Save Configuration" %}
+            </button>
+            <span class="status-badge">
+              <i class="far fa-clock text-indigo"></i>
+              {% trans "Last updated:" %} <strong class="ml-1">{{ settings_obj.updated_at|date:"d F Y, h:i A" }}</strong>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right Column: Cleanup Terminal Command -->
+    <div class="col-lg-4">
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">
+            <i class="fas fa-terminal text-indigo"></i>
+            {% trans "Cleanup Utility" %}
+          </h3>
+        </div>
+        <div class="premium-card-body">
+          <p class="text-muted small">
+            {% trans "Execute command-line scripts to safely purge attachment documents in accordance with the retention rules specified." %}
+          </p>
+
+          <!-- macOS style Terminal Console -->
+          <div class="terminal-box mb-3">
+            <div class="terminal-header">
+              <div class="terminal-dots">
+                <span class="terminal-dot dot-red"></span>
+                <span class="terminal-dot dot-yellow"></span>
+                <span class="terminal-dot dot-green"></span>
+              </div>
+              <span class="terminal-title">python manage.py coe_cleanup</span>
+              <button type="button" class="copy-btn" onclick="copyTerminalText()">
+                <i class="far fa-copy"></i>
+                <span>{% trans "Copy" %}</span>
+              </button>
+            </div>
+            <div class="terminal-body">
+              <pre class="terminal-pre"><span class="terminal-comment"># {% trans "Run actual purge" %}</span>
+python manage.py coe_cleanup
+
+<span class="terminal-comment"># {% trans "Dry-run (only verify counts)" %}</span>
+python manage.py coe_cleanup --dry-run</pre>
+            </div>
+          </div>
+
+          <!-- Info Callout -->
+          <div class="info-callout-premium">
+            <p class="text-secondary small mb-0 font-weight-bold" style="color: #0369a1 !important;">
+              <i class="fas fa-info-circle mr-1 text-info"></i>
+              {% trans "Automation Tip" %}
+            </p>
+            <p class="text-muted small mb-0 mt-1">
+              {% trans "Configure a system cron job to run coe_cleanup daily for hands-free background maintenance." %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inline JavaScript Utilities -->
+<script>
+  // Card click-toggle listener for custom switch widgets
+  function toggleSwitchCard(card, inputId, event) {
+    // Avoid double-triggering when checkbox or custom switch labels are targeted directly
+    if (event.target.tagName === 'INPUT' || event.target.classList.contains('custom-control-label')) {
+      return;
+    }
+    const checkbox = document.getElementById(inputId);
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      checkbox.dispatchEvent(new Event('change'));
+    }
+  }
+
+  // Real-time tracking ID prefix visualizer & Auto-Assignment rules toggling
+  document.addEventListener('DOMContentLoaded', function() {
+    const prefixInput = document.getElementById('{{ form.tracking_id_prefix.id_for_label }}');
+    const previewSpan = document.getElementById('prefix-preview');
+    if (prefixInput && previewSpan) {
+      prefixInput.addEventListener('input', function() {
+        const val = this.value.toUpperCase().trim() || 'APP';
+        previewSpan.textContent = val + '-2026-0001';
+      });
+    }
+
+    const autoAssignCheckbox = document.getElementById('{{ form.enable_auto_assignment.id_for_label }}');
+    const autoAssignSection = document.getElementById('auto-assign-rules-section');
+    const autoAssignDivider = document.getElementById('auto-assign-rules-divider');
+    
+    if (autoAssignCheckbox && autoAssignSection) {
+      function toggleRulesVisibility() {
+        if (autoAssignCheckbox.checked) {
+          autoAssignSection.style.display = 'block';
+          if (autoAssignDivider) autoAssignDivider.style.display = 'block';
+        } else {
+          autoAssignSection.style.display = 'none';
+          if (autoAssignDivider) autoAssignDivider.style.display = 'none';
+        }
+      }
+      
+      autoAssignCheckbox.addEventListener('change', toggleRulesVisibility);
+      // Trigger once on load to ensure correct initial state
+      toggleRulesVisibility();
+    }
+  });
+
+  // macOS Terminal Copy utility
+  function copyTerminalText() {
+    const codeText = "python manage.py coe_cleanup\n\n# Dry-run (preview only):\npython manage.py coe_cleanup --dry-run";
+    navigator.clipboard.writeText(codeText).then(() => {
+      const copyBtnStr = document.querySelector('.copy-btn span');
+      const copyBtnIcon = document.querySelector('.copy-btn i');
+      const copyBtn = document.querySelector('.copy-btn');
+      
+      const originalText = copyBtnStr.textContent;
+      
+      copyBtnStr.textContent = '{% trans "Copied!" %}';
+      copyBtnIcon.className = 'fas fa-check text-success';
+      copyBtn.style.borderColor = '#10b981';
+      
+      setTimeout(() => {
+        copyBtnStr.textContent = originalText;
+        copyBtnIcon.className = 'far fa-copy';
+        copyBtn.style.borderColor = '#475569';
+      }, 2000);
+    }).catch(err => {
+      console.error('Terminal copy failed: ', err);
+    });
+  }
+</script>
+{% endblock %}

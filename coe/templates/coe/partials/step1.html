@@ -1,0 +1,60 @@
+{% load i18n %}
+{% comment %}Step 1 — Application Type Selector{% endcomment %}
+
+<div id="wizard-content">
+<h5 class="font-weight-bold mb-3" style="font-family: 'Outfit', sans-serif; color: #0f172a;">
+  <i class="fas fa-file-alt mr-2 text-primary"></i>{% trans "Step 1: Select Application Type" %}
+</h5>
+
+{% if error %}
+<div class="alert alert-warning border-0 shadow-sm" style="border-radius: 10px;">
+  <i class="fas fa-exclamation-triangle mr-2"></i>{{ error }}
+</div>
+{% endif %}
+
+<form method="post" action="{% url 'coe_submit_step' 1 %}"
+      hx-post="{% url 'coe_submit_step' 1 %}"
+      hx-target="#wizard-content"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+
+  <div class="coe-type-grid">
+    {% for value, label in application_types %}
+    <label class="coe-type-card {% if wizard_data.application_type == value %}selected{% endif %}"
+           for="type_{{ value }}">
+      <input type="radio" name="application_type" id="type_{{ value }}" value="{{ value }}"
+             style="display:none;"
+             {% if wizard_data.application_type == value %}checked{% endif %}>
+      <div class="coe-type-icon">
+        {% if value == 'main_certificate' %}<i class="fas fa-certificate text-warning"></i>
+        {% elif value == 'provisional_transcript' or value == 'incomplete_transcript' %}<i class="fas fa-scroll text-info"></i>
+        {% elif value == 'name_correction' or value == 'parent_name_correction' %}<i class="fas fa-user-edit text-danger"></i>
+        {% elif value == 'recommendation_letter' %}<i class="fas fa-envelope-open-text text-success"></i>
+        {% elif value == 'grade_sheet' %}<i class="fas fa-chart-bar text-primary"></i>
+        {% elif value == 'duplicate_document' %}<i class="fas fa-copy text-secondary"></i>
+        {% else %}<i class="fas fa-file text-muted"></i>{% endif %}
+      </div>
+      <div class="coe-type-title">{{ label }}</div>
+      <div class="coe-type-check"><i class="fas fa-check-circle"></i></div>
+    </label>
+    {% endfor %}
+  </div>
+
+  <div class="mt-4 text-right">
+    <button type="submit" class="coe-btn coe-btn-primary w-100-mobile px-5">
+      {% trans "Next: Student Info" %} <i class="fas fa-arrow-right ml-2"></i>
+    </button>
+  </div>
+</form>
+
+<script>
+document.querySelectorAll('.coe-type-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.coe-type-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    const radio = card.querySelector('input[type="radio"]');
+    if (radio) radio.checked = true;
+  });
+});
+</script>
+</div>

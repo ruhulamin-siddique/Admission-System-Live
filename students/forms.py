@@ -297,6 +297,16 @@ class StudentForm(forms.ModelForm):
                 raise forms.ValidationError("NID must be 10, 13, or 17 digits long")
         return nid
 
+    def clean_student_email(self):
+        email = self.cleaned_data.get('student_email')
+        if email:
+            email = email.strip()
+            import re
+            email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+            if not re.match(email_regex, email):
+                raise forms.ValidationError("Please enter a valid email address format (e.g. student@baust.edu.bd)")
+        return email
+
     def clean_student_mobile(self):
         return self._clean_mobile(self.cleaned_data.get('student_mobile'))
 
@@ -311,13 +321,22 @@ class StudentForm(forms.ModelForm):
             # Strip all non-digit characters
             mobile = ''.join(filter(str.isdigit, mobile))
             
-            # Handle common prefixes (e.g. 88017... -> 017...)
+            # Handle common BD country code prefixes (e.g. 88017... -> 017...)
             if mobile.startswith('880') and len(mobile) == 13:
                 mobile = mobile[2:]
+            elif mobile.startswith('88') and len(mobile) == 13:
+                mobile = mobile[2:]
             
-            # Final validation: must be 11 digits starting with 01
+            valid_prefixes = ['013', '014', '015', '016', '017', '018', '019']
+            
+            # Final validation: must be 11 digits starting with valid Bangladeshi operator prefix
             if not mobile.startswith('01'):
-                raise forms.ValidationError("Mobile number must start with 01")
+                raise forms.ValidationError("Bangladeshi mobile number must start with 01")
+            
+            prefix = mobile[:3]
+            if len(mobile) >= 3 and prefix not in valid_prefixes:
+                raise forms.ValidationError(f"Invalid Bangladeshi operator prefix ({prefix}). Must start with 013, 014, 015, 016, 017, 018, or 019.")
+
             if len(mobile) != 11:
-                raise forms.ValidationError("Mobile number must be exactly 11 digits")
+                raise forms.ValidationError("Bangladeshi mobile number must be exactly 11 digits")
         return mobile

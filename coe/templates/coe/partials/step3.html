@@ -1,0 +1,89 @@
+{% load i18n %}
+{% comment %}Step 3 — File Uploads{% endcomment %}
+
+<div id="wizard-content">
+<h5 class="font-weight-bold mb-3" style="font-family: var(--coe-font-heading); color: var(--coe-dark);">
+  <i class="fas fa-paperclip mr-2 text-primary"></i>
+  {% trans "Step 3: Upload Required Documents" %}
+</h5>
+
+{% if errors %}
+<div class="alert alert-danger border-0 shadow-sm" style="border-radius: var(--coe-radius-sm);">
+  <strong>{% trans "Upload errors:" %}</strong>
+  <ul class="mb-0 mt-1">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<div class="alert alert-info border-0 shadow-sm" style="border-radius: var(--coe-radius-sm);">
+  <i class="fas fa-info-circle mr-1"></i>
+  {% trans "Maximum file size:" %} <strong>{{ max_mb }} MB</strong> per file.
+  {% trans "Accepted formats:" %} PDF, JPG, PNG, WEBP.
+</div>
+
+<form method="post" action="{% url 'coe_submit_step' 3 %}"
+      hx-post="{% url 'coe_submit_step' 3 %}"
+      hx-target="#wizard-content"
+      hx-swap="outerHTML"
+      hx-encoding="multipart/form-data"
+      enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div class="row">
+    {% for att in required_attachments %}
+    <div class="col-md-6 mb-3">
+      <label class="coe-label d-block">
+        {{ att.label }} <span class="text-danger">*</span>
+      </label>
+      <div class="coe-upload-zone" id="zone_{{ forloop.counter }}"
+           onclick="document.getElementById('file_{{ forloop.counter }}').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleDrop(event, '{{ forloop.counter }}')">
+        <div class="coe-upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+        <p class="mb-0 text-muted font-weight-semibold" id="zone_label_{{ forloop.counter }}" style="font-size: 0.9rem;">
+          {% trans "Tap or drag file to upload" %}
+        </p>
+      </div>
+      <input type="file" name="{{ att.key }}"
+             id="file_{{ forloop.counter }}"
+             accept=".pdf,.jpg,.jpeg,.png,.webp"
+             class="d-none"
+             onchange="showFileName(this, '{{ forloop.counter }}')">
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="d-flex justify-content-between mt-4 pt-2 border-top">
+    <button type="button" class="coe-btn coe-btn-secondary"
+            hx-get="{% url 'coe_submit_step' 2 %}?back=1"
+            hx-target="#wizard-content"
+            hx-swap="outerHTML">
+      <i class="fas fa-arrow-left mr-2"></i> {% trans "Back" %}
+    </button>
+    <button type="submit" class="coe-btn coe-btn-primary px-5">
+      {% trans "Next: Review & Submit" %} <i class="fas fa-arrow-right ml-2"></i>
+    </button>
+  </div>
+</form>
+
+<script>
+function showFileName(input, idx) {
+  const label = document.getElementById('zone_label_' + idx);
+  if (input.files.length > 0) {
+    const f = input.files[0];
+    const kb = (f.size / 1024).toFixed(1);
+    label.innerHTML = '<i class="fas fa-check-circle text-success mr-1"></i><strong>' + f.name + '</strong> (' + kb + ' KB)';
+    document.getElementById('zone_' + idx).style.borderColor = '#10b981';
+    document.getElementById('zone_' + idx).style.background = '#ecfdf5';
+  }
+}
+function handleDrop(event, idx) {
+  event.preventDefault();
+  const zone = document.getElementById('zone_' + idx);
+  zone.classList.remove('dragover');
+  const input = document.getElementById('file_' + idx);
+  input.files = event.dataTransfer.files;
+  showFileName(input, idx);
+}
+</script>
+</div>

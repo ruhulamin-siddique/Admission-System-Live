@@ -714,7 +714,5 @@ msgstr "সকল প্রেস রিলিজে কভারেজ যু�
 msgid "Great job! All existing Press Releases have media coverages attached."
 msgstr "সবকিছু ঠিক আছে! বিদ্যমান সকল প্রেস রিলিজে মিডিয়া কভারেজ যুক্ত রয়েছে।"
 
-
-
-
-
+msgid "CONTROLLER OF EXAMINATIONS"
+msgstr "পরীক্ষা নিয়ন্ত্রক"

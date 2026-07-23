@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ app.application_number }} | CoE{% endblock %}
+{% block page_title %}
+  <i class="fas fa-file-alt mr-2"></i>{{ app.application_number }}
+{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'coe_application_list' %}" class="btn btn-sm btn-outline-secondary mr-2">
+    <i class="fas fa-arrow-left mr-1"></i>{% trans "Back" %}
+  </a>
+  <a href="{% url 'coe_receipt_pdf' app.pk %}" target="_blank" class="btn btn-sm btn-outline-success mr-1">
+    <i class="fas fa-file-pdf mr-1"></i>{% trans "PDF Receipt" %}
+  </a>
+  <a href="{% url 'coe_routing_slip_pdf' app.pk %}" target="_blank" class="btn btn-sm btn-outline-info mr-2">
+    <i class="fas fa-print mr-1"></i>{% trans "Routing Slip" %}
+  </a>
+  {% if app.status == 'under_hod_review' %}
+  <a href="{% url 'coe_hod_review' app.pk %}" class="btn btn-sm btn-warning">
+    <i class="fas fa-user-tie mr-1"></i>{% trans "Review (HoD)" %}
+  </a>
+  {% elif app.status == 'pending_coe_assignment' %}
+  <a href="{% url 'coe_assign_officer' app.pk %}" class="btn btn-sm btn-primary">
+    <i class="fas fa-user-plus mr-1"></i>{% trans "Assign Officer" %}
+  </a>
+  {% elif app.status == 'in_processing' or app.status == 'action_required' %}
+  <a href="{% url 'coe_process' app.pk %}" class="btn btn-sm btn-info">
+    <i class="fas fa-cogs mr-1"></i>{% trans "Processing Desk" %}
+  </a>
+  {% elif app.status == 'ready_for_delivery' %}
+  <a href="{% url 'coe_verify_otp' app.pk %}" class="btn btn-sm btn-success">
+    <i class="fas fa-box-open mr-1"></i>{% trans "Delivery Desk" %}
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <!-- LEFT: Application Info + Attachments -->
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">{% trans "Application Details" %}</h3>
+        <span class="badge {{ app.get_status_badge_class }} px-3 py-2" style="font-size:0.9rem;">
+          <i class="{{ app.get_status_icon }} mr-1"></i>{{ app.get_status_display }}
+        </span>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm table-borderless">
+          <tr><th width="200">{% trans "Application Type" %}</th><td><strong>{{ app.get_application_type_display }}</strong></td></tr>
+          <tr><th>{% trans "Student Name" %}</th><td>{{ app.student_name }}</td></tr>
+          <tr><th>{% trans "Student ID" %}</th><td><code>{{ app.student_id }}</code></td></tr>
+          <tr><th>{% trans "Mobile" %}</th><td>{{ app.mobile_number }}</td></tr>
+          {% if app.email %}<tr><th>{% trans "Email" %}</th><td>{{ app.email }}</td></tr>{% endif %}
+          <tr><th>{% trans "Department" %}</th><td>{{ app.department }}</td></tr>
+          <tr><th>{% trans "Session" %}</th><td>{{ app.session }}</td></tr>
+          <tr><th>{% trans "Admission Batch" %}</th><td>{{ app.admission_batch }}</td></tr>
+          {% if app.father_name %}<tr><th>{% trans "Father's Name" %}</th><td>{{ app.father_name }}</td></tr>{% endif %}
+          {% if app.mother_name %}<tr><th>{% trans "Mother's Name" %}</th><td>{{ app.mother_name }}</td></tr>{% endif %}
+          {% if app.dob %}<tr><th>{% trans "Date of Birth" %}</th><td>{{ app.dob }}</td></tr>{% endif %}
+          <tr><th>{% trans "Passing Semester" %}</th><td>{{ app.passing_semester }}</td></tr>
+          <tr><th>{% trans "CGPA" %}</th><td>{{ app.cgpa }}</td></tr>
+          {% if app.result_date %}<tr><th>{% trans "Result Date" %}</th><td>{{ app.result_date }}</td></tr>{% endif %}
+          {% if app.corrected_name %}<tr><th>{% trans "Corrected Name" %}</th><td>{{ app.corrected_name }}</td></tr>{% endif %}
+          {% if app.corrected_parent_name %}<tr><th>{% trans "Corrected Parent Name" %}</th><td>{{ app.corrected_parent_name }}</td></tr>{% endif %}
+          {% if app.purpose_destination %}<tr><th>{% trans "Purpose/Destination" %}</th><td>{{ app.purpose_destination }}</td></tr>{% endif %}
+          {% if app.level_term %}<tr><th>{% trans "Level/Term" %}</th><td>{{ app.level_term }}</td></tr>{% endif %}
+          {% if app.missing_doc_type %}<tr><th>{% trans "Missing Doc Type" %}</th><td>{{ app.missing_doc_type }}</td></tr>{% endif %}
+          <tr><th>{% trans "Assigned To" %}</th><td>{{ app.assigned_to.get_full_name|default:"—" }}</td></tr>
+          {% if app.dept_head_note %}<tr><th>{% trans "HoD Note" %}</th><td class="text-info">{{ app.dept_head_note }}</td></tr>{% endif %}
+          {% if app.processing_note %}<tr><th>{% trans "Processing Note" %}</th><td>{{ app.processing_note }}</td></tr>{% endif %}
+          {% if app.rejection_reason %}<tr><th>{% trans "Rejection Reason" %}</th><td class="text-danger">{{ app.rejection_reason }}</td></tr>{% endif %}
+          <tr><th>{% trans "Submitted At" %}</th><td>{{ app.submitted_at|date:"d F Y, h:i A" }}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Attachments -->
+    <div class="card mt-3">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-paperclip mr-2"></i>{% trans "Attachments" %}</h3></div>
+      <div class="card-body">
+        {% for att in attachments %}
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <i class="fas fa-file mr-2 text-muted"></i>
+            <strong>{{ att.get_attachment_type_display }}</strong>
+            <small class="text-muted ml-2">{{ att.original_filename }} ({{ att.file_size_kb }} KB)</small>
+          </div>
+          {% if not att.is_purged %}
+          <a href="{{ att.file.url }}" target="_blank" class="btn btn-xs btn-outline-info">
+            <i class="fas fa-eye mr-1"></i>{% trans "View" %}
+          </a>
+          {% else %}
+          <span class="badge badge-secondary">{% trans "Purged" %}</span>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-muted mb-0">{% trans "No attachments." %}</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Audit Timeline -->
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-history mr-2"></i>{% trans "Status Timeline" %}</h3></div>
+      <div class="card-body p-0">
+        <div class="timeline px-3 pt-3">
+          {% for log in logs %}
+          <div class="time-label">
+            <span class="bg-secondary">{{ log.changed_at|date:"d M Y" }}</span>
+          </div>
+          <div>
+            <i class="fas fa-circle" style="color:#3b82f6;"></i>
+            <div class="timeline-item">
+              <span class="time text-muted"><i class="far fa-clock mr-1"></i>{{ log.changed_at|date:"h:i A" }}</span>
+              <h3 class="timeline-header">
+                {% if log.old_status %}
+                <span class="badge badge-secondary">{{ log.old_status }}</span>
+                <i class="fas fa-arrow-right mx-1"></i>
+                {% endif %}
+                <span class="badge badge-primary">{{ log.new_status }}</span>
+                {% if log.sms_sent %}<span class="badge badge-success ml-1" title="SMS sent"><i class="fas fa-sms"></i></span>{% endif %}
+              </h3>
+              {% if log.note %}
+              <div class="timeline-body">{{ log.note }}</div>
+              {% endif %}
+              {% if log.changed_by %}
+              <div class="timeline-footer">
+                <small class="text-muted"><i class="fas fa-user mr-1"></i>{{ log.changed_by.get_full_name|default:log.changed_by.username }}</small>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-muted text-center py-3">{% trans "No log entries." %}</p>
+          {% endfor %}
+          <div><i class="fas fa-clock bg-gray"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

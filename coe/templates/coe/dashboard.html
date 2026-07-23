@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "CoE Dashboard" %}{% endblock %}
+{% block page_title %}
+  <i class="fas fa-graduation-cap mr-2 text-primary"></i>{% trans "CoE — Dashboard" %}
+{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'coe_application_list' %}" class="btn btn-sm btn-outline-primary mr-2">
+    <i class="fas fa-list mr-1"></i>{% trans "All Applications" %}
+  </a>
+  <a href="{% url 'coe_submit' %}" class="btn btn-sm btn-success" target="_blank">
+    <i class="fas fa-plus mr-1"></i>{% trans "New Application" %}
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- KPI Cards Row 1 -->
+<div class="row">
+  <div class="col-lg-3 col-md-6">
+    <div class="small-box bg-info">
+      <div class="inner"><h3>{{ kpi.today_submitted }}</h3><p>{% trans "Today's Submissions" %}</p></div>
+      <div class="icon"><i class="fas fa-paper-plane"></i></div>
+      <a href="{% url 'coe_application_list' %}" class="small-box-footer">{% trans "View" %} <i class="fas fa-arrow-circle-right"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6">
+    <div class="small-box bg-warning">
+      <div class="inner"><h3>{{ kpi.pending_hod }}</h3><p>{% trans "Pending HoD Review" %}</p></div>
+      <div class="icon"><i class="fas fa-user-tie"></i></div>
+      <a href="{% url 'coe_hod_dashboard' %}" class="small-box-footer">{% trans "Review" %} <i class="fas fa-arrow-circle-right"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6">
+    <div class="small-box bg-primary">
+      <div class="inner"><h3>{{ kpi.pending_assignment }}</h3><p>{% trans "Pending CoE Assignment" %}</p></div>
+      <div class="icon"><i class="fas fa-hourglass-half"></i></div>
+      <a href="{% url 'coe_kanban' %}" class="small-box-footer">{% trans "Assign" %} <i class="fas fa-arrow-circle-right"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6">
+    <div class="small-box bg-secondary">
+      <div class="inner"><h3>{{ kpi.in_processing }}</h3><p>{% trans "In Processing" %}</p></div>
+      <div class="icon"><i class="fas fa-cogs"></i></div>
+      <a href="{% url 'coe_application_list' %}?status=in_processing" class="small-box-footer">{% trans "View" %} <i class="fas fa-arrow-circle-right"></i></a>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Cards Row 2 -->
+<div class="row">
+  <div class="col-lg-3 col-md-6">
+    <div class="small-box bg-danger">
+      <div class="inner"><h3>{{ kpi.action_required }}</h3><p>{% trans "Action Required" %}</p></div>
+      <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
+      <a href="{% url 'coe_application_list' %}?status=action_required" class="small-box-footer">{% trans "View" %} <i class="fas fa-arrow-circle-right"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6">
+    <div class="small-box bg-success">
+      <div class="inner"><h3>{{ kpi.ready_delivery }}</h3><p>{% trans "Ready for Delivery" %}</p></div>
+      <div class="icon"><i class="fas fa-box-open"></i></div>
+      <a href="{% url 'coe_delivery_dashboard' %}" class="small-box-footer">{% trans "Delivery Desk" %} <i class="fas fa-arrow-circle-right"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6">
+    <div class="small-box" style="background:#0f766e; color:#fff;">
+      <div class="inner"><h3>{{ kpi.delivered_today }}</h3><p>{% trans "Delivered Today" %}</p></div>
+      <div class="icon"><i class="fas fa-check-circle"></i></div>
+      <a href="{% url 'coe_application_list' %}?status=delivered" class="small-box-footer">{% trans "View" %} <i class="fas fa-arrow-circle-right"></i></a>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6">
+    <div class="small-box" style="background:#1e293b; color:#fff;">
+      <div class="inner"><h3>{{ kpi.total }}</h3><p>{% trans "Total Applications" %}</p></div>
+      <div class="icon"><i class="fas fa-archive"></i></div>
+      <a href="{% url 'coe_application_list' %}" class="small-box-footer">{% trans "All" %} <i class="fas fa-arrow-circle-right"></i></a>
+    </div>
+  </div>
+</div>
+
+<!-- Bottleneck Alert -->
+{% if stalled_count > 0 %}
+<div class="alert alert-danger alert-dismissible">
+  <i class="fas fa-exclamation-triangle mr-2"></i>
+  <strong>{% trans "Bottleneck Alert:" %}</strong>
+  {{ stalled_count }} {% trans "application(s) have been stalled for more than 48 hours." %}
+  {% for s in stalled %}
+  <br>&nbsp;&nbsp;&nbsp;› <a href="{% url 'coe_application_detail' s.pk %}" class="alert-link">{{ s.application_number }}</a>
+    — {{ s.get_status_display }} — {{ s.student_name }}
+  {% endfor %}
+  <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+</div>
+{% endif %}
+
+<div class="row">
+  <!-- Recent Applications -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-clock mr-2"></i>{% trans "Recent Applications" %}</h3>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover table-sm mb-0">
+          <thead>
+            <tr>
+              <th>{% trans "Tracking #" %}</th>
+              <th>{% trans "Type" %}</th>
+              <th>{% trans "Student" %}</th>
+              <th>{% trans "Dept" %}</th>
+              <th>{% trans "Status" %}</th>
+              <th>{% trans "Submitted" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for app in recent %}
+            <tr onclick="window.location='{% url 'coe_application_detail' app.pk %}'" style="cursor:pointer;">
+              <td><code>{{ app.application_number }}</code></td>
+              <td><small>{{ app.get_application_type_display|truncatechars:30 }}</small></td>
+              <td>{{ app.student_name }}</td>
+              <td><small>{{ app.department.short_name|default:app.department }}</small></td>
+              <td>
+                <span class="badge {{ app.get_status_badge_class }}">
+                  {{ app.get_status_display }}
+                </span>
+                {% if app.is_stalled %}<i class="fas fa-fire text-danger ml-1" title="Stalled > 48h"></i>{% endif %}
+              </td>
+              <td><small>{{ app.submitted_at|date:"d M Y" }}</small></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">{% trans "No applications yet." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer text-right">
+        <a href="{% url 'coe_application_list' %}">{% trans "View All Applications" %} →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Type Chart -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i>{% trans "By Application Type" %}</h3>
+      </div>
+      <div class="card-body">
+        <canvas id="typeChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+const typeData = {{ type_chart|safe }};
+const labels = typeData.map(d => d.application_type.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()));
+const counts = typeData.map(d => d.count);
+const colors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316'];
+
+new Chart(document.getElementById('typeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: labels,
+    datasets: [{ data: counts, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+  },
+  options: {
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+    cutout: '65%',
+  }
+});
+</script>
+{% endblock %}

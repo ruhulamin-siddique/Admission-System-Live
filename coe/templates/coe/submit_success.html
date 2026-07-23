@@ -1,0 +1,92 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% trans "Application Submitted" %} | BAUST CoE</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'coe/css/coe_premium.css' %}">
+  <style>
+    .success-icon { font-size: 4.5rem; color: #10b981; animation: checkPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .tracking-box { background: #f0f9ff; border: 2px solid #bae6fd; border-radius: var(--coe-radius-md); padding: 1.25rem; margin: 1.25rem 0; }
+    .tracking-id { font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 900; color: #0369a1; letter-spacing: 2px; font-family: monospace; }
+    .pin-box { background: #fef3c7; border: 2px solid #fcd34d; border-radius: var(--coe-radius-sm); padding: 0.85rem; margin-top: 0.85rem; }
+    .pin-value { font-size: clamp(1.6rem, 5vw, 2.4rem); font-weight: 900; color: #92400e; letter-spacing: 6px; font-family: monospace; }
+  </style>
+</head>
+<body class="coe-public-body">
+
+<nav class="coe-public-nav">
+  <div class="coe-nav-container">
+    <a href="{% url 'coe_submit' %}" class="coe-brand-logo">
+      <img src="https://www.baust.edu.bd/images/logo.png" alt="BAUST" onerror="this.style.display='none'">
+      <div>
+        <div class="coe-brand-title">BAUST CoE Portal</div>
+        <div class="coe-brand-sub">Controller of Examinations</div>
+      </div>
+    </a>
+    <div class="coe-nav-links">
+      <a href="{% url 'coe_track' %}" class="btn btn-outline-light">
+        <i class="fas fa-search mr-1"></i>{% trans "Track Application" %}
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="coe-public-container" style="max-width: 600px;">
+  <div class="coe-main-card text-center">
+    <div class="success-icon mb-2">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <h2 class="font-weight-bold mb-1" style="font-family: var(--coe-font-heading); text-shadow: none;">
+      {% trans "Application Submitted!" %}
+    </h2>
+    <p class="text-muted">
+      {% trans "Dear" %} <strong>{{ result.student_name }}</strong>,<br>
+      {% trans "your" %} <strong>{{ result.app_type }}</strong> {% trans "application has been successfully received." %}
+    </p>
+
+    <div class="tracking-box">
+      <p class="text-muted mb-1 small text-uppercase font-weight-bold">{% trans "Your Tracking Number" %}</p>
+      <div class="tracking-id">{{ result.tracking_number }}</div>
+
+      <div class="pin-box mt-3">
+        <p class="text-muted mb-1 small text-uppercase font-weight-bold">{% trans "Your Security PIN" %}</p>
+        <div class="pin-value">{{ result.pin }}</div>
+        <p class="text-muted small mt-1 mb-0">{% trans "Keep this PIN confidential for tracking and re-uploads." %}</p>
+      </div>
+    </div>
+
+    <div class="alert alert-info text-left border-0 shadow-sm mb-4" style="border-radius: var(--coe-radius-sm);">
+      <i class="fas fa-sms mr-2"></i>
+      {% trans "Your Tracking Number and PIN have been sent to your registered mobile number via SMS." %}
+    </div>
+
+    {% if result.pk %}
+    <div class="mb-3">
+      <a href="{% url 'coe_receipt_pdf' result.pk %}" target="_blank" class="coe-btn coe-btn-success w-100 font-weight-bold">
+        <i class="fas fa-file-pdf mr-2"></i>{% trans "Download PDF Application Receipt" %}
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="row">
+      <div class="col-6">
+        <a href="{% url 'coe_track' %}?tracking_number={{ result.tracking_number }}"
+           class="coe-btn coe-btn-primary w-100">
+          <i class="fas fa-search mr-1"></i> {% trans "Track Status" %}
+        </a>
+      </div>
+      <div class="col-6">
+        <a href="{% url 'coe_submit' %}" class="coe-btn coe-btn-secondary w-100">
+          <i class="fas fa-plus mr-1"></i> {% trans "New Application" %}
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Verify OTP & Deliver" %} — {{ app.application_number }} | CoE{% endblock %}
+{% block page_title %}<i class="fas fa-key mr-2"></i>{% trans "Delivery Verification" %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'coe_delivery_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+  <i class="fas fa-arrow-left mr-1"></i>{% trans "Back to Delivery Desk" %}
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm border-0" style="border-radius: var(--coe-radius-md, 16px);">
+      <div class="card-header bg-success text-white py-3">
+        <h5 class="card-title font-weight-bold mb-0">
+          <i class="fas fa-shield-alt mr-2"></i>{% trans "Verify Delivery OTP" %}
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        {% include "coe/partials/delivery_otp_modal.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

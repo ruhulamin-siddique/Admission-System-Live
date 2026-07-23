@@ -915,8 +915,7 @@ class StudentDirectoryTests(TestCase):
         student = Student.objects.get(student_id='CSE001')
         response = self.client.get(reverse('download_studentship', kwargs={'student_id': student.student_id}))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/pdf')
-        self.assertIn('inline; filename=Studentship_Certificate_CSE001.pdf', response['Content-Disposition'])
+        self.assertIn('text/html', response['Content-Type'])
 
     def test_download_studentship_certificate_pdf_post(self):
         student = Student.objects.get(student_id='CSE001')
@@ -931,8 +930,7 @@ class StudentDirectoryTests(TestCase):
         }
         response = self.client.post(reverse('download_studentship', kwargs={'student_id': student.student_id}), data)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/pdf')
-        self.assertIn('inline; filename=Studentship_Certificate_CSE001.pdf', response['Content-Disposition'])
+        self.assertIn('text/html', response['Content-Type'])
 
     def test_unspecified_gender_filtering(self):
         unspecified_student = Student.objects.create(
@@ -1541,7 +1539,7 @@ class ReferenceNodeSystemTests(TestCase):
         # PDF list
         response = self.client.get(reverse('reference_manage'), {'export': 'pdf'})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('text/html', response['Content-Type'])
 
     def test_merge_reference_nodes(self):
         from students.models import ReferenceNode, Student

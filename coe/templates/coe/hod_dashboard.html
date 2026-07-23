@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "HoD Review Dashboard" %} | CoE{% endblock %}
+{% block page_title %}<i class="fas fa-user-tie mr-2"></i>{% trans "HoD Review Dashboard" %}{% endblock %}
+
+{% block page_actions %}
+  {% if page_obj %}
+  <form method="post" action="{% url 'coe_hod_bulk' %}" id="bulkForm">
+    {% csrf_token %}
+    <select name="bulk_action" class="form-control form-control-sm d-inline-block mr-2" style="width:180px;">
+      <option value="approve">{% trans "Bulk Approve" %}</option>
+      <option value="reject">{% trans "Bulk Reject" %}</option>
+    </select>
+    <input type="text" name="note" placeholder="{% trans 'Note (required for reject)' %}" class="form-control form-control-sm d-inline-block mr-2" style="width:220px;">
+    <button type="submit" class="btn btn-sm btn-warning">
+      <i class="fas fa-check-double mr-1"></i>{% trans "Apply to Selected" %}
+    </button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <h3 class="card-title">
+      <strong>{{ total }}</strong> {% trans "application(s) awaiting your review" %}
+    </h3>
+    <span class="badge badge-warning px-3">{% trans "Under HoD Review" %}</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover table-sm mb-0">
+      <thead class="thead-light">
+        <tr>
+          <th><input type="checkbox" id="selectAll" title="{% trans 'Select All' %}"></th>
+          <th>{% trans "Tracking #" %}</th>
+          <th>{% trans "Type" %}</th>
+          <th>{% trans "Student" %}</th>
+          <th>{% trans "Dept." %}</th>
+          <th>{% trans "CGPA" %}</th>
+          <th>{% trans "Submitted" %}</th>
+          <th>{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in page_obj %}
+        <tr {% if app.is_stalled %}class="table-warning"{% endif %}>
+          <td><input type="checkbox" name="app_ids" value="{{ app.pk }}" form="bulkForm" class="app-checkbox"></td>
+          <td><code><a href="{% url 'coe_application_detail' app.pk %}">{{ app.application_number }}</a></code></td>
+          <td><small>{{ app.get_application_type_display|truncatechars:30 }}</small></td>
+          <td>{{ app.student_name }}</td>
+          <td><small>{{ app.department.short_name|default:app.department }}</small></td>
+          <td>{{ app.cgpa }}</td>
+          <td>
+            <small>{{ app.submitted_at|date:"d M Y" }}</small>
+            {% if app.is_stalled %}<i class="fas fa-fire text-danger ml-1" title="Stalled > 48h"></i>{% endif %}
+          </td>
+          <td class="text-nowrap">
+            <button type="button" class="btn btn-xs btn-success"
+                    hx-get="{% url 'coe_hod_review' app.pk %}"
+                    hx-target="#reviewModal .modal-body"
+                    hx-swap="innerHTML"
+                    data-toggle="modal" data-target="#reviewModal"
+                    data-app="{{ app.application_number }}">
+              <i class="fas fa-eye mr-1"></i>{% trans "Review" %}
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-5">
+          <i class="fas fa-check-circle fa-2x text-success mb-2"></i><br>
+          {% trans "No applications pending review. Great work!" %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer">
+    <ul class="pagination pagination-sm mb-0 justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+      {% endif %}
+      {% for p in page_obj.paginator.page_range %}
+      <li class="page-item {% if page_obj.number == p %}active{% endif %}">
+        <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-user-tie mr-2"></i>{% trans "Review Application" %}</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2 text-muted">{% trans "Loading..." %}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('selectAll').addEventListener('change', function() {
+  document.querySelectorAll('.app-checkbox').forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

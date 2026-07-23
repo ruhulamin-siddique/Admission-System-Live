@@ -45,6 +45,10 @@
     #intakeTable .badge {
         transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
         display: inline-block;
+        font-size: 0.92rem !important;
+        font-weight: 700 !important;
+        padding: 3px 8px;
+        border-radius: 6px;
     }
     #intakeTable td:hover .badge,
     #intakeTable .badge:hover {
@@ -53,8 +57,8 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12) !important;
     }
     .dept-name-cell {
-        font-size: 1.35rem !important;
-        font-weight: 800 !important;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
         transition: color 0.2s ease, padding-left 0.2s ease;
     }
     #intakeTable tbody tr:hover .dept-name-cell {
@@ -232,16 +236,16 @@
                             <tr onclick="showProgramDetail('{{ item.program|escapejs }}', '{{ item.short_name|escapejs }}', {{ item.count }}, {{ item.male }}, {{ item.female }}, {{ item.active }}, {{ item.cancelled }}, {{ item.non_residential }}, {{ item.quota }}, {{ item.hall_auah }}, {{ item.hall_btbh }}, {{ item.hall_zh }}, {{ item.unspecified }})">
                                 <td class="pl-3 py-2 align-middle text-dark dept-name-cell">{{ item.short_name }}</td>
                                 <td class="text-center align-middle">
-                                    <span class="badge badge-light border font-weight-bold" style="font-size: 1.3rem !important; font-weight: 900 !important; padding: 4px 12px; min-width: 38px; box-shadow: 0 2px 4px rgba(0,0,0,0.06);">{{ item.count }}</span>
+                                    <span class="badge badge-light border" style="min-width: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">{{ item.count }}</span>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge text-primary font-weight-bold" style="font-size: 1.3rem !important; font-weight: 900 !important; padding: 4px 10px; min-width: 36px; background-color: rgba(0,123,255,0.12);">{{ item.male }}</span>
+                                    <span class="badge text-primary" style="min-width: 30px; background-color: rgba(0,123,255,0.12);">{{ item.male }}</span>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge text-pink font-weight-bold" style="font-size: 1.3rem !important; font-weight: 900 !important; padding: 4px 10px; min-width: 36px; background-color: rgba(232,62,140,0.12); color: #e83e8c !important;">{{ item.female }}</span>
+                                    <span class="badge text-pink" style="min-width: 30px; background-color: rgba(232,62,140,0.12); color: #e83e8c !important;">{{ item.female }}</span>
                                 </td>
                                 <td class="text-right pr-3 align-middle">
-                                    <span class="badge text-dark font-weight-bold" style="font-size: 1.3rem !important; font-weight: 900 !important; padding: 4px 10px; background-color: rgba(108,117,125,0.12);">{{ percentage|floatformat:1 }}%</span>
+                                    <span class="badge text-dark" style="background-color: rgba(108,117,125,0.12);">{{ percentage|floatformat:1 }}%</span>
                                 </td>
                             </tr>
                             {% endwith %}
@@ -1353,16 +1357,16 @@
                             <tr onclick="showProgramDetail('${item.program.replace(/'/g, "\\'")}', '${item.short_name.replace(/'/g, "\\'")}', ${item.count}, ${item.male}, ${item.female}, ${item.active}, ${item.cancelled}, ${item.non_residential}, ${item.quota}, ${item.hall_auah}, ${item.hall_btbh}, ${item.hall_zh}, ${item.unspecified})">
                                 <td class="pl-3 py-2 align-middle text-dark dept-name-cell">${item.short_name}</td>
                                 <td class="text-center align-middle">
-                                    <span class="badge badge-light border font-weight-bold" style="font-size: 1.3rem !important; font-weight: 900 !important; padding: 4px 12px; min-width: 38px; box-shadow: 0 2px 4px rgba(0,0,0,0.06);">${item.count}</span>
+                                    <span class="badge badge-light border" style="min-width: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">${item.count}</span>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge text-primary font-weight-bold" style="font-size: 1.3rem !important; font-weight: 900 !important; padding: 4px 10px; min-width: 36px; background-color: rgba(0,123,255,0.12);">${item.male}</span>
+                                    <span class="badge text-primary" style="min-width: 30px; background-color: rgba(0,123,255,0.12);">${item.male}</span>
                                 </td>
                                 <td class="text-center align-middle">
-                                    <span class="badge text-pink font-weight-bold" style="font-size: 1.3rem !important; font-weight: 900 !important; padding: 4px 10px; min-width: 36px; background-color: rgba(232,62,140,0.12); color: #e83e8c !important;">${item.female}</span>
+                                    <span class="badge text-pink" style="min-width: 30px; background-color: rgba(232,62,140,0.12); color: #e83e8c !important;">${item.female}</span>
                                 </td>
                                 <td class="text-right pr-3 align-middle">
-                                    <span class="badge text-dark font-weight-bold" style="font-size: 1.3rem !important; font-weight: 900 !important; padding: 4px 10px; background-color: rgba(108,117,125,0.12);">${percentage}%</span>
+                                    <span class="badge text-dark" style="background-color: rgba(108,117,125,0.12);">${percentage}%</span>
                                 </td>
                             </tr>
                         `;

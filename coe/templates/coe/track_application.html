@@ -1,0 +1,141 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% trans "Track Application" %} | BAUST CoE</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'coe/css/coe_premium.css' %}">
+  <style>
+    body { background: var(--coe-bg-gradient); min-height: 100vh; padding: 1.5rem 0.75rem; }
+    .coe-track-card { background: var(--coe-glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: var(--coe-radius-lg); padding: 2rem 1.5rem; max-width: 780px; margin: 0 auto; box-shadow: var(--coe-glass-shadow); border: 1px solid var(--coe-glass-border); }
+  </style>
+</head>
+<body>
+<div class="coe-track-card animate-fade-up">
+  <div class="text-center mb-4 border-bottom pb-3">
+    <img src="https://www.baust.edu.bd/images/logo.png" height="55" alt="BAUST" onerror="this.style.display='none'">
+    <h3 class="font-weight-bold text-dark mt-2 mb-1" style="font-family: var(--coe-font-heading);">
+      {% trans "Application Tracking Portal" %}
+    </h3>
+    <p class="text-muted small mb-0">{% trans "Track your CoE academic document application status in real time" %}</p>
+  </div>
+
+  <!-- Search Form -->
+  <form method="get" action="{% url 'coe_track' %}" class="mb-4">
+    <div class="row">
+      <div class="col-md-5 col-12 mb-3">
+        <label class="coe-label">{% trans "Tracking Number" %} <span class="text-danger">*</span></label>
+        <input type="text" name="tracking_number" class="form-control coe-form-control" placeholder="APP-2026-0001" value="{{ form.tracking_number.value|default:'' }}" required>
+      </div>
+      <div class="col-md-5 col-12 mb-3">
+        <label class="coe-label">{% trans "Mobile Number or Student ID" %} <span class="text-danger">*</span></label>
+        <input type="text" name="identifier" class="form-control coe-form-control" placeholder="01XXXXXXXXX or Student ID" value="{{ form.identifier.value|default:'' }}" required>
+      </div>
+      <div class="col-md-2 col-12 mb-3 d-flex align-items-end">
+        <button type="submit" class="coe-btn coe-btn-primary w-100 font-weight-bold">
+          <i class="fas fa-search mr-1"></i> {% trans "Track" %}
+        </button>
+      </div>
+    </div>
+  </form>
+
+  {% if error %}
+  <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: var(--coe-radius-sm);">
+    <i class="fas fa-exclamation-circle mr-2"></i>{{ error }}
+  </div>
+  {% endif %}
+
+  {% if application %}
+  <!-- Application Card -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: var(--coe-radius-md); overflow: hidden;">
+    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center flex-wrap">
+      <div>
+        <strong class="h5 font-weight-bold text-dark mb-0 mr-2"><code>{{ application.application_number }}</code></strong>
+        <span class="text-muted small">— {{ application.get_application_type_display }}</span>
+      </div>
+      <span class="badge {{ application.get_status_badge_class }} px-3 py-2 mt-2 mt-sm-0" style="font-size: 0.9rem;">
+        <i class="{{ application.get_status_icon }} mr-1"></i>
+        {{ application.get_status_display }}
+      </span>
+    </div>
+    <div class="card-body">
+
+      <!-- Mobile-First Responsive Stepper -->
+      <div class="coe-stepper my-3">
+        <div class="coe-stepper-progress" style="width: {% if application.status == 'submitted' %}15%{% elif application.status == 'under_hod_review' %}30%{% elif application.status == 'pending_coe_assignment' %}45%{% elif application.status == 'in_processing' %}60%{% elif application.status == 'action_required' %}75%{% elif application.status == 'ready_for_delivery' %}90%{% else %}100%{% endif %};"></div>
+
+        {% for status_key in status_steps %}
+        <div class="coe-step-item {% if application.status == status_key %}active{% endif %}">
+          <div class="coe-step-circle">
+            <i class="fas fa-circle" style="font-size: 0.6rem;"></i>
+          </div>
+          <span class="coe-step-label">
+            {% if status_key == 'submitted' %}{% trans "Submitted" %}
+            {% elif status_key == 'under_hod_review' %}{% trans "HoD" %}
+            {% elif status_key == 'pending_coe_assignment' %}{% trans "Assigned" %}
+            {% elif status_key == 'in_processing' %}{% trans "Process" %}
+            {% elif status_key == 'action_required' %}{% trans "Action" %}
+            {% elif status_key == 'ready_for_delivery' %}{% trans "Ready" %}
+            {% elif status_key == 'delivered' %}{% trans "Delivered" %}
+            {% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Application Details Table -->
+      <div class="table-responsive">
+        <table class="table table-sm table-borderless mt-2 mb-0">
+          <tbody>
+            <tr><th width="180" class="text-muted">{% trans "Student Name" %}</th><td><strong>{{ application.student_name }}</strong></td></tr>
+            <tr><th class="text-muted">{% trans "Department" %}</th><td>{{ application.department }}</td></tr>
+            <tr><th class="text-muted">{% trans "Submitted At" %}</th><td>{{ application.submitted_at|date:"d F Y, h:i A" }}</td></tr>
+            <tr><th class="text-muted">{% trans "Last Updated" %}</th><td>{{ application.updated_at|date:"d F Y, h:i A" }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      {% if application.status == 'action_required' %}
+      <div class="alert alert-warning border-0 shadow-sm mt-3 mb-0" style="border-radius: var(--coe-radius-sm);">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        <strong>{% trans "Action Required:" %}</strong> {{ application.processing_note }}
+        <div class="mt-2">
+          <a href="{% url 'coe_reupload_portal' %}" class="coe-btn coe-btn-primary btn-sm">
+            <i class="fas fa-upload mr-1"></i>{% trans "Go to Re-Upload Portal" %}
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if application.status == 'ready_for_delivery' %}
+      <div class="alert alert-success border-0 shadow-sm mt-3 mb-0" style="border-radius: var(--coe-radius-sm);">
+        <i class="fas fa-box-open mr-2"></i>
+        <strong>{% trans "Your document is ready for collection!" %}</strong>
+        {% trans "Please visit the BAUST CoE Desk. Bring your original Student ID or NID and the 6-digit OTP sent via SMS." %}
+      </div>
+      {% endif %}
+
+      <div class="mt-4 pt-3 border-top d-flex justify-content-between flex-wrap gap-2">
+        <a href="{% url 'coe_receipt_pdf' application.pk %}" target="_blank" class="coe-btn coe-btn-secondary text-success">
+          <i class="fas fa-file-pdf mr-2"></i>{% trans "Download Receipt PDF" %}
+        </a>
+        <a href="{% url 'coe_verify_public' application.application_number %}" target="_blank" class="coe-btn coe-btn-secondary text-primary">
+          <i class="fas fa-qrcode mr-2"></i>{% trans "View Public QR Verification" %}
+        </a>
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="text-center mt-3">
+    <a href="{% url 'coe_submit' %}" class="coe-btn coe-btn-secondary">
+      <i class="fas fa-plus mr-1"></i> {% trans "Submit New Application" %}
+    </a>
+  </div>
+</div>
+</body>
+</html>

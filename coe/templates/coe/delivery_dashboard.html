@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Delivery Desk" %} | CoE{% endblock %}
+{% block page_title %}<i class="fas fa-box-open mr-2"></i>{% trans "Delivery Desk" %}{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body py-2 d-flex justify-content-between align-items-center">
+    <form method="get" class="form-inline">
+      <div class="input-group" style="width:400px;">
+        <input type="text" name="q" value="{{ query }}" class="form-control"
+               placeholder="{% trans 'Search by Tracking #, Name, or Student ID…' %}"
+               autofocus>
+        <div class="input-group-append">
+          <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
+          {% if query %}<a href="{% url 'coe_delivery_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-times"></i></a>{% endif %}
+        </div>
+      </div>
+      <small class="text-muted ml-3">
+        <i class="fas fa-qrcode mr-1"></i>{% trans "Supports QR scanner input" %}
+      </small>
+    </form>
+
+    <a href="{% url 'coe_handover_register' %}" target="_blank" class="btn btn-outline-dark font-weight-bold">
+      <i class="fas fa-print mr-1"></i>{% trans "Print Daily Handover Register" %}
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <h3 class="card-title">
+      <strong>{{ count }}</strong> {% trans "application(s) ready for delivery" %}
+    </h3>
+    <span class="badge badge-success px-3">{% trans "Ready for Delivery" %}</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover table-sm mb-0">
+      <thead class="thead-light">
+        <tr>
+          <th>{% trans "Tracking #" %}</th>
+          <th>{% trans "Type" %}</th>
+          <th>{% trans "Student" %}</th>
+          <th>{% trans "Student ID" %}</th>
+          <th>{% trans "Dept." %}</th>
+          <th>{% trans "Ready Since" %}</th>
+          <th>{% trans "OTP Status" %}</th>
+          <th>{% trans "Action" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td><code>{{ app.application_number }}</code></td>
+          <td><small>{{ app.get_application_type_display|truncatechars:30 }}</small></td>
+          <td><strong>{{ app.student_name }}</strong></td>
+          <td><small>{{ app.student_id }}</small></td>
+          <td><small>{{ app.department.short_name|default:app.department }}</small></td>
+          <td><small>{{ app.updated_at|date:"d M Y, h:i A" }}</small></td>
+          <td>
+            {% if app.delivery_otp_verified %}
+            <span class="badge badge-success"><i class="fas fa-check mr-1"></i>{% trans "Verified" %}</span>
+            {% elif app.delivery_otp %}
+            <span class="badge badge-warning">{% trans "OTP Sent" %}</span>
+            {% else %}
+            <span class="badge badge-secondary">{% trans "No OTP" %}</span>
+            {% endif %}
+          </td>
+          <td class="text-nowrap">
+            {% if app.delivery_otp_verified %}
+            <form method="post" action="{% url 'coe_mark_delivered' app.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="identity_note" value="">
+              <button type="submit" class="btn btn-xs btn-success">
+                <i class="fas fa-check-circle mr-1"></i>{% trans "Mark Delivered" %}
+              </button>
+            </form>
+            {% else %}
+            <button class="btn btn-xs btn-primary"
+                    hx-get="{% url 'coe_verify_otp' app.pk %}"
+                    hx-target="#otpModal .modal-body"
+                    hx-swap="innerHTML"
+                    data-toggle="modal" data-target="#otpModal">
+              <i class="fas fa-key mr-1"></i>{% trans "Verify OTP" %}
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-5">
+          <i class="fas fa-inbox fa-2x mb-2"></i><br>
+          {% if query %}{% trans "No results for your search." %}{% else %}{% trans "No applications ready for delivery." %}{% endif %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- OTP Modal -->
+<div class="modal fade" id="otpModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-key mr-2"></i>{% trans "Verify Delivery OTP" %}</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center py-3">
+          <div class="spinner-border text-primary"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -230,7 +230,7 @@ def user_management(request):
     selected_status = request.GET.get('status', '').strip()
     selected_scope = request.GET.get('scope', '').strip()
 
-    users = User.objects.all().select_related('profile', 'profile__role').order_by('username')
+    users = User.objects.all().select_related('profile', 'profile__role').prefetch_related('profile__role__permissions').order_by('username')
 
     if query:
         users = users.filter(
@@ -271,6 +271,41 @@ def user_management(request):
         )
         managed_user.display_name = managed_user.get_full_name() or managed_user.username
         managed_user.reg_status = getattr(profile, 'registration_status', 'APPROVED')
+
+        # Build accessible modules and task matrix for hover popup
+        accessible_modules = []
+        if managed_user.is_superuser:
+            for mod_key, mod_info in ACCESS_REGISTRY.items():
+                accessible_modules.append({
+                    'key': mod_key,
+                    'display': mod_info['display'],
+                    'icon': mod_info['icon'],
+                    'tasks': [t_info[0] for t_info in mod_info['tasks'].values()]
+                })
+        elif profile and profile.role:
+            perm_map = {}
+            for p in profile.role.permissions.all():
+                if p.module not in perm_map:
+                    perm_map[p.module] = []
+                perm_map[p.module].append(p.task)
+
+            for mod_key, task_keys in perm_map.items():
+                if mod_key in ACCESS_REGISTRY:
+                    mod_info = ACCESS_REGISTRY[mod_key]
+                    task_labels = []
+                    for t_key in task_keys:
+                        if t_key in mod_info['tasks']:
+                            task_labels.append(mod_info['tasks'][t_key][0])
+                        else:
+                            task_labels.append(t_key.replace('_', ' ').title())
+                    accessible_modules.append({
+                        'key': mod_key,
+                        'display': mod_info['display'],
+                        'icon': mod_info['icon'],
+                        'tasks': task_labels
+                    })
+
+        managed_user.accessible_modules = accessible_modules
 
     pending_count = User.objects.filter(profile__registration_status='PENDING').count()
 

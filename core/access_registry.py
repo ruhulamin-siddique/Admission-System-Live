@@ -94,5 +94,19 @@ ACCESS_REGISTRY = {
             "manage_media_houses": (_("Manage Media Houses"), _("Add, edit, and maintain the media outlet directory.")),
         }
     },
+    "coe": {
+        "display": "Controller of Examinations (CoE)",
+        "icon": "fas fa-graduation-cap",
+        "tasks": {
+            "submit_application":    ("Submit Application",               "Submit new student document applications via public portal."),
+            "track_application":     ("Track Application",                "Look up own application status using Tracking ID + PIN."),
+            "dept_head_review":      ("Dept. Head Review & Approval",     "Review, approve, hold, or reject applications as Dept. Head. Supports bulk actions."),
+            "coe_desk_assign":       ("CoE Desk — Assignment & Kanban",   "Review pending assignments, view Kanban board, assign to processing officers."),
+            "processing_officer":    ("Processing Officer Workstation",   "Verify records via board/admission API, request re-uploads, mark ready for delivery."),
+            "delivery_desk":         ("Delivery Desk — OTP Handover",     "Search applications by tracking ID, verify OTP, log physical delivery."),
+            "view_all_applications": ("View All Applications",            "View and search all applications across departments and statuses."),
+            "export_data":           ("Export & Print",                   "Export application data to Excel and generate print-formatted summaries."),
+            "manage_settings":       ("Manage CoE Settings",              "Configure tracking ID prefix, SMS rules, and retention policies."),
+        }
+    },
 }
-

@@ -1406,44 +1406,173 @@
             dateField.val(today).trigger('change');
         }
 
-        // Real-time Validation for Mobile & Email
+        // ─────────────────────────────────────────────────────────
+        // Advanced Live Bangladeshi Mobile & Email Verification Engine
+        // ─────────────────────────────────────────────────────────
+        const BD_OPERATORS = {
+            '017': 'Grameenphone',
+            '013': 'Grameenphone (Skitto)',
+            '018': 'Robi',
+            '016': 'Airtel',
+            '019': 'Banglalink',
+            '014': 'Banglalink',
+            '015': 'Teletalk'
+        };
+
+        function verifyBdMobileInput($input, $helpContainer, isRequired = true, isBlur = false) {
+            let raw = $input.val() || '';
+            let digits = raw.replace(/\D/g, '');
+            
+            // Normalize country code prefix (+880 / 880)
+            if (digits.startsWith('880') && digits.length === 13) {
+                digits = digits.substring(2);
+            } else if (digits.startsWith('88') && digits.length === 13) {
+                digits = digits.substring(2);
+            }
+
+            if (digits !== raw) {
+                $input.val(digits);
+            }
+
+            const len = digits.length;
+            
+            if (len === 0) {
+                $input.removeClass('is-valid is-invalid').css('border-color', '#ced4da');
+                if (isRequired && isBlur) {
+                    $input.addClass('is-invalid').css('border-color', '#dc3545');
+                    $helpContainer.html('<span class="badge badge-danger px-2 py-1"><i class="fas fa-exclamation-circle mr-1"></i> Mobile number is required</span>');
+                    return false;
+                } else if (isRequired) {
+                    $helpContainer.html('<span class="small text-muted"><i class="fas fa-mobile-alt mr-1"></i> 11-digit BD mobile required (013-019)</span>');
+                    return false;
+                } else {
+                    $helpContainer.html('');
+                    return true;
+                }
+            }
+
+            if (!digits.startsWith('01')) {
+                $input.addClass('is-invalid').removeClass('is-valid').css('border-color', '#dc3545');
+                $helpContainer.html('<span class="badge badge-danger px-2 py-1"><i class="fas fa-times-circle mr-1"></i> Must start with 01 (Bangladeshi mobile)</span>');
+                return false;
+            }
+
+            const prefix = digits.substring(0, 3);
+            const operator = BD_OPERATORS[prefix];
+
+            if (len >= 3 && !operator) {
+                $input.addClass('is-invalid').removeClass('is-valid').css('border-color', '#dc3545');
+                $helpContainer.html(`<span class="badge badge-danger px-2 py-1"><i class="fas fa-times-circle mr-1"></i> Invalid operator prefix (${prefix}). Allowed: 013-019</span>`);
+                return false;
+            }
+
+            if (len < 11) {
+                if (isBlur) {
+                    $input.addClass('is-invalid').removeClass('is-valid').css('border-color', '#dc3545');
+                    $helpContainer.html(`<span class="badge badge-danger px-2 py-1"><i class="fas fa-exclamation-triangle mr-1"></i> Incomplete mobile number (${len}/11 digits)</span>`);
+                } else {
+                    $input.removeClass('is-valid is-invalid').css('border-color', '#3b82f6');
+                    $helpContainer.html(`<span class="badge badge-info px-2 py-1" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;"><i class="fas fa-pen mr-1"></i> Typing mobile... (${len}/11) [${operator || 'Checking operator'}]</span>`);
+                }
+                return false;
+            }
+
+            if (len > 11) {
+                $input.addClass('is-invalid').removeClass('is-valid').css('border-color', '#dc3545');
+                $helpContainer.html(`<span class="badge badge-danger px-2 py-1"><i class="fas fa-times-circle mr-1"></i> Too many digits (${len}). Exactly 11 required</span>`);
+                return false;
+            }
+
+            // Valid 11-digit Bangladeshi mobile number
+            $input.removeClass('is-invalid').addClass('is-valid').css('border-color', '#10b981');
+            $helpContainer.html(`<span class="badge badge-success px-2 py-1" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;"><i class="fas fa-check-circle mr-1"></i> Verified BD Mobile (${operator})</span>`);
+            return true;
+        }
+
+        function verifyEmailInput($input, $helpContainer, isRequired = false, isBlur = false) {
+            const raw = ($input.val() || '').trim();
+            const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+
+            if (raw.length === 0) {
+                $input.removeClass('is-valid is-invalid').css('border-color', '#ced4da');
+                if (isRequired && isBlur) {
+                    $input.addClass('is-invalid').css('border-color', '#dc3545');
+                    $helpContainer.html('<span class="badge badge-danger px-2 py-1"><i class="fas fa-exclamation-circle mr-1"></i> Email address is required</span>');
+                    return false;
+                } else {
+                    $helpContainer.html('');
+                    return true;
+                }
+            }
+
+            if (emailRegex.test(raw)) {
+                $input.removeClass('is-invalid').addClass('is-valid').css('border-color', '#10b981');
+                $helpContainer.html('<span class="badge badge-success px-2 py-1" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;"><i class="fas fa-check-circle mr-1"></i> Verified Email Format</span>');
+                return true;
+            } else {
+                if (isBlur) {
+                    $input.addClass('is-invalid').removeClass('is-valid').css('border-color', '#dc3545');
+                    $helpContainer.html('<span class="badge badge-danger px-2 py-1"><i class="fas fa-times-circle mr-1"></i> Invalid email address (e.g. student@baust.edu.bd)</span>');
+                } else {
+                    $input.removeClass('is-valid is-invalid').css('border-color', '#3b82f6');
+                    $helpContainer.html('<span class="badge badge-info px-2 py-1" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;"><i class="fas fa-pen mr-1"></i> Typing email...</span>');
+                }
+                return false;
+            }
+        }
+
         const $mobile = $('[name="student_mobile"]');
         const $email = $('[name="student_email"]');
         const $mobileHelp = $('#mobile-help');
         const $emailHelp = $('#email-help');
 
-        $mobile.on('input', function() {
-            let val = $(this).val().replace(/\D/g, '');
-            $(this).val(val); // Force numbers only
-            
-            if (val.length === 0) {
-                $(this).css('border-color', '#ced4da');
-                $mobileHelp.text('');
-            } else if (!val.startsWith('01')) {
-                $(this).css('border-color', '#dc3545');
-                $mobileHelp.text('Must start with 01').css('color', '#dc3545');
-            } else if (val.length !== 11) {
-                $(this).css('border-color', '#ffc107');
-                $mobileHelp.text('Entering digits... (' + val.length + '/11)').css('color', '#ffc107');
-            } else {
-                $(this).css('border-color', '#28a745');
-                $mobileHelp.text('Valid Bangladeshi Mobile').css('color', '#28a745');
-            }
+        $mobile.on('input keyup paste change', function() {
+            verifyBdMobileInput($mobile, $mobileHelp, true, false);
+        }).on('blur', function() {
+            verifyBdMobileInput($mobile, $mobileHelp, true, true);
         });
 
-        $email.on('input', function() {
-            const val = $(this).val();
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            if (val.length === 0) {
-                $(this).css('border-color', '#ced4da');
-                $emailHelp.text('');
-            } else if (!emailRegex.test(val)) {
-                $(this).css('border-color', '#ffc107');
-                $emailHelp.text('Optional: Check format').css('color', '#ffc107');
-            } else {
-                $(this).css('border-color', '#28a745');
-                $emailHelp.text('Valid Email Format').css('color', '#28a745');
+        $email.on('input keyup paste change', function() {
+            verifyEmailInput($email, $emailHelp, false, false);
+        }).on('blur', function() {
+            verifyEmailInput($email, $emailHelp, false, true);
+        });
+
+        $('[name="father_mobile"]').on('input keyup paste change', function() {
+            verifyBdMobileInput($(this), $('#father-mobile-help'), false, false);
+        }).on('blur', function() {
+            verifyBdMobileInput($(this), $('#father-mobile-help'), false, true);
+        });
+
+        $('[name="mother_mobile"]').on('input keyup paste change', function() {
+            verifyBdMobileInput($(this), $('#mother-mobile-help'), false, false);
+        }).on('blur', function() {
+            verifyBdMobileInput($(this), $('#mother-mobile-help'), false, true);
+        });
+
+        // Trigger initial checks on load
+        if ($mobile.val()) verifyBdMobileInput($mobile, $mobileHelp, true, false);
+        if ($email.val()) verifyEmailInput($email, $emailHelp, false, false);
+
+        // Submit Guard to prevent submission of unverified mobile or invalid email
+        $('#admissionForm').on('submit', function(e) {
+            const isMobileValid = verifyBdMobileInput($mobile, $mobileHelp, true, true);
+            const isEmailValid = verifyEmailInput($email, $emailHelp, false, true);
+
+            if (!isMobileValid) {
+                e.preventDefault();
+                $('a[href="#identity"]').tab('show');
+                $mobile.focus();
+                alert('Please enter a valid 11-digit Bangladeshi mobile number (013-019 operator prefix required).');
+                return false;
+            }
+
+            if (!isEmailValid) {
+                e.preventDefault();
+                $('a[href="#identity"]').tab('show');
+                $email.focus();
+                alert('Please enter a valid email address format (e.g. student@baust.edu.bd) or leave it empty.');
+                return false;
             }
         });
 
@@ -1454,31 +1583,6 @@
                 $(this).val(parseFloat(val).toFixed(2));
             }
         });
-
-        // Parent Mobile Validation Helper
-        function setupMobileValidation($input, $help) {
-            $input.on('input', function() {
-                let val = $(this).val().replace(/\D/g, '');
-                $(this).val(val);
-                
-                if (val.length === 0) {
-                    $(this).css('border-color', '#ced4da');
-                    $help.text('');
-                } else if (!val.startsWith('01')) {
-                    $(this).css('border-color', '#dc3545');
-                    $help.text('Must start with 01').css('color', '#dc3545');
-                } else if (val.length !== 11) {
-                    $(this).css('border-color', '#ffc107');
-                    $help.text('11 digits needed (' + val.length + '/11)').css('color', '#ffc107');
-                } else {
-                    $(this).css('border-color', '#28a745');
-                    $help.text('Valid Mobile').css('color', '#28a745');
-                }
-            });
-        }
-
-        setupMobileValidation($('[name="father_mobile"]'), $('#father-mobile-help'));
-        setupMobileValidation($('[name="mother_mobile"]'), $('#mother-mobile-help'));
 
         // Dynamic Address Logic
         let isSyncing = false;

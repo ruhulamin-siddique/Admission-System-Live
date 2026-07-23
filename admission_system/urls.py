@@ -25,6 +25,7 @@ urlpatterns = [
     path('exam-billing/', include('exam_billing.urls')),
     path('ict/', include('ict_wing.urls')),
     path('pr/', include('public_relations.urls')),   # PR Office Management
+    path('coe/', include('coe.urls')),               # CoE — Academic Document Processing
     path('i18n/', include('django.conf.urls.i18n')), # For runtime language switcher
 ]
 

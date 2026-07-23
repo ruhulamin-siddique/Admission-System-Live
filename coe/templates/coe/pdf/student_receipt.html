@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 1.5cm; }
+    body { font-family: Helvetica, Arial, sans-serif; color: #1e293b; font-size: 11pt; line-height: 1.4; }
+    .header { text-align: center; border-bottom: 2px solid #1e3a5f; padding-bottom: 10px; margin-bottom: 20px; }
+    .title { font-size: 16pt; font-weight: bold; color: #1e3a5f; text-transform: uppercase; margin-bottom: 2px; }
+    .subtitle { font-size: 10pt; color: #64748b; }
+    .box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; margin-bottom: 15px; }
+    .tracking-number { font-size: 16pt; font-weight: bold; color: #0284c7; font-family: monospace; letter-spacing: 2px; }
+    .pin-number { font-size: 14pt; font-weight: bold; color: #d97706; font-family: monospace; letter-spacing: 3px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    th, td { padding: 6px 8px; text-align: left; vertical-align: top; border-bottom: 1px solid #e2e8f0; }
+    th { width: 35%; background-color: #f1f5f9; font-size: 9pt; text-transform: uppercase; color: #475569; }
+    td { font-size: 10pt; }
+    .qr-col { text-align: right; vertical-align: middle; }
+    .instructions { font-size: 9pt; color: #475569; background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 10px; margin-top: 20px; }
+    .footer { text-align: center; font-size: 8pt; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">BAUST Controller of Examinations</div>
+  <div class="subtitle">Bangladesh Army University of Science and Technology, Saidpur</div>
+  <div class="subtitle" style="font-weight:bold; color:#1e3a5f; margin-top:4px;">Academic Document Application Receipt</div>
+</div>
+
+<table>
+  <tr>
+    <td>
+      <div>Application Tracking Number:</div>
+      <div class="tracking-number">{{ app.application_number }}</div>
+      <div style="margin-top:6px;">Security PIN: <span class="pin-number">{{ app.tracking_pin }}</span></div>
+    </td>
+    <td class="qr-col">
+      {% if qr_base64 %}
+      <img src="{{ qr_base64 }}" width="90" height="90" alt="QR Code">
+      {% endif %}
+    </td>
+  </tr>
+</table>
+
+<div class="box">
+  <div style="font-weight:bold; font-size:10pt; color:#1e3a5f; margin-bottom:6px;">Application Details</div>
+  <table>
+    <tr><th>Document Requested</th><td><strong>{{ app.get_application_type_display }}</strong></td></tr>
+    <tr><th>Student Name</th><td>{{ app.student_name }}</td></tr>
+    <tr><th>BAUST Student ID</th><td>{{ app.student_id }}</td></tr>
+    <tr><th>Mobile Number</th><td>{{ app.mobile_number }}</td></tr>
+    <tr><th>Department / Program</th><td>{{ app.department }}</td></tr>
+    <tr><th>Session & Batch</th><td>{{ app.session }} ({{ app.admission_batch }})</td></tr>
+    <tr><th>Passing Semester & CGPA</th><td>{{ app.passing_semester }} — CGPA: {{ app.cgpa }}</td></tr>
+    <tr><th>Submission Timestamp</th><td>{{ app.submitted_at|date:"d F Y, h:i A" }}</td></tr>
+  </table>
+</div>
+
+<div class="instructions">
+  <strong>Collection Instructions:</strong><br>
+  1. Keep your Tracking Number and 4-digit PIN confidential.<br>
+  2. Track your application status anytime at <strong>https://www.baust.edu.bd/coe/track/</strong>.<br>
+  3. When status reaches "Ready for Delivery", bring your original Student ID or NID card and the 6-digit OTP sent via SMS to the CoE Desk.
+</div>
+
+<div class="footer">
+  This is a system-generated official application receipt from BAUST Controller of Examinations System.<br>
+  Printed on: {{ now|date:"d F Y, h:i A" }}
+</div>
+
+</body>
+</html>
