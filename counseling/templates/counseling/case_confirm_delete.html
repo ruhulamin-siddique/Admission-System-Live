@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Confirm Delete" %} — {{ case.case_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+{% endblock %}
+
+{% block page_title %}
+  <i class="fas fa-trash-alt mr-2 text-danger"></i>{% trans "Soft-Delete Clinical Case" %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card border-danger shadow-sm">
+      <div class="card-header bg-danger text-white">
+        <h5 class="card-title font-weight-bold mb-0">{% trans "Confirm Soft-Delete" %}</h5>
+      </div>
+      <div class="card-body p-4 text-center">
+        <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
+        <h4>{% trans "Are you sure you want to soft-delete this case?" %}</h4>
+        <p class="text-muted">
+          <strong>{{ case.case_number }}</strong> — <span class="confidential-pii">{{ case.student.student_name }} ({{ case.student.student_id }})</span>
+        </p>
+        <p class="small text-muted">
+          {% trans "The case and its session history will be archived and hidden from the active directory, but can be restored by system administrators if needed." %}
+        </p>
+
+        <form method="post" class="mt-4">
+          {% csrf_token %}
+          <a href="{% url 'counseling_case_detail' pk=case.pk %}" class="btn btn-secondary mr-2">{% trans "Cancel" %}</a>
+          <button type="submit" class="btn btn-danger px-4">{% trans "Yes, Soft-Delete Case" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

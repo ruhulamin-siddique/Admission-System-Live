@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -332,11 +333,15 @@
 
   <div class="status-container">
     <div class="header">
-      <div class="logo-icon">
-        <i class="fas fa-search"></i>
+      <div class="mb-3">
+        {% if sys_settings and sys_settings.logo_url %}
+          <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo" style="height: 64px; width: 64px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 3px; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);">
+        {% else %}
+          <img src="/media/branding/logo.png" onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}';" alt="BAUST Logo" style="height: 64px; width: 64px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 3px; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);">
+        {% endif %}
       </div>
       <h1 class="title">Check Status</h1>
-      <p class="subtitle">Query your MAC Address registration status on the network</p>
+      <p class="subtitle">Query your MAC Address registration status &bull; BAUST ICT Wing</p>
     </div>
 
     <!-- Search Box -->
@@ -436,10 +441,17 @@
     {% endif %}
 
     <div class="actions">
+      <a href="{% url 'login' %}" class="btn-action btn-secondary" style="border-color: rgba(99, 102, 241, 0.35); color: #a5b4fc;">
+        <i class="fas fa-arrow-left"></i> Back to Campus Connect / Login
+      </a>
       <a href="{% url 'register_device' %}" class="btn-action btn-secondary">
         <i class="fas fa-plus"></i> Go to Device Registration Form
       </a>
     </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 24px; color: #6b7280; font-size: 0.78rem;">
+    Developed with &hearts; by ICT Wing & Archive &bull; BAUST
   </div>
 
 </body>

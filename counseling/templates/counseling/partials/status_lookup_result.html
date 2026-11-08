@@ -1,0 +1,123 @@
+{% load i18n %}
+
+{% if not searched %}
+  <div class="p-4 text-center text-muted">
+    <i class="fas fa-search fa-2x mb-2 text-secondary"></i>
+    <p class="small mb-0">
+      <span class="d-none lang-bn-inline">আপনার গোপন ট্র্যাকিং টোকেন (যেমন: <code>CARE-2026-XXXX</code>) বা শিক্ষার্থী আইডি দিয়ে সার্চ করুন।</span>
+      <span class="lang-en-inline">Enter your Secret Tracking Token (e.g. <code>CARE-2026-XXXX</code>) or Student ID above.</span>
+    </p>
+  </div>
+{% elif not appointment %}
+  <div class="alert alert-warning p-3 rounded-lg text-center animate__animated animate__shakeX mb-0">
+    <i class="fas fa-exclamation-circle fa-2x text-warning mb-2 d-block"></i>
+    <h6 class="font-weight-bold mb-1">
+      <span class="d-none lang-bn-inline">কোনো অ্যাপয়েন্টমেন্ট পাওয়া যায়নি!</span>
+      <span class="lang-en-inline">No Appointment Found!</span>
+    </h6>
+    <p class="small mb-0 text-muted">
+      <span class="d-none lang-bn-inline">"<strong>{{ query }}</strong>" কোড বা শিক্ষার্থী আইডির সাথে মেলে এমন কোনো সক্রিয় অ্যাপয়েন্টমেন্ট পাওয়া যায়নি। অনুগ্রহ করে কোডটি পুনরায় চেক করুন।</span>
+      <span class="lang-en-inline">No active counseling appointment matches "<strong>{{ query }}</strong>". Please double check your secret code or Student ID.</span>
+    </p>
+  </div>
+{% else %}
+  <!-- Appointment Status Card -->
+  <div class="counseling-card border shadow-sm rounded-lg p-3 animate__animated animate__fadeIn">
+    {% if cancel_success %}
+    <div class="alert alert-success p-2 px-3 mb-3 rounded-lg small font-weight-bold">
+      <i class="fas fa-check-circle mr-1"></i>
+      <span class="d-none lang-bn-inline">আপনার অ্যাপয়েন্টমেন্ট সফলভাবে বাতিল করা হয়েছে।</span>
+      <span class="lang-en-inline">Your appointment has been cancelled successfully.</span>
+    </div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+      <div>
+        <span class="small text-muted font-weight-bold text-uppercase">
+          <span class="d-none lang-bn-inline">গোপন ট্র্যাকিং কোড</span>
+          <span class="lang-en-inline">Secret Tracking Code</span>
+        </span>
+        <h5 class="font-weight-bold text-primary mb-0 font-monospace" style="letter-spacing: 1px;">
+          <i class="fas fa-ticket-alt mr-1"></i> {{ appointment.secret_token|default:"CARE-SESSION" }}
+        </h5>
+      </div>
+      <div class="text-right">
+        {% if appointment.status == 'confirmed' %}
+          <span class="badge badge-success px-3 py-2" style="font-size: 0.9rem;">
+            <i class="fas fa-check-circle mr-1"></i> <span class="d-none lang-bn-inline">নিশ্চিতকৃত (Confirmed)</span><span class="lang-en-inline">Confirmed</span>
+          </span>
+        {% elif appointment.status == 'requested' %}
+          <span class="badge badge-warning px-3 py-2 text-dark font-weight-bold" style="font-size: 0.9rem;">
+            <i class="fas fa-clock mr-1"></i> <span class="d-none lang-bn-inline">পর্যালোচনায় আছে (Under Review)</span><span class="lang-en-inline">Requested / Pending Review</span>
+          </span>
+        {% elif appointment.status == 'completed' %}
+          <span class="badge badge-info px-3 py-2" style="font-size: 0.9rem;">
+            <i class="fas fa-medal mr-1"></i> <span class="d-none lang-bn-inline">সম্পন্ন হয়েছে (Completed)</span><span class="lang-en-inline">Session Completed</span>
+          </span>
+        {% elif appointment.status == 'cancelled' %}
+          <span class="badge badge-danger px-3 py-2" style="font-size: 0.9rem;">
+            <i class="fas fa-times-circle mr-1"></i> <span class="d-none lang-bn-inline">বাতিল করা হয়েছে (Cancelled)</span><span class="lang-en-inline">Cancelled</span>
+          </span>
+        {% elif appointment.status == 'rescheduled' %}
+          <span class="badge badge-secondary px-3 py-2" style="font-size: 0.9rem;">
+            <i class="fas fa-calendar-alt mr-1"></i> <span class="d-none lang-bn-inline">পুনঃনির্ধারিত (Rescheduled)</span><span class="lang-en-inline">Rescheduled</span>
+          </span>
+        {% else %}
+          <span class="badge badge-light border px-3 py-2">{{ appointment.get_status_display }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-sm-6 mb-2">
+        <div class="p-2 bg-light rounded">
+          <small class="text-muted d-block font-weight-bold">
+            <span class="d-none lang-bn-inline">তারিখ ও সময়</span>
+            <span class="lang-en-inline">Date & Time Slot</span>
+          </small>
+          <strong class="text-dark">
+            <i class="far fa-calendar-check text-primary mr-1"></i> {{ appointment.appointment_date|date:"l, d F Y" }}
+          </strong>
+          <div class="small text-primary font-weight-bold mt-1">
+            <i class="far fa-clock mr-1"></i> {{ appointment.time_slot }}
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-sm-6 mb-2">
+        <div class="p-2 bg-light rounded">
+          <small class="text-muted d-block font-weight-bold">
+            <span class="d-none lang-bn-inline">কাউন্সেলিং চেম্বার ও স্থান</span>
+            <span class="lang-en-inline">Chamber & Venue</span>
+          </small>
+          <strong class="text-dark">
+            <i class="fas fa-map-marker-alt text-danger mr-1"></i> {{ appointment.counselor.room_number|default:settings.counselor_room_default|default:"Room 204, Admin Building" }}
+          </strong>
+          <div class="small text-muted mt-1">
+            <i class="fas fa-user-md text-info mr-1"></i> {{ appointment.counselor.user.get_full_name|default:appointment.counselor.user.username }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center pt-2 border-top">
+      <div class="small text-muted">
+        <i class="fas fa-shield-alt text-success mr-1"></i>
+        <span class="d-none lang-bn-inline">কাউন্সেলিং কেন্দ্রের সেবা ১০০% গোপন ও শিক্ষার্থীদের জন্য সম্পূর্ণ ফ্রি।</span>
+        <span class="lang-en-inline">100% confidential and free for all BAUST students.</span>
+      </div>
+      
+      {% if appointment.status == 'requested' or appointment.status == 'confirmed' %}
+      <form hx-post="{% url 'counseling_api_cancel_appointment' %}" hx-target="#statusLookupResult" class="mt-2 mt-sm-0">
+        {% csrf_token %}
+        <input type="hidden" name="secret_token" value="{{ appointment.secret_token }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this appointment request? / আপনি কি নিশ্চিতভাবে এই অ্যাপয়েন্টমেন্ট বাতিল করতে চান?');">
+          <i class="fas fa-times-circle mr-1"></i>
+          <span class="d-none lang-bn-inline">অ্যাপয়েন্টমেন্ট বাতিল করুন</span>
+          <span class="lang-en-inline">Cancel Appointment</span>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}

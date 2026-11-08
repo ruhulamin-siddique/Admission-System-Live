@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}🚨 {% trans "Emergency Crisis Escalation" %} — {{ case.case_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+{% endblock %}
+
+{% block page_title %}
+  <span class="text-danger"><i class="fas fa-ambulance mr-2"></i>{% trans "Emergency Crisis Intervention Protocol" %}</span>
+{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'counseling_case_detail' pk=case.pk %}" class="btn btn-sm btn-outline-secondary">
+    <i class="fas fa-arrow-left mr-1"></i> {% trans "Back to Dossier" %}
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Urgent Notice Banner -->
+<div class="alert alert-danger p-3 rounded-lg mb-4">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-exclamation-triangle fa-2x mr-3"></i>
+    <div>
+      <h5 class="font-weight-bold mb-1">{% trans "Active Crisis / High-Risk Safety Protocol" %}</h5>
+      <p class="mb-0 small">{% trans "Immediate action must be taken. Ensure student is not left unattended if acute suicidal intent or severe self-harm is expressed." %}</p>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Left Column: Quick Contacts -->
+  <div class="col-lg-5">
+    <div class="counseling-card border-danger">
+      <div class="counseling-card-header bg-danger text-white">
+        <h3 class="counseling-card-title text-white"><i class="fas fa-phone-alt"></i> {% trans "Emergency Contacts" %}</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-3 p-2 border rounded bg-light">
+          <strong class="text-dark d-block">{% trans "Student Guardian / Father:" %}</strong>
+          <span class="font-weight-bold text-danger confidential-pii">{{ student.father_mobile|default:student.emergency_contact|default:"No number registered" }}</span>
+          {% if student.father_mobile %}
+            <a href="tel:{{ student.father_mobile }}" class="btn btn-xs btn-outline-danger float-right"><i class="fas fa-phone mr-1"></i>{% trans "Call" %}</a>
+          {% endif %}
+        </div>
+
+        <div class="mb-3 p-2 border rounded bg-light">
+          <strong class="text-dark d-block">{% trans "Residential Hall Provost / Warden:" %}</strong>
+          <span>{{ student.hall_attached|default:"Non-Resident (Commuter)" }}</span>
+        </div>
+
+        <div class="mb-3 p-2 border rounded bg-light">
+          <strong class="text-dark d-block">{% trans "University Medical Center (CMH Liaison):" %}</strong>
+          <span class="font-weight-bold text-primary">01769-675555</span>
+          <a href="tel:01769675555" class="btn btn-xs btn-outline-primary float-right"><i class="fas fa-phone mr-1"></i>{% trans "Call" %}</a>
+        </div>
+
+        <div class="p-2 border rounded bg-light">
+          <strong class="text-dark d-block">{% trans "Proctorial Body / Campus Security:" %}</strong>
+          <span class="font-weight-bold text-dark">01769-675550</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Emergency Action Logger -->
+  <div class="col-lg-7">
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title"><i class="fas fa-edit text-primary"></i> {% trans "Incident Action Log & Safety Contract" %}</h3>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.incident_type.label }} <span class="text-danger">*</span></label>
+            {{ form.incident_type }}
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.actions_taken.label }} <span class="text-danger">*</span></label>
+            {{ form.actions_taken }}
+          </div>
+
+          <div class="form-group">
+            <div class="custom-control custom-checkbox mb-2">
+              {{ form.medical_referral_made }}
+              <label class="custom-control-label font-weight-bold" for="id_med_referral">
+                {% trans "Formal Medical / Hospital Referral Made (e.g. CMH, Hospital)" %}
+              </label>
+            </div>
+            {{ form.hospital_name }}
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.authorities_notified.label }}</label>
+            {{ form.authorities_notified }}
+          </div>
+
+          <div class="form-group">
+            <div class="custom-control custom-checkbox">
+              {{ form.safety_contract_signed }}
+              <label class="custom-control-label font-weight-bold text-success" for="id_safety_contract">
+                {% trans "Safety Agreement / No-Harm Contract verbally signed with student" %}
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group border-top pt-3">
+            <div class="custom-control custom-checkbox mb-2">
+              {{ form.resolved }}
+              <label class="custom-control-label font-weight-bold" for="id_resolved">
+                {% trans "Crisis Stabilized & Immediate Threat De-escalated" %}
+              </label>
+            </div>
+            {{ form.resolution_notes }}
+          </div>
+
+          <div class="border-top pt-3 text-right">
+            <button type="submit" class="btn btn-danger btn-lg px-4">
+              <i class="fas fa-save mr-1"></i> {% trans "Submit Emergency Incident Record" %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

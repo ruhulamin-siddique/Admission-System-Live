@@ -34,7 +34,6 @@ class Program(models.Model):
 
     class Meta:
         ordering = ['-sort_order', 'name']
-        unique_together = ('cluster', 'ugc_code', 'level_code')
 
 class Hall(models.Model):
     full_name = models.CharField(max_length=150, unique=True, null=True, blank=True)

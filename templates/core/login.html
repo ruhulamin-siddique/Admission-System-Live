@@ -1,46 +1,80 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Login | Campus Connect{% endblock %}
+{% block title %}Executive Access & Campus Services | BAUST Campus Connect{% endblock %}
 
 {% block extra_css %}
+<!-- Mobile & Browser Cache Control to Prevent Stale CSRF Tokens -->
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <style>
-    /* Full Page Background */
+    /* Full Page Background & Base Setup */
     body.login-page {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 40%),
+                    radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.12) 0%, transparent 40%),
+                    linear-gradient(135deg, #090f1d 0%, #0f172a 60%, #131d36 100%) !important;
         display: flex;
         align-items: center;
         justify-content: center;
         min-height: 100vh !important;
         height: auto !important;
         margin: 0;
+        padding: 30px 16px;
         font-family: 'Source Sans Pro', 'Inter', system-ui, -apple-system, sans-serif;
+        color: #f8fafc;
     }
 
-    .login-box {
+    /* Outer Workspace Grid (Two-Sided) */
+    .auth-workspace {
         width: 100%;
-        max-width: 450px;
-        margin: 20px;
+        max-width: 1140px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1.15fr 0.95fr;
+        gap: 32px;
+        align-items: stretch;
+        position: relative;
+        z-index: 1;
     }
 
-    .login-card {
-        background: rgba(255, 255, 255, 0.05);
+    /* Left Panel: Institution Showcase & Service Hub */
+    .workspace-showcase {
+        background: rgba(255, 255, 255, 0.04);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.09);
         border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        transition: transform 0.3s ease;
+        padding: 40px 36px 32px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+        overflow: visible; /* Required: protects crest glow & animation */
+        position: relative;
     }
 
-    .login-card:hover {
-        transform: translateY(-5px);
+    /* Preserved BAUST Crest Animation Exactly as Designed */
+    .logo-entrance {
+        position: relative;
+        display: inline-block;
+        isolation: isolate;
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation-delay: 0.1s;
     }
 
-    .login-header {
-        padding: 40px 40px 20px;
-        text-align: center;
+    .logo-glow-effect {
+        position: absolute;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.45) 0%, transparent 70%);
+        animation: pulse-glow 2s ease-in-out infinite alternate;
+        z-index: -3;
+        pointer-events: none;
+        left: 0;
+        top: 0;
     }
 
     .logo-wrapper {
@@ -85,19 +119,6 @@
         z-index: -1;
     }
 
-    .logo-glow-effect {
-        position: absolute;
-        width: 110px;
-        height: 110px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%);
-        animation: pulse-glow 2s ease-in-out infinite alternate;
-        z-index: -3;
-        pointer-events: none;
-        left: 0;
-        top: 0;
-    }
-
     @keyframes rotate-border {
         100% {
             transform: rotate(360deg);
@@ -116,14 +137,6 @@
         }
     }
 
-    .logo-entrance {
-        position: relative;
-        display: inline-block;
-        isolation: isolate;
-        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-        animation-delay: 0.1s;
-    }
-
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -135,32 +148,309 @@
         }
     }
 
-    .login-header h2 {
+    .showcase-header {
+        margin-bottom: 28px;
+    }
+
+    .showcase-header .inst-title {
         color: #ffffff;
         font-weight: 800;
-        font-size: 1.5rem;
-        margin: 0;
-        letter-spacing: -0.025em;
-        line-height: 1.2;
-        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-        animation-delay: 0.25s;
+        font-size: 1.45rem;
+        margin: 16px 0 6px;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
         transition: text-shadow 0.3s ease;
     }
 
-    .login-header h2:hover {
-        text-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    .showcase-header .inst-title:hover {
+        text-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
     }
 
-    .login-header p {
+    .showcase-header .inst-tagline {
         color: #94a3b8;
-        font-size: 0.9rem;
-        margin-top: 8px;
-        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-        animation-delay: 0.4s;
+        font-size: 0.92rem;
+        margin: 0;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .login-body {
-        padding: 20px 40px 40px;
+    .showcase-header .inst-badge {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    /* Service Cards Grid (Left Panel Hub) */
+    .services-label {
+        font-size: 0.76rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .services-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Service Cards (2-Line Row-Based Launcher) */
+    .service-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+
+    .service-row-card {
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 12px 14px;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .service-row-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 3px;
+        background: transparent;
+        transition: background 0.25s ease;
+    }
+
+    .service-row-card:hover {
+        background: rgba(30, 41, 59, 0.75);
+        border-color: rgba(96, 165, 250, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px -4px rgba(0, 0, 0, 0.4);
+        color: #ffffff;
+        text-decoration: none;
+    }
+
+    .service-row-card.row-admissions:hover::before { background: linear-gradient(180deg, #008080, #0ea5e9); }
+    .service-row-card.row-counseling:hover::before { background: linear-gradient(180deg, #ec4899, #f43f5e); }
+    .service-row-card.row-student-apps:hover::before { background: linear-gradient(180deg, #10b981, #059669); }
+    .service-row-card.row-network:hover::before { background: linear-gradient(180deg, #8b5cf6, #6366f1); }
+
+    /* Line 1: Header (Icon + Title + Category Tag) */
+    .row-header-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .row-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .row-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.92rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+
+    .row-admissions .row-icon { background: linear-gradient(135deg, #008080 0%, #0ea5e9 100%); color: #ffffff; box-shadow: 0 3px 10px rgba(0,128,128,0.4); }
+    .row-counseling .row-icon { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
+    .row-student-apps .row-icon { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .row-network .row-icon { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+
+    .row-title {
+        font-size: 0.94rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: #f1f5f9;
+        line-height: 1.2;
+    }
+
+    .row-badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 12px;
+        white-space: nowrap;
+    }
+    .row-badge-teal { background: rgba(0, 128, 128, 0.15); color: #6ee7b7; border: 1px solid rgba(0, 128, 128, 0.3); }
+    .row-badge-rose { background: rgba(236, 72, 153, 0.12); color: #f9a8d4; border: 1px solid rgba(236, 72, 153, 0.25); }
+    .row-badge-emerald { background: rgba(16, 185, 129, 0.12); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.25); }
+    .row-badge-purple { background: rgba(139, 92, 246, 0.12); color: #ddd6fe; border: 1px solid rgba(139, 92, 246, 0.25); }
+
+    /* Line 2: Actions Row (Buttons Indented Under Title) */
+    .row-actions-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-left: 40px;
+    }
+
+    /* Primary CTA button for Line 2 */
+    .btn-row-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 13px;
+        background: linear-gradient(135deg, #008080 0%, #0284c7 100%);
+        color: #ffffff !important;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+        border-radius: 18px;
+        text-align: center;
+        text-decoration: none !important;
+        border: none;
+        box-shadow: 0 3px 10px rgba(0, 128, 128, 0.35);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-sizing: border-box;
+        line-height: 1.25;
+    }
+    .btn-row-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 128, 128, 0.5);
+        color: #ffffff !important;
+        text-decoration: none !important;
+    }
+
+    /* Tactile pill action buttons */
+    .btn-tile-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 5px 11px;
+        border-radius: 18px;
+        text-decoration: none !important;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        line-height: 1.2;
+    }
+    .btn-tile-pill:hover {
+        text-decoration: none !important;
+        transform: translateY(-1px);
+    }
+    .btn-tile-pill.pill-track { color: #38bdf8 !important; border-color: rgba(56, 189, 248, 0.35); background: rgba(56, 189, 248, 0.08); }
+    .btn-tile-pill.pill-track:hover { background: rgba(56, 189, 248, 0.18); color: #7dd3fc !important; }
+    .btn-tile-pill.pill-info { color: #94a3b8 !important; border-color: rgba(148, 163, 184, 0.25); background: rgba(148, 163, 184, 0.06); }
+    .btn-tile-pill.pill-info:hover { background: rgba(148, 163, 184, 0.14); color: #f1f5f9 !important; }
+    .btn-tile-pill.pill-rose { color: #f472b6 !important; border-color: rgba(244, 114, 182, 0.3); background: rgba(244, 114, 182, 0.08); }
+    .btn-tile-pill.pill-rose:hover { background: rgba(244, 114, 182, 0.18); color: #fda4af !important; }
+    .btn-tile-pill.pill-emerald { color: #34d399 !important; border-color: rgba(52, 211, 153, 0.3); background: rgba(52, 211, 153, 0.08); }
+    .btn-tile-pill.pill-emerald:hover { background: rgba(52, 211, 153, 0.18); color: #6ee7b7 !important; }
+    .btn-tile-pill.pill-violet { color: #a78bfa !important; border-color: rgba(167, 139, 250, 0.3); background: rgba(167, 139, 250, 0.08); }
+    .btn-tile-pill.pill-violet:hover { background: rgba(167, 139, 250, 0.18); color: #c4b5fd !important; }
+
+    .showcase-footer {
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+
+    .showcase-footer a {
+        color: #94a3b8;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .showcase-footer a:hover {
+        color: #3b82f6;
+    }
+
+    /* Right Panel: Executive Auth Card */
+    .workspace-auth {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .login-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
+        transition: box-shadow 0.3s ease;
+        padding: 40px 36px;
+    }
+
+    .login-card:hover {
+        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.65);
+    }
+
+    .auth-card-header {
+        margin-bottom: 26px;
+    }
+
+    .auth-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        color: #93c5fd;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 20px;
+        margin-bottom: 12px;
+    }
+
+    .auth-card-header h2 {
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.6rem;
+        margin: 0 0 6px;
+        letter-spacing: -0.025em;
+    }
+
+    .auth-card-header p {
+        color: #94a3b8;
+        font-size: 0.88rem;
+        margin: 0;
     }
 
     .form-group {
@@ -181,7 +471,7 @@
         position: relative;
     }
 
-    .auth-input-group > i {
+    .auth-input-group > i.input-icon {
         position: absolute;
         left: 16px;
         top: 50%;
@@ -189,9 +479,10 @@
         color: #64748b;
         font-size: 1.1rem;
         transition: color 0.2s ease;
+        pointer-events: none;
     }
 
-    .form-group:focus-within > .auth-input-group > i {
+    .form-group:focus-within > .auth-input-group > i.input-icon {
         color: #3b82f6;
     }
 
@@ -205,6 +496,7 @@
         font-size: 1.1rem;
         z-index: 10;
         transition: color 0.2s ease;
+        padding: 4px;
     }
 
     .password-toggle:hover {
@@ -212,25 +504,40 @@
     }
 
     .form-control {
-        background: rgba(15, 23, 42, 0.6) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: rgba(15, 23, 42, 0.65) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
         border-radius: 12px !important;
         color: #ffffff !important;
-        padding: 12px 16px 12px 48px !important;
+        padding: 13px 16px 13px 46px !important;
         height: auto !important;
         font-size: 0.95rem !important;
         transition: all 0.2s ease;
+        width: 100%;
+        box-sizing: border-box;
     }
 
-    input[type="password"] {
+    input[type="password"], input[name="password"] {
         padding-right: 48px !important;
     }
 
     .form-control:focus {
-        background: rgba(15, 23, 42, 0.8) !important;
+        background: rgba(15, 23, 42, 0.85) !important;
         border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25) !important;
         outline: none;
+    }
+
+    /* Caps Lock Warning Banner */
+    .caps-warning {
+        display: none;
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        color: #fcd34d;
+        border-radius: 8px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        padding: 6px 10px;
+        margin-top: 6px;
     }
 
     .btn-login {
@@ -243,74 +550,57 @@
         font-weight: 700;
         font-size: 1rem;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         margin-top: 10px;
-        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        box-shadow: 0 10px 20px -3px rgba(37, 99, 235, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
     }
 
     .btn-login:hover {
-        transform: scale(1.02);
-        box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 16px 28px -4px rgba(37, 99, 235, 0.5);
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
     }
 
-    .login-footer {
-        margin-top: 30px;
-        text-align: center;
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    .auth-help-bar {
+        margin-top: 24px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
         display: flex;
         justify-content: space-between;
-        font-size: 0.85rem;
+        align-items: center;
+        font-size: 0.82rem;
     }
 
-    .login-footer a {
+    .auth-help-bar a {
         color: #94a3b8;
         text-decoration: none;
         transition: color 0.2s;
     }
 
-    .login-footer a:hover {
-        color: #3b82f6;
-    }
-
-    /* Mobile Responsiveness Improvements */
-    @media (max-width: 480px) {
-        .login-box {
-            margin: 10px;
-        }
-        .login-card {
-            border-radius: 16px;
-        }
-        .login-header {
-            padding: 30px 20px 10px;
-        }
-        .login-body {
-            padding: 10px 20px 30px;
-        }
-        .login-header h2 {
-            font-size: 1.25rem;
-        }
-        .login-logo img {
-            height: 70px;
-            margin-bottom: 15px;
-        }
-        .login-footer {
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 20px;
-        }
-        .btn-login {
-            padding: 12px;
-        }
+    .auth-help-bar a:hover {
+        color: #60a5fa;
     }
 
     /* Error Messages */
     .alert-danger {
-        background: rgba(239, 68, 68, 0.1) !important;
-        border: 1px solid rgba(239, 68, 68, 0.2) !important;
+        background: rgba(239, 68, 68, 0.12) !important;
+        border: 1px solid rgba(239, 68, 68, 0.28) !important;
         color: #fca5a5 !important;
         border-radius: 12px;
         font-size: 0.85rem;
         margin-bottom: 20px;
         padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
 
     /* Hide base UI elements */
@@ -322,82 +612,282 @@
         margin: 0 !important;
     }
     .content-wrapper { margin-left: 0 !important; background: transparent !important; }
+
+    /* Mobile & Tablet Responsiveness */
+    @media (max-width: 991px) {
+        body.login-page {
+            align-items: flex-start !important;
+            padding: 20px 14px !important;
+        }
+
+        .auth-workspace {
+            grid-template-columns: 1fr;
+            gap: 24px;
+            max-width: 520px;
+        }
+
+        .workspace-auth {
+            order: 1; /* Auth card first on mobile for immediate login flow */
+        }
+
+        .workspace-showcase {
+            order: 2;
+            padding: 30px 22px 24px;
+        }
+
+        .login-card {
+            padding: 32px 24px;
+            border-radius: 20px;
+        }
+
+        .service-rows {
+            gap: 8px;
+        }
+
+        .showcase-header {
+            text-align: center;
+        }
+
+        .showcase-header .inst-tagline {
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .login-card {
+            padding: 26px 18px;
+        }
+        
+        .auth-card-header h2 {
+            font-size: 1.35rem;
+        }
+
+        .showcase-header .inst-title {
+            font-size: 1.2rem;
+        }
+
+        .auth-help-bar {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .row-header-line {
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .row-badge {
+            display: none; /* Hide category badge on very small screens to keep clean */
+        }
+
+        .row-actions-line {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .btn-row-primary {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-tile-pill {
+            flex: 1 1 auto;
+            justify-content: center;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="login-box">
-    <div class="login-card">
-        <div class="login-header">
-            <div class="login-logo" style="margin-bottom: 20px;">
+<div class="auth-workspace">
+    <!-- Left Panel: Institution Branding & Public Services Hub -->
+    <div class="workspace-showcase">
+        <div>
+            <div class="showcase-header text-center">
                 <div class="logo-entrance">
                     <div class="logo-glow-effect"></div>
                     <div class="logo-wrapper">
-                        {% if sys_settings.logo_url %}
-                            <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo" style="height: 90px; width: 90px; object-fit: contain; z-index: 2; border-radius: 50%;">
-                        {% else %}
-                            <i class="fas fa-graduation-cap text-primary" style="font-size: 3rem; z-index: 2;"></i>
-                        {% endif %}
+                        <img src="{{ sys_settings.logo_url|default:'/media/branding/logo.png' }}" 
+                             onerror="if(this.src.indexOf('/media/branding/logo.png')===-1){this.src='/media/branding/logo.png';}else if(this.src.indexOf('img/baust_logo.png')===-1){this.src='{% static 'img/baust_logo.png' %}';}" 
+                             alt="BAUST Logo" 
+                             style="height: 90px; width: 90px; object-fit: contain; position: relative; z-index: 5; border-radius: 50%;">
+                    </div>
+                </div>
+                <h1 class="inst-title">Bangladesh Army University of Science and Technology</h1>
+                <div class="inst-tagline">
+                    <span class="inst-badge"><i class="fas fa-shield-alt mr-1"></i> Official Portal</span>
+                    <span>Campus Connect Workspace</span>
+                </div>
+            </div>
+
+            <!-- Public Services Desks -->
+            <div class="services-label">
+                <i class="fas fa-th-large mr-1 text-primary"></i> Public Services & Portals
+            </div>
+
+            <div class="service-rows">
+                {% if sys_settings and sys_settings.show_online_admission_on_login %}
+                <!-- Row 1: Online Admission Application (Featured Row) -->
+                <div class="service-row-card row-admissions" style="border: 1.5px solid rgba(99, 202, 183, 0.35); background: linear-gradient(135deg, rgba(0, 128, 128, 0.1) 0%, rgba(59, 130, 246, 0.07) 100%);">
+                    <!-- Line 1: Header (Icon + Title + Category Tag) -->
+                    <div class="row-header-line">
+                        <div class="row-header-left">
+                            <div class="row-icon"><i class="fas fa-graduation-cap"></i></div>
+                            <div class="row-title" style="color: #e0f7f7;">Online Admission Application</div>
+                        </div>
+                        <span class="row-badge row-badge-teal">Undergraduate</span>
+                    </div>
+                    <!-- Line 2: Actions (Primary CTA + Secondary Pills) -->
+                    <div class="row-actions-line">
+                        <a href="{% url 'public_apply_form' %}" class="btn-row-primary">
+                            <i class="fas fa-pen-nib mr-1"></i> Apply Online Now
+                        </a>
+                        <a href="{% url 'public_application_status' %}" class="btn-tile-pill pill-track">
+                            <i class="fas fa-search-location"></i> Track Status
+                        </a>
+                        <a href="{% url 'public_requirements' %}" class="btn-tile-pill pill-info">
+                            <i class="fas fa-info-circle"></i> Requirements
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Row 2: Counseling Service -->
+                <div class="service-row-card row-counseling">
+                    <!-- Line 1: Header -->
+                    <div class="row-header-line">
+                        <div class="row-header-left">
+                            <div class="row-icon"><i class="fas fa-heartbeat"></i></div>
+                            <div class="row-title">Student Counseling Center</div>
+                        </div>
+                        <span class="row-badge row-badge-rose">Confidential Care</span>
+                    </div>
+                    <!-- Line 2: Actions -->
+                    <div class="row-actions-line">
+                        <a href="{% url 'counseling_public_book' %}" class="btn-tile-pill pill-rose">
+                            <i class="fas fa-calendar-check mr-1"></i> Book Session ➔
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Row 3: Student Internal Applications -->
+                <div class="service-row-card row-student-apps">
+                    <!-- Line 1: Header -->
+                    <div class="row-header-line">
+                        <div class="row-header-left">
+                            <div class="row-icon"><i class="fas fa-file-signature"></i></div>
+                            <div class="row-title">Student Applications</div>
+                        </div>
+                        <span class="row-badge row-badge-emerald">Enrolled Services</span>
+                    </div>
+                    <!-- Line 2: Actions -->
+                    <div class="row-actions-line">
+                        <a href="{% url 'public_apply' %}" class="btn-tile-pill pill-emerald">
+                            <i class="fas fa-paper-plane mr-1"></i> Apply for Service
+                        </a>
+                        <a href="{% url 'public_track_application' %}" class="btn-tile-pill pill-info">
+                            <i class="fas fa-search mr-1"></i> Track Request
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Row 4: ICT Wing Network Services -->
+                <div class="service-row-card row-network">
+                    <!-- Line 1: Header -->
+                    <div class="row-header-line">
+                        <div class="row-header-left">
+                            <div class="row-icon"><i class="fas fa-network-wired"></i></div>
+                            <div class="row-title">ICT Device Hub</div>
+                        </div>
+                        <span class="row-badge row-badge-purple">Campus Wi-Fi</span>
+                    </div>
+                    <!-- Line 2: Actions -->
+                    <div class="row-actions-line">
+                        <a href="{% url 'register_device' %}" class="btn-tile-pill pill-violet">
+                            <i class="fas fa-wifi mr-1"></i> Register MAC
+                        </a>
+                        <a href="{% url 'check_device_status' %}" class="btn-tile-pill pill-info">
+                            <i class="fas fa-check-circle mr-1"></i> Check Status
+                        </a>
                     </div>
                 </div>
             </div>
-            <h2>Bangladesh Army University of Science and Technology</h2>
-            <p>Campus Connect Workspace</p>
         </div>
 
-        <div class="login-body">
+        <div class="showcase-footer">
+            <span>© 2026 BAUST Information Systems.</span>
+            <span><i class="fas fa-shield-alt mr-1 text-success"></i> Secure Campus Network</span>
+        </div>
+    </div>
+
+    <!-- Right Panel: Institutional Login Form -->
+    <div class="workspace-auth">
+        <div class="login-card">
+            <div class="auth-card-header">
+                <div class="auth-badge">
+                    <i class="fas fa-lock"></i> Institutional Sign In
+                </div>
+                <h2>Portal Access</h2>
+                <p>Enter your authorized credentials to access your administrative, academic, or staff dashboard.</p>
+            </div>
+
             {% if form.errors %}
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle mr-2"></i> Invalid username or password.
+            <div class="alert alert-danger" role="alert">
+                <div>
+                    <i class="fas fa-exclamation-circle mr-2"></i> Invalid username or security key. Please check your credentials.
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:#fca5a5; cursor:pointer; font-size:1.15rem; line-height:1; padding:0 4px;" aria-label="Dismiss alert">&times;</button>
             </div>
             {% endif %}
 
-            <form action="{% url 'login' %}" method="post">
+            <form action="{% url 'login' %}" method="post" autocomplete="on">
                 {% csrf_token %}
+                {% if request.GET.next %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+                {% endif %}
+
                 <div class="form-group">
-                    <label for="id_username">Username / Email</label>
+                    <label for="id_username">Username / Institutional Email</label>
                     <div class="auth-input-group">
-                        <i class="fas fa-user"></i>
-                        <input type="text" name="username" class="form-control" placeholder="Enter your username" required id="id_username">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="username" class="form-control" placeholder="e.g. employee.id or user@baust.edu.bd" required id="id_username" autocomplete="username" autofocus>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="id_password">Security Key</label>
+                    <label for="id_password">Security Key / Password</label>
                     <div class="auth-input-group">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" name="password" class="form-control" placeholder="••••••••" required id="id_password">
-                        <span class="password-toggle"><i class="fas fa-eye-slash"></i></span>
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" name="password" class="form-control" placeholder="••••••••••••" required id="id_password" autocomplete="current-password">
+                        <span class="password-toggle" title="Toggle password visibility" aria-label="Toggle password visibility" role="button" tabindex="0">
+                            <i class="fas fa-eye-slash"></i>
+                        </span>
+                    </div>
+                    <!-- Realtime Caps Lock Indicator -->
+                    <div id="caps-warning" class="caps-warning">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> <strong>Caps Lock is ON</strong> — Passwords are case-sensitive.
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-login">
-                    Access Portal <i class="fas fa-arrow-right ml-2"></i>
+                <button type="submit" class="btn btn-login" id="loginSubmitBtn">
+                    <span>Access Portal</span> <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
 
-            <div class="login-footer">
+            <div class="auth-help-bar">
                 <a href="{% url 'check_status' %}">
-                    <i class="fas fa-search mr-1"></i> Account Approval Status
+                    <i class="fas fa-question-circle mr-1"></i> Account Pending Approval?
                 </a>
                 <a href="{% url 'register' %}">
-                    <i class="fas fa-user-plus mr-1"></i> Staff Registration
-                </a>
-            </div>
-            
-            <div class="login-footer" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
-                <a href="{% url 'register_device' %}" style="opacity: 0.85;">
-                    <i class="fas fa-wifi mr-1"></i> Register Device MAC
-                </a>
-                <a href="{% url 'check_device_status' %}" style="opacity: 0.85;">
-                    <i class="fas fa-network-wired mr-1"></i> MAC Binding Status
+                    <i class="fas fa-user-plus mr-1"></i> New Staff Registration
                 </a>
             </div>
         </div>
-    </div>
-    
-    <div class="text-center mt-4">
-        <p class="text-muted small">© 2026 BAUST Information Systems. All rights reserved.</p>
+
+        <div class="text-center mt-3" style="color: #64748b; font-size: 0.78rem;">
+            <span><i class="fas fa-lock mr-1"></i> Enterprise Grade Encryption & Session Hardening Active</span>
+        </div>
     </div>
 </div>
 
@@ -410,18 +900,40 @@
 {% block extra_js %}
 <script>
     $(document).ready(function() {
-        $('.password-toggle').on('click', function() {
-            const icon = $(this).find('i');
-            const passwordInput = $(this).siblings('input');
-            
-            if (passwordInput.attr('type') === 'password') {
-                passwordInput.attr('type', 'text');
-                icon.removeClass('fa-eye-slash').addClass('fa-eye');
-            } else {
-                passwordInput.attr('type', 'password');
-                icon.removeClass('fa-eye').addClass('fa-eye-slash');
+        // Password Visibility Toggle
+        $('.password-toggle').on('click keypress', function(e) {
+            if (e.type === 'click' || e.which === 13 || e.which === 32) {
+                const icon = $(this).find('i');
+                const passwordInput = $(this).siblings('input');
+                
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                }
             }
         });
+
+        // Realtime Caps Lock Detection on Password Field
+        const passInput = document.getElementById('id_password');
+        const capsWarning = document.getElementById('caps-warning');
+        if (passInput && capsWarning) {
+            ['keydown', 'keyup'].forEach(eventType => {
+                passInput.addEventListener(eventType, function(e) {
+                    if (e.getModifierState && e.getModifierState('CapsLock')) {
+                        capsWarning.style.display = 'block';
+                    } else {
+                        capsWarning.style.display = 'none';
+                    }
+                });
+            });
+            passInput.addEventListener('blur', function() {
+                capsWarning.style.display = 'none';
+            });
+        }
     });
 </script>
 {% endblock %}
+

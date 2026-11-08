@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Counseling Settings" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+{% endblock %}
+
+{% block page_title %}
+  <i class="fas fa-sliders-h mr-2 text-primary"></i>{% trans "Counseling & Wellbeing System Settings" %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title"><i class="fas fa-cogs text-primary"></i> {% trans "System Configuration & SMS Templates" %}</h3>
+      </div>
+      <div class="card-body p-4">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="custom-control custom-checkbox mb-4 p-2 bg-light rounded">
+            {{ form.enable_sms_notifications }}
+            <label class="custom-control-label font-weight-bold" for="{{ form.enable_sms_notifications.id_for_label }}">
+              {{ form.enable_sms_notifications.label }}
+            </label>
+            <small class="d-block text-muted">{% trans "Dispatches automated discreet confirmation SMS to students upon appointment booking." %}</small>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-bold">{{ form.sms_template_appointment_confirm.label }}</label>
+            {{ form.sms_template_appointment_confirm }}
+            <small class="text-muted">{% trans "Available tokens: {date}, {time}, {room}" %}</small>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-bold">{{ form.sms_template_crisis_alert.label }}</label>
+            {{ form.sms_template_crisis_alert }}
+            <small class="text-muted">{% trans "Available tokens: {student_id}, {case_number}" %}</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 form-group">
+              <label class="font-weight-bold">{{ form.session_lock_hours.label }}</label>
+              {{ form.session_lock_hours }}
+            </div>
+            <div class="col-md-4 form-group">
+              <label class="font-weight-bold">{{ form.crisis_sla_hours.label }}</label>
+              {{ form.crisis_sla_hours }}
+            </div>
+            <div class="col-md-4 form-group">
+              <label class="font-weight-bold">{{ form.default_slot_duration_minutes.label }}</label>
+              {{ form.default_slot_duration_minutes }}
+            </div>
+          </div>
+
+          <div class="form-group mb-4">
+            <label class="font-weight-bold">{{ form.counselor_room_default.label }}</label>
+            {{ form.counselor_room_default }}
+          </div>
+
+          <div class="border-top pt-3 text-right">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="fas fa-save mr-1"></i> {% trans "Save Settings" %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

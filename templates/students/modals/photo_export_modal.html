@@ -1,0 +1,279 @@
+<!-- Photo Export Naming Rules & Configuration Modal -->
+<div class="modal fade" id="photoExportModal" tabindex="-1" role="dialog" aria-labelledby="photoExportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header bg-gradient-success text-white py-3 px-4" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                <h5 class="modal-title font-weight-bold d-flex align-items-center" id="photoExportModalLabel">
+                    <i class="fas fa-camera-retro mr-2"></i> Photo Export Naming Rules & Audit
+                </h5>
+                <button type="button" class="close text-white opacity-9" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <form id="photoExportForm" action="{% url 'export_photos_zip' %}" method="POST">
+                {% csrf_token %}
+                <div id="photoExportHiddenContainer"></div>
+
+                <div class="modal-body p-4">
+                    <!-- Scope Summary Alert -->
+                    <div class="alert alert-light border d-flex align-items-center rounded-pill px-4 py-2 mb-3" style="background: #f8f9fa;">
+                        <i class="fas fa-info-circle text-success fa-lg mr-3"></i>
+                        <div class="w-100">
+                            <span class="font-weight-bold text-dark" id="photoExportScopeText">Preparing student photos for download...</span>
+                        </div>
+                    </div>
+
+                    <!-- Photo Availability Statistics Badges -->
+                    <div class="row text-center mb-4" id="photoExportStatsRow">
+                        <div class="col-4">
+                            <div class="p-2 border rounded-lg bg-light shadow-sm">
+                                <span class="d-block small text-muted font-weight-bold text-uppercase">Target Students</span>
+                                <span class="h5 font-weight-black text-dark mb-0" id="statsTotalCount"><i class="fas fa-spinner fa-spin text-muted" style="font-size: 14px;"></i></span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded-lg shadow-sm" style="background: rgba(40, 167, 69, 0.08); border-color: rgba(40, 167, 69, 0.2) !important;">
+                                <span class="d-block small text-success font-weight-bold text-uppercase"><i class="fas fa-check-circle mr-1"></i> With Photo</span>
+                                <span class="h5 font-weight-black text-success mb-0" id="statsHasPhotoCount"><i class="fas fa-spinner fa-spin text-muted" style="font-size: 14px;"></i></span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded-lg shadow-sm" style="background: rgba(220, 53, 69, 0.08); border-color: rgba(220, 53, 69, 0.2) !important;">
+                                <span class="d-block small text-danger font-weight-bold text-uppercase"><i class="fas fa-exclamation-triangle mr-1"></i> Missing Photo</span>
+                                <span class="h5 font-weight-black text-danger mb-0" id="statsNoPhotoCount"><i class="fas fa-spinner fa-spin text-muted" style="font-size: 14px;"></i></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Left Column: Naming Presets -->
+                        <div class="col-md-7 border-right">
+                            <label class="small font-weight-black text-uppercase text-muted letter-spacing-1 mb-3 d-block">
+                                <i class="fas fa-list-check text-success mr-1"></i> Select Naming Pattern
+                            </label>
+
+                            <div class="naming-preset-group">
+                                <div class="custom-control custom-radio mb-2 p-2 border rounded-lg hover-bg-light" style="cursor: pointer;">
+                                    <input type="radio" id="rule_id_name" name="naming_rule" value="id_name" class="custom-control-input" checked onchange="updatePhotoExportPreview()">
+                                    <label class="custom-control-label w-100 font-weight-bold" for="rule_id_name" style="cursor: pointer;">
+                                        ID + Name <span class="badge badge-success-soft ml-2">Recommended</span>
+                                        <small class="d-block text-muted font-weight-normal">e.g. 20230104001_John_Doe.jpg</small>
+                                    </label>
+                                </div>
+
+                                <div class="custom-control custom-radio mb-2 p-2 border rounded-lg hover-bg-light" style="cursor: pointer;">
+                                    <input type="radio" id="rule_id_only" name="naming_rule" value="id_only" class="custom-control-input" onchange="updatePhotoExportPreview()">
+                                    <label class="custom-control-label w-100 font-weight-bold" for="rule_id_only" style="cursor: pointer;">
+                                        ID Only
+                                        <small class="d-block text-muted font-weight-normal">e.g. 20230104001.jpg</small>
+                                    </label>
+                                </div>
+
+                                <div class="custom-control custom-radio mb-2 p-2 border rounded-lg hover-bg-light" style="cursor: pointer;">
+                                    <input type="radio" id="rule_name_id" name="naming_rule" value="name_id" class="custom-control-input" onchange="updatePhotoExportPreview()">
+                                    <label class="custom-control-label w-100 font-weight-bold" for="rule_name_id" style="cursor: pointer;">
+                                        Name + ID
+                                        <small class="d-block text-muted font-weight-normal">e.g. John_Doe_20230104001.jpg</small>
+                                    </label>
+                                </div>
+
+                                <div class="custom-control custom-radio mb-2 p-2 border rounded-lg hover-bg-light" style="cursor: pointer;">
+                                    <input type="radio" id="rule_id_program_name" name="naming_rule" value="id_program_name" class="custom-control-input" onchange="updatePhotoExportPreview()">
+                                    <label class="custom-control-label w-100 font-weight-bold" for="rule_id_program_name" style="cursor: pointer;">
+                                        ID + Program + Name
+                                        <small class="d-block text-muted font-weight-normal">e.g. 20230104001_CSE_John_Doe.jpg</small>
+                                    </label>
+                                </div>
+
+                                <div class="custom-control custom-radio mb-2 p-2 border rounded-lg hover-bg-light" style="cursor: pointer;">
+                                    <input type="radio" id="rule_id_batch_name" name="naming_rule" value="id_batch_name" class="custom-control-input" onchange="updatePhotoExportPreview()">
+                                    <label class="custom-control-label w-100 font-weight-bold" for="rule_id_batch_name" style="cursor: pointer;">
+                                        ID + Batch + Name
+                                        <small class="d-block text-muted font-weight-normal">e.g. 20230104001_Batch60_John_Doe.jpg</small>
+                                    </label>
+                                </div>
+
+                                <div class="custom-control custom-radio mb-2 p-2 border rounded-lg hover-bg-light" style="cursor: pointer;">
+                                    <input type="radio" id="rule_custom" name="naming_rule" value="custom" class="custom-control-input" onchange="updatePhotoExportPreview()">
+                                    <label class="custom-control-label w-100 font-weight-bold" for="rule_custom" style="cursor: pointer;">
+                                        Custom Pattern
+                                        <small class="d-block text-muted font-weight-normal">Use placeholders: {id}, {name}, {program}, {batch}</small>
+                                    </label>
+                                </div>
+
+                                <div id="customPatternWrapper" class="mt-2 pl-4" style="display: none;">
+                                    <input type="text" id="customPatternInput" name="custom_pattern" class="form-control form-control-sm rounded-pill border-2" placeholder="{id}_{program}_{name}" value="{id}_{program}_{name}" oninput="updatePhotoExportPreview()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Formatting Options & Preview -->
+                        <div class="col-md-5">
+                            <label class="small font-weight-black text-uppercase text-muted letter-spacing-1 mb-3 d-block">
+                                <i class="fas fa-sliders-h text-success mr-1"></i> Formatting Options
+                            </label>
+
+                            <div class="form-group mb-3">
+                                <label class="small font-weight-bold text-muted mb-1">Separator</label>
+                                <select name="separator" id="photoExportSeparator" class="form-control form-control-sm rounded-pill border-2" onchange="updatePhotoExportPreview()">
+                                    <option value="_">Underscore ( _ )</option>
+                                    <option value="-">Hyphen ( - )</option>
+                                    <option value=" ">Space (   )</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="small font-weight-bold text-muted mb-1">Text Case</label>
+                                <select name="case_format" id="photoExportCase" class="form-control form-control-sm rounded-pill border-2" onchange="updatePhotoExportPreview()">
+                                    <option value="preserve">As Is (Default)</option>
+                                    <option value="upper">UPPERCASE</option>
+                                    <option value="lower">lowercase</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="small font-weight-bold text-muted mb-1">ZIP Folder Organization</label>
+                                <select name="folder_structure" id="photoExportFolder" class="form-control form-control-sm rounded-pill border-2" onchange="updatePhotoExportPreview()">
+                                    <option value="flat">Flat Archive (All files in root)</option>
+                                    <option value="batch">Group into Subfolders by Batch</option>
+                                    <option value="program">Group into Subfolders by Department</option>
+                                </select>
+                            </div>
+
+                            <!-- Live Sample Preview Card -->
+                            <div class="card bg-dark text-white border-0 shadow-sm rounded-xl">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="small font-weight-bold text-uppercase text-success"><i class="fas fa-eye mr-1"></i> Live File Preview</span>
+                                        <span class="badge badge-secondary badge-pill" style="font-size: 10px;">Sample</span>
+                                    </div>
+                                    <div class="bg-black p-2 rounded text-truncate font-monospace" id="photoExportLivePreview" style="font-family: monospace; font-size: 12px; color: #00ff66; background: #111;">
+                                        20230104001_John_Doe.jpg
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light py-3 px-4 border-top">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-5 font-weight-bold shadow transform-hover">
+                        <i class="fas fa-download mr-2"></i> Download ZIP Archive
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function fetchPhotoExportStats() {
+    const totalEl = document.getElementById('statsTotalCount');
+    const hasEl = document.getElementById('statsHasPhotoCount');
+    const noEl = document.getElementById('statsNoPhotoCount');
+
+    if (totalEl) totalEl.innerHTML = '<i class="fas fa-spinner fa-spin text-muted" style="font-size: 14px;"></i>';
+    if (hasEl) hasEl.innerHTML = '<i class="fas fa-spinner fa-spin text-muted" style="font-size: 14px;"></i>';
+    if (noEl) noEl.innerHTML = '<i class="fas fa-spinner fa-spin text-muted" style="font-size: 14px;"></i>';
+
+    const hiddenContainer = document.getElementById('photoExportHiddenContainer');
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    if (hiddenContainer) {
+        const inputs = hiddenContainer.querySelectorAll('input');
+        inputs.forEach(inp => {
+            if (inp.name && inp.value) {
+                formData.append(inp.name, inp.value);
+            }
+        });
+    }
+
+    fetch('/students/api/export-photos/stats/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (totalEl) totalEl.textContent = data.total || 0;
+        if (hasEl) hasEl.textContent = data.has_photo || 0;
+        if (noEl) noEl.textContent = data.no_photo || 0;
+    })
+    .catch(err => {
+        if (totalEl) totalEl.textContent = '-';
+        if (hasEl) hasEl.textContent = '-';
+        if (noEl) noEl.textContent = '-';
+    });
+}
+
+function updatePhotoExportPreview() {
+    const selectedRule = document.querySelector('input[name="naming_rule"]:checked')?.value || 'id_name';
+    const separator = document.getElementById('photoExportSeparator')?.value || '_';
+    const caseFormat = document.getElementById('photoExportCase')?.value || 'preserve';
+    const folderStructure = document.getElementById('photoExportFolder')?.value || 'flat';
+    const customPatternWrapper = document.getElementById('customPatternWrapper');
+    const customPatternInput = document.getElementById('customPatternInput');
+    const previewEl = document.getElementById('photoExportLivePreview');
+
+    if (!previewEl) return;
+
+    if (customPatternWrapper) {
+        customPatternWrapper.style.display = (selectedRule === 'custom') ? 'block' : 'none';
+    }
+
+    // Sample student data
+    let sampleId = '20230104001';
+    let sampleName = 'John Doe';
+    let sampleProg = 'CSE';
+    let sampleBatch = '60';
+
+    const sep = separator;
+    let cleanName = (sep === '_' || sep === '-') ? sampleName.replace(/ /g, sep) : sampleName;
+    let cleanProg = (sep === '_' || sep === '-') ? sampleProg.replace(/ /g, sep) : sampleProg;
+    let cleanBatch = (sep === '_' || sep === '-') ? sampleBatch.replace(/ /g, sep) : sampleBatch;
+
+    let baseName = '';
+    if (selectedRule === 'id_only') {
+        baseName = sampleId;
+    } else if (selectedRule === 'name_id') {
+        baseName = `${cleanName}${sep}${sampleId}`;
+    } else if (selectedRule === 'id_program_name') {
+        baseName = `${sampleId}${sep}${cleanProg}${sep}${cleanName}`;
+    } else if (selectedRule === 'id_batch_name') {
+        baseName = `${sampleId}${sep}Batch${cleanBatch}${sep}${cleanName}`;
+    } else if (selectedRule === 'custom') {
+        let pat = customPatternInput?.value || '{id}_{program}_{name}';
+        baseName = pat
+            .replace(/{id}/g, sampleId)
+            .replace(/{name}/g, cleanName)
+            .replace(/{program}/g, cleanProg)
+            .replace(/{batch}/g, cleanBatch)
+            .replace(/{year}/g, '2023')
+            .replace(/{roll}/g, '104001');
+    } else { // id_name
+        baseName = `${sampleId}${sep}${cleanName}`;
+    }
+
+    if (caseFormat === 'upper') {
+        baseName = baseName.toUpperCase();
+    } else if (caseFormat === 'lower') {
+        baseName = baseName.toLowerCase();
+    }
+
+    let fullPath = `${baseName}.jpg`;
+
+    if (folderStructure === 'batch') {
+        fullPath = `Batch_${sampleBatch}/${fullPath}`;
+    } else if (folderStructure === 'program') {
+        fullPath = `${sampleProg}/${fullPath}`;
+    }
+
+    previewEl.textContent = fullPath;
+}
+
+$('#photoExportModal').on('shown.bs.modal', function () {
+    fetchPhotoExportStats();
+});
+</script>

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Mental Health Workshops" %} — {% trans "Counseling Center" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+{% endblock %}
+
+{% block page_title %}
+  <i class="fas fa-users-cog mr-2 text-primary"></i>{% trans "Mental Health Workshops & Awareness Campaigns" %}
+{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'counseling_workshop_create' %}" class="btn-action-pill btn-pill-intake">
+    <i class="fas fa-plus-circle"></i> <span>{% trans "Create New Workshop" %}</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  {% for w in workshops %}
+  <div class="col-lg-6 col-12 mb-4">
+    <div class="counseling-card h-100">
+      <div class="counseling-card-header bg-light">
+        <h5 class="font-weight-bold mb-0 text-primary">{{ w.title }}</h5>
+        {% if w.is_cancelled %}
+          <span class="badge badge-danger">{% trans "Cancelled" %}</span>
+        {% elif w.event_date < today %}
+          <span class="badge badge-secondary"><i class="fas fa-check-circle mr-1"></i>{% trans "Completed" %}</span>
+        {% elif w.registered_count >= w.capacity %}
+          <span class="badge badge-warning">{% trans "Fully Booked" %}</span>
+        {% else %}
+          <span class="badge badge-success"><i class="fas fa-satellite-dish mr-1"></i>{% trans "Active" %}</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <div class="mb-2"><strong><i class="far fa-calendar text-primary mr-2"></i>{% trans "Date:" %}</strong> {{ w.event_date|date:"l, d F Y" }} {% if w.start_time %}at {{ w.start_time|time:"h:i A" }}{% endif %}</div>
+        <div class="mb-2"><strong><i class="fas fa-map-marker-alt text-primary mr-2"></i>{% trans "Venue:" %}</strong> {{ w.venue }}</div>
+        <div class="mb-2"><strong><i class="fas fa-user-tie text-primary mr-2"></i>{% trans "Speaker / Facilitator:" %}</strong> {{ w.speaker }}</div>
+        <div class="mb-3"><strong><i class="fas fa-users text-primary mr-2"></i>{% trans "Target:" %}</strong> {{ w.target_audience }}</div>
+        
+        {% if w.description %}
+          <p class="small text-muted mb-3">{{ w.description }}</p>
+        {% endif %}
+
+        <hr>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="badge badge-info p-2">
+            <i class="fas fa-user-check mr-1"></i> {{ w.registered_count }} / {{ w.capacity }} {% trans "Registered" %}
+          </span>
+        </div>
+
+        <!-- Quick Register Form -->
+        {% if not w.is_cancelled and w.event_date >= today and w.registered_count < w.capacity %}
+        <form method="post" action="{% url 'counseling_workshop_register' pk=w.pk %}" class="input-group">
+          {% csrf_token %}
+          <input type="text" name="student_id" class="form-control form-control-sm" placeholder="{% trans 'Enter Student ID to Register...' %}" required>
+          <div class="input-group-append">
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="fas fa-user-plus mr-1"></i> {% trans "Register Student" %}
+            </button>
+          </div>
+        </form>
+        {% elif w.registered_count >= w.capacity and not w.is_cancelled and w.event_date >= today %}
+        <div class="text-muted small text-center p-2 bg-light rounded">
+          <i class="fas fa-ban mr-1 text-warning"></i> {% trans "Registration closed (Capacity reached)." %}
+        </div>
+        {% else %}
+        <div class="text-muted small text-center p-2 bg-light rounded">
+          <i class="fas fa-info-circle mr-1"></i> {% trans "Registration closed." %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5 text-muted">
+    <i class="fas fa-chalkboard-teacher fa-3x mb-3 text-secondary"></i>
+    <p>{% trans "No workshops scheduled yet." %}</p>
+    <a href="{% url 'counseling_workshop_create' %}" class="btn btn-sm btn-primary">{% trans "Schedule First Workshop" %}</a>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

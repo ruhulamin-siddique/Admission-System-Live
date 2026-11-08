@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
   
   <!-- HTMX -->
-  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.2" defer></script>
 
   <!-- Favicon -->
   {% if sys_settings.favicon_url %}
@@ -25,6 +25,10 @@
   {% if 'coe/' in request.path %}
   {% load static %}
   <link rel="stylesheet" href="{% static 'coe/css/coe_premium.css' %}">
+  {% endif %}
+  {% if 'counseling/' in request.path %}
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
   {% endif %}
   {% block extra_css %}{% endblock %}
   <!-- SweetAlert2 -->
@@ -423,7 +427,8 @@
     <!-- Brand Logo -->
     <a href="{% url 'dashboard' %}" class="brand-link d-flex align-items-center" style="background-color: {{ sys_settings.theme_color|default:'#004085' }}; height: 57px; overflow: hidden;">
       {% if sys_settings.logo_url %}
-      <img src="{{ sys_settings.logo_url }}" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8; max-height: 33px; margin-left: 0.5rem;">
+      <img src="{{ sys_settings.logo_url }}" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .9; max-height: 33px; margin-left: 0.5rem;" onerror="if(this.src.indexOf('branding/logo.png')===-1){this.src='{% static 'branding/logo.png' %}';}else{this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='inline-block';}">
+      <i class="fas fa-graduation-cap ml-3 mr-2" style="font-size: 1.2rem; color: white; display: none;"></i>
       {% else %}
       <i class="fas fa-graduation-cap ml-3 mr-2" style="font-size: 1.2rem; color: white;"></i>
       {% endif %}
@@ -465,6 +470,12 @@
           {% has_access 'students' 'view_directory' as can_view_students %}
           {% has_access 'students' 'add_student' as can_add_student %}
           {% has_access 'students' 'edit_profile' as can_edit_students %}
+          {% has_access 'students' 'manage_online_applicants' as can_manage_online_applicants %}
+          {% has_access 'students' 'manage_admission_intakes' as can_manage_intakes %}
+          {% has_access 'students' 'view_applications' as can_view_apps %}
+          {% has_access 'students' 'view_migrations' as can_view_migrations %}
+          {% has_access 'students' 'view_cancellations' as can_view_cancellations %}
+          {% has_access 'students' 'manage_references' as can_manage_references %}
 
           {% if can_view_students %}
           <li class="nav-item">
@@ -474,7 +485,7 @@
             </a>
           </li>
           {% endif %}
-          
+
           {% if can_add_student %}
           <li class="nav-item">
             <a href="{% url 'add_student' %}" class="nav-link {% if request.resolver_match.url_name == 'add_student' %}active{% endif %}">
@@ -484,33 +495,119 @@
           </li>
           {% endif %}
 
-          {% has_access 'students' 'view_migrations' as can_view_migrations %}
-          {% if can_view_migrations %}
-          <li class="nav-item">
-            <a href="{% url 'migration_center' %}" class="nav-link {% if request.resolver_match.url_name == 'migration_center' %}active{% endif %}">
-              <i class="nav-icon fas fa-exchange-alt"></i>
-              <p>{% translate "Department Change" %}</p>
+          {% if can_manage_online_applicants or can_manage_intakes %}
+          <li class="nav-item {% if request.resolver_match.url_name == 'admin_online_applicant_list' or request.resolver_match.url_name == 'admin_intake_list' or request.resolver_match.url_name == 'admin_intake_add' or request.resolver_match.url_name == 'admin_intake_edit' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.url_name == 'admin_online_applicant_list' or request.resolver_match.url_name == 'admin_intake_list' or request.resolver_match.url_name == 'admin_intake_add' or request.resolver_match.url_name == 'admin_intake_edit' %}active{% endif %}">
+              <i class="nav-icon fas fa-globe text-info"></i>
+              <p>
+                {% translate "Online Admission Portal" %}
+                <i class="right fas fa-angle-left"></i>
+              </p>
             </a>
+            <ul class="nav nav-treeview">
+              {% if can_manage_online_applicants %}
+              <li class="nav-item">
+                <a href="{% url 'admin_online_applicant_list' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_online_applicant_list' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon text-info"></i>
+                  <p>{% translate "Online Applicant Hub" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_manage_intakes %}
+              <li class="nav-item">
+                <a href="{% url 'admin_intake_list' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_intake_list' or request.resolver_match.url_name == 'admin_intake_add' or request.resolver_match.url_name == 'admin_intake_edit' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon text-warning"></i>
+                  <p>{% translate "Admission Intakes" %}</p>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
           </li>
           {% endif %}
 
-          {% has_access 'students' 'view_cancellations' as can_view_cancellations %}
-          {% if can_view_cancellations %}
-          <li class="nav-item">
-            <a href="{% url 'cancellation_hub' %}" class="nav-link {% if request.resolver_match.url_name == 'cancellation_hub' %}active{% endif %}">
-              <i class="nav-icon fas fa-user-times"></i>
-              <p>{% translate "Admission Cancel" %}</p>
+          {% if can_view_apps or can_view_migrations or can_view_cancellations or can_manage_references %}
+          {% url 'admission_applications_admin' as admin_apps_url %}
+          <li class="nav-item {% if request.resolver_match.url_name == 'admission_applications_admin' or request.resolver_match.url_name == 'migration_center' or request.resolver_match.url_name == 'cancellation_hub' or request.resolver_match.url_name == 'reference_manage' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.url_name == 'admission_applications_admin' or request.resolver_match.url_name == 'migration_center' or request.resolver_match.url_name == 'cancellation_hub' or request.resolver_match.url_name == 'reference_manage' %}active{% endif %}">
+              <i class="nav-icon fas fa-tasks text-success"></i>
+              <p>
+                {% translate "Student Operations" %}
+                <i class="right fas fa-angle-left"></i>
+              </p>
             </a>
+            <ul class="nav nav-treeview">
+              {% if can_view_apps %}
+              <li class="nav-item">
+                <a href="{{ admin_apps_url|default:'/students/applications/' }}" class="nav-link {% if request.resolver_match.url_name == 'admission_applications_admin' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "Internal Student Requests" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_view_migrations %}
+              <li class="nav-item">
+                <a href="{% url 'migration_center' %}" class="nav-link {% if request.resolver_match.url_name == 'migration_center' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "Department Change" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_view_cancellations %}
+              <li class="nav-item">
+                <a href="{% url 'cancellation_hub' %}" class="nav-link {% if request.resolver_match.url_name == 'cancellation_hub' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "Admission Cancel Hub" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_manage_references %}
+              <li class="nav-item">
+                <a href="{% url 'reference_manage' %}" class="nav-link {% if request.resolver_match.url_name == 'reference_manage' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "Reference Hub" %}</p>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
           </li>
           {% endif %}
 
-          {% has_access 'students' 'manage_references' as can_manage_references %}
-          {% if can_manage_references %}
-          <li class="nav-item">
-            <a href="{% url 'reference_manage' %}" class="nav-link {% if request.resolver_match.url_name == 'reference_manage' %}active{% endif %}">
-              <i class="nav-icon fas fa-network-wired"></i>
-              <p>{% translate "Reference Hub" %}</p>
+          {% has_access 'reports' 'view_analytics' as can_view_reports %}
+          {% if can_view_reports %}
+          <li class="nav-item {% if request.resolver_match.url_name == 'reports_center' or request.resolver_match.url_name == 'institutional_report' or request.resolver_match.url_name == 'geographic_insights_v2' or request.resolver_match.url_name == 'export_center' or request.resolver_match.url_name == 'analytics_dashboard' or request.resolver_match.url_name == 'intake_performance_report' or request.resolver_match.url_name == 'academic_intake_report' or request.resolver_match.url_name == 'additional_fees_report' or request.resolver_match.url_name == 'financial_intelligence_report' or request.resolver_match.url_name == 'reference_report' or 'export' in request.path %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.url_name == 'reports_center' or request.resolver_match.url_name == 'institutional_report' or request.resolver_match.url_name == 'geographic_insights_v2' or request.resolver_match.url_name == 'export_center' or 'export' in request.path %}active{% endif %}">
+              <i class="nav-icon fas fa-chart-pie text-warning"></i>
+              <p>
+                {% translate "Admission Reports" %}
+                <i class="right fas fa-angle-left"></i>
+              </p>
             </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{% url 'reports_center' %}" class="nav-link {% if request.resolver_match.url_name == 'reports_center' or request.resolver_match.url_name == 'analytics_dashboard' or request.resolver_match.url_name == 'intake_performance_report' or request.resolver_match.url_name == 'academic_intake_report' or request.resolver_match.url_name == 'additional_fees_report' or request.resolver_match.url_name == 'financial_intelligence_report' or request.resolver_match.url_name == 'reference_report' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon text-info"></i>
+                  <p>{% translate "Reports Hub" %}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'institutional_report' %}" class="nav-link {% if request.resolver_match.url_name == 'institutional_report' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon text-primary"></i>
+                  <p>{% translate "Feeder Analysis" %}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'geographic_insights_v2' %}" class="nav-link {% if request.resolver_match.url_name == 'geographic_insights_v2' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon text-success"></i>
+                  <p>{% translate "Geographical Outreach" %}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'export_center' %}" class="nav-link {% if request.resolver_match.url_name == 'export_center' or 'export' in request.path %}active{% endif %}">
+                  <i class="far fa-circle nav-icon text-teal"></i>
+                  <p>{% translate "Dynamic Export" %}</p>
+                </a>
+              </li>
+            </ul>
           </li>
           {% endif %}
 
@@ -521,8 +618,8 @@
           {% has_access 'students' 'patch_academic_data' as can_patch %}
 
           {% if can_import or can_scan or can_audit or can_repair or can_patch %}
-          <li class="nav-item {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' or request.resolver_match.url_name == 'academic_data_patch' %}menu-open{% endif %}">
-            <a href="#" class="nav-link {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' or request.resolver_match.url_name == 'academic_data_patch' %}active{% endif %}">
+          <li class="nav-item {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' or request.resolver_match.url_name == 'academic_data_patch' or request.resolver_match.url_name == 'verification_hub' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.url_name == 'import_students' or request.resolver_match.url_name == 'data_integrity' or request.resolver_match.url_name == 'mobile_repair_tool' or request.resolver_match.url_name == 'academic_audit_center' or request.resolver_match.url_name == 'academic_data_patch' or request.resolver_match.url_name == 'verification_hub' %}active{% endif %}">
               <i class="nav-icon fas fa-toolbox"></i>
               <p>
                 {% translate "Administrative Tools" %}
@@ -561,6 +658,12 @@
                   <p>{% translate "Academic Audit" %}</p>
                 </a>
               </li>
+              <li class="nav-item">
+                <a href="{% url 'verification_hub' %}" class="nav-link {% if request.resolver_match.url_name == 'verification_hub' %}active{% endif %}" target="_blank">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{% translate "Verification Support Hub" %}</p>
+                </a>
+              </li>
               {% endif %}
               {% if can_patch %}
               <li class="nav-item">
@@ -574,34 +677,7 @@
           </li>
           {% endif %}
 
-          {% has_access 'reports' 'view_analytics' as can_view_reports %}
-          {% if can_view_reports %}
-          <li class="nav-header">{% translate "ACADEMIC & REPORTS" %}</li>
-          <li class="nav-item">
-            <a href="{% url 'reports_center' %}" class="nav-link {% if request.resolver_match.url_name == 'reports_center' %}active{% endif %}">
-              <i class="nav-icon fas fa-chart-pie"></i>
-              <p>{% translate "Reports Hub" %}</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{% url 'institutional_report' %}" class="nav-link {% if request.resolver_match.url_name == 'institutional_report' %}active{% endif %}">
-              <i class="nav-icon fas fa-university"></i>
-              <p>{% translate "Feeder Analysis" %}</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{% url 'geographic_insights_v2' %}" class="nav-link {% if request.resolver_match.url_name == 'geographic_insights_v2' %}active{% endif %}">
-              <i class="nav-icon fas fa-map-marked-alt"></i>
-              <p>{% translate "Geographic Outreach" %}</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{% url 'export_center' %}" class="nav-link {% if 'export' in request.path %}active{% endif %}">
-              <i class="nav-icon fas fa-file-excel"></i>
-              <p>{% translate "Dynamic Export" %}</p>
-            </a>
-          </li>
-          {% endif %}
+
 
           {% has_access 'exam_billing' 'view_dashboard' as can_view_billing %}
           {% has_access 'coe' 'view_all_applications' as can_view_coe %}
@@ -779,12 +855,81 @@
           </li>
           {% endif %}
 
+          {% has_access 'counseling' 'view_dashboard' as can_view_counseling %}
+          {% if can_view_counseling %}
+          <li class="nav-header">{% translate "STUDENT WELLBEING" %}</li>
+          <li class="nav-item {% if 'counseling/' in request.path %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if 'counseling/' in request.path %}active{% endif %}">
+              <i class="nav-icon fas fa-brain text-info"></i>
+              <p>
+                {% translate "Counseling Center" %}
+                <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{% url 'counseling_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'counseling_dashboard' or request.resolver_match.url_name == 'counseling_dashboard_alt' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Command Center" %}</p>
+                </a>
+              </li>
+              {% has_access 'counseling' 'manage_cases' as can_manage_cases %}
+              {% if can_manage_cases %}
+              <li class="nav-item">
+                <a href="{% url 'counseling_case_list' %}" class="nav-link {% if 'cases' in request.path %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Case Directory" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% has_access 'counseling' 'manage_appointments' as can_manage_appts %}
+              {% if can_manage_appts %}
+              <li class="nav-item">
+                <a href="{% url 'counseling_appointments' %}" class="nav-link {% if 'appointments' in request.path %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Schedule & Slots" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% has_access 'counseling' 'manage_workshops' as can_manage_c_workshops %}
+              {% if can_manage_c_workshops %}
+              <li class="nav-item">
+                <a href="{% url 'counseling_workshops' %}" class="nav-link {% if 'workshops' in request.path %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Wellness Workshops" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% has_access 'counseling' 'view_analytics' as can_view_c_analytics %}
+              {% if can_view_c_analytics %}
+              <li class="nav-item">
+                <a href="{% url 'counseling_analytics' %}" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Wellbeing Analytics" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% has_access 'counseling' 'manage_settings' as can_manage_c_settings %}
+              {% if can_manage_c_settings %}
+              <li class="nav-item">
+                <a href="{% url 'counseling_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'counseling_settings' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Center Settings" %}</p>
+                </a>
+              </li>
+              {% endif %}
+              {% if can_manage_cases %}
+              <li class="nav-item">
+                <a href="{% url 'counseling_counselor_profile' %}" class="nav-link {% if request.resolver_match.url_name == 'counseling_counselor_profile' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i><p>{% translate "Chamber & Profile" %}</p>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </li>
+          {% endif %}
+
           {% has_access 'security' 'manage_users' as can_manage_users %}
           {% has_access 'security' 'manage_roles' as can_manage_roles %}
           {% has_access 'security' 'manage_academic_settings' as can_manage_academic %}
           {% has_access 'security' 'manage_settings' as can_manage_global %}
+          {% has_access 'security' 'manage_sms' as can_manage_sms %}
 
-          {% if can_manage_users or can_manage_roles or can_manage_academic or can_manage_global %}
+          {% if can_manage_users or can_manage_roles or can_manage_academic or can_manage_global or can_manage_sms %}
           <li class="nav-header">{% translate "SYSTEM" %}</li>
           
           {% if can_manage_users or can_manage_roles %}
@@ -849,16 +994,16 @@
             </a>
           </li>
           {% endif %}
-          {% endif %}
-
-          {% if user.is_superuser %}
+          {% if can_manage_sms or can_manage_global %}
           <li class="nav-item">
-            <a href="{% url 'admin:index' %}" class="nav-link">
-              <i class="nav-icon fas fa-cogs"></i>
-              <p>{% translate "Admin Panel" %}</p>
+            <a href="{% url 'sms_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'sms_dashboard' %}active{% endif %}">
+              <i class="nav-icon fas fa-sms"></i>
+              <p>{% translate "SMS Gateway Hub" %}</p>
             </a>
           </li>
           {% endif %}
+          {% endif %}
+
           <li class="nav-item">
             <a href="#" class="nav-link" data-toggle="modal" data-target="#systemOfferingsModal">
               <i class="nav-icon fas fa-info-circle text-info"></i>
@@ -875,13 +1020,13 @@
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
     <!-- Content Header (Page header) -->
-    <div class="content-header">
+    <div class="content-header py-2">
       <div class="container-fluid">
-        <div class="row mb-2 align-items-center">
-          <div class="col-sm-6">
-            <h1 class="m-0">{% block page_title %}Dashboard{% endblock %}</h1>
+        <div class="row align-items-center">
+          <div class="col-xl-4 col-lg-5 col-md-12 mb-2 mb-lg-0">
+            <h1 class="m-0 text-truncate font-weight-bold" style="font-size: 1.4rem;">{% block page_title %}Dashboard{% endblock %}</h1>
           </div>
-          <div class="col-sm-6 text-sm-right d-flex align-items-center justify-content-sm-end mt-2 mt-sm-0" style="gap: 10px;">
+          <div class="col-xl-8 col-lg-7 col-md-12 text-lg-right d-flex flex-wrap align-items-center justify-content-start justify-content-lg-end" style="gap: 6px;">
             {% block page_actions %}{% endblock %}
           </div>
         </div>
@@ -945,6 +1090,33 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.1/js/bootstrap.bundle.min.js"></script>
 <!-- AdminLTE App -->
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+<!-- Instant Treeview Toggle Fallback (Guarantees submenus expand even if CDN is delayed) -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', function(e) {
+      const link = e.target.closest('.nav-sidebar .nav-item > a.nav-link');
+      if (!link) return;
+      const parentItem = link.closest('.nav-item');
+      if (!parentItem) return;
+      const treeview = parentItem.querySelector(':scope > .nav-treeview');
+      if (treeview) {
+        if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.Treeview) {
+          return;
+        }
+        e.preventDefault();
+        const isOpen = parentItem.classList.contains('menu-open');
+        if (isOpen) {
+          parentItem.classList.remove('menu-open');
+          treeview.style.display = 'none';
+        } else {
+          parentItem.classList.add('menu-open');
+          treeview.style.display = 'block';
+        }
+      }
+    });
+  });
+</script>
 
 {% block extra_js %}{% endblock %}
   <script>

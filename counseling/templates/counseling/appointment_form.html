@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Schedule Counseling Session" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+{% endblock %}
+
+{% block page_title %}
+  <i class="fas fa-calendar-plus mr-2 text-primary"></i>{% trans "Schedule Counseling Appointment" %}
+{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'counseling_appointments' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="fas fa-arrow-left mr-1"></i> {% trans "Back to Schedule" %}
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title"><i class="fas fa-calendar-check text-primary"></i> {% trans "Session Booking Details" %}</h3>
+      </div>
+      <div class="card-body p-4">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.case.label }} <span class="text-danger">*</span></label>
+            {{ form.case }}
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.counselor.label }} <span class="text-danger">*</span></label>
+            {{ form.counselor }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold">{{ form.appointment_date.label }} <span class="text-danger">*</span></label>
+              {{ form.appointment_date }}
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold">{{ form.time_slot.label }} <span class="text-danger">*</span></label>
+              {{ form.time_slot }}
+              <div id="slotSuggestions" class="mt-2 d-flex flex-wrap gap-1"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold">{{ form.session_mode.label }}</label>
+              {{ form.session_mode }}
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold">{{ form.referral_source.label }}</label>
+              {{ form.referral_source }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.status.label }}</label>
+            {{ form.status }}
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">{{ form.student_notes.label }}</label>
+            {{ form.student_notes }}
+          </div>
+
+          <div class="border-top pt-3 text-right">
+            <a href="{% url 'counseling_appointments' %}" class="btn btn-outline-secondary mr-2">{% trans "Cancel" %}</a>
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="fas fa-calendar-check mr-1"></i> {% trans "Confirm & Send SMS" %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const counselorSelect = document.getElementById('id_counselor_select');
+    const dateInput = document.getElementById('id_appointment_date');
+    const slotInput = document.getElementById('id_time_slot_input');
+    const suggestionsBox = document.getElementById('slotSuggestions');
+
+    function fetchAvailableSlots() {
+      const cId = counselorSelect ? counselorSelect.value : '';
+      const dVal = dateInput ? dateInput.value : '';
+      if (dVal) {
+        fetch(`{% url 'counseling_api_slots' %}?counselor_id=${cId}&date=${dVal}`)
+          .then(res => res.json())
+          .then(data => {
+            suggestionsBox.innerHTML = '';
+            if (data.slots && data.slots.length > 0) {
+              data.slots.forEach(item => {
+                const badge = document.createElement('span');
+                badge.className = item.is_available ? 'badge badge-light border text-primary p-2 mr-1 mb-1' : 'badge badge-secondary p-2 mr-1 mb-1';
+                badge.style.cursor = item.is_available ? 'pointer' : 'not-allowed';
+                badge.textContent = item.slot + (item.is_available ? '' : ' (Booked)');
+                if (item.is_available) {
+                  badge.addEventListener('click', function () {
+                    slotInput.value = item.slot;
+                  });
+                }
+                suggestionsBox.appendChild(badge);
+              });
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
+    if (dateInput) dateInput.addEventListener('change', fetchAvailableSlots);
+    if (counselorSelect) counselorSelect.addEventListener('change', fetchAvailableSlots);
+    if (dateInput && dateInput.value) fetchAvailableSlots();
+  });
+</script>
+{% endblock %}

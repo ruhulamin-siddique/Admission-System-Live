@@ -1,0 +1,1230 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Online Admission Application Form | BAUST</title>
+
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 4.6 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <style>
+        :root {
+            --baust-navy: #0b2545;
+            --baust-blue: #134074;
+            --baust-teal: #008080;
+            --baust-green: #2d6a4f;
+            --baust-gold: #d4af37;
+            --baust-light: #eef4f8;
+            --card-border: #cbd5e1;
+        }
+
+        body {
+            font-family: 'Inter', 'Hind Siliguri', sans-serif;
+            background-color: #eef2f6;
+            color: #2b2d42;
+            min-height: 100vh;
+        }
+
+        /* Top Brand Bar */
+        .top-brand-bar {
+            background: var(--baust-navy);
+            color: #ffffff;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--baust-gold);
+        }
+
+        /* Header Area */
+        .header-main {
+            background: #ffffff;
+            padding: 18px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+
+        .crest-img {
+            max-height: 68px;
+            margin-right: 16px;
+        }
+
+        .header-titles h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--baust-navy);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .header-titles p {
+            margin: 2px 0 0;
+            color: #64748b;
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+
+        /* Navigation Bar */
+        .nav-portal {
+            background: var(--baust-blue);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+
+        .nav-portal .nav-link {
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 12px 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .nav-portal .nav-link:hover, .nav-portal .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #ffde59 !important;
+        }
+
+        /* Form Card Styling (Screenshot 2 Alignment) */
+        .form-section-card {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .form-section-header {
+            background: var(--baust-blue);
+            color: #ffffff;
+            padding: 12px 20px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            letter-spacing: 0.3px;
+        }
+
+        .form-section-header i {
+            margin-right: 10px;
+        }
+
+        .form-section-body {
+            padding: 24px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.87rem;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .req-star {
+            color: #e53e3e;
+        }
+
+        .form-control, .custom-select {
+            font-size: 0.9rem;
+            border-radius: 5px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+            height: calc(1.5em + 1rem + 2px);
+        }
+
+        .form-control:focus, .custom-select:focus {
+            border-color: #008080;
+            box-shadow: 0 0 0 0.2rem rgba(0, 128, 128, 0.18);
+        }
+
+        /* Callouts */
+        .callout-hint {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 10px 14px;
+            font-size: 0.83rem;
+            color: #1e40af;
+            border-radius: 4px;
+            margin-top: 6px;
+        }
+
+        /* Photo Upload Box */
+        .photo-preview-wrapper {
+            width: 150px;
+            height: 150px;
+            border: 2px dashed #94a3b8;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #f8fafc;
+            margin-bottom: 12px;
+        }
+
+        .photo-preview-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-guidance-card {
+            background: #fdf6e2;
+            border-left: 4px solid #b58900;
+            padding: 14px 18px;
+            font-size: 0.85rem;
+            color: #657b83;
+            border-radius: 6px;
+        }
+
+        /* Payment Section (Screenshot 4 Alignment) */
+        .payment-card {
+            border: 2px solid #008080;
+        }
+
+        .payment-header {
+            background: var(--baust-navy);
+            color: #ffffff;
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .bkash-callout-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .bkash-badge {
+            background: #e2136e;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .fee-highlight {
+            color: #e2136e;
+            font-weight: 800;
+            font-size: 1.05rem;
+        }
+
+        .phone-highlight {
+            color: #0b2545;
+            font-weight: 800;
+            font-size: 1.05rem;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* Sticky Form Progress */
+        .form-progress-bar {
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            background: #ffffff;
+            border-bottom: 1px solid #cbd5e1;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .step-pill {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            margin-right: 6px;
+            display: inline-block;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+        }
+
+        .step-pill:hover {
+            background: #cce8e8;
+            color: #006060;
+            transform: translateY(-1px);
+        }
+
+        .step-pill.active {
+            background: #008080;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 128, 128, 0.35);
+        }
+
+        .footer-portal {
+            background: var(--baust-navy);
+            color: #cbd5e1;
+            padding: 25px 0;
+            font-size: 0.88rem;
+            text-align: center;
+            border-top: 3px solid var(--baust-gold);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- University Name Bar -->
+    <div class="top-brand-bar">
+        <div>
+            <i class="fas fa-university mr-2"></i> Bangladesh Army University of Science and Technology (BAUST), Saidpur
+        </div>
+        <div>
+            <span><i class="fas fa-phone mr-1"></i> Admission Helpline: 01769675554, 01769675556</span>
+        </div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="header-main">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8 col-12 mb-2 mb-md-0">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ sys_settings.logo_url|default:'/media/branding/logo.png' }}" 
+                             onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}'; if (!this.complete) { this.src='{% static 'img/baust_logo.png' %}'; }" 
+                             alt="BAUST Logo" class="crest-img">
+                        <div class="header-titles">
+                            <h1>BAUST Online Admission System</h1>
+                            <p>Online Application Form for Prospective Students</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-12 text-md-right">
+                    <a href="{% url 'public_requirements' %}" class="btn btn-outline-secondary btn-sm mr-1">
+                        <i class="fas fa-arrow-left mr-1"></i> Requirements
+                    </a>
+                    <a href="{% url 'public_application_status' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-search mr-1"></i> Track Status
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark nav-portal">
+        <div class="container">
+            <div class="collapse navbar-collapse show">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'public_requirements' %}"><i class="fas fa-home mr-1"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'public_apply_form' %}"><i class="fas fa-pen-alt mr-1"></i> Apply Now</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'public_application_status' %}"><i class="fas fa-search-location mr-1"></i> Application Status</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'public_application_status' %}"><i class="fas fa-download mr-1"></i> Admitcard Download</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://baust.edu.bd" target="_blank"><i class="fas fa-globe mr-1"></i> Visit Main Site</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sticky Form Navigation / Progress -->
+    <div class="form-progress-bar">
+        <div class="container d-flex align-items-center justify-content-between flex-wrap">
+            <div>
+                <span class="step-pill active" data-target="sec-program" onclick="scrollToSection('sec-program')">1. Program</span>
+                <span class="step-pill" data-target="sec-applicant" onclick="scrollToSection('sec-applicant')">2. Applicant Info</span>
+                <span class="step-pill" data-target="sec-photo" onclick="scrollToSection('sec-photo')">3. Photo</span>
+                <span class="step-pill" data-target="sec-address" onclick="scrollToSection('sec-address')">4. Address</span>
+                <span class="step-pill" data-target="sec-academic" onclick="scrollToSection('sec-academic')">5. Academic</span>
+                <span class="step-pill" data-target="sec-payment" onclick="scrollToSection('sec-payment')">6. Payment</span>
+            </div>
+            <div class="text-muted small font-weight-bold">
+                Applying for: <span class="text-primary" id="selected-intake-banner">{{ active_intake.intake_name }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container my-3">
+
+        <!-- Flash Messages -->
+        {% if messages %}
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-exclamation-circle mr-2"></i> {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- FORM START -->
+        <!-- Draft Recovery Notification Banner -->
+        <div id="draftRecoveryBanner" class="alert alert-warning alert-dismissible fade show shadow-sm mb-4" style="display: none; border-radius: 8px; border-left: 5px solid #d97706;" role="alert">
+            <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 10px;">
+                <div>
+                    <i class="fas fa-history mr-2 text-warning"></i>
+                    <strong>Unsaved Application Draft Found:</strong> We noticed you have previously entered information on this device.
+                </div>
+                <div>
+                    <button type="button" class="btn btn-warning btn-sm font-weight-bold px-3 mr-2" id="btnRestoreDraft" onclick="restoreAdmissionDraft()">
+                        <i class="fas fa-undo mr-1"></i> Restore My Details
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-2" id="btnDiscardDraft" onclick="discardAdmissionDraft()">
+                        Discard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" id="onlineAdmissionForm" novalidate>
+            {% csrf_token %}
+
+            <!-- SECTION 1: PROGRAM INFORMATION (Screenshot 2) -->
+            <div class="form-section-card" id="sec-program">
+                <div class="form-section-header">
+                    <i class="fas fa-graduation-cap"></i> Program Information
+                </div>
+                <div class="form-section-body">
+                    <div class="row">
+                        <!-- Mobile Number -->
+                        <div class="col-md-6 col-12 mb-3">
+                            <label for="mobile">Mobile <span class="req-star">*</span></label>
+                            <input type="tel" class="form-control" id="mobile" name="mobile" placeholder="01XXXXXXXXX" maxlength="15" inputmode="tel" required>
+                            <div class="callout-hint">
+                                <i class="fas fa-info-circle mr-1"></i> Please Note This Mobile Number. This mobile number will be used for admitcard download and SMS notifications.
+                            </div>
+                        </div>
+
+                        <!-- Semester (Intake) Selection -->
+                        <div class="col-md-6 col-12 mb-3">
+                            <label for="intake">Semester <span class="req-star">*</span></label>
+                            <select class="custom-select" id="intake" name="intake" required>
+                                {% for item in open_intakes %}
+                                <option value="{{ item.id }}" 
+                                    data-fee="{{ item.form_fee_bdt }}" 
+                                    data-charge="{{ item.bkash_charge_bdt }}" 
+                                    data-total="{{ item.total_fee_bdt }}" 
+                                    data-bkash="{{ item.bkash_number }}"
+                                    data-venue="{{ item.exam_venue }}"
+                                    {% if active_intake and active_intake.id == item.id %}selected{% endif %}>
+                                    {{ item.intake_name }}{% if forloop.first %} (Active){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Program Category -->
+                        <div class="col-md-6 col-12 mb-3">
+                            <label>Program Category <span class="req-star">*</span></label>
+                            <div class="mt-2">
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" id="cat_eng" name="program_category" value="Engineering" class="custom-control-input" checked>
+                                    <label class="custom-control-label font-weight-bold" for="cat_eng">Engineering</label>
+                                </div>
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" id="cat_non_eng" name="program_category" value="Non Engineering" class="custom-control-input">
+                                    <label class="custom-control-label font-weight-bold" for="cat_non_eng">Non Engineering</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desired Program -->
+                        <div class="col-md-6 col-12 mb-3">
+                            <label for="desired_program">Desired Program <span class="req-star">*</span></label>
+                            <select class="custom-select" id="desired_program" name="desired_program" required>
+                                <option value="">-- Select Program --</option>
+                                <!-- Populated dynamically by category selection -->
+                            </select>
+                        </div>
+
+                        <!-- Exam Venue -->
+                        <div class="col-md-12 col-12 mb-2">
+                            <label for="exam_venue">Exam Venue</label>
+                            <input type="text" class="form-control bg-light" id="exam_venue" name="exam_venue" value="{{ active_intake.exam_venue }}" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: APPLICANT INFO (Screenshot 2) -->
+            <div class="form-section-card" id="sec-applicant">
+                <div class="form-section-header">
+                    <i class="fas fa-user-edit"></i> Applicant Info
+                </div>
+                <div class="form-section-body">
+                    <div class="row">
+                        <!-- Left Column: Personal -->
+                        <div class="col-lg-6 col-12 pr-lg-4 border-right">
+                            <h6 class="font-weight-bold text-primary mb-3"><i class="fas fa-user mr-1"></i> Personal Details</h6>
+                            
+                            <div class="form-group">
+                                <label for="name">Full Name (in English, Block Letters) <span class="req-star">*</span></label>
+                                <input type="text" class="form-control text-uppercase" id="name" name="name" placeholder="MD. RAHIM AHMED" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="example@domain.com">
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="national_id">National ID / Birth Cert. No</label>
+                                    <input type="text" class="form-control" id="national_id" name="national_id" placeholder="NID or Birth Reg No">
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="place_of_birth">Place of Birth (District)</label>
+                                    <input type="text" class="form-control" id="place_of_birth" name="place_of_birth" placeholder="e.g. Dinajpur">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="gender">Gender <span class="req-star">*</span></label>
+                                    <select class="custom-select" id="gender" name="gender" required>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="blood_group">Blood Group</label>
+                                    <select class="custom-select" id="blood_group" name="blood_group">
+                                        <option value="">-- Select --</option>
+                                        <option value="A+">A+</option>
+                                        <option value="A-">A-</option>
+                                        <option value="B+">B+</option>
+                                        <option value="B-">B-</option>
+                                        <option value="AB+">AB+</option>
+                                        <option value="AB-">AB-</option>
+                                        <option value="O+">O+</option>
+                                        <option value="O-">O-</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="dob">Date of Birth (dd-mm-yyyy) <span class="req-star">*</span></label>
+                                    <input type="date" class="form-control" id="dob" name="dob" required>
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="nationality">Nationality</label>
+                                    <input type="text" class="form-control" id="nationality" name="nationality" value="Bangladeshi" readonly>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="marital_status">Marital Status</label>
+                                    <select class="custom-select" id="marital_status" name="marital_status">
+                                        <option value="Single" selected>Single</option>
+                                        <option value="Married">Married</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="student_type">Student Type</label>
+                                    <select class="custom-select" id="student_type" name="student_type">
+                                        <option value="Regular" selected>Regular</option>
+                                        <option value="Transfer">Transfer</option>
+                                        <option value="Diploma Holder">Diploma Holder</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Family Details -->
+                        <div class="col-lg-6 col-12 pl-lg-4 mt-4 mt-lg-0">
+                            <h6 class="font-weight-bold text-primary mb-3"><i class="fas fa-users mr-1"></i> Family & Guardian Details</h6>
+
+                            <div class="form-group">
+                                <label for="father_name">Father's Name <span class="req-star">*</span></label>
+                                <input type="text" class="form-control" id="father_name" name="father_name" required>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="father_occupation">Father's Occupation</label>
+                                    <input type="text" class="form-control" id="father_occupation" name="father_occupation" placeholder="e.g. Service / Business">
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="father_mobile">Father's Mobile</label>
+                                    <input type="tel" class="form-control" id="father_mobile" name="father_mobile" placeholder="01XXXXXXXXX" inputmode="tel">
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="form-group">
+                                <label for="mother_name">Mother's Name <span class="req-star">*</span></label>
+                                <input type="text" class="form-control" id="mother_name" name="mother_name" required>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="mother_occupation">Mother's Occupation</label>
+                                    <input type="text" class="form-control" id="mother_occupation" name="mother_occupation" placeholder="e.g. Homemaker">
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="mother_mobile">Mother's Mobile</label>
+                                    <input type="tel" class="form-control" id="mother_mobile" name="mother_mobile" placeholder="01XXXXXXXXX" inputmode="tel">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: PROFILE PHOTO UPLOAD (Screenshot 2) -->
+            <div class="form-section-card" id="sec-photo">
+                <div class="form-section-header">
+                    <i class="fas fa-portrait"></i> Profile Photo Upload
+                </div>
+                <div class="form-section-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 col-12 text-center mb-3 mb-md-0">
+                            <div class="photo-preview-wrapper mx-auto">
+                                <img id="photo-preview" src="{% static 'img/default_avatar.jpg' %}" alt="Photo Preview" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'150\' height=\'150\' fill=\'%23cbd5e1\' viewBox=\'0 0 16 16\'><path d=\'M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z\'/><path fill-rule=\'evenodd\' d=\'M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z\'/></svg>';">
+                            </div>
+                            <label class="btn btn-outline-primary btn-sm btn-block mb-0 cursor-pointer">
+                                <i class="fas fa-upload mr-1"></i> Choose File
+                                <input type="file" id="photo-input" name="photo" accept="image/jpeg,image/png" style="display: none;" required>
+                            </label>
+                            <small class="text-danger d-block mt-1 font-weight-bold" id="photo-error"></small>
+                        </div>
+                        <div class="col-md-9 col-12">
+                            <div class="photo-guidance-card">
+                                <h6 class="font-weight-bold text-dark mb-2"><i class="fas fa-lightbulb text-warning mr-1"></i> Photo Specifications:</h6>
+                                <ul class="mb-0 pl-3">
+                                    <li>Format: <strong>JPG, JPEG or PNG</strong> (Other file extensions will be rejected).</li>
+                                    <li>Dimensions: Exactly <strong>300 x 300 pixels</strong> recommended (aspect ratio 1:1).</li>
+                                    <li>File Size: Maximum <strong>300 KB</strong>.</li>
+                                    <li>Appearance: Formal photograph with clean white or plain light background. Face must be directly looking into the camera.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: ADDRESS INFORMATION -->
+            <div class="form-section-card" id="sec-address">
+                <div class="form-section-header">
+                    <i class="fas fa-map-marked-alt"></i> Address Information
+                </div>
+                <div class="form-section-body">
+                    <div class="row">
+                        <!-- Present Address -->
+                        <div class="col-lg-6 col-12 pr-lg-4 border-right">
+                            <h6 class="font-weight-bold text-primary mb-3"><i class="fas fa-home mr-1"></i> Present Address</h6>
+                            
+                            <div class="form-group">
+                                <label for="present_house">House / Village / Road <span class="req-star">*</span></label>
+                                <input type="text" class="form-control" id="present_house" name="present_house" required>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="present_district">District <span class="req-star">*</span></label>
+                                    <select class="custom-select district-select" id="present_district" name="present_district" data-target="present_police_station" required>
+                                        <option value="">-- Select District --</option>
+                                        {% for dist in district_list %}
+                                        <option value="{{ dist }}">{{ dist }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="present_police_station">Police Station / Upazila <span class="req-star">*</span></label>
+                                    <select class="custom-select" id="present_police_station" name="present_police_station" required>
+                                        <option value="">-- Select Upazila --</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="present_post_code">Post Code</label>
+                                    <input type="text" class="form-control" id="present_post_code" name="present_post_code" placeholder="e.g. 5310">
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="present_country">Country</label>
+                                    <input type="text" class="form-control" id="present_country" name="present_country" value="Bangladesh" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Permanent Address -->
+                        <div class="col-lg-6 col-12 pl-lg-4 mt-4 mt-lg-0">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="font-weight-bold text-primary mb-0"><i class="fas fa-building mr-1"></i> Permanent Address</h6>
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="same_as_present" name="same_as_present">
+                                    <label class="custom-control-label font-weight-bold text-success cursor-pointer" for="same_as_present">Same as Present Address</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="permanent_house">House / Village / Road <span class="req-star">*</span></label>
+                                <input type="text" class="form-control" id="permanent_house" name="permanent_house" required>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="permanent_district">District <span class="req-star">*</span></label>
+                                    <select class="custom-select district-select" id="permanent_district" name="permanent_district" data-target="permanent_police_station" required>
+                                        <option value="">-- Select District --</option>
+                                        {% for dist in district_list %}
+                                        <option value="{{ dist }}">{{ dist }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="permanent_police_station">Police Station / Upazila <span class="req-star">*</span></label>
+                                    <select class="custom-select" id="permanent_police_station" name="permanent_police_station" required>
+                                        <option value="">-- Select Upazila --</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="permanent_post_code">Post Code</label>
+                                    <input type="text" class="form-control" id="permanent_post_code" name="permanent_post_code" placeholder="e.g. 5310">
+                                </div>
+                                <div class="col-md-6 col-12 form-group">
+                                    <label for="permanent_country">Country</label>
+                                    <input type="text" class="form-control" id="permanent_country" name="permanent_country" value="Bangladesh" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: ACADEMIC INFORMATION -->
+            <div class="form-section-card" id="sec-academic">
+                <div class="form-section-header">
+                    <i class="fas fa-award"></i> Academic Information
+                </div>
+                <div class="form-section-body">
+                    
+                    <!-- SSC Section -->
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                        <h6 class="font-weight-bold text-dark mb-0">
+                            <i class="fas fa-book-reader mr-1 text-info"></i> SSC / Dakhil / O-Level / Equivalent
+                        </h6>
+                        <div class="btn-group btn-group-toggle btn-group-sm" data-toggle="buttons">
+                            <label class="btn btn-outline-secondary active btn-sm py-1 px-2 font-weight-bold">
+                                <input type="radio" name="ssc_system" id="apply_ssc_sys_gpa" value="GPA" checked onchange="toggleApplyResultSystem('ssc')"> GPA System
+                            </label>
+                            <label class="btn btn-outline-info btn-sm py-1 px-2 font-weight-bold">
+                                <input type="radio" name="ssc_system" id="apply_ssc_sys_div" value="DIVISION" onchange="toggleApplyResultSystem('ssc')"> Division System (Pre-2001)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 col-12 form-group">
+                            <label for="ssc_school">School / Institute Name <span class="req-star">*</span></label>
+                            <input type="text" class="form-control" id="ssc_school" name="ssc_school" required>
+                        </div>
+                        <div class="col-md-2 col-6 form-group">
+                            <label for="ssc_board">Education Board <span class="req-star">*</span></label>
+                            <select class="custom-select" id="ssc_board" name="ssc_board" required>
+                                <option value="">-- Board --</option>
+                                {% for b in board_choices %}
+                                <option value="{{ b }}">{{ b }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6 form-group">
+                            <label for="ssc_roll">Roll No <span class="req-star">*</span></label>
+                            <input type="text" class="form-control" id="ssc_roll" name="ssc_roll" required>
+                        </div>
+                        <div class="col-md-2 col-6 form-group">
+                            <label for="ssc_reg">Registration No</label>
+                            <input type="text" class="form-control" id="ssc_reg" name="ssc_reg">
+                        </div>
+                        <div class="col-md-1 col-6 form-group">
+                            <label for="ssc_year">Year <span class="req-star">*</span></label>
+                            <input type="text" class="form-control" id="ssc_year" name="ssc_year" placeholder="2023" maxlength="4" required>
+                        </div>
+                        <div class="col-md-1 col-6 form-group apply-ssc-gpa-col">
+                            <label for="ssc_gpa">GPA <span class="req-star">*</span></label>
+                            <input type="number" step="0.01" min="0.00" max="5.00" class="form-control gpa-calc" id="ssc_gpa" name="ssc_gpa" placeholder="5.00" inputmode="decimal" required>
+                        </div>
+                        <div class="col-md-2 col-6 form-group apply-ssc-div-col" style="display:none;">
+                            <label for="ssc_division">Division <span class="req-star">*</span></label>
+                            <select class="custom-select gpa-calc" id="ssc_division" name="ssc_division">
+                                <option value="">-- Division --</option>
+                                <option value="FIRST_STAR">1st Div with Star (≥75%)</option>
+                                <option value="FIRST">1st Division (≥60%)</option>
+                                <option value="SECOND">2nd Division (45%–59%)</option>
+                                <option value="THIRD">3rd Division (33%–44%)</option>
+                                <option value="PASS">Pass / Compartmental</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 col-6 form-group apply-ssc-div-col" style="display:none;">
+                            <label for="ssc_marks">Marks</label>
+                            <input type="number" min="0" max="1000" class="form-control gpa-calc" id="ssc_marks" name="ssc_marks" placeholder="Marks/1000">
+                        </div>
+                    </div>
+
+                    <!-- HSC Section -->
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3 mt-4">
+                        <h6 class="font-weight-bold text-dark mb-0">
+                            <i class="fas fa-university mr-1 text-success"></i> HSC / Alim / A-Level / Diploma / Equivalent
+                        </h6>
+                        <div class="btn-group btn-group-toggle btn-group-sm" data-toggle="buttons">
+                            <label class="btn btn-outline-secondary active btn-sm py-1 px-2 font-weight-bold">
+                                <input type="radio" name="hsc_system" id="apply_hsc_sys_gpa" value="GPA" checked onchange="toggleApplyResultSystem('hsc')"> GPA System
+                            </label>
+                            <label class="btn btn-outline-info btn-sm py-1 px-2 font-weight-bold">
+                                <input type="radio" name="hsc_system" id="apply_hsc_sys_div" value="DIVISION" onchange="toggleApplyResultSystem('hsc')"> Division System (Pre-2003)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 col-12 form-group">
+                            <label for="hsc_college">College / Institute Name <span class="req-star">*</span></label>
+                            <input type="text" class="form-control" id="hsc_college" name="hsc_college" required>
+                        </div>
+                        <div class="col-md-2 col-6 form-group">
+                            <label for="hsc_board">Education Board <span class="req-star">*</span></label>
+                            <select class="custom-select" id="hsc_board" name="hsc_board" required>
+                                <option value="">-- Board --</option>
+                                {% for b in board_choices %}
+                                <option value="{{ b }}">{{ b }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6 form-group">
+                            <label for="hsc_roll">Roll No <span class="req-star">*</span></label>
+                            <input type="text" class="form-control" id="hsc_roll" name="hsc_roll" required>
+                        </div>
+                        <div class="col-md-2 col-6 form-group">
+                            <label for="hsc_reg">Registration No</label>
+                            <input type="text" class="form-control" id="hsc_reg" name="hsc_reg">
+                        </div>
+                        <div class="col-md-1 col-6 form-group">
+                            <label for="hsc_year">Year <span class="req-star">*</span></label>
+                            <input type="text" class="form-control" id="hsc_year" name="hsc_year" placeholder="2025" maxlength="4" required>
+                        </div>
+                        <div class="col-md-1 col-6 form-group apply-hsc-gpa-col">
+                            <label for="hsc_gpa">GPA <span class="req-star">*</span></label>
+                            <input type="number" step="0.01" min="0.00" max="5.00" class="form-control gpa-calc" id="hsc_gpa" name="hsc_gpa" placeholder="5.00" inputmode="decimal" required>
+                        </div>
+                        <div class="col-md-2 col-6 form-group apply-hsc-div-col" style="display:none;">
+                            <label for="hsc_division">Division <span class="req-star">*</span></label>
+                            <select class="custom-select gpa-calc" id="hsc_division" name="hsc_division">
+                                <option value="">-- Division --</option>
+                                <option value="FIRST_STAR">1st Div with Star (≥75%)</option>
+                                <option value="FIRST">1st Division (≥60%)</option>
+                                <option value="SECOND">2nd Division (45%–59%)</option>
+                                <option value="THIRD">3rd Division (33%–44%)</option>
+                                <option value="PASS">Pass / Compartmental</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 col-6 form-group apply-hsc-div-col" style="display:none;">
+                            <label for="hsc_marks">Marks</label>
+                            <input type="number" min="0" max="1000" class="form-control gpa-calc" id="hsc_marks" name="hsc_marks" placeholder="Marks/1000">
+                        </div>
+                    </div>
+
+                    <!-- Total Calculated GPA -->
+                    <div class="row mt-2">
+                        <div class="col-md-12 text-right">
+                            <span class="font-weight-bold mr-2">Total Calculated Combined GPA:</span>
+                            <span class="badge badge-primary py-2 px-3 font-weight-bold" style="font-size: 1.1rem;" id="total_gpa_badge">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 6: PAYMENT INFORMATION (Screenshot 4 EXACT ALIGNMENT) -->
+            <div class="form-section-card payment-card" id="sec-payment">
+                <div class="payment-header">
+                    <i class="fas fa-money-check-alt mr-2"></i> Payment Information
+                </div>
+                <div class="form-section-body">
+                    <div class="row align-items-center">
+                        <!-- Left: Radio & TrxID Input -->
+                        <div class="col-lg-6 col-12 mb-4 mb-lg-0 pr-lg-4 border-right">
+                            <div class="form-group mb-3">
+                                <label class="d-block font-weight-bold">Payment Method:</label>
+                                <div class="custom-control custom-radio">
+                                    <input type="radio" id="pm_bkash" name="payment_method" value="bKash" class="custom-control-input" checked>
+                                    <label class="custom-control-label font-weight-bold" for="pm_bkash">
+                                        <span class="text-danger"><i class="fas fa-mobile-alt mr-1"></i> bKash</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-0">
+                                <label for="payment_trx_id" class="font-weight-bold" style="font-size: 1rem;">
+                                    TRXID. : <span class="req-star">*</span>
+                                </label>
+                                <input type="text" class="form-control form-control-lg text-uppercase font-weight-bold" 
+                                    id="payment_trx_id" name="payment_trx_id" placeholder="e.g. CBG0UEAZE2" 
+                                    style="letter-spacing: 1.5px;" required>
+                                <small class="text-muted">Enter the 10-character bKash Transaction ID from your confirmation SMS.</small>
+                            </div>
+                        </div>
+
+                        <!-- Right: Dynamic Notice Callout (Screenshot 4) -->
+                        <div class="col-lg-6 col-12 pl-lg-4">
+                            <div class="bkash-callout-box shadow-sm">
+                                <span class="bkash-badge"><i class="fas fa-mobile mr-1"></i> bKash</span>
+                                <p class="mb-0">
+                                    Admission Form Fee BDT. <span class="fee-highlight" id="dyn-form-fee">{{ active_intake.form_fee_bdt }}</span> with bKash Charge (<span id="dyn-charge">{{ active_intake.bkash_charge_bdt }}</span>) = <span class="fee-highlight" id="dyn-total">{{ active_intake.total_fee_bdt }}</span>, Transfer to This bKash Number <span class="phone-highlight" id="dyn-bkash-num">{{ active_intake.bkash_number }}</span> and Put Your TRX ID in the Box.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBMISSION BUTTON -->
+            <div class="text-center my-4">
+                <button type="submit" class="btn btn-teal btn-lg px-5 py-3 font-weight-bold shadow" id="submitBtn" style="font-size: 1.2rem; border-radius: 30px;">
+                    <i class="fas fa-paper-plane mr-2"></i> Submit Application
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer-portal">
+        <div class="container">
+            <p class="mb-1 font-weight-bold">Bangladesh Army University of Science and Technology (BAUST)</p>
+            <p class="mb-0 text-muted">Saidpur Cantonment, Saidpur, Nilphamari, Bangladesh &bull; Website: <a href="https://baust.edu.bd" target="_blank" class="text-light">www.baust.edu.bd</a></p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap & jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Step Pill Navigation & ScrollSpy -->
+    <script>
+        // Scroll-to-section with offset for sticky progress bar
+        function scrollToSection(sectionId) {
+            const target = document.getElementById(sectionId);
+            if (!target) return;
+            const progressBar = document.querySelector('.form-progress-bar');
+            const offset = (progressBar ? progressBar.offsetHeight : 0) + 12;
+            const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+            window.scrollTo({ top: top, behavior: 'smooth' });
+        }
+
+        // IntersectionObserver ScrollSpy — auto-highlight active pill
+        (function () {
+            const sectionIds = ['sec-program', 'sec-applicant', 'sec-photo', 'sec-address', 'sec-academic', 'sec-payment'];
+            const pills = document.querySelectorAll('.step-pill[data-target]');
+
+            const progressBar = document.querySelector('.form-progress-bar');
+            const navHeight = document.querySelector('.nav-portal') ? document.querySelector('.nav-portal').offsetHeight : 56;
+            const pbHeight = progressBar ? progressBar.offsetHeight : 0;
+            const rootMarginTop = '-' + (navHeight + pbHeight + 4) + 'px';
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        pills.forEach(function(pill) {
+                            pill.classList.remove('active');
+                            if (pill.dataset.target === entry.target.id) {
+                                pill.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, {
+                root: null,
+                rootMargin: rootMarginTop + ' 0px -55% 0px',
+                threshold: 0
+            });
+
+            sectionIds.forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) observer.observe(el);
+            });
+        })();
+    </script>
+
+    <!-- Client-Side Form Logic -->
+    <script>
+        // Programs data from server
+        const engPrograms = [
+            {% for p in eng_programs %}{ id: "{{ p.id }}", name: "{{ p.name }}", short: "{{ p.short_name|default:p.name }}" },{% endfor %}
+        ];
+        const nonEngPrograms = [
+            {% for p in non_eng_programs %}{ id: "{{ p.id }}", name: "{{ p.name }}", short: "{{ p.short_name|default:p.name }}" },{% endfor %}
+        ];
+
+        // District-to-police-stations mapping
+        const policeStationMap = {{ district_police_station_map_json|safe }};
+
+        // 1. Program Category Switcher
+        function updateProgramDropdown(category) {
+            const $progSelect = $('#desired_program');
+            $progSelect.empty().append('<option value="">-- Select Program --</option>');
+            
+            const list = (category === 'Engineering') ? engPrograms : nonEngPrograms;
+            list.forEach(p => {
+                $progSelect.append(`<option value="${p.short}">${p.name} (${p.short})</option>`);
+            });
+        }
+
+        $('input[name="program_category"]').on('change', function() {
+            updateProgramDropdown($(this).val());
+        });
+
+        // Initialize default programs
+        updateProgramDropdown('Engineering');
+
+        // 2. Intake Selection Dynamic Financial Info Update
+        $('#intake').on('change', function() {
+            const $opt = $(this).find('option:selected');
+            const fee = $opt.data('fee');
+            const charge = $opt.data('charge');
+            const total = $opt.data('total');
+            const bkash = $opt.data('bkash');
+            const venue = $opt.data('venue');
+
+            $('#dyn-form-fee').text(fee);
+            $('#dyn-charge').text(charge);
+            $('#dyn-total').text(total);
+            $('#dyn-bkash-num').text(bkash);
+            $('#exam_venue').val(venue);
+            $('#selected-intake-banner').text($opt.text());
+        });
+
+        // 3. District & Police Station / Upazila Dynamic Population
+        $('.district-select').on('change', function() {
+            const district = $(this).val();
+            const targetId = $(this).data('target');
+            const $target = $('#' + targetId);
+            $target.empty().append('<option value="">-- Select Upazila --</option>');
+
+            if (policeStationMap[district]) {
+                policeStationMap[district].forEach(station => {
+                    $target.append(`<option value="${station}">${station}</option>`);
+                });
+            }
+        });
+
+        // 4. Same As Present Address Checkbox (Rule F2)
+        let originalPermanentValues = {};
+        $('#same_as_present').on('change', function() {
+            const isChecked = $(this).is(':checked');
+            if (isChecked) {
+                // Save original
+                originalPermanentValues = {
+                    house: $('#permanent_house').val(),
+                    district: $('#permanent_district').val(),
+                    station: $('#permanent_police_station').val(),
+                    postCode: $('#permanent_post_code').val(),
+                };
+
+                // Copy present to permanent
+                $('#permanent_house').val($('#present_house').val()).prop('readonly', true);
+                const presDist = $('#present_district').val();
+                $('#permanent_district').val(presDist).trigger('change');
+                
+                setTimeout(() => {
+                    $('#permanent_police_station').val($('#present_police_station').val()).prop('disabled', true);
+                }, 50);
+
+                $('#permanent_district').prop('disabled', true);
+                $('#permanent_post_code').val($('#present_post_code').val()).prop('readonly', true);
+            } else {
+                // Revert and enable
+                $('#permanent_house').val(originalPermanentValues.house || '').prop('readonly', false);
+                $('#permanent_district').prop('disabled', false).val(originalPermanentValues.district || '').trigger('change');
+                setTimeout(() => {
+                    $('#permanent_police_station').prop('disabled', false).val(originalPermanentValues.station || '');
+                }, 50);
+                $('#permanent_post_code').val(originalPermanentValues.postCode || '').prop('readonly', false);
+            }
+        });
+
+        // 5. Total GPA Calculator (Real-Time with Division Equivalence)
+        function calcEquiv(div, marks) {
+            var equivMap = {'FIRST_STAR': 4.00, 'FIRST': 3.50, 'SECOND': 2.75, 'THIRD': 2.00, 'PASS': 1.50};
+            var g = equivMap[div] || null;
+            if (g !== null && marks) {
+                var m = parseFloat(marks);
+                if (div === 'FIRST' && m >= 600 && m < 750) g = 3.50 + ((m - 600) / 150) * 0.49;
+                else if (div === 'SECOND' && m >= 450 && m < 600) g = 2.75 + ((m - 450) / 150) * 0.74;
+                else if (div === 'THIRD' && m >= 330 && m < 450) g = 2.00 + ((m - 330) / 120) * 0.74;
+            }
+            return g;
+        }
+
+        window.toggleApplyResultSystem = function(prefix) {
+            var isDiv = $('input[name="' + prefix + '_system"]:checked').val() === 'DIVISION';
+            if (isDiv) {
+                $('.apply-' + prefix + '-gpa-col').hide();
+                $('#' + prefix + '_gpa').prop('required', false).val('');
+                $('.apply-' + prefix + '-div-col').show();
+                $('#' + prefix + '_division').prop('required', true);
+            } else {
+                $('.apply-' + prefix + '-gpa-col').show();
+                $('#' + prefix + '_gpa').prop('required', true);
+                $('.apply-' + prefix + '-div-col').hide();
+                $('#' + prefix + '_division').prop('required', false).val('');
+                $('#' + prefix + '_marks').val('');
+            }
+            calculateApplyTotal();
+        };
+
+        function calculateApplyTotal() {
+            var ssc = 0;
+            if ($('input[name="ssc_system"]:checked').val() === 'DIVISION') {
+                ssc = calcEquiv($('#ssc_division').val(), $('#ssc_marks').val()) || 0;
+            } else {
+                ssc = parseFloat($('#ssc_gpa').val()) || 0;
+            }
+
+            var hsc = 0;
+            if ($('input[name="hsc_system"]:checked').val() === 'DIVISION') {
+                hsc = calcEquiv($('#hsc_division').val(), $('#hsc_marks').val()) || 0;
+            } else {
+                hsc = parseFloat($('#hsc_gpa').val()) || 0;
+            }
+
+            var total = (ssc + hsc).toFixed(2);
+            $('#total_gpa_badge').text(total);
+        }
+
+        $(document).on('input change', '.gpa-calc', calculateApplyTotal);
+
+        // 6. Photo Upload & Preview with Client-Side Size & Dimension Validation (Rule F4)
+        $('#photo-input').on('change', function() {
+            const file = this.files[0];
+            const $err = $('#photo-error');
+            $err.text('');
+
+            if (!file) return;
+
+            // Size check: max 300KB
+            if (file.size > 300 * 1024) {
+                $err.text('File size exceeds 300KB limit. Please choose a smaller photo.');
+                $(this).val('');
+                return;
+            }
+
+            // Dimension verification & preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    $('#photo-preview').attr('src', e.target.result);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 7. Form Submission Guard
+        $('#onlineAdmissionForm').on('submit', function() {
+            // Temporarily enable any disabled fields so their values submit
+            $('#permanent_district, #permanent_police_station').prop('disabled', false);
+            $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Submitting Application...');
+        });
+
+        // ─── 8. Draft Auto-Save & Recovery System ───
+        const DRAFT_KEY = 'baust_online_admission_draft';
+        const EXCLUDED_FIELDS = ['photo', 'csrfmiddlewaretoken', 'bkash_trx_id'];
+
+        function saveAdmissionDraft() {
+            const formData = {};
+            const formElements = document.querySelectorAll('#onlineAdmissionForm input, #onlineAdmissionForm select, #onlineAdmissionForm textarea');
+            formElements.forEach(el => {
+                if (!el.name || EXCLUDED_FIELDS.includes(el.name) || el.type === 'file' || el.type === 'password') return;
+                if (el.type === 'radio' || el.type === 'checkbox') {
+                    if (el.checked) formData[el.name] = el.value;
+                } else if (el.value && el.value.trim()) {
+                    formData[el.name] = el.value.trim();
+                }
+            });
+            if (Object.keys(formData).length > 2) {
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+            }
+        }
+
+        function restoreAdmissionDraft() {
+            try {
+                const raw = localStorage.getItem(DRAFT_KEY);
+                if (!raw) return;
+                const data = JSON.parse(raw);
+                Object.keys(data).forEach(key => {
+                    const el = document.querySelector('[name="' + key + '"]');
+                    if (!el) return;
+                    if (el.type === 'radio' || el.type === 'checkbox') {
+                        const matchRadio = document.querySelector('[name="' + key + '"][value="' + data[key] + '"]');
+                        if (matchRadio) { matchRadio.checked = true; $(matchRadio).trigger('change'); }
+                    } else {
+                        el.value = data[key];
+                        $(el).trigger('change');
+                    }
+                });
+                $('#draftRecoveryBanner').slideUp(200);
+                if (typeof calculateApplyTotal === 'function') calculateApplyTotal();
+            } catch(e) {}
+        }
+
+        function discardAdmissionDraft() {
+            localStorage.removeItem(DRAFT_KEY);
+            $('#draftRecoveryBanner').slideUp(200);
+        }
+
+        // Check for existing draft on page load
+        $(document).ready(function() {
+            const savedDraft = localStorage.getItem(DRAFT_KEY);
+            if (savedDraft) {
+                try {
+                    const parsed = JSON.parse(savedDraft);
+                    if (Object.keys(parsed).length > 2) {
+                        $('#draftRecoveryBanner').slideDown(200);
+                    }
+                } catch(e) {}
+            }
+
+            // Auto-save on input changes (debounced)
+            let draftSaveTimer = null;
+            $('#onlineAdmissionForm').on('input change', 'input, select, textarea', function() {
+                clearTimeout(draftSaveTimer);
+                draftSaveTimer = setTimeout(saveAdmissionDraft, 600);
+            });
+
+            // Clear draft on successful submit
+            $('#onlineAdmissionForm').on('submit', function() {
+                localStorage.removeItem(DRAFT_KEY);
+            });
+        });
+    </script>
+</body>
+</html>

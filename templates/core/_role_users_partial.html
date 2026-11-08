@@ -1,0 +1,74 @@
+{% load i18n %}
+<div class="role-users-drawer">
+
+  {# ─── Drawer Header ─────────────────────────────── #}
+  <div class="ru-header">
+    <div class="ru-header-left">
+      <div class="ru-avatar-wrap" style="background: linear-gradient(135deg,#3b82f6,#1e40af);">
+        <i class="fas fa-users"></i>
+      </div>
+      <div>
+        <div class="ru-title">{% translate "Assigned Users" %}</div>
+        <div class="ru-sub">
+          {% if role %}{{ role.name }} &mdash; {% endif %}
+          <strong>{{ users|length }}</strong> {% translate "member(s)" %}
+        </div>
+      </div>
+    </div>
+    <button class="ru-close-btn" onclick="closeUsersDrawer()" aria-label="Close">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  {# ─── Search bar ─────────────────────────────────── #}
+  <div class="ru-search-wrap">
+    <i class="fas fa-search ru-search-icon"></i>
+    <input type="text" id="ruSearchInput" class="ru-search-input"
+           placeholder="{% translate 'Search members…' %}"
+           oninput="filterRuList(this.value)">
+  </div>
+
+  {# ─── User List ───────────────────────────────────── #}
+  <div class="ru-list" id="ruList">
+    {% for profile in users %}
+    <div class="ru-user-row" data-name="{{ profile.user.get_full_name|lower }} {{ profile.user.username|lower }}">
+      <div class="ru-user-avatar">
+        {% if profile.photo %}
+          <img src="{{ profile.photo.url }}" alt="{{ profile.user.get_full_name }}">
+        {% else %}
+          <span class="ru-avatar-initials">
+            {{ profile.user.first_name|slice:":1"|upper }}{{ profile.user.last_name|slice:":1"|upper }}
+          </span>
+        {% endif %}
+      </div>
+      <div class="ru-user-info">
+        <div class="ru-user-name">
+          {{ profile.user.get_full_name|default:profile.user.username }}
+        </div>
+        <div class="ru-user-meta">
+          {% if profile.designation %}<span>{{ profile.designation }}</span>{% endif %}
+          {% if profile.department %}<span class="ru-dot">·</span><span>{{ profile.department }}</span>{% endif %}
+        </div>
+        {% if profile.employee_id %}
+        <div class="ru-user-id">
+          <i class="fas fa-id-badge mr-1" style="font-size:0.7rem;"></i>{{ profile.employee_id }}
+        </div>
+        {% endif %}
+      </div>
+      <div class="ru-user-status">
+        {% if profile.user.is_active %}
+          <span class="ru-status-pill active"><i class="fas fa-circle"></i> {% translate "Active" %}</span>
+        {% else %}
+          <span class="ru-status-pill inactive"><i class="fas fa-circle"></i> {% translate "Inactive" %}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="ru-empty">
+      <div class="ru-empty-icon"><i class="fas fa-user-slash"></i></div>
+      <div class="ru-empty-label">{% translate "No users assigned to this role yet." %}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>

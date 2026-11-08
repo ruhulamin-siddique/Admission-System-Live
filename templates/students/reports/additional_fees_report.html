@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load core_tags %}
+
+{% block title %}Additional Fees & Uniform Audit | Bangladesh Army University of Science and Technology{% endblock %}
+{% block page_title %}Additional Institutional Fees & Uniform Service Intelligence{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-metric-card {
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease;
+    }
+    .kpi-metric-card:hover {
+        transform: translateY(-3px);
+    }
+    .kpi-metric-icon {
+        position: absolute;
+        right: 1.25rem;
+        bottom: 1rem;
+        font-size: 3rem;
+        opacity: 0.18;
+    }
+    .kpi-metric-val {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+    .bg-grad-students { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    .bg-grad-medical { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+    .bg-grad-uniform { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+    .bg-grad-grand { background: linear-gradient(135deg, #10b981, #059669); }
+    
+    .filter-bar-card {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+    }
+    .dark-mode .filter-bar-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header Navigation & Action Bar -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 pb-2 border-bottom">
+        <div>
+            <a href="{% url 'reports_center' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 font-weight-bold mr-2">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Report Center
+            </a>
+            <span class="badge badge-light border text-muted font-weight-bold px-2 py-1">Institutional Audit Notice 2026</span>
+        </div>
+        <div class="d-flex align-items-center flex-wrap gap-2 mt-2 mt-sm-0">
+            <a href="{% url 'export_additional_fees' %}?batch={{ selected_batch }}&program={{ selected_program }}&gender={{ selected_gender }}&medical_status={{ selected_medical }}&uniform_status={{ selected_uniform }}" class="btn btn-sm btn-success rounded-pill px-3 font-weight-bold shadow-sm mr-2">
+                <i class="fas fa-file-excel mr-1"></i> Export Excel (.xlsx)
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3 font-weight-bold" onclick="window.print()">
+                <i class="fas fa-print mr-1"></i> Print Audit Sheet
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <div class="card filter-bar-card shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="{% url 'additional_fees_report' %}" class="row align-items-end" id="filterForm">
+                <div class="col-md-2 col-6 mb-2 mb-md-0">
+                    <label class="small font-weight-bold text-muted mb-1 text-uppercase">Intake / Batch</label>
+                    <select name="batch" class="form-control form-control-sm font-weight-bold" onchange="$('#filterForm').submit()">
+                        <option value="all">All Batches (Overall)</option>
+                        {% for b in all_batches %}
+                        <option value="{{ b }}" {% if selected_batch == b %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 col-6 mb-2 mb-md-0">
+                    <label class="small font-weight-bold text-muted mb-1 text-uppercase">Department / Program</label>
+                    <select name="program" class="form-control form-control-sm font-weight-bold" onchange="$('#filterForm').submit()">
+                        <option value="">All Programs</option>
+                        {% for p in all_programs %}
+                        <option value="{{ p }}" {% if selected_program == p %}selected{% endif %}>{{ p }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 col-4 mb-2 mb-md-0">
+                    <label class="small font-weight-bold text-muted mb-1 text-uppercase">Gender Filter</label>
+                    <select name="gender" class="form-control form-control-sm font-weight-bold" onchange="$('#filterForm').submit()">
+                        <option value="">All Genders</option>
+                        <option value="Male" {% if selected_gender == 'Male' %}selected{% endif %}>Male</option>
+                        <option value="Female" {% if selected_gender == 'Female' %}selected{% endif %}>Female</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-4 mb-2 mb-md-0">
+                    <label class="small font-weight-bold text-muted mb-1 text-uppercase">Medical/Scout Fee</label>
+                    <select name="medical_status" class="form-control form-control-sm font-weight-bold" onchange="$('#filterForm').submit()">
+                        <option value="">All Statuses</option>
+                        <option value="PAID" {% if selected_medical == 'PAID' %}selected{% endif %}>Paid (৳1,540)</option>
+                        <option value="UNPAID" {% if selected_medical == 'UNPAID' %}selected{% endif %}>Unpaid / Due</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-4 mb-2 mb-md-0">
+                    <label class="small font-weight-bold text-muted mb-1 text-uppercase">Uniform Package</label>
+                    <select name="uniform_status" class="form-control form-control-sm font-weight-bold" onchange="$('#filterForm').submit()">
+                        <option value="">All Packages</option>
+                        <option value="PAID" {% if selected_uniform == 'PAID' %}selected{% endif %}>Opted In &amp; Paid</option>
+                        <option value="PARTIAL" {% if selected_uniform == 'PARTIAL' %}selected{% endif %}>Opted In &amp; Partial</option>
+                        <option value="DUE" {% if selected_uniform == 'DUE' %}selected{% endif %}>Opted In &amp; Due</option>
+                        <option value="OPTED_OUT" {% if selected_uniform == 'OPTED_OUT' %}selected{% endif %}>Opted Out (Self)</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-12 d-flex align-items-center">
+                    <a href="{% url 'additional_fees_report' %}" class="btn btn-sm btn-light border rounded-pill px-3 mr-2" title="Reset Filters">
+                        <i class="fas fa-rotate-left mr-1"></i> Reset
+                    </a>
+                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 font-weight-bold">
+                        <i class="fas fa-filter mr-1"></i> Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Top Executive Metric Cards (4 Cards) -->
+    <div class="row mb-4">
+        <!-- Analyzed Students -->
+        <div class="col-xl-3 col-sm-6 mb-3 mb-xl-0">
+            <div class="kpi-metric-card bg-grad-students">
+                <i class="fas fa-users kpi-metric-icon"></i>
+                <small class="text-white-50 font-weight-bold text-uppercase d-block mb-1">Enrolled Cohort Analyzed</small>
+                <div class="kpi-metric-val">{{ metrics.total_students }}</div>
+                <small class="text-white font-weight-bold">Filtered Dataset Sample</small>
+            </div>
+        </div>
+
+        <!-- Medical & Scout Collections -->
+        <div class="col-xl-3 col-sm-6 mb-3 mb-xl-0">
+            <div class="kpi-metric-card bg-grad-medical">
+                <i class="fas fa-notes-medical kpi-metric-icon"></i>
+                <small class="text-white-50 font-weight-bold text-uppercase d-block mb-1">Medical, BNCC &amp; Scout</small>
+                <div class="kpi-metric-val">৳{{ metrics.medical.total_collected|floatformat:0 }}</div>
+                <small class="text-white font-weight-bold">
+                    {{ metrics.medical.total_paid }} Paid ({{ metrics.medical.collection_pct }}%) | ৳{{ metrics.medical.total_due|floatformat:0 }} Due
+                </small>
+            </div>
+        </div>
+
+        <!-- Uniform Service Collections -->
+        <div class="col-xl-3 col-sm-6 mb-3 mb-xl-0">
+            <div class="kpi-metric-card bg-grad-uniform">
+                <i class="fas fa-vest kpi-metric-icon"></i>
+                <small class="text-white-50 font-weight-bold text-uppercase d-block mb-1">Uniform Tailoring Collections</small>
+                <div class="kpi-metric-val">৳{{ metrics.uniform.total_collected|floatformat:0 }}</div>
+                <small class="text-white font-weight-bold">
+                    {{ metrics.uniform.total_paid }} of {{ metrics.uniform.total_opted_in }} In-House | {{ metrics.uniform.total_out }} Opted Out
+                </small>
+            </div>
+        </div>
+
+        <!-- Grand Total Collections -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="kpi-metric-card bg-grad-grand">
+                <i class="fas fa-vault kpi-metric-icon"></i>
+                <small class="text-white-50 font-weight-bold text-uppercase d-block mb-1">Combined Institutional Intake</small>
+                <div class="kpi-metric-val">৳{{ metrics.combined.grand_collected|floatformat:0 }}</div>
+                <small class="text-white font-weight-bold">
+                    Outstanding Additional Due: ৳{{ metrics.combined.grand_due|floatformat:0 }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparative Gender Breakdown Matrix -->
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-header bg-white py-3 px-4 border-bottom">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <h5 class="card-title font-weight-bold text-dark mb-0">
+                    <i class="fas fa-venus-mars text-primary mr-2"></i> Gender Distribution &amp; Assessment Matrix
+                </h5>
+                <span class="badge badge-light border text-muted">Fixed Notice Rates Applied</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="bg-light text-muted text-uppercase" style="font-size: 0.75rem;">
+                        <tr>
+                            <th class="text-left pl-4" rowspan="2" style="vertical-align: middle;">Segment / Gender</th>
+                            <th colspan="3" class="border-left border-right" style="background: rgba(20,184,166,0.06);">Medical, BNCC &amp; Scout (৳1,540)</th>
+                            <th colspan="4" class="border-right" style="background: rgba(99,102,241,0.06);">Uniform Service (Male ৳4.4k / Female ৳5.4k)</th>
+                            <th colspan="2" style="background: rgba(16,185,129,0.06);">Combined Totals</th>
+                        </tr>
+                        <tr>
+                            <th style="background: rgba(20,184,166,0.06);">Paid</th>
+                            <th style="background: rgba(20,184,166,0.06);">Unpaid</th>
+                            <th class="border-right" style="background: rgba(20,184,166,0.06);">Collected</th>
+                            <th style="background: rgba(99,102,241,0.06);">Opted In</th>
+                            <th style="background: rgba(99,102,241,0.06);">Paid</th>
+                            <th style="background: rgba(99,102,241,0.06);">Due</th>
+                            <th class="border-right" style="background: rgba(99,102,241,0.06);">Collected</th>
+                            <th style="background: rgba(16,185,129,0.06);">Collected</th>
+                            <th style="background: rgba(16,185,129,0.06);">Due</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Male Cohort -->
+                        <tr>
+                            <td class="text-left pl-4 font-weight-bold text-primary">
+                                <i class="fas fa-mars mr-2"></i> Male Cohort
+                                <span class="badge badge-light border ml-1">{{ metrics.medical.male_total }}</span>
+                            </td>
+                            <td class="font-weight-bold text-success">{{ metrics.medical.male_paid }}</td>
+                            <td class="font-weight-bold text-danger">{{ metrics.medical.male_unpaid }}</td>
+                            <td class="font-weight-bold text-dark border-right">৳{{ metrics.medical.male_collected|floatformat:0 }}</td>
+                            
+                            <td class="font-weight-bold text-primary">{{ metrics.uniform.male_opted_in }}</td>
+                            <td class="font-weight-bold text-success">{{ metrics.uniform.male_paid }}</td>
+                            <td class="font-weight-bold text-warning text-dark">{{ metrics.uniform.male_due }}</td>
+                            <td class="font-weight-bold text-dark border-right">৳{{ metrics.uniform.male_collected|floatformat:0 }}</td>
+
+                            <td class="font-weight-black text-success">৳{{ metrics.medical.male_collected|add:metrics.uniform.male_collected|floatformat:0 }}</td>
+                            <td class="font-weight-bold text-danger">৳{{ metrics.medical.male_due|add:metrics.uniform.male_outstanding|floatformat:0 }}</td>
+                        </tr>
+
+                        <!-- Female Cohort -->
+                        <tr>
+                            <td class="text-left pl-4 font-weight-bold text-pink" style="color: #e83e8c;">
+                                <i class="fas fa-venus mr-2"></i> Female Cohort
+                                <span class="badge badge-light border ml-1">{{ metrics.medical.female_total }}</span>
+                            </td>
+                            <td class="font-weight-bold text-success">{{ metrics.medical.female_paid }}</td>
+                            <td class="font-weight-bold text-danger">{{ metrics.medical.female_unpaid }}</td>
+                            <td class="font-weight-bold text-dark border-right">৳{{ metrics.medical.female_collected|floatformat:0 }}</td>
+                            
+                            <td class="font-weight-bold text-primary">{{ metrics.uniform.female_opted_in }}</td>
+                            <td class="font-weight-bold text-success">{{ metrics.uniform.female_paid }}</td>
+                            <td class="font-weight-bold text-warning text-dark">{{ metrics.uniform.female_due }}</td>
+                            <td class="font-weight-bold text-dark border-right">৳{{ metrics.uniform.female_collected|floatformat:0 }}</td>
+
+                            <td class="font-weight-black text-success">৳{{ metrics.medical.female_collected|add:metrics.uniform.female_collected|floatformat:0 }}</td>
+                            <td class="font-weight-bold text-danger">৳{{ metrics.medical.female_due|add:metrics.uniform.female_outstanding|floatformat:0 }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="bg-light font-weight-bold">
+                        <tr>
+                            <td class="text-left pl-4">Grand Totals</td>
+                            <td class="text-success">{{ metrics.medical.total_paid }}</td>
+                            <td class="text-danger">{{ metrics.medical.total_unpaid }}</td>
+                            <td class="text-dark border-right">৳{{ metrics.medical.total_collected|floatformat:0 }}</td>
+                            
+                            <td class="text-primary">{{ metrics.uniform.total_opted_in }}</td>
+                            <td class="text-success">{{ metrics.uniform.total_paid }}</td>
+                            <td class="text-danger">{{ metrics.uniform.total_due }}</td>
+                            <td class="text-dark border-right">৳{{ metrics.uniform.total_collected|floatformat:0 }}</td>
+
+                            <td class="text-success" style="font-size: 1.05rem;">৳{{ metrics.combined.grand_collected|floatformat:0 }}</td>
+                            <td class="text-danger" style="font-size: 1.05rem;">৳{{ metrics.combined.grand_due|floatformat:0 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Student Breakdown Table -->
+    <div class="card shadow-sm border-0" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h5 class="card-title font-weight-bold text-dark mb-0">
+                    <i class="fas fa-list mr-2 text-secondary"></i> Student Records &amp; Fee Status Audit ({{ total_filtered }} Records)
+                </h5>
+                <small class="text-muted">Showing up to 500 records on current query. Export to Excel for full database extraction.</small>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="additionalFeesTable">
+                    <thead class="bg-light text-muted text-uppercase" style="font-size: 0.72rem;">
+                        <tr>
+                            <th class="pl-4">Student ID</th>
+                            <th>Student Name</th>
+                            <th>Gender</th>
+                            <th>Program</th>
+                            <th>Batch</th>
+                            <th>Medical / Scout</th>
+                            <th>Uniform Service</th>
+                            <th>Receipts</th>
+                            <th class="text-center pr-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td class="pl-4 py-3 font-weight-bold">
+                                <a href="{% url 'student_profile' s.student_id %}" class="text-primary">{{ s.student_id }}</a>
+                            </td>
+                            <td class="font-weight-bold text-dark">
+                                {{ s.student_name }}
+                            </td>
+                            <td>
+                                {% if s.gender|lower == 'female' or s.gender|lower == 'f' %}
+                                    <span class="badge" style="background: rgba(232,62,140,0.12); color: #e83e8c;">Female</span>
+                                {% else %}
+                                    <span class="badge" style="background: rgba(0,123,255,0.12); color: #007bff;">Male</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge badge-light border">{{ s.program|default:'-' }}</span></td>
+                            <td class="text-muted small">{{ s.batch|default:'-' }}</td>
+                            <td>
+                                {% if s.medical_scout_paid %}
+                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Paid (৳1,540)</span>
+                                {% else %}
+                                    <span class="badge badge-danger px-2 py-1"><i class="fas fa-times-circle mr-1"></i> Unpaid</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if s.uniform_status == 'PAID' %}
+                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Paid (৳{{ s.uniform_paid_amount|floatformat:0 }})</span>
+                                {% elif s.uniform_status == 'PARTIAL' %}
+                                    <span class="badge badge-info px-2 py-1"><i class="fas fa-adjust mr-1"></i> Partial (Paid ৳{{ s.uniform_paid_amount|floatformat:0 }}, Due ৳{{ s.uniform_due_amount|floatformat:0 }})</span>
+                                {% elif s.uniform_status == 'DUE' %}
+                                    <span class="badge badge-warning px-2 py-1 text-dark"><i class="fas fa-clock mr-1"></i> Due (৳{{ s.uniform_amount|floatformat:0 }})</span>
+                                {% else %}
+                                    <span class="badge badge-secondary px-2 py-1"><i class="fas fa-ban mr-1"></i> Opted Out</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">
+                                {% if s.medical_scout_receipt or s.uniform_receipt %}
+                                    {% if s.medical_scout_receipt %}<span>M: {{ s.medical_scout_receipt }}</span>{% endif %}
+                                    {% if s.uniform_receipt %}<span class="ml-1">U: {{ s.uniform_receipt }}</span>{% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="text-center pr-4">
+                                <a href="{% url 'student_profile' s.student_id %}#financial" class="btn btn-xs btn-outline-primary rounded-pill px-2">
+                                    <i class="fas fa-eye mr-1"></i> Profile
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="fas fa-inbox fa-3x mb-2 d-block opacity-50"></i>
+                                No student records found matching the specified filters.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -100,3 +100,64 @@ class HallTests(TestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn("Warning: A duplicate Hall code '02' has been detected", messages[0].message)
 
+
+class ProgramMasterDataTests(TestCase):
+    def setUp(self):
+        self.superuser = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='password123'
+        )
+        self.client.force_login(self.superuser)
+        self.cluster = Cluster.objects.create(name='Engineering', code='05')
+        self.program1 = Program.objects.create(
+            name='Computer Science and Engineering',
+            short_name='CSE',
+            ugc_code='01',
+            cluster=self.cluster,
+            level_code='1'
+        )
+
+    def test_duplicate_program_edit_gracefully_handled(self):
+        program2 = Program.objects.create(
+            name='Electrical and Electronic Engineering',
+            short_name='EEE',
+            ugc_code='02',
+            cluster=self.cluster,
+            level_code='1'
+        )
+        url = reverse('edit_master_data', args=['program', program2.id])
+        # Edit program2 to share same ugc_code as program1
+        response = self.client.post(url, {
+            'name': 'Electrical and Electronic Engineering',
+            'short_name': 'EEE',
+            'ugc_code': '01',
+            'cluster': self.cluster.id,
+            'level_code': '1',
+            'sort_order': 0
+        })
+        self.assertEqual(response.status_code, 302)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any("Notice: Another program under this Cluster already uses UGC Code '01'" in m.message for m in messages))
+        
+        # Verify program2 ugc_code was updated successfully
+        program2.refresh_from_db()
+        self.assertEqual(program2.ugc_code, '01')
+
+    def test_duplicate_program_add_gracefully_handled(self):
+        url = reverse('add_master_data', args=['program'])
+        # Create program with duplicate UGC code
+        response = self.client.post(url, {
+            'name': 'Civil Engineering',
+            'short_name': 'CE',
+            'ugc_code': '01',
+            'cluster': self.cluster.id,
+            'level_code': '1',
+            'sort_order': 0
+        })
+        self.assertEqual(response.status_code, 302)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(any("Notice: A program with the same Cluster, UGC Code '01'" in m.message for m in messages))
+        self.assertEqual(Program.objects.filter(ugc_code='01', cluster=self.cluster, level_code='1').count(), 2)
+
+

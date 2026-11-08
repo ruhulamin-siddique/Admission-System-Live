@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admission Intakes | BAUST Admission{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-calendar-alt text-warning mr-2"></i> Admission Intakes Manager
+{% endblock %}
+
+{% block page_actions %}
+    <button class="btn btn-primary btn-sm font-weight-bold shadow-sm" data-toggle="modal" data-target="#addIntakeModal">
+        <i class="fas fa-plus-circle mr-1"></i> Add New Intake
+    </button>
+    <a href="{% url 'admin_online_applicant_list' %}" class="btn btn-outline-secondary btn-sm ml-2 font-weight-bold">
+        <i class="fas fa-arrow-left mr-1"></i> Applicant Hub
+    </a>
+{% endblock %}
+
+{% block content %}
+
+            <!-- Flash Messages -->
+            {% if messages %}
+            <div class="row">
+                <div class="col-12">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-info-circle mr-2"></i> {{ message }}
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Intakes Card -->
+            <div class="card card-outline card-warning shadow-sm">
+                <div class="card-header py-2">
+                    <h5 class="card-title font-weight-bold mb-0">Admission Sessions Directory</h5>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover table-striped table-bordered mb-0">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th>Intake Name</th>
+                                <th>Status</th>
+                                <th>Application Deadline</th>
+                                <th>Exam Schedule</th>
+                                <th>Financials</th>
+                                <th>bKash Number</th>
+                                <th>Roll Prefix</th>
+                                <th>Applicants</th>
+                                <th style="width: 130px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in intakes_with_counts %}
+                            <tr>
+                                <td class="text-center font-weight-bold">{{ forloop.counter }}</td>
+                                <td class="font-weight-bold text-primary">{{ item.intake.intake_name }}</td>
+                                <td class="text-center" id="intake-status-cell-{{ item.intake.id }}">
+                                    {% if item.intake.is_open_for_application %}
+                                        {% if item.is_open %}
+                                            <button class="btn btn-xs btn-success font-weight-bold" onclick="toggleIntake({{ item.intake.id }})" title="Click to manually close">
+                                                <i class="fas fa-check-circle mr-1"></i> Open
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-xs btn-warning font-weight-bold text-dark" onclick="toggleIntake({{ item.intake.id }})" title="Active flag is ON, but deadline has passed!">
+                                                <i class="fas fa-clock mr-1"></i> Expired
+                                            </button>
+                                            <small class="d-block text-danger font-weight-bold" style="font-size: 0.68rem;">Deadline Passed</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <button class="btn btn-xs btn-danger font-weight-bold" onclick="toggleIntake({{ item.intake.id }})" title="Click to manually open">
+                                            <i class="fas fa-times-circle mr-1"></i> Closed
+                                        </button>
+                                    {% endif %}
+                                </td>
+                                <td id="intake-deadline-cell-{{ item.intake.id }}">
+                                    {% if item.intake.application_deadline %}
+                                        <span class="small font-weight-bold">{{ item.intake.application_deadline|date:"d M Y, h:i A" }}</span>
+                                        {% if not item.is_open and item.intake.is_open_for_application %}
+                                            <span class="badge badge-danger ml-1" id="deadline-badge-{{ item.intake.id }}" style="font-size: 0.68rem;">Passed</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted small">No deadline</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="d-block"><strong>Date:</strong> {{ item.intake.exam_date|date:"d M Y, h:i A"|default:"TBA" }}</small>
+                                    <small class="d-block text-muted"><strong>Venue:</strong> {{ item.intake.exam_venue }}</small>
+                                </td>
+                                <td>
+                                    <small class="d-block">Fee: BDT <strong>{{ item.intake.form_fee_bdt }}</strong></small>
+                                    <small class="d-block">Charge: BDT <strong>{{ item.intake.bkash_charge_bdt }}</strong></small>
+                                    <span class="badge badge-info" style="font-size: 0.75rem;">Total: BDT {{ item.intake.total_fee_bdt }}</span>
+                                </td>
+                                <td><code>{{ item.intake.bkash_number }}</code></td>
+                                <td><code>{{ item.intake.exam_roll_prefix }}{{ item.intake.next_roll_number }}</code></td>
+                                <td>
+                                    <a href="{% url 'admin_online_applicant_list' %}?intake={{ item.intake.id }}" class="badge badge-primary px-2 py-1" title="View Applicants">
+                                        Total: {{ item.total_applicants }}
+                                    </a>
+                                    <div class="small mt-1">
+                                        <span class="text-warning font-weight-bold">P: {{ item.pending_count }}</span> &bull;
+                                        <span class="text-success font-weight-bold">A: {{ item.approved_count }}</span> &bull;
+                                        <span class="text-primary font-weight-bold">Enr: {{ item.admitted_count }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-xs btn-outline-warning" onclick="editIntakeModal({{ item.intake.id }})" title="Edit Settings">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <a href="{% url 'admin_online_applicant_list' %}?intake={{ item.intake.id }}" class="btn btn-xs btn-outline-primary" title="View Applicants">
+                                        <i class="fas fa-users"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">
+                                    No admission intakes configured yet. Click "Add New Intake" above.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+<!-- Add Intake Modal -->
+<div class="modal fade" id="addIntakeModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-plus-circle mr-1"></i> Add New Admission Intake</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form method="POST" action="{% url 'admin_intake_add' %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Intake / Semester Name: <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="intake_name" placeholder="e.g. Winter 2027 Intake" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Academic Year:</label>
+                            <select class="custom-select" name="academic_year">
+                                <option value="">-- Select Year --</option>
+                                {% for y in academic_years %}
+                                <option value="{{ y.id }}">{{ y.year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Application Deadline:</label>
+                            <input type="datetime-local" class="form-control" name="application_deadline">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Admission Exam Date & Time:</label>
+                            <input type="datetime-local" class="form-control" name="exam_date">
+                        </div>
+                        <div class="col-md-12 form-group">
+                            <label class="small font-weight-bold">Exam Venue:</label>
+                            <input type="text" class="form-control" name="exam_venue" value="BAUST Campus (Saidpur)">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">Form Fee (BDT):</label>
+                            <input type="number" step="0.01" class="form-control" name="form_fee_bdt" value="750.00" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">bKash Charge (BDT):</label>
+                            <input type="number" step="0.01" class="form-control" name="bkash_charge_bdt" value="12.00" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">bKash Number:</label>
+                            <input type="text" class="form-control" name="bkash_number" value="01769675556" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Exam Roll Prefix:</label>
+                            <input type="text" class="form-control" name="exam_roll_prefix" value="BAUST-">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Starting Roll Number:</label>
+                            <input type="number" class="form-control" name="next_roll_number" value="1001">
+                        </div>
+                        <div class="col-md-12 form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="open_now" name="is_open_for_application" value="1" checked>
+                                <label class="custom-control-label font-weight-bold text-success" for="open_now">
+                                    Open for Online Applications Immediately
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm font-weight-bold">
+                        <i class="fas fa-save mr-1"></i> Create Intake
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="editIntakeModalContainer"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toast notification setup with SweetAlert2
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+
+    function toggleIntake(id) {
+        const cell = $(`#intake-status-cell-${id}`);
+        const originalHtml = cell.html();
+        
+        // Show subtle spinner while processing
+        cell.html('<span class="spinner-border spinner-border-sm text-secondary" role="status"></span>');
+
+        $.post(`/students/admission-intakes/${id}/toggle/`, { csrfmiddlewaretoken: '{{ csrf_token }}' })
+            .done(function(res) {
+                if (res.status === 'success') {
+                    // Update DOM element without reload
+                    if (res.is_open) {
+                        if (res.is_currently_open) {
+                            cell.html(`
+                                <button class="btn btn-xs btn-success font-weight-bold" onclick="toggleIntake(${id})" title="Click to manually close">
+                                    <i class="fas fa-check-circle mr-1"></i> Open
+                                </button>
+                            `);
+                            $(`#deadline-badge-${id}`).remove();
+                        } else {
+                            cell.html(`
+                                <button class="btn btn-xs btn-warning font-weight-bold text-dark" onclick="toggleIntake(${id})" title="Active flag is ON, but deadline has passed!">
+                                    <i class="fas fa-clock mr-1"></i> Expired
+                                </button>
+                                <small class="d-block text-danger font-weight-bold" style="font-size: 0.68rem;">Deadline Passed</small>
+                            `);
+                        }
+                    } else {
+                        cell.html(`
+                            <button class="btn btn-xs btn-danger font-weight-bold" onclick="toggleIntake(${id})" title="Click to manually open">
+                                <i class="fas fa-times-circle mr-1"></i> Closed
+                            </button>
+                        `);
+                        $(`#deadline-badge-${id}`).remove();
+                    }
+
+                    Toast.fire({
+                        icon: res.is_currently_open ? 'success' : 'info',
+                        title: res.message || 'Intake status updated successfully!'
+                    });
+                } else {
+                    cell.html(originalHtml);
+                    Toast.fire({
+                        icon: 'error',
+                        title: res.message || 'Failed to toggle status.'
+                    });
+                }
+            })
+            .fail(function() {
+                cell.html(originalHtml);
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Network error while updating intake status.'
+                });
+            });
+    }
+
+    function editIntakeModal(id) {
+        $.get(`/students/admission-intakes/${id}/edit/`, function(html) {
+            $('#editIntakeModalContainer').html(html);
+            $('#editIntakeModal').modal('show');
+        });
+    }
+</script>
+{% endblock %}

@@ -704,6 +704,54 @@ class StudentDirectoryTests(TestCase):
         self.assertIsNotNone(form.cleaned_data['student_id'])
         self.assertTrue(form.cleaned_data['student_id'].startswith('080'))
 
+    def test_student_form_excludes_and_preserves_additional_fees(self):
+        """Verify StudentForm does not require additional fee fields and preserves existing values on edit."""
+        from students.forms import StudentForm
+        # 1. New student creation via form
+        form_data = {
+            'student_name': 'New Regular Student',
+            'program': self.cse_program.name,
+            'admission_year': 2025,
+            'semester_name': 'Spring',
+            'program_type': 'Bachelor',
+            'batch': '25th',
+            'current_batch': '25th',
+            'current_semester': 'Level 1 Term I',
+            'student_mobile': '01711111111',
+            'father_mobile': '01722222222',
+            'mother_mobile': '01733333333',
+            'admission_status': 'Active',
+        }
+        form = StudentForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        student = form.save(commit=False)
+        student.student_id = '0802510101001001'
+        student.save()
+        
+        # Verify defaults are applied
+        self.assertEqual(student.uniform_status, 'OPTED_OUT')
+        self.assertFalse(student.medical_scout_paid)
+
+        # 2. Existing student with paid uniform being edited via form without uniform fields in POST
+        student.uniform_status = 'PAID'
+        student.uniform_paid_amount = 4400.0
+        student.uniform_receipt = 'MR-9999'
+        student.medical_scout_paid = True
+        student.save()
+
+        edit_data = form_data.copy()
+        edit_data['student_name'] = 'New Regular Student (Edited)'
+        edit_form = StudentForm(data=edit_data, instance=student)
+        self.assertTrue(edit_form.is_valid(), edit_form.errors.as_json())
+        updated_student = edit_form.save()
+
+        # Check that institutional fee data is safely preserved
+        self.assertEqual(updated_student.student_name, 'New Regular Student (Edited)')
+        self.assertEqual(updated_student.uniform_status, 'PAID')
+        self.assertEqual(updated_student.uniform_paid_amount, 4400.0)
+        self.assertEqual(updated_student.uniform_receipt, 'MR-9999')
+        self.assertTrue(updated_student.medical_scout_paid)
+
     def test_api_student_ugc_id_preview(self):
         # Create a legacy student with missing academic parameters
         legacy_student_missing = Student.objects.create(
@@ -1290,7 +1338,7 @@ class StudentDirectoryTests(TestCase):
             'reg': '654321',
             'gpa': '5.0',
         })
-        self.assertRedirects(response, reverse('user_profile'))
+        self.assertEqual(response.status_code, 403)
         
         # 2. Privileged user (superuser) should succeed for SSC
         self.client.force_login(self.superuser)
@@ -1697,7 +1745,7 @@ class ReferenceNodeSystemTests(TestCase):
         self.client.force_login(viewer_user)
         response = self.client.get(reverse('cancellation_hub'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Cancellations Directory')
+        self.assertContains(response, 'Admission Cancellation & Status Hub')
         
         # 3. Create a cancelled student and check filters
         cancelled_student = Student.objects.create(
@@ -1744,6 +1792,37 @@ class ReferenceNodeSystemTests(TestCase):
         response = self.client.get(reverse('export_cancellations_dynamic') + "?program=Computer+Science+and+Engineering")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+        # 5. Check official documents (Print List & Notice)
+        list_doc_res = self.client.get(reverse('cancellation_document_list'))
+        self.assertEqual(list_doc_res.status_code, 200)
+        self.assertContains(list_doc_res, "BANGLADESH ARMY UNIVERSITY OF SCIENCE AND TECHNOLOGY, SAIDPUR")
+        self.assertContains(list_doc_res, "CSE2025999")
+
+        notice_doc_res = self.client.get(reverse('cancellation_document_notice'))
+        self.assertEqual(notice_doc_res.status_code, 200)
+        self.assertContains(notice_doc_res, "NOTICE- ADMISSION CANCEL")
+        self.assertContains(notice_doc_res, "BAUST, Saidpur")
+
+        # 6. Check modal cancellation API
+        RolePermission.objects.create(role=viewer_role, module='students', task='cancel_admission')
+        active_student = Student.objects.create(
+            student_id="CSE2025888",
+            student_name="Active To Cancel",
+            program="Computer Science and Engineering",
+            batch="25th",
+            admission_status="Active"
+        )
+        api_cancel_res = self.client.post(reverse('api_cancel_admission_modal'), {
+            'student_id': active_student.student_id,
+            'cancel_type': 'Temporary',
+            'reason_category': 'Migration',
+            'notes': 'Test modal cancel',
+        })
+        self.assertEqual(api_cancel_res.status_code, 200)
+        active_student.refresh_from_db()
+        self.assertEqual(active_student.admission_status, 'Cancelled')
+        self.assertTrue(active_student.is_temp_admission_cancel)
 
     def test_migration_hub_access_and_filtering(self):
         from core.models import Role, RolePermission
@@ -1807,6 +1886,782 @@ class ReferenceNodeSystemTests(TestCase):
         response = self.client.get(reverse('export_migrations_dynamic') + "?old_program=Computer+Science+and+Engineering")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+class AcademicDataPatchLeadingZeroTests(TestCase):
+    """Unit tests to verify leading zero recovery ('080' prefix) in Academic Patch export & import."""
+
+    def test_normalize_student_id(self):
+        from students.utils import normalize_student_id
+
+        db_ids = {'0802310102161001', '080101001'}
+
+        # 16-digit exact match
+        self.assertEqual(normalize_student_id('0802310102161001', valid_ids_set=db_ids), '0802310102161001')
+
+        # 15-digit missing leading zero (Excel numerical conversion)
+        self.assertEqual(normalize_student_id('802310102161001', valid_ids_set=db_ids), '0802310102161001')
+
+        # Float string missing leading zero
+        self.assertEqual(normalize_student_id('802310102161001.0', valid_ids_set=db_ids), '0802310102161001')
+
+        # 8-digit legacy ID missing leading zero
+        self.assertEqual(normalize_student_id('80101001', valid_ids_set=db_ids), '080101001')
+
+        # Standalone normalization without DB set
+        self.assertEqual(normalize_student_id('802310102161001'), '0802310102161001')
+
+        # Invalid/empty cases
+        self.assertEqual(normalize_student_id(None), '')
+        self.assertEqual(normalize_student_id('nan'), '')
+
+    def test_patch_academic_data_from_excel_with_leading_zero(self):
+        from students.utils import patch_academic_data_from_excel
+        import openpyxl
+
+        student = Student.objects.create(
+            student_id='0802310102161001',
+            student_name='Test Student Batch 16',
+            batch='16th',
+            ssc_board='Rajshahi'
+        )
+
+        # Create Excel where student_id is stored without leading zero (802310102161001)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['student_id', 'ssc_board'])
+        ws.append(['802310102161001', 'Dhaka'])
+
+        file_obj = BytesIO()
+        wb.save(file_obj)
+        file_obj.seek(0)
+
+        scope_qs = Student.objects.filter(batch='16th')
+        result = patch_academic_data_from_excel(file_obj, ['ssc_board'], scope_qs, dry_run=False)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(result['updated_count'], 1)
+        self.assertEqual(len(result['not_found']), 0)
+
+        student.refresh_from_db()
+        self.assertEqual(student.ssc_board, 'Dhaka')
+
+    def test_download_academic_patch_template(self):
+        import openpyxl
+
+        user = User.objects.create_user(username='patchadmin', password='password123')
+        role = Role.objects.create(name='Patch Admin')
+        user.profile.role = role
+        user.profile.save()
+        RolePermission.objects.create(role=role, module='students', task='patch_academic_data')
+
+        Student.objects.create(
+            student_id='0802310102161001',
+            student_name='Test Batch 16',
+            batch='16th'
+        )
+
+        self.client.login(username='patchadmin', password='password123')
+        url = reverse('academic_patch_template') + '?fields=ssc_board,ssc_year&batch=16th'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        # Parse generated Excel
+        wb = openpyxl.load_workbook(BytesIO(response.content))
+        ws = wb['Academic Patch']
+        
+        # Row 2 is first data row
+        cell_id = ws.cell(row=2, column=1)
+        self.assertEqual(str(cell_id.value), '0802310102161001')
+        self.assertEqual(cell_id.number_format, '@')
+
+    def test_api_manual_verify_student(self):
+        user = User.objects.create_user(username='verifier', password='password123')
+        role = Role.objects.create(name='Document Verifier')
+        user.profile.role = role
+        user.profile.save()
+        RolePermission.objects.create(role=role, module='students', task='verify_documents')
+
+        student = Student.objects.create(
+            student_id='0802310102161005',
+            student_name='Manual Verify Student',
+            ssc_verified=False,
+            hsc_verified=False
+        )
+
+        self.client.login(username='verifier', password='password123')
+        url = reverse('api_manual_verify_student')
+
+        # Test manual verify SSC
+        response = self.client.post(url, {'student_id': '0802310102161005', 'exam_type': 'SSC'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+
+        student.refresh_from_db()
+        self.assertTrue(student.ssc_verified)
+        self.assertIn('SSC', student.academic_verification_logs)
+        self.assertEqual(student.academic_verification_logs['SSC']['method'], 'manual_bypass')
+
+        # Test valid board student name update
+        response = self.client.post(url, {
+            'student_id': '0802310102161005',
+            'exam_type': 'HSC',
+            'student_name': 'MD. RAKIB HASAN',
+            'gpa': '5.00'
+        })
+        self.assertEqual(response.status_code, 200)
+        student.refresh_from_db()
+        self.assertEqual(student.student_name, 'MD. RAKIB HASAN')
+        self.assertTrue(student.hsc_verified)
+
+        # Test header string rejection (e.g. "BOARD OF INTERMEDIATE AND SECONDARY EDUCATION")
+        response = self.client.post(url, {
+            'student_id': '0802310102161005',
+            'exam_type': 'SSC',
+            'student_name': 'BOARD OF INTERMEDIATE AND SECONDARY EDUCATION CHITTAGONG',
+            'gpa': '5.00'
+        })
+        self.assertEqual(response.status_code, 200)
+        student.refresh_from_db()
+        # Ensure existing name 'MD. RAKIB HASAN' was retained and NOT overwritten by 'BOARD OF...'
+        self.assertEqual(student.student_name, 'MD. RAKIB HASAN')
+
+
+class PreGpaDivisionSystemTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from master_data.models import Cluster, Program, AdmissionYear, Hall, Batch
+        from students.models import AdmissionIntake
+        from students.utils import get_canonical_program_name
+        if hasattr(get_canonical_program_name, '_cache'):
+            delattr(get_canonical_program_name, '_cache')
+
+        cls.cluster = Cluster.objects.create(name='Engineering PreGPA', code='98')
+        cls.program = Program.objects.create(
+            name='Computer Science and Engineering',
+            short_name='CSE',
+            ugc_code='01',
+            cluster=cls.cluster,
+            level_code='1'
+        )
+        cls.hall, _ = Hall.objects.get_or_create(short_name='ZH', defaults={'full_name': 'Dr. Zikrul Haque Hall', 'code': '03'})
+        cls.adm_year, _ = AdmissionYear.objects.get_or_create(year=2025)
+        cls.batch, _ = Batch.objects.get_or_create(name='25th', defaults={'admission_year': cls.adm_year})
+
+        cls.intake = AdmissionIntake.objects.create(
+            intake_name='Spring 2025 Intake',
+            academic_year=cls.adm_year,
+            form_fee_bdt=1000.0,
+            bkash_charge_bdt=15.0,
+            bkash_number='01700000000',
+            exam_roll_prefix='25',
+            next_roll_number=1001,
+            is_open_for_application=True,
+        )
+
+        cls.user = User.objects.create_superuser(username='division_admin', password='adminpassword')
+        role = Role.objects.create(name='Admission Division Admin')
+        cls.user.profile.role = role
+        cls.user.profile.save()
+        RolePermission.objects.create(role=role, module='students', task='edit_profile')
+        RolePermission.objects.create(role=role, module='students', task='academic_audit')
+        RolePermission.objects.create(role=role, module='students', task='verify_documents')
+        RolePermission.objects.create(role=role, module='students', task='manage_online_applicants')
+
+    def test_division_equivalent_gpa_utility(self):
+        """Test standard UGC equivalent GPA mapping and marks interpolation."""
+        from students.utils import get_division_equivalent_gpa
+        # Standard mappings without marks
+        self.assertEqual(get_division_equivalent_gpa('FIRST_STAR'), 4.00)
+        self.assertEqual(get_division_equivalent_gpa('FIRST'), 3.50)
+        self.assertEqual(get_division_equivalent_gpa('SECOND'), 2.75)
+        self.assertEqual(get_division_equivalent_gpa('THIRD'), 2.00)
+        self.assertEqual(get_division_equivalent_gpa('PASS'), 1.50)
+        self.assertIsNone(get_division_equivalent_gpa(None))
+
+        # Interpolated mappings with marks
+        # FIRST_STAR with marks 800 (out of 1000, 80%) -> 4.00
+        self.assertEqual(get_division_equivalent_gpa('FIRST_STAR', 800), 4.00)
+        # FIRST with marks 675 (midway between 600 and 750) -> 3.75
+        self.assertEqual(get_division_equivalent_gpa('FIRST', 675), 3.75)
+
+    def test_student_model_division_fields_and_display(self):
+        """Test Student model stores division fields and returns rich display string."""
+        student = Student.objects.create(
+            student_id='0802310102161990',
+            student_name='LEGACY STUDENT 1990',
+            ssc_system='DIVISION',
+            ssc_division='FIRST',
+            ssc_marks=680,
+            ssc_gpa=3.50,
+            hsc_system='DIVISION',
+            hsc_division='SECOND',
+            hsc_marks=550,
+            hsc_gpa=2.75,
+            student_mobile='01711000099',
+            father_mobile='01711000098',
+            mother_mobile='01711000097',
+        )
+        ssc_disp = student.get_ssc_result_display_full()
+        self.assertIn('1st Division', ssc_disp)
+        self.assertIn('680/1000', ssc_disp)
+        self.assertIn('3.5', ssc_disp)
+
+        hsc_disp = student.get_hsc_result_display_full()
+        self.assertIn('2nd Division', hsc_disp)
+        self.assertIn('550/1000', hsc_disp)
+
+        # Profile completeness gives points for academic division result
+        comp = student.get_profile_completeness()
+        self.assertGreater(comp['score'], 0)
+
+    def test_student_form_division_auto_gpa(self):
+        """Test StudentForm auto-assigns UGC equivalent GPA when division is chosen and GPA is omitted."""
+        from students.forms import StudentForm
+        form_data = {
+            'student_name': 'DIVISION FORM TEST',
+            'ssc_system': 'DIVISION',
+            'ssc_division': 'SECOND',
+            'ssc_marks': 520,
+            'ssc_gpa': '',  # intentionally omitted
+            'hsc_system': 'DIVISION',
+            'hsc_division': 'FIRST',
+            'hsc_marks': 640,
+            'hsc_gpa': '',  # intentionally omitted
+            'student_mobile': '01711223344',
+            'father_mobile': '01711223345',
+            'mother_mobile': '01711223346',
+            'admission_year': '2025',
+            'semester_name': 'Spring',
+            'program': self.program.name,
+            'cluster': self.cluster.name,
+            'program_type': 'Bachelor',
+            'admission_status': 'Active',
+            'is_legacy_student': 'on',
+        }
+        form = StudentForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        # Cleaned data should have auto-assigned equivalent GPAs
+        self.assertIsNotNone(form.cleaned_data['ssc_gpa'])
+        self.assertGreater(form.cleaned_data['ssc_gpa'], 2.0)
+        self.assertIsNotNone(form.cleaned_data['hsc_gpa'])
+        self.assertGreater(form.cleaned_data['hsc_gpa'], 3.0)
+
+    def test_student_form_validation_range_checks(self):
+        """Test StudentForm validation rules: GPA [0.0, 5.0] and Marks [0, 1000]."""
+        from students.forms import StudentForm
+        # Invalid GPA (> 5.0)
+        bad_gpa_data = {
+            'student_name': 'BAD GPA TEST',
+            'ssc_system': 'GPA',
+            'ssc_gpa': 5.50,
+            'student_mobile': '01711223344',
+            'father_mobile': '01711223345',
+            'mother_mobile': '01711223346',
+            'admission_year': '2025',
+            'semester_name': 'Spring',
+            'program': self.program.name,
+            'admission_status': 'Active',
+            'is_legacy_student': 'on',
+        }
+        form = StudentForm(data=bad_gpa_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('ssc_gpa', form.errors)
+
+        # Invalid Marks (> 1000)
+        bad_marks_data = {
+            'student_name': 'BAD MARKS TEST',
+            'ssc_system': 'DIVISION',
+            'ssc_division': 'FIRST',
+            'ssc_marks': 1200,
+            'student_mobile': '01711223344',
+            'father_mobile': '01711223345',
+            'mother_mobile': '01711223346',
+            'admission_year': '2025',
+            'semester_name': 'Spring',
+            'program': self.program.name,
+            'admission_status': 'Active',
+            'is_legacy_student': 'on',
+        }
+        form2 = StudentForm(data=bad_marks_data)
+        self.assertFalse(form2.is_valid())
+        self.assertIn('ssc_marks', form2.errors)
+
+    def test_student_form_legacy_alphanumeric_roll_reg(self):
+        """Test legacy alphanumeric roll and reg (e.g. 'Dhk No. 1204', '1989-90/34120') pass form validation."""
+        from students.forms import StudentForm
+        form_data = {
+            'student_name': 'ALPHANUMERIC ROLL TEST',
+            'ssc_system': 'DIVISION',
+            'ssc_division': 'FIRST',
+            'ssc_roll': 'Dhk No. 1204',
+            'ssc_reg': '1989-90/34120',
+            'ssc_year': '1992',
+            'ssc_board': 'Dhaka',
+            'hsc_system': 'DIVISION',
+            'hsc_division': 'FIRST',
+            'hsc_roll': 'Com No. 904',
+            'hsc_reg': '1992-93/11024',
+            'hsc_year': '1994',
+            'hsc_board': 'Comilla',
+            'student_mobile': '01711223344',
+            'father_mobile': '01711223345',
+            'mother_mobile': '01711223346',
+            'admission_year': '2025',
+            'semester_name': 'Spring',
+            'program': self.program.name,
+            'cluster': self.cluster.name,
+            'program_type': 'Bachelor',
+            'admission_status': 'Active',
+            'is_legacy_student': 'on',
+        }
+        form = StudentForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        student = form.save(commit=False)
+        self.assertEqual(student.ssc_roll, 'Dhk No. 1204')
+        self.assertEqual(student.ssc_reg, '1989-90/34120')
+
+    def test_api_verify_board_result_division_blocked(self):
+        """Test api_verify_board_result returns division_system error and blocks external scraping."""
+        student = Student.objects.create(
+            student_id='0802310102161991',
+            student_name='DIVISION BLOCK TEST',
+            ssc_system='DIVISION',
+            ssc_division='FIRST',
+            ssc_year='1993',
+            ssc_roll='Dhk No. 550',
+            ssc_reg='1990-91/220',
+            ssc_board='Dhaka'
+        )
+        self.client.force_login(self.user)
+        url = reverse('api_verify_board_result')
+        response = self.client.post(url, {
+            'student_id': student.student_id,
+            'exam_type': 'SSC',
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data['success'])
+        self.assertEqual(data.get('error'), 'division_system')
+        self.assertIn('original physical certificates', data.get('message', ''))
+
+    def test_online_applicant_enroll_bridge_copies_division_fields(self):
+        """Test enrolling an OnlineApplicant with division records bridges all 6 division fields into Student."""
+        from students.models import OnlineApplicant
+        applicant = OnlineApplicant.objects.create(
+            intake=self.intake,
+            intake_name=self.intake.intake_name,
+            name='ONLINE DIVISION APPLICANT',
+            mobile='01711223399',
+            father_name='Father Online',
+            mother_name='Mother Online',
+            gender='Male',
+            program_category='Engineering',
+            desired_program='CSE',
+            ssc_system='DIVISION',
+            ssc_division='FIRST_STAR',
+            ssc_marks=780,
+            ssc_gpa=4.00,
+            ssc_board='Dhaka',
+            ssc_year='1992',
+            ssc_roll='Dhk 404',
+            ssc_reg='1990/55',
+            hsc_system='DIVISION',
+            hsc_division='FIRST',
+            hsc_marks=660,
+            hsc_gpa=3.50,
+            hsc_board='Dhaka',
+            hsc_year='1994',
+            hsc_roll='Dhk 808',
+            hsc_reg='1992/55',
+            payment_status='VERIFIED',
+            status='PENDING',
+        )
+        self.client.force_login(self.user)
+        enroll_url = reverse('admin_enroll_to_database', kwargs={'pk': applicant.pk})
+        response = self.client.post(enroll_url, {
+            'batch_name': self.batch.name,
+            'hall_name': self.hall.short_name,
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get('status'), 'success')
+
+        applicant.refresh_from_db()
+        self.assertEqual(applicant.status, 'ADMITTED')
+        self.assertIsNotNone(applicant.admitted_student)
+
+        enrolled_student = applicant.admitted_student
+        self.assertEqual(enrolled_student.ssc_system, 'DIVISION')
+        self.assertEqual(enrolled_student.ssc_division, 'FIRST_STAR')
+        self.assertEqual(enrolled_student.ssc_marks, 780)
+        self.assertEqual(enrolled_student.hsc_system, 'DIVISION')
+        self.assertEqual(enrolled_student.hsc_division, 'FIRST')
+        self.assertEqual(enrolled_student.hsc_marks, 660)
+
+    def test_api_update_board_info_division_support(self):
+        """Test api_update_board_info accepts system='DIVISION', division, and marks updates."""
+        student = Student.objects.create(
+            student_id='0802310102161992',
+            student_name='UPDATE BOARD INFO TEST',
+            ssc_system='GPA',
+            ssc_gpa=5.00,
+        )
+        self.client.force_login(self.user)
+        url = reverse('api_update_board_info')
+        response = self.client.post(url, {
+            'student_id': student.student_id,
+            'level': 'SSC',
+            'system': 'DIVISION',
+            'division': 'FIRST',
+            'marks': '680',
+            'school_college': 'Old Model High School',
+            'board': 'Dhaka',
+            'year': '1991',
+            'roll': 'Dhk No. 102',
+            'reg': '1989/44',
+            'gpa': '3.50',
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        student.refresh_from_db()
+        self.assertEqual(student.ssc_system, 'DIVISION')
+        self.assertEqual(student.ssc_division, 'FIRST')
+        self.assertEqual(student.ssc_marks, 680)
+        self.assertEqual(student.ssc_roll, 'Dhk No. 102')
+
+    def test_applicant_export_contains_division_columns(self):
+        """Test admin_export_applicants includes ssc_system, ssc_division, ssc_marks."""
+        from students.models import OnlineApplicant
+        OnlineApplicant.objects.create(
+            intake=self.intake,
+            intake_name=self.intake.intake_name,
+            name='EXPORT APPLICANT',
+            mobile='01711223388',
+            father_name='Father Export',
+            mother_name='Mother Export',
+            gender='Male',
+            program_category='Engineering',
+            ssc_system='DIVISION',
+            ssc_division='FIRST',
+            ssc_marks=700,
+            payment_status='VERIFIED',
+        )
+        self.client.force_login(self.user)
+        url = reverse('admin_export_applicants')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        import openpyxl
+        wb = openpyxl.load_workbook(BytesIO(response.content))
+        ws = wb.active
+        headers = [ws.cell(row=1, column=col).value for col in range(1, ws.max_column + 1)]
+        self.assertIn('SSC System', headers)
+        self.assertIn('SSC Division', headers)
+        self.assertIn('SSC Marks', headers)
+        self.assertIn('HSC System', headers)
+
+
+class AdditionalInstitutionalFeesTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from master_data.models import Cluster, Program
+        cls.cluster, _ = Cluster.objects.get_or_create(name='Engineering & Technology', code='05')
+        cls.program, _ = Program.objects.get_or_create(
+            name='Computer Science and Engineering',
+            short_name='CSE',
+            ugc_code='01',
+            cluster=cls.cluster,
+            level_code='1'
+        )
+        cls.user = User.objects.create_superuser(username='fees_admin', password='adminpassword')
+        role, _ = Role.objects.get_or_create(name='Additional Fees Admin')
+        cls.user.profile.role = role
+        cls.user.profile.save()
+        RolePermission.objects.get_or_create(role=role, module='students', task='edit_profile')
+
+    def setUp(self):
+        self.client.force_login(self.user)
+        self.student = Student.objects.create(
+            student_id='0802310102169999',
+            student_name='FEE TEST STUDENT',
+            program=self.program.name,
+            gender='Male',
+            admission_year=2025,
+            semester_name='Spring'
+        )
+
+    def test_additional_fees_default_on_creation(self):
+        """Fresh student should have medical unpaid (0 amount, no receipt/date) and uniform opted out."""
+        fresh_student = Student.objects.create(
+            student_id='0802310102169998',
+            student_name='FRESH STUDENT',
+            gender='Female'
+        )
+        self.assertFalse(fresh_student.medical_scout_paid)
+        self.assertEqual(fresh_student.medical_scout_amount, 0.0)
+        self.assertIsNone(fresh_student.medical_scout_receipt)
+        self.assertIsNone(fresh_student.medical_scout_date)
+        self.assertEqual(fresh_student.uniform_status, 'OPTED_OUT')
+        self.assertEqual(fresh_student.uniform_amount, 0.0)
+        self.assertEqual(fresh_student.uniform_paid_amount, 0.0)
+        self.assertIsNone(fresh_student.uniform_receipt)
+        self.assertIsNone(fresh_student.uniform_date)
+
+    def test_update_additional_fees_medical_toggle_paid(self):
+        """POST medical_scout_paid=on auto-assigns ৳1,540, MS receipt, and date."""
+        url = reverse('update_student_additional_fees', args=[self.student.student_id])
+        response = self.client.post(url, {
+            'medical_scout_paid': 'on',
+            'uniform_choice': 'OPTED_OUT'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.student.refresh_from_db()
+        self.assertTrue(self.student.medical_scout_paid)
+        self.assertEqual(self.student.medical_scout_amount, 1540.0)
+        self.assertEqual(self.student.medical_scout_receipt, f"MS-{self.student.student_id}")
+        self.assertIsNotNone(self.student.medical_scout_date)
+
+    def test_update_additional_fees_medical_toggle_unpaid(self):
+        """POST without medical_scout_paid resets amount, receipt, and date to None."""
+        from django.utils import timezone
+        self.student.medical_scout_paid = True
+        self.student.medical_scout_amount = 1540.0
+        self.student.medical_scout_receipt = f"MS-{self.student.student_id}"
+        self.student.medical_scout_date = timezone.localdate()
+        self.student.save()
+
+        url = reverse('update_student_additional_fees', args=[self.student.student_id])
+        response = self.client.post(url, {
+            'uniform_choice': 'OPTED_OUT'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.student.refresh_from_db()
+        self.assertFalse(self.student.medical_scout_paid)
+        self.assertEqual(self.student.medical_scout_amount, 0.0)
+        self.assertIsNone(self.student.medical_scout_receipt)
+        self.assertIsNone(self.student.medical_scout_date)
+
+    def test_update_additional_fees_uniform_opted_out(self):
+        """POST uniform_choice=OPTED_OUT resets amount, paid amount, receipt and date."""
+        self.student.uniform_status = 'PAID'
+        self.student.uniform_amount = 4400.0
+        self.student.uniform_paid_amount = 4400.0
+        self.student.uniform_receipt = f"UF-{self.student.student_id}"
+        self.student.save()
+
+        url = reverse('update_student_additional_fees', args=[self.student.student_id])
+        response = self.client.post(url, {
+            'uniform_choice': 'OPTED_OUT',
+            'uniform_remarks': 'Opted out privately'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.uniform_status, 'OPTED_OUT')
+        self.assertEqual(self.student.uniform_amount, 0.0)
+        self.assertEqual(self.student.uniform_paid_amount, 0.0)
+        self.assertIsNone(self.student.uniform_receipt)
+        self.assertIsNone(self.student.uniform_date)
+        self.assertEqual(self.student.uniform_remarks, 'Opted out privately')
+
+    def test_update_additional_fees_uniform_due_gets_date(self):
+        """POST uniform_choice=DUE auto-populates date if not provided."""
+        url = reverse('update_student_additional_fees', args=[self.student.student_id])
+        response = self.client.post(url, {
+            'uniform_choice': 'DUE',
+            'uniform_amount': '4400'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.uniform_status, 'DUE')
+        self.assertEqual(self.student.uniform_amount, 4400.0)
+        self.assertEqual(self.student.uniform_paid_amount, 0.0)
+        self.assertEqual(self.student.uniform_receipt, f"UF-{self.student.student_id}")
+        self.assertIsNotNone(self.student.uniform_date)
+
+    def test_update_additional_fees_response_json_structure(self):
+        """Verify response contains all required fields for frontend DOM updates."""
+        url = reverse('update_student_additional_fees', args=[self.student.student_id])
+        response = self.client.post(url, {
+            'medical_scout_paid': 'on',
+            'uniform_choice': 'PAID',
+            'uniform_amount': '4400',
+            'uniform_paid_amount': '4400'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertIn('data', data)
+        fee_data = data['data']
+        for key in [
+            'medical_scout_paid', 'medical_scout_amount', 'medical_scout_receipt', 'medical_scout_date',
+            'uniform_status', 'uniform_amount', 'uniform_paid_amount', 'uniform_receipt', 'uniform_date', 'uniform_remarks'
+        ]:
+            self.assertIn(key, fee_data)
+        self.assertTrue(fee_data['medical_scout_paid'])
+        self.assertEqual(fee_data['medical_scout_amount'], '1540')
+        self.assertEqual(fee_data['uniform_status'], 'PAID')
+
+    def test_update_additional_fees_uniform_partial_paid(self):
+        """POST uniform_choice=PARTIAL sets status, amounts, auto-generates receipt and returns remaining due."""
+        url = reverse('update_student_additional_fees', args=[self.student.student_id])
+        response = self.client.post(url, {
+            'uniform_choice': 'PARTIAL',
+            'uniform_amount': '4400',
+            'uniform_paid_amount': '2000',
+            'uniform_remarks': 'Paid 2000 in cash, rest pending'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['data']['uniform_status'], 'PARTIAL')
+        self.assertEqual(data['data']['uniform_amount'], '4400')
+        self.assertEqual(data['data']['uniform_paid_amount'], '2000')
+        self.assertEqual(data['data']['uniform_due_amount'], '2400')
+        self.assertTrue(data['data']['uniform_receipt'].startswith(f"UF-{self.student.student_id}"))
+
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.uniform_status, 'PARTIAL')
+        self.assertEqual(self.student.uniform_amount, 4400.0)
+        self.assertEqual(self.student.uniform_paid_amount, 2000.0)
+        self.assertEqual(self.student.uniform_due_amount, 2400.0)
+        self.assertEqual(self.student.uniform_receipt, f"UF-{self.student.student_id}")
+        self.assertIsNotNone(self.student.uniform_date)
+        self.assertEqual(self.student.uniform_remarks, 'Paid 2000 in cash, rest pending')
+
+    def test_update_additional_fees_uniform_partial_paid_clamping(self):
+        """POST partial payment with paid_amount > package amount is clamped to package amount."""
+        url = reverse('update_student_additional_fees', args=[self.student.student_id])
+        response = self.client.post(url, {
+            'uniform_choice': 'PARTIAL',
+            'uniform_amount': '4400',
+            'uniform_paid_amount': '5500'  # exceeds 4400
+        })
+        self.assertEqual(response.status_code, 200)
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.uniform_paid_amount, 4400.0)
+        self.assertEqual(self.student.uniform_due_amount, 0.0)
+
+    def test_calc_additional_fees_stats_with_partial(self):
+        """Verify _calc_additional_fees_stats correctly counts partials, collections, and dues."""
+        from students.views import _calc_additional_fees_stats
+        
+        # Male student with PARTIAL (4400 package, 2000 paid, 2400 due)
+        male = Student.objects.create(
+            student_id='0802310102169991',
+            student_name='MALE PARTIAL',
+            gender='Male',
+            uniform_status='PARTIAL',
+            uniform_amount=4400.0,
+            uniform_paid_amount=2000.0
+        )
+        # Female student with PARTIAL (5400 package, 3000 paid, 2400 due)
+        female = Student.objects.create(
+            student_id='0802310102169992',
+            student_name='FEMALE PARTIAL',
+            gender='Female',
+            uniform_status='PARTIAL',
+            uniform_amount=5400.0,
+            uniform_paid_amount=3000.0
+        )
+        
+        stats = _calc_additional_fees_stats(Student.objects.filter(pk__in=[male.pk, female.pk]))
+        uni = stats['uniform']
+        self.assertEqual(uni['total_opted_in'], 2)
+        self.assertEqual(uni['total_partial'], 2)
+        self.assertEqual(uni['total_collected'], 5000.0)
+        self.assertEqual(uni['total_due_amount'], 4800.0)
+        self.assertEqual(uni['male_partial'], 1)
+        self.assertEqual(uni['male_collected'], 2000.0)
+        self.assertEqual(uni['male_partial_due'], 2400.0)
+        self.assertEqual(uni['female_partial'], 1)
+        self.assertEqual(uni['female_collected'], 3000.0)
+        self.assertEqual(uni['female_partial_due'], 2400.0)
+
+
+class LoginAdmissionVisibilityToggleTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from core.models import Role, RolePermission, SystemSettings
+        cls.settings_obj, _ = SystemSettings.objects.get_or_create(id=1)
+        cls.user = User.objects.create_superuser(username='toggle_admin', password='password')
+        cls.role = Role.objects.create(name='Admission Toggle Role')
+        cls.perm_user = User.objects.create_user(username='toggle_staff', password='password')
+        profile = cls.perm_user.profile
+        profile.role = cls.role
+        profile.save()
+        RolePermission.objects.create(role=cls.role, module='students', task='manage_online_applicants')
+
+    def setUp(self):
+        self.settings_obj.show_online_admission_on_login = True
+        self.settings_obj.save()
+
+    def test_anonymous_user_gets_401(self):
+        """Unauthenticated AJAX call returns 401 JSON, not redirect."""
+        response = self.client.post('/api/toggle-login-admission/')
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('error', response.json())
+
+    def test_unauthorized_staff_gets_403(self):
+        """Staff without manage_online_applicants gets 403 JSON."""
+        unauth = User.objects.create_user(username='no_perm', password='password')
+        self.client.force_login(unauth)
+        response = self.client.post('/api/toggle-login-admission/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_authorized_staff_can_toggle(self):
+        """Permitted staff can toggle True -> False -> True."""
+        self.client.force_login(self.perm_user)
+        # Toggle OFF
+        res = self.client.post('/api/toggle-login-admission/')
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.json()['is_visible'])
+        self.settings_obj.refresh_from_db()
+        self.assertFalse(self.settings_obj.show_online_admission_on_login)
+        # Toggle ON again
+        res = self.client.post('/api/toggle-login-admission/')
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()['is_visible'])
+        self.settings_obj.refresh_from_db()
+        self.assertTrue(self.settings_obj.show_online_admission_on_login)
+
+    def test_login_page_shows_row_when_visible(self):
+        """Login page HTML contains admission row when setting is True."""
+        self.settings_obj.show_online_admission_on_login = True
+        self.settings_obj.save()
+        res = self.client.get('/login/')
+        self.assertContains(res, 'Online Admission Application')
+
+    def test_login_page_hides_row_when_hidden(self):
+        """Login page HTML omits admission row when setting is False."""
+        self.settings_obj.show_online_admission_on_login = False
+        self.settings_obj.save()
+        res = self.client.get('/login/')
+        self.assertNotContains(res, 'Online Admission Application')
+
+    def test_activity_log_written_on_toggle(self):
+        """ActivityLog entry is created for every toggle."""
+        from core.models import ActivityLog
+        self.client.force_login(self.perm_user)
+        count_before = ActivityLog.objects.count()
+        self.client.post('/api/toggle-login-admission/')
+        self.assertEqual(ActivityLog.objects.count(), count_before + 1)
+        log = ActivityLog.objects.latest('id')
+        self.assertIn('Login Page Online Admission Portal', log.description)
+
+
+
 
 
 

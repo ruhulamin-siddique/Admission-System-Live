@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Record SOAP Session" %} — {{ case.case_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+{% endblock %}
+
+{% block page_title %}
+  <i class="fas fa-file-medical mr-2 text-primary"></i>
+  {% trans "Clinical Session Note (SOAP Record)" %} : <span class="text-primary">{{ case.case_number }}</span>
+{% endblock %}
+
+{% block page_actions %}
+  <span id="soapAutoSaveBadge" class="small text-muted mr-3 align-self-center"></span>
+  <a href="{% url 'counseling_case_detail' pk=case.pk %}" class="btn btn-sm btn-outline-secondary">
+    <i class="fas fa-arrow-left mr-1"></i> {% trans "Back to Dossier" %}
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<form method="post" id="soapRecordForm" data-case-id="{{ case.pk }}">
+  {% csrf_token %}
+
+  <!-- Top Bar: Session Metadata -->
+  <div class="counseling-card mb-3">
+    <div class="card-body p-3">
+      <div class="row align-items-center">
+        <div class="col-12 col-sm-6 col-lg-3 mb-2 mb-lg-0">
+          <label class="small font-weight-bold mb-1">{% trans "Session Number" %}</label>
+          {{ form.session_number }}
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3 mb-2 mb-lg-0">
+          <label class="small font-weight-bold mb-1">{% trans "Session Date" %}</label>
+          {{ form.session_date }}
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3 mb-2 mb-lg-0">
+          <label class="small font-weight-bold mb-1">{% trans "Next Appointment Target" %}</label>
+          {{ form.next_session_date }}
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3 text-sm-right">
+          <span class="badge badge-info p-2 mt-1 mt-sm-3 d-inline-block">
+            <i class="fas fa-shield-alt mr-1"></i> {% trans "Encrypted Clinical Storage" %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4-Quadrant SOAP Note Workspace -->
+  <div class="soap-workspace-grid mb-4">
+    <!-- [S] Subjective -->
+    <div class="soap-box">
+      <div class="soap-box-header">
+        <div>
+          <span class="soap-letter">S</span>
+          <span class="text-primary font-weight-bold">{% trans "SUBJECTIVE (Narrative)" %}</span>
+        </div>
+        <small class="text-muted">{% trans "Client's self-reported mood, symptoms & life events" %}</small>
+      </div>
+      {{ form.subjective_notes }}
+      {% if form.subjective_notes.errors %}<div class="text-danger small mt-1">{{ form.subjective_notes.errors }}</div>{% endif %}
+
+      <!-- Quick Snippets -->
+      <div class="snippet-carousel mt-2">
+        {% for snip in snippets.subjective %}
+          <span class="snippet-chip" data-target="id_subjective" data-snippet="{{ snip }}">+ {{ snip|truncatewords:4 }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- [O] Objective -->
+    <div class="soap-box">
+      <div class="soap-box-header">
+        <div>
+          <span class="soap-letter" style="background:#0284c7;">O</span>
+          <span class="text-info font-weight-bold">{% trans "OBJECTIVE (Observations)" %}</span>
+        </div>
+        <small class="text-muted">{% trans "Behavior, affect, eye contact, speech & motor state" %}</small>
+      </div>
+      {{ form.objective_notes }}
+      {% if form.objective_notes.errors %}<div class="text-danger small mt-1">{{ form.objective_notes.errors }}</div>{% endif %}
+
+      <div class="snippet-carousel mt-2">
+        {% for snip in snippets.objective %}
+          <span class="snippet-chip" data-target="id_objective" data-snippet="{{ snip }}">+ {{ snip|truncatewords:4 }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- [A] Assessment -->
+    <div class="soap-box">
+      <div class="soap-box-header">
+        <div>
+          <span class="soap-letter" style="background:#f59e0b;">A</span>
+          <span class="text-warning font-weight-bold">{% trans "ASSESSMENT (Clinical Formulation)" %}</span>
+        </div>
+        <small class="text-muted">{% trans "Diagnostic impressions, therapeutic progress & changes" %}</small>
+      </div>
+      {{ form.assessment }}
+      {% if form.assessment.errors %}<div class="text-danger small mt-1">{{ form.assessment.errors }}</div>{% endif %}
+
+      <div class="snippet-carousel mt-2">
+        {% for snip in snippets.assessment %}
+          <span class="snippet-chip" data-target="id_assessment" data-snippet="{{ snip }}">+ {{ snip|truncatewords:4 }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- [P] Plan -->
+    <div class="soap-box">
+      <div class="soap-box-header">
+        <div>
+          <span class="soap-letter" style="background:#10b981;">P</span>
+          <span class="text-success font-weight-bold">{% trans "PLAN (Therapeutic Interventions)" %}</span>
+        </div>
+        <small class="text-muted">{% trans "CBT homework, exercises, safety plan & referrals" %}</small>
+      </div>
+      {{ form.plan }}
+      {% if form.plan.errors %}<div class="text-danger small mt-1">{{ form.plan.errors }}</div>{% endif %}
+
+      <div class="snippet-carousel mt-2">
+        {% for snip in snippets.plan %}
+          <span class="snippet-chip" data-target="id_plan" data-snippet="{{ snip }}">+ {{ snip|truncatewords:4 }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Action Bar -->
+  <div class="counseling-card">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center p-3 gap-2">
+      <a href="{% url 'counseling_case_detail' pk=case.pk %}" class="btn-counseling-cancel mb-2 mb-sm-0">
+        <i class="fas fa-arrow-left mr-1"></i> {% trans "Discard / Cancel" %}
+      </a>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="submit" name="save_draft" class="btn-counseling-dossier mr-2">
+          <i class="fas fa-save mr-1"></i> <span>{% trans "Save Active Record" %}</span>
+        </button>
+        <button type="submit" name="lock_record" value="true" class="btn-counseling-soap" onclick="return confirm('Lock this clinical record? Locked records become immutable.');">
+          <i class="fas fa-lock mr-1"></i> <span>{% trans "Sign & Lock Record" %}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'counseling/js/counseling_scales.js' %}"></script>
+{% endblock %}

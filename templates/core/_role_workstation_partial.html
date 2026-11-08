@@ -1,0 +1,249 @@
+{% load i18n %}
+{% if selected_role %}
+
+<style>
+  @keyframes cardEntranceSuper {
+    0%   { opacity: 0; transform: translateY(35px) scale(0.92); }
+    70%  { transform: translateY(-5px) scale(1.015); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .mod-card {
+    border-radius: 16px !important;
+    border: 2px solid #e2e8f0 !important;
+    margin-bottom: 16px !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s !important;
+    animation: cardEntranceSuper 0.5s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+    animation-delay: calc(var(--mi, 1) * 90ms) !important;
+  }
+
+  .mod-card:hover {
+    transform: translateY(-8px) scale(1.015) !important;
+    box-shadow: 0 18px 40px rgba(59, 130, 246, 0.28) !important;
+    border-color: #3b82f6 !important;
+  }
+
+  .dark-mode .mod-card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+  }
+
+  .dark-mode .mod-card:hover {
+    border-color: #60a5fa !important;
+    box-shadow: 0 18px 40px rgba(96, 165, 250, 0.3) !important;
+  }
+
+  .mod-icon-wrap {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s !important;
+  }
+
+  .mod-card:hover .mod-icon-wrap {
+    transform: scale(1.3) rotate(-14deg) !important;
+    box-shadow: 0 8px 22px rgba(59, 130, 246, 0.55) !important;
+  }
+
+  .perm-row {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s, box-shadow 0.25s !important;
+  }
+
+  .perm-row:hover {
+    background: #eff6ff !important;
+    transform: translateX(8px) !important;
+    box-shadow: inset 5px 0 0 #3b82f6 !important;
+  }
+
+  .dark-mode .perm-row:hover {
+    background: #0f172a !important;
+    box-shadow: inset 5px 0 0 #60a5fa !important;
+  }
+</style>
+
+{# ─── Workstation Header ─────────────────────── #}
+<div class="role-workstation-header d-flex align-items-center justify-content-between flex-wrap" style="gap: 16px; padding: 18px 24px;">
+  {# ── Left: Role Title & Description / Badges ── #}
+  <div style="flex:1.2; min-width:200px;">
+    <div class="role-name-editable">
+      <div class="role-name-view" id="roleNameView">
+        <span class="role-workstation-title" id="roleNameDisplay">{{ selected_role.name }}</span>
+        <button class="btn btn-sm btn-outline-secondary" onclick="startRenaming()"
+                style="border-radius: 8px; padding: 3px 10px; font-size: 0.78rem;">
+          <i class="fas fa-pencil-alt"></i>
+        </button>
+      </div>
+      <div class="role-name-edit" id="roleNameEdit">
+        <form method="POST" action="{% url 'role_management' %}" class="d-flex align-items-center" style="gap:8px; flex-wrap:wrap;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="edit_role">
+          <input type="hidden" name="role_id" value="{{ selected_role.id }}">
+          <input type="text" name="name" class="form-control form-control-sm"
+                 value="{{ selected_role.name }}" required
+                 style="width: 200px; border-radius: 8px; font-weight: 700; font-size: 1rem;">
+          <button type="submit" class="btn btn-sm btn-primary" style="border-radius: 8px;">
+            <i class="fas fa-check mr-1"></i>{% translate "Save" %}
+          </button>
+          <button type="button" class="btn btn-sm btn-light" onclick="cancelRenaming()" style="border-radius: 8px;">
+            {% translate "Cancel" %}
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="role-workstation-desc mt-1">{{ selected_role.description|default:"—" }}</div>
+    <div class="mt-2 d-flex align-items-center flex-wrap" style="gap: 8px;">
+      <span id="globalSaveStatus" class="save-status-badge saved">
+        <i class="fas fa-check-circle"></i> {% translate "All Saved" %}
+      </span>
+      <span class="text-muted small">
+        <i class="fas fa-users mr-1"></i>{{ selected_role.user_count }} {% translate "user(s)" %}
+      </span>
+      <span class="text-muted small">
+        <i class="fas fa-key mr-1"></i>{{ selected_role.permission_total }} {% translate "active" %}
+      </span>
+    </div>
+  </div>
+
+  {# ── Middle: Search Bar between Title Edit Button & Actions ── #}
+  <div class="perm-search-wrap" style="flex:1; min-width:240px; max-width:380px; padding:0; background:transparent; border:none;">
+    <div class="perm-search-inner">
+      <i class="fas fa-search perm-search-icon"></i>
+      <input type="text" id="permSearchInput"
+             class="perm-search-input"
+             placeholder="{% translate 'Search permissions… (e.g. view, export)' %}"
+             oninput="filterPermissions(this.value)">
+      <button class="perm-search-clear" id="permSearchClear"
+              onclick="clearPermSearch()" title="{% translate 'Clear search' %}" style="display:none;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="permSearchInfo" class="perm-search-info" style="display:none;">
+      <span id="permSearchCount"></span>
+    </div>
+  </div>
+
+  {# ── Right: Action Buttons (Users, Delete) ── #}
+  <div class="role-workstation-actions d-flex align-items-center" style="gap: 8px;">
+    {# ── View Users Button ── #}
+    <button class="btn btn-sm btn-outline-primary"
+            style="border-radius: 8px;"
+            hx-get="{% url 'role_users_partial' %}?role_id={{ selected_role.id }}"
+            hx-target="#usersDrawerContent"
+            hx-swap="innerHTML"
+            hx-indicator="#usersDrawerSpinner"
+            onclick="openUsersDrawer()"
+            title="{% translate 'View assigned users' %}">
+      <i class="fas fa-users mr-1"></i>
+      {% translate "Users" %}
+      {% if selected_role.user_count > 0 %}
+      <span class="badge badge-primary ml-1" style="font-size:0.68rem; border-radius:20px;">
+        {{ selected_role.user_count }}
+      </span>
+      {% endif %}
+    </button>
+    {# ── Delete Button ── #}
+    {% if selected_role.user_count == 0 %}
+    <form method="POST" action="{% url 'role_management' %}" onsubmit="return confirm('{% translate "Permanently delete this role?" %}')" class="m-0">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete_role">
+      <input type="hidden" name="role_id" value="{{ selected_role.id }}">
+      <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius: 8px;">
+        <i class="fas fa-trash-alt mr-1"></i>{% translate "Delete" %}
+      </button>
+    </form>
+    {% else %}
+    <button class="btn btn-sm btn-outline-secondary disabled"
+            title="{% translate 'Cannot delete: users are assigned to this role.' %}"
+            style="border-radius: 8px;">
+      <i class="fas fa-trash-alt mr-1"></i>{% translate "Delete" %}
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{# ─── Hidden form for AJAX saves ─────────────── #}
+<form id="form-role-{{ selected_role.id }}" data-role-id="{{ selected_role.id }}" style="display:none;">
+  {% csrf_token %}
+</form>
+
+{# ─── Module Accordions ───────────────────────── #}
+<div class="role-workstation-body" id="workstationBody">
+  {% for mod_key, module in registry.items %}
+  {% with mod_tasks=module.tasks %}
+  <div class="mod-card open" data-mod="{{ mod_key }}" style="--mi: {{ forloop.counter }};">
+    <div class="mod-card-header" onclick="toggleMod(this)">
+      <div class="mod-icon-wrap"><i class="{{ module.icon }}"></i></div>
+      <span class="mod-label">{{ module.display }}</span>
+      <span class="mod-task-count" id="mod-count-{{ mod_key }}">
+        {% with total=mod_tasks|length %}
+        <span class="mod-active-count" data-mod="{{ mod_key }}">—</span> / {{ total }} active
+        {% endwith %}
+      </span>
+      <div class="mod-toggle-all-wrap" onclick="event.stopPropagation()">
+        <span class="mod-toggle-all-label">{% translate "All" %}</span>
+        <div class="custom-control custom-checkbox d-inline-block">
+          <input type="checkbox" class="custom-control-input mod-toggle-all"
+                 id="toggle-all-{{ mod_key }}"
+                 data-mod="{{ mod_key }}" data-role-id="{{ selected_role.id }}">
+          <label class="custom-control-label" for="toggle-all-{{ mod_key }}"></label>
+        </div>
+      </div>
+      <i class="fas fa-chevron-down mod-chevron"></i>
+    </div>
+    <div class="mod-card-body">
+      <div class="mod-card-body-inner">
+        {% for task_key, task_info in mod_tasks.items %}
+        <div class="perm-row"
+             data-perm-name="{{ task_info.0|lower }}"
+             data-perm-desc="{{ task_info.1|lower|default:'' }}">
+          <div class="perm-meta">
+            <div class="perm-name">{{ task_info.0 }}</div>
+            {% if task_info.1 %}<div class="perm-desc">{{ task_info.1 }}</div>{% endif %}
+          </div>
+          <div class="perm-switch">
+            {% with perm_key=mod_key|add:":"|add:task_key %}
+            <div class="custom-control custom-switch">
+              <input type="checkbox"
+                     class="custom-control-input role-perm-toggle"
+                     id="switch-{{ selected_role.id }}-{{ mod_key }}-{{ task_key }}"
+                     name="{{ perm_key }}"
+                     data-role-id="{{ selected_role.id }}"
+                     data-mod="{{ mod_key }}"
+                     form="form-role-{{ selected_role.id }}"
+                     {% for p in selected_role.permissions.all %}{% if p.module == mod_key and p.task == task_key %}checked{% endif %}{% endfor %}>
+              <label class="custom-control-label"
+                     for="switch-{{ selected_role.id }}-{{ mod_key }}-{{ task_key }}"></label>
+            </div>
+            {% endwith %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+
+{# ─── Users Drawer Overlay ────────────────────── #}
+<div id="usersDrawerOverlay" class="users-drawer-overlay" onclick="closeUsersDrawer()"></div>
+<div id="usersDrawer" class="users-drawer">
+  <div id="usersDrawerSpinner" class="users-drawer-spinner htmx-indicator">
+    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+  </div>
+  <div id="usersDrawerContent" class="users-drawer-content">
+    {# Filled by HTMX #}
+  </div>
+</div>
+
+{% else %}
+<div class="role-empty-state">
+  <div class="role-empty-icon"><i class="fas fa-layer-group"></i></div>
+  <h5 class="font-weight-bold text-muted">{% translate "No Roles Yet" %}</h5>
+  <p class="text-muted" style="max-width: 320px;">
+    {% translate "Create your first role using the button on the left to start configuring access permissions." %}
+  </p>
+  <button class="btn btn-primary mt-2" data-toggle="modal" data-target="#addRoleModal" style="border-radius: 10px;">
+    <i class="fas fa-plus mr-2"></i>{% translate "Create First Role" %}
+  </button>
+</div>
+{% endif %}

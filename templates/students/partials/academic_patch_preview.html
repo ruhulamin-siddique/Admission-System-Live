@@ -126,17 +126,30 @@
 {% endif %}
 
 <!-- Confirm Form -->
-<div class="alert alert-success rounded-lg shadow-sm p-3 mb-0">
+<div class="alert alert-success border-0 rounded-lg shadow-sm p-4 mb-0" style="background: linear-gradient(135deg, #f0fdf4 0%, #e6f4ea 100%); border-left: 4px solid #16a34a !important;">
     <div class="d-flex align-items-start">
-        <i class="fas fa-check-circle text-success mt-1 mr-3 fa-lg"></i>
+        <div class="rounded-circle bg-success text-white p-2 mr-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px; flex-shrink: 0;">
+            <i class="fas fa-check fa-lg"></i>
+        </div>
         <div class="flex-grow-1">
-            <p class="mb-2 font-weight-bold">Ready to apply patch to {{ result.preview_count }} student(s)?</p>
-            <p class="small text-muted mb-3">
-                <i class="fas fa-shield-alt mr-1"></i>
-                {% if result.groups_affected.ssc %}SSC verification flags will be reset. {% endif %}
-                {% if result.groups_affected.hsc %}HSC verification flags will be reset. {% endif %}
-                All changes will be logged to student field history.
-            </p>
+            <h6 class="font-weight-bold text-dark mb-2" style="font-size: 1.05rem;">
+                Ready to apply patch to {{ result.preview_count }} student(s)?
+            </h6>
+            <div class="d-flex flex-wrap align-items-center mb-3">
+                {% if result.groups_affected.ssc %}
+                <span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mr-2 mb-1 shadow-xs border border-warning" style="font-size: 0.82rem; background-color: #fef08a;">
+                    <i class="fas fa-exclamation-triangle text-warning-dark mr-1"></i> SSC verification flags will be reset
+                </span>
+                {% endif %}
+                {% if result.groups_affected.hsc %}
+                <span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mr-2 mb-1 shadow-xs border border-warning" style="font-size: 0.82rem; background-color: #fef08a;">
+                    <i class="fas fa-exclamation-triangle text-warning-dark mr-1"></i> HSC verification flags will be reset
+                </span>
+                {% endif %}
+                <span class="badge badge-info text-white font-weight-semibold px-2 py-1 mb-1 shadow-xs" style="font-size: 0.82rem; background-color: #0284c7;">
+                    <i class="fas fa-history mr-1"></i> All changes will be logged to student field history
+                </span>
+            </div>
             <form method="POST"
                   enctype="multipart/form-data"
                   action="{% url 'academic_data_patch' %}"
@@ -150,12 +163,12 @@
                 {% endfor %}
 
                 <div class="form-group mb-3">
-                    <label class="font-weight-600 small" for="commitExcelFile">
-                        <i class="fas fa-upload mr-1"></i> Re-upload the same Excel file to confirm:
+                    <label class="font-weight-bold text-dark small mb-2" for="commitExcelFile" style="color: #0f172a !important; font-size: 0.88rem;">
+                        <i class="fas fa-file-excel mr-1 text-success"></i> Re-upload the same Excel file to confirm:
                     </label>
                     <div class="custom-file shadow-sm" style="max-width:400px;">
                         <input type="file" name="excel_file" class="custom-file-input" id="commitExcelFile" accept=".xlsx,.xls" required>
-                        <label class="custom-file-label border-0 bg-white" for="commitExcelFile">Select file…</label>
+                        <label class="custom-file-label border bg-white text-dark" for="commitExcelFile" style="color: #334155 !important;">Select file…</label>
                     </div>
                 </div>
 

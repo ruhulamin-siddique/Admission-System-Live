@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admission Board Verifier v2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --success: #16a34a;
+            --danger: #f43f5e;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            width: 350px;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            padding: 18px;
+            font-size: 13px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+
+        .logo-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #38bdf8;
+            letter-spacing: -0.3px;
+        }
+
+        .version-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 8px 4px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+            font-size: 13px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #38bdf8;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #d97706, #b45309);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 20px;
+            font-weight: 800;
+            color: #38bdf8;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .status-toast {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            text-align: center;
+            display: none;
+        }
+
+        .toast-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border: 1px solid #22c55e;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo-title">⚡ Admission Verifier</div>
+        <div class="version-badge">v2.5.0 PRO</div>
+    </div>
+    <div style="font-size:10px; color:#64748b; margin-top:-10px; margin-bottom:12px; font-weight:600;">
+        <i class="fas fa-clock mr-1"></i> Built: Aug 13, 2026
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <div class="nav-tab active" onclick="switchTab('tab_config', this)">Settings</div>
+        <div class="nav-tab" onclick="switchTab('tab_queue', this)">Batch Queue</div>
+        <div class="nav-tab" onclick="switchTab('tab_bteb', this)">BTEB Board</div>
+    </div>
+
+    <!-- Tab 1: Settings & Config -->
+    <div id="tab_config" class="tab-pane active">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-num" id="stat_verified">0</div>
+                <div class="stat-label">Verified Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="stat_mismatch" style="color:#f43f5e;">0</div>
+                <div class="stat-label">Mismatches</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="server_url">Active Target Server URL:</label>
+            <input type="text" id="server_url" placeholder="https://portal.baust.edu.bd">
+        </div>
+
+        <button class="btn btn-primary" id="btn_save">Save Server Configuration</button>
+        <div id="save_status" class="status-toast toast-success">✓ Settings Saved Successfully!</div>
+    </div>
+
+    <!-- Tab 2: Batch Queue Runner -->
+    <div id="tab_queue" class="tab-pane">
+        <div class="form-group">
+            <label for="queue_batch_filter">Filter Admission Batch:</label>
+            <select id="queue_batch_filter">
+                <option value="">All Unverified Students</option>
+                <option value="Batch 16">Batch 16 (CSE / EEE)</option>
+                <option value="Batch 17">Batch 17</option>
+            </select>
+        </div>
+
+        <button class="btn btn-success" id="btn_run_queue">🚀 Fetch &amp; Run Batch Queue</button>
+        <div id="queue_progress_box"
+            style="margin-top:12px; font-size:12px; color:var(--text-muted); text-align:center;">
+            Queue Runner Ready
+        </div>
+    </div>
+
+    <!-- Tab 3: BTEB Technical Board Options -->
+    <div id="tab_bteb" class="tab-pane">
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+            Options for Bangladesh Technical Education Board (BTEB) Diploma and Vocational verifications.
+        </p>
+
+        <div class="form-group">
+            <label for="bteb_exam_type">BTEB Program:</label>
+            <select id="bteb_exam_type">
+                <option value="DIPLOMA">Diploma in Engineering</option>
+                <option value="SSC_VOC">SSC Vocational</option>
+                <option value="HSC_VOC">HSC Vocational</option>
+            </select>
+        </div>
+
+        <button class="btn btn-warning" id="btn_bteb_mode">Enable BTEB Technical Mode</button>
+    </div>
+
+    <div
+        style="text-align:center; margin-top:16px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08); font-size:10px; color:#64748b;">
+        ⚡ Build Version 2.5.0 &bull; Last Developed: Aug 13, 2026
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

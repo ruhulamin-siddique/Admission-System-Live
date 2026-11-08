@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Counseling Command Center" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+<style>
+  .kpi-card {
+    border-radius: 16px !important;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  }
+  .kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.1);
+  }
+</style>
+{% endblock %}
+
+{% block page_title %}
+  <i class="fas fa-brain mr-2 text-primary"></i>{% trans "Counseling Command Center" %}
+{% endblock %}
+
+{% block page_actions %}
+  <button type="button" class="btn-action-pill btn-pill-privacy" id="privacyShieldToggle" title="Toggle confidential PII blur (Alt+P)">
+    <i class="fas fa-eye-slash"></i> <span>{% trans "Privacy Shield" %}</span>
+  </button>
+  <a href="{% url 'counseling_counselor_profile' %}" class="btn-action-pill btn-pill-chamber" title="Chamber & Consultation Schedule">
+    <i class="fas fa-user-md"></i> <span>{% trans "Chamber" %}</span>
+  </a>
+  <a href="{% url 'counseling_public_book' %}" target="_blank" class="btn-action-pill btn-pill-public" title="Open Public Booking Portal">
+    <i class="fas fa-globe"></i> <span>{% trans "Public Portal" %}</span>
+  </a>
+  <a href="{% url 'counseling_appointment_create' %}" class="btn-action-pill btn-pill-schedule" title="Schedule Appointment">
+    <i class="fas fa-calendar-plus"></i> <span>{% trans "Schedule" %}</span>
+  </a>
+  <a href="{% url 'counseling_case_create' %}" class="btn-action-pill btn-pill-intake" title="Open New Clinical Case Intake">
+    <i class="fas fa-plus-circle"></i> <span>{% trans "New Intake" %}</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Row 1: Minimalistic KPI Metric Cards -->
+<div class="row">
+  <!-- Metric 1: Total Cases -->
+  <div class="col-xl-3 col-sm-6 col-12">
+    <div class="minimal-kpi-card kpi-cyan">
+      <div class="minimal-kpi-body">
+        <div class="minimal-kpi-info">
+          <span class="minimal-kpi-label">{% trans "Total Case Files" %}</span>
+          <span class="minimal-kpi-value">{{ kpi.total_cases }}</span>
+        </div>
+        <div class="minimal-kpi-icon">
+          <i class="fas fa-folder-open"></i>
+        </div>
+      </div>
+      <a href="{% url 'counseling_case_list' %}" class="minimal-kpi-footer">
+        <span>{% trans "View Archive Directory" %}</span>
+        <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Metric 2: Active In-Therapy -->
+  <div class="col-xl-3 col-sm-6 col-12">
+    <div class="minimal-kpi-card kpi-indigo">
+      <div class="minimal-kpi-body">
+        <div class="minimal-kpi-info">
+          <span class="minimal-kpi-label">{% trans "In-Therapy Cases" %}</span>
+          <span class="minimal-kpi-value">{{ kpi.active_cases }}</span>
+        </div>
+        <div class="minimal-kpi-icon">
+          <i class="fas fa-user-check"></i>
+        </div>
+      </div>
+      <a href="{% url 'counseling_case_list' %}?status=in_therapy" class="minimal-kpi-footer">
+        <span>{% trans "View Active Cases" %}</span>
+        <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Metric 3: Today's Appointments -->
+  <div class="col-xl-3 col-sm-6 col-12">
+    <div class="minimal-kpi-card kpi-amber">
+      <div class="minimal-kpi-body">
+        <div class="minimal-kpi-info">
+          <span class="minimal-kpi-label">{% trans "Today's Sessions" %}</span>
+          <span class="minimal-kpi-value">{{ kpi.today_appts_count }}</span>
+        </div>
+        <div class="minimal-kpi-icon">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+      </div>
+      <a href="{% url 'counseling_appointments' %}" class="minimal-kpi-footer">
+        <span>{% trans "Open Daily Schedule" %}</span>
+        <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Metric 4: Acute Crisis Alerts -->
+  <div class="col-xl-3 col-sm-6 col-12">
+    <div class="minimal-kpi-card kpi-crimson {% if kpi.critical_cases > 0 %}pulse-danger{% endif %}">
+      <div class="minimal-kpi-body">
+        <div class="minimal-kpi-info">
+          <span class="minimal-kpi-label">{% trans "Acute Crisis Alerts" %}</span>
+          <span class="minimal-kpi-value">{{ kpi.critical_cases }}</span>
+        </div>
+        <div class="minimal-kpi-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+      </div>
+      <a href="{% url 'counseling_case_list' %}?risk=critical" class="minimal-kpi-footer">
+        <span>{% trans "Urgent Triage Queue" %}</span>
+        <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: Today's Schedule & High Priority Queue -->
+<div class="row">
+  <!-- Today's Appointment Schedule -->
+  <div class="col-lg-8">
+    <div class="counseling-card anim-hover-lift">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title">
+          <i class="fas fa-clock text-primary"></i> {% trans "Today's Counseling Schedule" %} ({{ today|date:"l, d F Y" }})
+        </h3>
+        <span class="badge badge-info">{{ today_appointments.count }} {% trans "Sessions Scheduled" %}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if today_appointments %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>{% trans "Time Slot" %}</th>
+                <th>{% trans "Student" %}</th>
+                <th>{% trans "Mode" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th class="text-right">{% trans "Action" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for appt in today_appointments %}
+              <tr>
+                <td class="font-weight-bold text-primary">
+                  <i class="far fa-clock mr-1"></i>{{ appt.time_slot }}
+                </td>
+                <td>
+                  <span class="confidential-pii font-weight-bold">{{ appt.case.student.student_name }}</span>
+                  <br>
+                  <small class="text-muted confidential-pii">{{ appt.case.student.student_id }} • {{ appt.case.student.program }}</small>
+                </td>
+                <td>
+                  <span class="badge badge-light border">{{ appt.get_session_mode_display }}</span>
+                </td>
+                <td>
+                  <span class="badge {{ appt.get_status_badge_class }}">{{ appt.get_status_display }}</span>
+                </td>
+                <td class="text-right text-nowrap">
+                  <a href="{% url 'counseling_record_session' case_id=appt.case.pk %}" class="btn-counseling-soap mr-1" title="{% trans 'Record SOAP Note' %}">
+                    <i class="fas fa-notes-medical"></i> <span>{% trans "SOAP" %}</span>
+                  </a>
+                  <a href="{% url 'counseling_case_detail' pk=appt.case.pk %}" class="btn-counseling-dossier" title="{% trans 'View Case Dossier' %}">
+                    <i class="fas fa-folder-open"></i> <span>{% trans "Dossier" %}</span>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="far fa-calendar-check fa-3x mb-3 text-secondary"></i>
+          <p>{% trans "No counseling appointments scheduled for today." %}</p>
+          <a href="{% url 'counseling_appointment_create' %}" class="btn-counseling-soap">
+            <i class="fas fa-calendar-plus mr-1"></i> {% trans "Schedule a Session" %}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Category Breakdown Chart -->
+    <div class="counseling-card anim-hover-lift">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title">
+          <i class="fas fa-chart-pie text-teal"></i> {% trans "Primary Presenting Concerns (All Cases)" %}
+        </h3>
+      </div>
+      <div class="card-body">
+        <div style="height: 250px;">
+          <canvas id="categoryPieChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar: Priority Cases & Quick Tools -->
+  <div class="col-lg-4">
+    <!-- Urgent Crisis Triage Card -->
+    <div class="counseling-card anim-hover-lift {% if urgent_cases %}border-danger anim-crisis-card{% else %}border-light{% endif %}">
+      <div class="counseling-card-header {% if urgent_cases %}bg-danger text-white{% else %}counseling-header-calm{% endif %}">
+        <h3 class="counseling-card-title {% if urgent_cases %}text-white{% endif %}">
+          {% if urgent_cases %}
+            <i class="fas fa-exclamation-triangle text-warning mr-1"></i> {% trans "Priority & Crisis Triage" %}
+          {% else %}
+            <i class="fas fa-shield-alt text-success mr-1"></i> {% trans "Priority & Crisis Triage" %}
+          {% endif %}
+        </h3>
+        {% if urgent_cases %}
+          <span class="badge badge-light text-danger font-weight-bold">{{ urgent_cases.count }} {% trans "Active" %}</span>
+        {% else %}
+          <span class="badge badge-success"><i class="fas fa-check mr-1"></i>0 {% trans "Active" %}</span>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        {% if urgent_cases %}
+        <ul class="list-group list-group-flush">
+          {% for c in urgent_cases %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <a href="{% url 'counseling_case_detail' pk=c.pk %}" class="font-weight-bold confidential-pii text-primary">
+                {{ c.student.student_name }}
+              </a>
+              <br>
+              <small class="text-muted confidential-pii">{{ c.case_number }} • {{ c.student.program }}</small>
+            </div>
+            <div class="text-right">
+              <span class="badge {{ c.get_risk_badge_class }}">{{ c.get_risk_level_display }}</span>
+              <br>
+              <a href="{% url 'counseling_emergency' case_id=c.pk %}" class="btn-counseling-crisis mt-1">
+                <i class="fas fa-ambulance"></i> <span>{% trans "Crisis Triage" %}</span>
+              </a>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="p-4 text-center text-muted">
+          <div class="mb-2">
+            <i class="fas fa-check-circle text-success fa-3x"></i>
+          </div>
+          <h6 class="font-weight-bold mb-1">{% trans "All Clear" %}</h6>
+          <p class="small text-muted mb-0">{% trans "No high-risk or acute crisis cases currently pending intervention." %}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick Clinical Screening Launchpad -->
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title">
+          <i class="fas fa-stethoscope text-primary"></i> {% trans "Psychometric Scales" %}
+        </h3>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-3">{% trans "Launch standardized clinical assessments directly for any active case:" %}</p>
+        <div class="d-flex flex-column gap-2">
+          <div class="btn-counseling-scale">
+            <div>
+              <div class="scale-title text-info"><i class="fas fa-file-medical-alt mr-1"></i> PHQ-9</div>
+              <div class="scale-desc">{% trans "Depression Screener (9 items)" %}</div>
+            </div>
+            <span class="badge badge-info scale-badge">0–27</span>
+          </div>
+          <div class="btn-counseling-scale">
+            <div>
+              <div class="scale-title text-primary"><i class="fas fa-heartbeat mr-1"></i> GAD-7</div>
+              <div class="scale-desc">{% trans "Anxiety Screener (7 items)" %}</div>
+            </div>
+            <span class="badge badge-primary scale-badge">0–21</span>
+          </div>
+          <div class="btn-counseling-scale">
+            <div>
+              <div class="scale-title text-teal"><i class="fas fa-poll mr-1"></i> DASS-21</div>
+              <div class="scale-desc">{% trans "Depression, Anxiety, Stress (21 items)" %}</div>
+            </div>
+            <span class="badge badge-teal scale-badge" style="background:#0d9488;color:#fff;">0–126</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Public Booking QR / Link Promo Card -->
+    <div class="counseling-card bg-light">
+      <div class="card-body text-center">
+        <i class="fas fa-shield-alt fa-2x text-primary mb-2"></i>
+        <h5 class="font-weight-bold">{% trans "Student Booking Link" %}</h5>
+        <p class="small text-muted mb-3">{% trans "Share this link with students for discreet, self-directed appointment scheduling:" %}</p>
+        <div class="input-group">
+          <input type="text" class="form-control form-control-sm" value="{{ request.scheme }}://{{ request.get_host }}{% url 'counseling_public_book' %}" readonly id="publicLinkInput">
+          <div class="input-group-append">
+            <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('publicLinkInput').value); alert('Public booking URL copied!');">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'counseling/js/counseling_scales.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('categoryPieChart').getContext('2d');
+    const labels = {{ category_labels_json|safe }};
+    const data = {{ category_data_json|safe }};
+
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: [
+            '#1e40af', '#0284c7', '#0d9488', '#10b981', '#f59e0b', '#f97316', '#ef4444', '#64748b'
+          ],
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        legend: {
+          position: 'right',
+          labels: { boxWidth: 12, fontSize: 11 }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

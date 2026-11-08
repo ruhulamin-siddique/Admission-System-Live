@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Receipt - {{ student.student_id }} - BAUST</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 1.2cm 1.4cm 1.2cm 1.4cm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+        .receipt-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #1e3a8a;
+            border-radius: 8px;
+            padding: 24px 28px;
+            position: relative;
+            background: #ffffff;
+        }
+        /* Header styling */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 12px;
+        }
+        .header-logo {
+            width: 85px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .header-logo img {
+            width: 78px;
+            height: 78px;
+            object-fit: contain;
+        }
+        .header-text {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .univ-title {
+            font-size: 14pt;
+            font-weight: 800;
+            color: #1e3a8a;
+            letter-spacing: 0.5px;
+            margin: 0 0 3px 0;
+            text-transform: uppercase;
+        }
+        .univ-sub {
+            font-size: 9.5pt;
+            color: #334155;
+            font-weight: 600;
+            margin: 0 0 2px 0;
+        }
+        .univ-dept {
+            font-size: 8.5pt;
+            color: #64748b;
+            font-weight: 500;
+            margin: 0 0 6px 0;
+        }
+        .voucher-title-pill {
+            display: inline-block;
+            background: #1e3a8a;
+            color: #ffffff;
+            font-size: 10pt;
+            font-weight: 700;
+            padding: 4px 18px;
+            border-radius: 20px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .header-meta {
+            width: 120px;
+            text-align: right;
+            vertical-align: middle;
+            font-size: 8.5pt;
+            color: #475569;
+        }
+        .meta-box {
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            border-radius: 6px;
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        /* Top meta strip */
+        .meta-strip {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .meta-strip td {
+            padding: 6px 12px;
+            font-size: 9pt;
+            border: none;
+        }
+
+        /* Student details grid */
+        .student-box {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .student-box th {
+            width: 18%;
+            background-color: #f8fafc;
+            color: #475569;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            font-weight: 600;
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+            text-align: left;
+        }
+        .student-box td {
+            width: 32%;
+            font-size: 9.5pt;
+            font-weight: 500;
+            color: #0f172a;
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+        }
+
+        /* Fee Table */
+        .fee-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        .fee-table th {
+            background-color: #1e3a8a;
+            color: #ffffff;
+            font-size: 8.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 8px 10px;
+            border: 1px solid #1e3a8a;
+            text-align: left;
+        }
+        .fee-table td {
+            padding: 8px 10px;
+            font-size: 9.5pt;
+            border: 1px solid #cbd5e1;
+            vertical-align: middle;
+        }
+        .fee-table tr.total-row td {
+            background-color: #f8fafc;
+            font-weight: 700;
+            border-top: 2px solid #1e3a8a;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 8pt;
+            font-weight: 700;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+        .badge-paid {
+            background-color: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
+        }
+        .badge-due {
+            background-color: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #fde047;
+        }
+        .badge-opted {
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        .badge-partial {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #7dd3fc;
+        }
+
+        /* Words & Summary Box */
+        .summary-box {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+        }
+        .words-cell {
+            padding: 10px 14px;
+            background-color: #f8fafc;
+            border: 1px dashed #94a3b8;
+            border-radius: 6px;
+            font-size: 9pt;
+            color: #1e293b;
+            vertical-align: top;
+        }
+        .amount-summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .amount-summary-table td {
+            padding: 4px 8px;
+            font-size: 9pt;
+            border: none;
+        }
+
+        /* Terms / notice */
+        .notice-box {
+            background-color: #eff6ff;
+            border-left: 3px solid #1e3a8a;
+            padding: 8px 12px;
+            font-size: 8pt;
+            color: #334155;
+            margin-bottom: 30px;
+            border-radius: 0 4px 4px 0;
+            line-height: 1.45;
+        }
+
+        /* Signature block */
+        .sig-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 35px;
+            margin-bottom: 10px;
+        }
+        .sig-table td {
+            width: 33.33%;
+            text-align: center;
+            vertical-align: bottom;
+            border: none;
+            padding: 0 15px;
+        }
+        .sig-line {
+            border-top: 1px solid #475569;
+            margin-top: 35px;
+            padding-top: 5px;
+            font-size: 8.5pt;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .sig-sub {
+            font-size: 7.5pt;
+            color: #64748b;
+        }
+
+        /* Footer */
+        .receipt-footer {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+            margin-top: 12px;
+            font-size: 7.5pt;
+            color: #94a3b8;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+<div class="receipt-container">
+    <!-- Header -->
+    <table class="header-table">
+        <tr>
+            <td class="header-logo">
+                {% if sys_settings and sys_settings.logo_url %}
+                    <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo">
+                {% else %}
+                    <img src="https://www.baust.edu.bd/images/logo.png" onerror="this.style.display='none'" alt="BAUST Logo">
+                {% endif %}
+            </td>
+            <td class="header-text">
+                <div class="univ-title">Bangladesh Army University of Science &amp; Technology</div>
+                <div class="univ-sub">Saidpur Cantonment, Saidpur-5310, Nilphamari</div>
+                <div class="univ-dept">Office of the Accounts &amp; Finance / Admission Branch</div>
+                <div class="voucher-title-pill">Money Receipt &amp; Payment Voucher</div>
+            </td>
+            <td class="header-meta">
+                <div class="meta-box">
+                    <strong style="color:#1e3a8a; display:block; font-size:9pt;">VOUCHER REF</strong>
+                    <span style="font-family:monospace; font-weight:700; color:#0f172a;">{{ voucher_ref }}</span>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Metadata Strip -->
+    <table class="meta-strip">
+        <tr>
+            <td><strong>Issue Date:</strong> {{ issue_date|date:"d M Y"|default:now|date:"d M Y" }}</td>
+            <td style="text-align:center;"><strong>Payment Purpose:</strong> Institutional Additional Fees</td>
+            <td style="text-align:right;"><strong>Printed:</strong> {{ now|date:"d M Y, h:i A" }}</td>
+        </tr>
+    </table>
+
+    <!-- Student Information Box -->
+    <table class="student-box">
+        <tr>
+            <th>Student Name</th>
+            <td colspan="3"><strong>{{ student.student_name|upper }}</strong></td>
+        </tr>
+        <tr>
+            <th>Student ID</th>
+            <td><strong style="font-family:monospace; color:#1e3a8a; font-size:11pt;">{{ student.student_id }}</strong></td>
+            <th>Program / Dept</th>
+            <td>{{ student.program|default:"Undergraduate" }}</td>
+        </tr>
+        <tr>
+            <th>Session &amp; Batch</th>
+            <td>{{ student.semester_name|default:student.admission_year|default:"Regular" }} (Batch: {{ student.batch|default:"N/A" }})</td>
+            <th>Gender</th>
+            <td>{{ student.gender|default:"Not Specified" }}</td>
+        </tr>
+        <tr>
+            <th>Mobile Number</th>
+            <td>{{ student.student_mobile|default:student.emergency_contact|default:"N/A" }}</td>
+            <th>Hall Residency</th>
+            <td>
+                {% if student.is_non_residential %}
+                    Non-Residential
+                {% elif student.hall_residential %}
+                    {{ student.hall_residential.short_name|default:student.hall_residential.full_name }}
+                {% else %}
+                    Unspecified
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <!-- Fee Particulars Table -->
+    <table class="fee-table">
+        <thead>
+            <tr>
+                <th style="width: 5%; text-align:center;">#</th>
+                <th style="width: 32%;">Fee Particulars</th>
+                <th style="width: 14%; text-align:right;">Billed (BDT)</th>
+                <th style="width: 14%; text-align:right;">Paid (BDT)</th>
+                <th style="width: 12%; text-align:center;">Status</th>
+                <th style="width: 23%;">Receipt / Voucher Ref</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Fee 1: Medical, BNCC & Scout -->
+            <tr>
+                <td style="text-align:center; font-weight:600;">1</td>
+                <td>
+                    <strong>Medical, BNCC &amp; Rover Scout Fee</strong>
+                    <div style="font-size:7.5pt; color:#64748b;">(৳300 + ৳60 + ৳25) × 4 Years mandatory admission fee</div>
+                </td>
+                <td style="text-align:right; font-weight:600;">৳{{ med_amount|floatformat:2 }}</td>
+                <td style="text-align:right; font-weight:700; color:{% if student.medical_scout_paid %}#15803d{% else %}#dc2626{% endif %};">
+                    ৳{{ med_paid_amt|floatformat:2 }}
+                </td>
+                <td style="text-align:center;">
+                    {% if student.medical_scout_paid %}
+                        <span class="badge badge-paid">PAID</span>
+                    {% else %}
+                        <span class="badge badge-due">UNPAID</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span style="font-family:monospace; font-weight:600;">{{ student.medical_scout_receipt|default:"Pending" }}</span>
+                    {% if student.medical_scout_date %}
+                        <div style="font-size:7.5pt; color:#64748b;">Paid: {{ student.medical_scout_date|date:"d M Y" }}</div>
+                    {% endif %}
+                </td>
+            </tr>
+
+            <!-- Fee 2: Uniform Package -->
+            <tr>
+                <td style="text-align:center; font-weight:600;">2</td>
+                <td>
+                    <strong>University Uniform Tailoring Service</strong>
+                    <div style="font-size:7.5pt; color:#64748b;">
+                        {% if student.uniform_status == 'OPTED_OUT' %}
+                            Opted Out — Student will prepare uniform privately within 7 days
+                        {% elif is_female %}
+                            Female Package: 2 Sets Salwar-Kameez-Apron-Belt (৳3,600) + Blazer (৳1,800)
+                        {% else %}
+                            Male Package: 2 Sets Shirt &amp; Pant (৳2,600) + Blazer (৳1,800)
+                        {% endif %}
+                    </div>
+                </td>
+                <td style="text-align:right; font-weight:600;">
+                    {% if student.uniform_status == 'OPTED_OUT' %}
+                        ৳0.00
+                    {% else %}
+                        ৳{{ uni_assessed_amt|floatformat:2 }}
+                    {% endif %}
+                </td>
+                <td style="text-align:right; font-weight:700; color:{% if student.uniform_status == 'PAID' %}#15803d{% elif student.uniform_status == 'PARTIAL' %}#0284c7{% elif student.uniform_status == 'DUE' %}#ca8a04{% else %}#64748b{% endif %};">
+                    ৳{{ uni_paid_amt|floatformat:2 }}
+                </td>
+                <td style="text-align:center;">
+                    {% if student.uniform_status == 'PAID' %}
+                        <span class="badge badge-paid">PAID</span>
+                    {% elif student.uniform_status == 'PARTIAL' %}
+                        <span class="badge badge-partial">PARTIAL PAID</span>
+                        <div style="font-size:7pt; color:#dc2626; margin-top:2px;">Due: ৳{{ total_due|floatformat:2 }}</div>
+                    {% elif student.uniform_status == 'DUE' %}
+                        <span class="badge badge-due">DUE</span>
+                    {% else %}
+                        <span class="badge badge-opted">OPTED OUT</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span style="font-family:monospace; font-weight:600;">{{ student.uniform_receipt|default:"N/A" }}</span>
+                    {% if student.uniform_date %}
+                        <div style="font-size:7.5pt; color:#64748b;">Date: {{ student.uniform_date|date:"d M Y" }}</div>
+                    {% endif %}
+                </td>
+            </tr>
+
+            <!-- Totals -->
+            <tr class="total-row">
+                <td colspan="2" style="text-align:right; text-transform:uppercase;"><strong>Grand Totals:</strong></td>
+                <td style="text-align:right;">৳{{ total_assessed|floatformat:2 }}</td>
+                <td style="text-align:right; color:#15803d; font-size:10.5pt;">৳{{ total_paid|floatformat:2 }}</td>
+                <td style="text-align:center;">
+                    {% if total_due == 0 and total_paid > 0 %}
+                        <span class="badge badge-paid">CLEARED</span>
+                    {% elif total_due > 0 %}
+                        <span class="badge badge-due">৳{{ total_due|floatformat:0 }} DUE</span>
+                    {% else %}
+                        <span class="badge badge-opted">NO BILL</span>
+                    {% endif %}
+                </td>
+                <td style="font-size:8.5pt; color:#64748b;">
+                    Outstanding Due: <strong style="color:{% if total_due > 0 %}#dc2626{% else %}#15803d{% endif %};">৳{{ total_due|floatformat:2 }}</strong>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Amount in Words & Summary -->
+    <table class="summary-box">
+        <tr>
+            <td class="words-cell" style="width: 65%;">
+                <div style="font-size:8pt; text-transform:uppercase; color:#64748b; font-weight:700; margin-bottom:2px;">Amount Collected in Words:</div>
+                <strong style="color:#1e3a8a; font-size:10pt;">{{ amount_in_words }}</strong>
+                {% if student.uniform_remarks %}
+                    <div style="margin-top:6px; font-size:8pt; color:#475569;">
+                        <strong>Remarks:</strong> {{ student.uniform_remarks }}
+                    </div>
+                {% endif %}
+            </td>
+            <td style="width: 35%; padding-left: 15px; vertical-align:top;">
+                <table class="amount-summary-table">
+                    <tr>
+                        <td style="color:#64748b;">Total Billed:</td>
+                        <td style="text-align:right; font-weight:600;">৳{{ total_assessed|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#15803d; font-weight:700;">Total Paid:</td>
+                        <td style="text-align:right; font-weight:700; color:#15803d;">৳{{ total_paid|floatformat:2 }}</td>
+                    </tr>
+                    <tr style="border-top: 1px solid #cbd5e1;">
+                        <td style="color:#dc2626; font-weight:700; padding-top:4px;">Balance Due:</td>
+                        <td style="text-align:right; font-weight:700; color:#dc2626; padding-top:4px;">৳{{ total_due|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Important Notice -->
+    <div class="notice-box">
+        <strong>Important Institutional Instructions:</strong>
+        <ol style="margin: 3px 0 0 16px; padding: 0;">
+            <li>Medical, BNCC &amp; Rover Scout Fee is mandatory and non-refundable per university admission policy.</li>
+            <li>For Uniform Package: Students opting out must strictly tailor the uniform as per BAUST dress code specifications within 7 days of class inauguration.</li>
+            <li>Please preserve this receipt voucher for verification during uniform delivery and administrative clearance.</li>
+        </ol>
+    </div>
+
+    <!-- Signatures -->
+    <table class="sig-table">
+        <tr>
+            <td>
+                <div class="sig-line">Student / Depositor Signature</div>
+                <div class="sig-sub">Date: ____________________</div>
+            </td>
+            <td>
+                <div class="sig-line">Prepared &amp; Verified By</div>
+                <div class="sig-sub">Admission Desk / Cashier</div>
+            </td>
+            <td>
+                <div class="sig-line">Accounts Officer / Registrar</div>
+                <div class="sig-sub">BAUST, Saidpur Cantonment</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Receipt Footer -->
+    <div class="receipt-footer">
+        <div>BAUST Admission Management System &bull; Official Fee Payment Receipt</div>
+        <div>System Record ID: {{ student.student_id }} &bull; Print Date: {{ now|date:"Y-m-d H:i" }}</div>
+    </div>
+</div>
+
+</body>
+</html>

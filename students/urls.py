@@ -1,5 +1,8 @@
 from django.urls import path
 from . import views
+from . import application_views as app_views
+from . import admission_public_views as pub_views
+from . import online_applicant_views as admin_applicant_views
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
@@ -8,6 +11,10 @@ urlpatterns = [
     path('students/cancel-hub/', views.cancellation_hub, name='cancellation_hub'),
     path('students/cancel-list-modal/', views.cancellation_list_modal, name='cancellation_list_modal'),
     path('students/cancel-action/<str:student_id>/', views.cancel_admission, name='cancel_admission'),
+    path('students/cancel-action-api/', views.api_cancel_admission_modal, name='api_cancel_admission_modal'),
+    path('students/api/search-active/', views.api_search_active_students, name='api_search_active_students'),
+    path('students/documents/cancelled-list/', views.cancellation_document_list, name='cancellation_document_list'),
+    path('students/documents/cancellation-notice/', views.cancellation_document_notice, name='cancellation_document_notice'),
     path('api/bulk-cancel/', views.api_bulk_cancel_admission, name='api_bulk_cancel_admission'),
     path('api/bulk-update-modal/', views.api_bulk_update_modal, name='api_bulk_update_modal'),
     path('api/bulk-update-input/', views.api_bulk_update_field_input, name='api_bulk_update_field_input'),
@@ -80,6 +87,7 @@ urlpatterns = [
     path('reports/export/migrations/', views.export_migrations_dynamic, name='export_migrations_dynamic'),
     path('reports/export/cancellations/', views.export_cancellations_dynamic, name='export_cancellations_dynamic'),
     path('students/api/export-photos/', views.api_bulk_photo_zip, name='export_photos_zip'),
+    path('students/api/export-photos/stats/', views.api_photo_export_stats, name='api_photo_export_stats'),
     path('api/bulk-verify-init/', views.api_bulk_verify_init, name='bulk_verify_init'),
     path('students/mobile-repair/', views.mobile_repair_tool, name='mobile_repair_tool'),
     path('api/bulk-fix-mobile/', views.api_bulk_fix_mobile, name='api_bulk_fix_mobile'),
@@ -91,8 +99,69 @@ urlpatterns = [
     path('api/reference-link-count/<int:ref_id>/', views.api_reference_link_count, name='api_reference_link_count'),
     path('api/align-legacy-reference/', views.api_align_legacy_reference, name='api_align_legacy_reference'),
     path('api/reference-students/', views.api_reference_students, name='api_reference_students'),
+    path('api/manual-verify-student/', views.api_manual_verify_student, name='api_manual_verify_student'),
+    path('api/batch-verify-queue/', views.api_batch_verify_queue, name='api_batch_verify_queue'),
+    path('bookmarklet-installer/', views.bookmarklet_installer_view, name='bookmarklet_installer'),
+    path('extension-guide/', views.extension_guide_view, name='extension_guide'),
+    path('verification-center/', views.verification_hub_view, name='verification_hub'),
+    path('extension/download-zip/', views.download_extension_zip_view, name='download_extension_zip'),
 
     # Academic Data Patch
     path('students/academic-patch/', views.academic_data_patch, name='academic_data_patch'),
     path('students/academic-patch/template/', views.download_academic_patch_template, name='academic_patch_template'),
+
+    # ── Admission Applications Portal (Public) ──────────────────────
+    path('apply/', app_views.public_apply, name='public_apply'),
+    path('apply/track/', app_views.public_track_application, name='public_track_application'),
+    path('apply/blank-pdf/<str:app_type_code>/', app_views.download_blank_pdf, name='download_blank_pdf'),
+    path('apply/blank-docx/<str:app_type_code>/', app_views.download_blank_docx, name='download_blank_docx'),
+    path('apply/filled-pdf/<str:tracking_number>/', app_views.download_filled_pdf, name='download_filled_pdf'),
+    path('apply/api/autofill/', app_views.api_secure_autofill, name='api_secure_autofill'),
+    path('apply/api/check-sibling/', app_views.api_check_sibling, name='api_check_sibling'),
+    path('apply/api/validate-id/', app_views.api_validate_id, name='api_validate_id'),
+
+    # ── Admission Applications Management (Staff) ───────────────────
+    path('students/applications/', app_views.admin_application_list, name='admission_applications_admin'),
+    path('students/applications/<str:tracking_number>/detail-modal/', app_views.admin_application_detail_modal, name='admin_application_detail_modal'),
+    path('students/applications/<str:tracking_number>/update-status/', app_views.admin_update_application_status, name='admin_update_application_status'),
+    path('students/applications/<str:tracking_number>/delete/', app_views.admin_delete_application, name='admin_delete_application'),
+    path('students/applications/<str:tracking_number>/sync-profile/', app_views.admin_sync_student_profile, name='admin_sync_student_profile'),
+    path('students/applications/toggle-policy/', app_views.admin_toggle_validation_policy, name='admin_toggle_validation_policy'),
+    path('students/applications/templates/manager-modal/', app_views.admin_template_manager_modal, name='admin_template_manager_modal'),
+    path('students/applications/templates/<str:app_type_code>/upload/', app_views.admin_upload_template, name='admin_upload_template'),
+    path('students/applications/templates/<str:app_type_code>/delete/<str:file_type>/', app_views.admin_delete_template, name='admin_delete_template'),
+
+    # ── Additional Fees & Uniform Tracking System ───────────────────
+    path('students/profile/<str:student_id>/update-additional-fees/', views.update_student_additional_fees, name='update_student_additional_fees'),
+    path('students/profile/<str:student_id>/additional-fees-receipt/', views.print_additional_fees_receipt, name='print_additional_fees_receipt'),
+    path('api/additional-fees-stats/', views.api_additional_fees_stats, name='api_additional_fees_stats'),
+    path('reports/additional-fees/', views.additional_fees_report, name='additional_fees_report'),
+    path('reports/additional-fees/export/', views.export_additional_fees, name='export_additional_fees'),
+
+    # ── Prospective Student Online Admission Portal (Public) ────────
+    path('admission-portal/', pub_views.public_requirements, name='public_requirements'),
+    path('admission-portal/apply/', pub_views.public_apply_form, name='public_apply_form'),
+    path('admission-portal/confirmation/<str:exam_roll>/', pub_views.public_confirmation, name='public_confirmation'),
+    path('admission-portal/status/', pub_views.public_application_status, name='public_application_status'),
+    path('admission-portal/admitcard/', pub_views.public_admitcard_download, name='public_admitcard_download'),
+    path('admission-portal/api/check-open/', pub_views.api_check_open_intakes, name='api_check_open_intakes'),
+
+    # ── Online Applicants Hub & Intake Management (Admin) ───────────
+    path('students/online-applicants/', admin_applicant_views.admin_online_applicant_list, name='admin_online_applicant_list'),
+    path('students/online-applicants/<int:pk>/detail/', admin_applicant_views.admin_applicant_detail_modal, name='admin_applicant_detail_modal'),
+    path('students/online-applicants/<int:pk>/update-status/', admin_applicant_views.admin_update_applicant_status, name='admin_update_applicant_status'),
+    path('students/online-applicants/<int:pk>/verify-payment/', admin_applicant_views.admin_verify_payment, name='admin_verify_payment'),
+    path('students/online-applicants/<int:pk>/verify-board/', admin_applicant_views.api_verify_applicant_board_result, name='api_verify_applicant_board_result'),
+    path('students/online-applicants/<int:pk>/edit/', admin_applicant_views.admin_edit_applicant, name='admin_edit_applicant'),
+    path('students/online-applicants/<int:pk>/print/', admin_applicant_views.admin_print_application, name='admin_print_application'),
+    path('students/online-applicants/<int:pk>/enroll/', admin_applicant_views.admin_enroll_to_database, name='admin_enroll_to_database'),
+    path('students/online-applicants/<int:pk>/trash/', admin_applicant_views.admin_trash_applicant, name='admin_trash_applicant'),
+    path('students/online-applicants/<int:pk>/restore/', admin_applicant_views.admin_restore_applicant, name='admin_restore_applicant'),
+    path('students/online-applicants/export/', admin_applicant_views.admin_export_applicants, name='admin_export_applicants'),
+
+    path('students/admission-intakes/', admin_applicant_views.admin_intake_list, name='admin_intake_list'),
+    path('students/admission-intakes/add/', admin_applicant_views.admin_intake_add, name='admin_intake_add'),
+    path('students/admission-intakes/<int:pk>/edit/', admin_applicant_views.admin_intake_edit, name='admin_intake_edit'),
+    path('students/admission-intakes/<int:pk>/toggle/', admin_applicant_views.admin_intake_toggle, name='admin_intake_toggle'),
+    path('api/toggle-login-admission/', admin_applicant_views.admin_toggle_login_admission_visibility, name='admin_toggle_login_admission_visibility'),
 ]

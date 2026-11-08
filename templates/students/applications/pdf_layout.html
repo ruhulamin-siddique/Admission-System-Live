@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ app_type.title_en }} - {{ tracking_number }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif, 'Helvetica Neue', Arial;
+            font-size: 11.5pt;
+            line-height: 1.5;
+            color: #111;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+        }
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 8px;
+            margin-bottom: 18px;
+        }
+        .header-title {
+            text-align: center;
+        }
+        .header-title h1 {
+            font-size: 15pt;
+            margin: 0;
+            font-weight: bold;
+            color: #1a365d;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .header-title h2 {
+            font-size: 11pt;
+            margin: 2px 0 0 0;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .header-title p {
+            font-size: 9.5pt;
+            margin: 2px 0 0 0;
+            color: #718096;
+        }
+        .meta-bar {
+            width: 100%;
+            margin-bottom: 16px;
+            font-size: 10pt;
+        }
+        .meta-bar td {
+            vertical-align: top;
+        }
+        .tracking-badge {
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #1a365d;
+            font-size: 10.5pt;
+            background: #edf2f7;
+            padding: 3px 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+        }
+        .qr-box {
+            text-align: right;
+        }
+        .qr-box img {
+            width: 75px;
+            height: 75px;
+        }
+        .recipient-block {
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .through-block {
+            margin-bottom: 12px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .subject-block {
+            margin: 14px 0;
+            font-weight: bold;
+            font-size: 12pt;
+            text-decoration: underline;
+            color: #1a202c;
+        }
+        .salutation {
+            margin-bottom: 12px;
+        }
+        .letter-body {
+            text-align: justify;
+            text-justify: inter-word;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        .letter-body p {
+            margin: 0 0 10px 0;
+            text-indent: 35px;
+        }
+        .closing-prayer {
+            margin-bottom: 25px;
+            text-indent: 35px;
+        }
+        .signoff-section {
+            width: 100%;
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+        .signoff-standard {
+            width: 50%;
+            margin-left: 50%;
+            line-height: 1.5;
+        }
+        .two-col-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .two-col-table td {
+            width: 50%;
+            vertical-align: top;
+            padding: 5px 10px;
+            line-height: 1.45;
+        }
+        .inline-box {
+            border: 1px dashed #718096;
+            padding: 10px 14px;
+            margin-top: 12px;
+            background: #f7fafc;
+            line-height: 1.8;
+        }
+        .office-section {
+            width: 100%;
+            border: 1.5px solid #4a5568;
+            margin-top: 25px;
+            border-collapse: collapse;
+        }
+        .office-header {
+            background-color: #edf2f7;
+            font-weight: bold;
+            font-size: 10pt;
+            text-align: center;
+            padding: 4px;
+            border-bottom: 1px solid #4a5568;
+            color: #2d3748;
+            text-transform: uppercase;
+        }
+        .office-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .office-table td {
+            width: 50%;
+            height: 75px;
+            vertical-align: bottom;
+            padding: 8px 14px;
+            font-size: 9.5pt;
+            border-right: 1px solid #cbd5e0;
+        }
+        .office-table td:last-child {
+            border-right: none;
+        }
+        .print-btn-bar {
+            background: #2b6cb0;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            font-family: sans-serif;
+        }
+        .print-btn {
+            background: #fff;
+            color: #2b6cb0;
+            border: none;
+            padding: 8px 20px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: none;
+                margin: 0;
+            }
+        }
+        @media screen {
+            body {
+                background-color: #e2e8f0;
+                padding: 25px 0;
+            }
+            .page-container {
+                max-width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                background: white;
+                padding: 20mm 20mm;
+                box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-container">
+        <!-- Print Toolbar for Web Browser Preview -->
+        <div class="no-print print-btn-bar">
+            <span>Official BAUST Academic Letterhead Format</span> &nbsp;&bull;&nbsp;
+            <button class="print-btn" onclick="window.print()">🖨️ Print Application / Save as PDF</button>
+            <a href="{% url 'public_apply' %}" style="color: white; margin-left: 15px; font-size: 13px; text-decoration: underline;">Back to Application Portal</a>
+        </div>
+
+        <!-- Official Header -->
+        <table class="header-table" style="border: none;">
+            <tr>
+                <td style="width: 80%; border: none;">
+                    <div class="header-title" style="text-align: left;">
+                        <h1>Bangladesh Army University of Science and Technology</h1>
+                        <h2>Saidpur Cantonment, Saidpur, Nilphamari-5310</h2>
+                        <p>Office of the Registrar &bull; Academic Admission Affairs</p>
+                    </div>
+                </td>
+                <td class="qr-box" style="width: 20%; border: none; vertical-align: middle;">
+                    {% if qr_code_b64 %}
+                        <img src="{{ qr_code_b64 }}" alt="QR Code" title="Tracking Verification QR">
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+        <!-- Metadata & Date Bar -->
+        <table class="meta-bar" style="border: none;">
+            <tr>
+                <td style="text-align: left;">
+                    <strong>Tracking No:</strong> <span class="tracking-badge">{{ tracking_number }}</span>
+                    {% if is_blank %}
+                        <span style="color: #c53030; font-weight: bold; margin-left: 10px;">[BLANK TEMPLATE]</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right;">
+                    <strong>Date:</strong> {{ submitted_at|date:"d F, Y" }}
+                </td>
+            </tr>
+        </table>
+
+        <!-- Recipient Block -->
+        <div class="recipient-block">
+            To<br>
+            <strong>{{ addressed_to }}</strong><br>
+            Bangladesh Army University of Science and Technology (BAUST)<br>
+            Saidpur Cantonment, Saidpur.
+        </div>
+
+        <!-- Through Block (Conditional) -->
+        {% if through_dept_head and not is_no_through %}
+        <div class="through-block">
+            Through: The Head of the Department, Department of {{ department|default:"........................................" }}.
+        </div>
+        {% endif %}
+
+        <!-- Subject Line -->
+        <div class="subject-block">
+            Subject: {{ subject }}
+        </div>
+
+        <!-- Salutation -->
+        <div class="salutation">
+            Sir,
+        </div>
+
+        <!-- Body Paragraph -->
+        <div class="letter-body">
+            <p>
+                {{ body|linebreaksbr }}
+            </p>
+            <div class="closing-prayer">
+                I, therefore, pray and hope that you would be kind enough to grant my application and oblige thereby.
+            </div>
+        </div>
+
+        <!-- Bottom Sign-off Section -->
+        <div class="signoff-section">
+            {% if is_army_waiver %}
+                <!-- Special Layout for App 03 (Army Waiver): Two Columns -->
+                <table class="two-col-table">
+                    <tr>
+                        <td style="border-right: 1px dashed #cbd5e0;">
+                            <strong>Yours obediently,</strong><br><br>
+                            Signature: __________________________<br>
+                            Name: <strong>{{ student_name|default:"........................................" }}</strong><br>
+                            Department: {{ department|default:"...................." }}<br>
+                            Student ID: {{ student_id|default:"...................." }}<br>
+                            Mobile: {{ phone_no|default:"...................." }}<br>
+                            Date: {{ submitted_at|date:"d/m/Y" }}
+                        </td>
+                        <td>
+                            <strong>Guardian / Father's Service Record:</strong><br><br>
+                            Signature: __________________________<br>
+                            Name: {{ form_data.father_name|default:"........................................" }}<br>
+                            Branch: {{ form_data.armed_force_branch|default:"...................." }}<br>
+                            Rank: {{ form_data.father_rank|default:"...................." }}<br>
+                            Army/Badge No: {{ form_data.father_badge_no|default:"...................." }}<br>
+                            Parent Mobile: {{ form_data.father_phone|default:"...................." }}
+                        </td>
+                    </tr>
+                </table>
+
+            {% elif is_drop_semester %}
+                <!-- Special Layout for App 07 (Drop Semester): Inline format -->
+                <div class="inline-box">
+                    <strong>Yours obediently,</strong><br>
+                    Signature: ____________________________________ &nbsp;&nbsp;&nbsp;&nbsp; Name: <strong>{{ student_name|default:"........................................" }}</strong><br>
+                    Semester/Batch: <strong>{{ form_data.batch|default:"........" }} ({{ form_data.level }}-{{ form_data.term }})</strong> &nbsp;&bull;&nbsp;
+                    Sex: <strong>{{ form_data.sex|default:"........" }}</strong> &nbsp;&bull;&nbsp;
+                    Phone No: <strong>{{ phone_no|default:"...................." }}</strong><br>
+                    Father/Mother's Name (Capital): <strong>{{ form_data.father_mother_name_capital|default:"...................................................." }}</strong> &nbsp;&nbsp;
+                    Guardian Sign: ___________________________
+                </div>
+
+            {% else %}
+                <!-- Standard BAUST Sign-off Layout -->
+                <table style="width: 100%; border: none;">
+                    <tr>
+                        <td style="width: 50%; vertical-align: bottom; border: none;">
+                            {% if not is_blank and form_data %}
+                                <div style="font-size: 9pt; color: #4a5568;">
+                                    <strong>Guardian's Consent & Signature:</strong><br><br>
+                                    Signature: ___________________________<br>
+                                    Date: .......................................
+                                </div>
+                            {% else %}
+                                <div style="font-size: 9pt; color: #4a5568;">
+                                    Guardian's Signature: ___________________________
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td style="width: 50%; vertical-align: top; border: none; padding-left: 20px;">
+                            <strong>Yours obediently,</strong><br><br>
+                            Signature: ___________________________<br>
+                            Name: <strong>{{ student_name|default:"........................................" }}</strong><br>
+                            Department: {{ department|default:"...................." }}<br>
+                            {% if not is_id_optional or student_id %}
+                                Student ID: <strong>{{ student_id|default:"...................." }}</strong><br>
+                            {% endif %}
+                            Mobile: {{ phone_no|default:"...................." }}<br>
+                            Date: {{ submitted_at|date:"d/m/Y" }}
+                        </td>
+                    </tr>
+                </table>
+            {% endif %}
+        </div>
+
+        <!-- Official Office Use / Approval Section -->
+        <table class="office-section">
+            <tr>
+                <td colspan="2" class="office-header">
+                    For Official Endorsement & Approval
+                </td>
+            </tr>
+            <tr>
+                <td style="width: 50%; vertical-align: top; padding: 8px 12px; border-right: 1px solid #4a5568; height: 85px;">
+                    <div style="font-size: 9pt; font-weight: bold; margin-bottom: 4px;">1. Recommendation of Head of the Department:</div>
+                    <div style="font-size: 8.5pt; color: #4a5568; margin-bottom: 25px;">
+                        [ &nbsp; ] Recommended &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ &nbsp; ] Not Recommended
+                    </div>
+                    <div style="font-size: 8.5pt; border-top: 1px dotted #718096; padding-top: 3px;">
+                        Signature of Dept Head with Seal & Date
+                    </div>
+                </td>
+                <td style="width: 50%; vertical-align: top; padding: 8px 12px; height: 85px;">
+                    <div style="font-size: 9pt; font-weight: bold; margin-bottom: 4px;">2. Order / Decision of the Registrar:</div>
+                    <div style="font-size: 8.5pt; color: #4a5568; margin-bottom: 25px;">
+                        [ &nbsp; ] Approved &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ &nbsp; ] Disapproved / File
+                    </div>
+                    <div style="font-size: 8.5pt; border-top: 1px dotted #718096; padding-top: 3px;">
+                        Signature of Registrar / Authorized Officer
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Verification Footnote -->
+        <div style="margin-top: 15px; font-size: 7.5pt; color: #718096; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 5px;">
+            BAUST Automated Admission System &bull; Verification URL: {{ verify_url }} &bull; Document Tracking: {{ tracking_number }}
+        </div>
+    </div>
+
+</body>
+</html>

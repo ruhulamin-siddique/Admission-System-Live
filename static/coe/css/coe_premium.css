@@ -237,7 +237,6 @@ body.coe-public-body {
 
 .coe-type-card:hover {
   border-color: #a5b4fc;
-  transform: translateY(-2px);
   box-shadow: var(--coe-card-shadow-hover);
 }
 
@@ -346,7 +345,6 @@ body.coe-public-body {
 
 .coe-btn-primary:hover {
   background: linear-gradient(135deg, var(--coe-primary-hover) 0%, #0369a1 100%);
-  transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
 }
 

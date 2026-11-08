@@ -1,0 +1,71 @@
+# DEPLOYMENT INSTRUCTIONS FOR LIVE SERVER
+
+Package: admission_online_and_login_refactor_live_update.zip
+Date: 2026-09-23
+
+## Summary of Updates Included
+1. Online Admission Module:
+   - Models: AdmissionIntake, OnlineApplicant (with Board verification, bKash verification, Roll generator, Admit card generation)
+   - Views: Public admission portal & application form, status tracking, admit card download
+   - Admin Views: Online applicant hub, quick verification modal, detail modal, batch export, intake manager
+   - Intake Manager AJAX: Open/Closed toggle now updates asynchronously without page reload with a sleek Toast notification.
+   - Public Branding: Resilient logo fallback across public applicant pages (Brand settings -> /media/branding/logo.png -> static branding).
+   - Migrations: 
+     - 0029_admissionintake_onlineapplicant.py
+     - 0030_alter_student_uniform_status.py
+2. Test Data Seeder:
+   - Command: `python manage.py seed_winter_2027_test_applicants`
+   - Generates 2 realistic student records for "Winter 2027" (1 Approved Engineering CSE with admit card ready, 1 Pending Non-Engineering BBA).
+   - Automatically ensures "Winter 2027" intake has a future deadline so applications are open.
+3. Navigation & Sidebar Re-arrangement:
+   - Consolidated Admission Reports treeview submenu (Hub, Feeder, Outreach, Dynamic Export)
+   - Renamed Admission Intake label to 'Admission Intakes'
+   - Updated RBAC permissions in access_registry.py
+4. Login Page Refactoring:
+   - Removed Staff Services card from public desk (kept onboarding links on right panel)
+   - Added Student Internal Applications launcher card
+   - Refactored Online Admission Application card (wide prominent CTA button, track & requirements pills)
+   - Cleaned all descriptive text for a sleek kiosk-style interface
+   - Fixed pre-existing bugs (redirect next param, autocomplete, icon fix, dismissable alerts, FOUC/card hover fix)
+5. Static Branding:
+   - Included static/branding/logo.png, static/img/logo.png, static/img/baust_logo.png
+
+## Deployment Steps on Live Server
+
+Step 1: Backup current codebase & database
+------------------------------------------
+python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.Permission --indent 4 > pre_update_backup.json
+
+Step 2: Extract Zip Package
+---------------------------
+unzip -o admission_online_and_login_refactor_live_update.zip -d /path/to/project/root/
+
+Step 3: Run Database Migrations
+-------------------------------
+python manage.py migrate students
+
+(Expected applied migrations: 0029_admissionintake_onlineapplicant, 0030_alter_student_uniform_status)
+
+Step 4: Collect Static Files
+----------------------------
+python manage.py collectstatic --noinput
+
+Step 5: Seed 2 Test Students for Winter 2027 (Optional / Recommended for Testing)
+-------------------------------------------------------------------------------
+python manage.py seed_winter_2027_test_applicants
+
+This will:
+- Check for "Winter 2027" intake (or create it with future deadline if not present)
+- Create 1 Approved applicant: Nafis Fuad (OA-W27-00101, Roll: BAUST-W27-1001)
+- Create 1 Pending applicant: Sumaiya Tasnim (OA-W27-00102)
+
+Step 6: Verify System Check
+---------------------------
+python manage.py check
+
+Step 7: Restart Application Server / Daemon
+-------------------------------------------
+sudo systemctl restart gunicorn
+# or
+sudo systemctl restart uwsgi
+# or reload supervisor / cPanel passenger

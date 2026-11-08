@@ -1,110 +1,652 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n coe_tags %}
 
-{% block title %}{% trans "Applications" %} | CoE{% endblock %}
-{% block page_title %}<i class="fas fa-list mr-2"></i>{% trans "All Applications" %}{% endblock %}
+{% block title %}{% trans "All Applications" %} | CoE{% endblock %}
+{% block page_title %}<i class="fas fa-layer-group mr-2 text-indigo"></i>{% trans "All Applications Directory" %}{% endblock %}
 
 {% block page_actions %}
-  <a href="{% url 'coe_export' %}?{{ request.GET.urlencode }}" class="btn btn-sm btn-success">
-    <i class="fas fa-file-excel mr-1"></i>{% trans "Export Excel" %}
+  <a href="{% url 'coe_export' %}?{{ request.GET.urlencode }}" class="btn btn-sm btn-success shadow-sm rounded-lg font-weight-bold px-3 py-1.5" style="font-size: 0.88rem;">
+    <i class="fas fa-file-excel mr-1.5"></i>{% trans "Export Excel" %}
   </a>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Student Directory Style Floating-Label Filter System
+     ────────────────────────────────────────────────────────────────────────────── */
+  .filter-section-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    padding: 1rem 1rem 0.6rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+    gap: 0.75rem;
+    align-items: end;
+  }
+
+  .filter-group {
+    position: relative;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 2px 10px;
+    background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+  }
+
+  .filter-group label {
+    position: absolute;
+    top: -9px;
+    left: 10px;
+    background: #ffffff;
+    padding: 0 5px;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #475569;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    line-height: 1;
+    margin: 0;
+    pointer-events: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .filter-group select,
+  .filter-group input {
+    border: none !important;
+    width: 100%;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: #0f172a;
+    height: 38px;
+    padding: 0;
+  }
+
+  .filter-group:focus-within {
+    border-color: #4f46e5 !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14) !important;
+  }
+
+  .filter-group:focus-within label {
+    color: #4f46e5 !important;
+  }
+
+  /* Active Filter Highlight State */
+  .filter-group.active {
+    border-color: #4f46e5 !important;
+    background-color: #f5f3ff !important;
+  }
+
+  .filter-group.active label {
+    color: #4338ca !important;
+    background: #f5f3ff !important;
+  }
+
+  .filter-group .input-icon {
+    color: #64748b;
+    margin-right: 6px;
+    font-size: 0.88rem;
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .btn-filter-submit {
+    background: linear-gradient(135deg, #4f46e5 0%, #0284c7 100%);
+    color: #ffffff !important;
+    border: none;
+    border-radius: 8px;
+    height: 46px;
+    padding: 0 1.15rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  }
+
+  .btn-filter-submit:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #0369a1 100%);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+  }
+
+  .btn-filter-reset {
+    background: #f1f5f9;
+    color: #64748b !important;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    height: 46px;
+    width: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.92rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-filter-reset:hover {
+    background: #e2e8f0;
+    color: #1e293b !important;
+    border-color: #94a3b8;
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Dark Mode Extensions for Filter Bar
+     ────────────────────────────────────────────────────────────────────────────── */
+  body.dark-mode .filter-section-card {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  body.dark-mode .filter-group {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  body.dark-mode .filter-group label {
+    background: #0f172a;
+    color: #94a3b8;
+  }
+
+  body.dark-mode .filter-group select,
+  body.dark-mode .filter-group input {
+    color: #f8fafc;
+  }
+
+  body.dark-mode .filter-group.active {
+    border-color: #818cf8 !important;
+    background-color: #1e1b4b !important;
+  }
+
+  body.dark-mode .filter-group.active label {
+    color: #a5b4fc !important;
+    background: #1e1b4b !important;
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Compact Summary Bar & Ultra-Compact Table Grid
+     ────────────────────────────────────────────────────────────────────────────── */
+  .summary-bar {
+    background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+    color: #ffffff;
+    padding: 0.65rem 1.15rem;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .summary-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .total-count-pill {
+    background: #4f46e5;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 16px;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
+  }
+
+  .table-scroll-container {
+    max-height: 72vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #cbd5e1;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+
+  .app-list-table {
+    margin-bottom: 0;
+    width: 100%;
+    border-collapse: separate !important;
+    border-spacing: 0;
+  }
+
+  /* Compact Sticky Table Header */
+  .app-list-table thead th {
+    position: sticky !important;
+    top: 0;
+    z-index: 12;
+    background: #f8fafc !important;
+    color: #1e293b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.55rem 0.75rem;
+    border-right: 1px solid #cbd5e1 !important;
+    border-bottom: 2px solid #94a3b8 !important;
+    border-top: none !important;
+    white-space: normal;
+    word-break: break-word;
+    vertical-align: middle;
+    box-shadow: inset 0 -2px 0 #cbd5e1;
+  }
+
+  .app-list-table thead th:last-child {
+    border-right: none !important;
+  }
+
+  /* Compact Grid Cells & Fit Height */
+  .app-list-table tbody td {
+    padding: 0.45rem 0.75rem;
+    vertical-align: middle;
+    border-right: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    font-size: 0.88rem;
+    line-height: 1.3;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .app-list-table tbody td:last-child {
+    border-right: none !important;
+  }
+
+  .app-list-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  /* Dark Mode Table Overrides */
+  body.dark-mode .table-scroll-container {
+    border-color: #334155;
+  }
+
+  body.dark-mode .app-list-table thead th {
+    background: #0f172a !important;
+    color: #f8fafc;
+    border-right-color: #334155 !important;
+    border-bottom-color: #475569 !important;
+    box-shadow: inset 0 -2px 0 #334155;
+  }
+
+  body.dark-mode .app-list-table tbody td {
+    border-right-color: #1e293b !important;
+    border-bottom-color: #1e293b !important;
+  }
+
+  body.dark-mode .app-list-table tbody tr:hover {
+    background-color: #1e293b;
+  }
+
+  /* Responsive Mobile Tweaks */
+  @media (max-width: 768px) {
+    .filter-grid {
+      grid-template-columns: 1fr;
+    }
+    .filter-actions {
+      width: 100%;
+    }
+    .btn-filter-submit {
+      flex: 1;
+    }
+    .app-list-table thead th,
+    .app-list-table tbody td {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.82rem;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<!-- Search / Filter Bar -->
-<div class="card mb-3">
-  <div class="card-body py-2">
-    <form method="get" class="form-inline flex-wrap" style="gap:8px;">
-      <input type="text" name="q" value="{{ form.q.value|default:'' }}"
-             class="form-control form-control-sm" placeholder="{% trans 'Search...' %}" style="width:220px;">
-      <select name="status" class="form-control form-control-sm">
-        <option value="">{% trans "All Statuses" %}</option>
-        {% for val, label in form.fields.status.choices %}
-        {% if val %}<option value="{{ val }}" {% if form.status.value == val %}selected{% endif %}>{{ label }}</option>{% endif %}
-        {% endfor %}
-      </select>
-      <select name="application_type" class="form-control form-control-sm">
-        <option value="">{% trans "All Types" %}</option>
-        {% for val, label in form.fields.application_type.choices %}
-        {% if val %}<option value="{{ val }}" {% if form.application_type.value == val %}selected{% endif %}>{{ label }}</option>{% endif %}
-        {% endfor %}
-      </select>
-      <input type="date" name="date_from" value="{{ form.date_from.value|default:'' }}" class="form-control form-control-sm" title="{% trans 'From' %}">
-      <input type="date" name="date_to" value="{{ form.date_to.value|default:'' }}" class="form-control form-control-sm" title="{% trans 'To' %}">
-      <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-search"></i></button>
-      <a href="{% url 'coe_application_list' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-times"></i></a>
-    </form>
-  </div>
+<!-- Student Directory Style Filter Toolbar -->
+<div class="filter-section-card">
+  <form method="get" id="filterForm">
+    <div class="filter-grid">
+      
+      <!-- Search Input -->
+      <div class="filter-group {% if form.q.value %}active{% endif %}">
+        <label for="id_q">{% trans "Search Query" %}</label>
+        <i class="fas fa-search input-icon"></i>
+        <input type="text" name="q" id="id_q" value="{{ form.q.value|default:'' }}"
+               placeholder="{% trans 'Name, ID, Tracking #…' %}" autocomplete="off">
+      </div>
+
+      <!-- Status Filter -->
+      <div class="filter-group {% if form.status.value %}active{% endif %}">
+        <label for="id_status">{% trans "Application Status" %}</label>
+        <select name="status" id="id_status" onchange="this.form.submit()">
+          <option value="">{% trans "All Statuses" %}</option>
+          {% for val, label in form.fields.status.choices %}
+            {% if val %}<option value="{{ val }}" {% if form.status.value == val %}selected{% endif %}>{{ label }}</option>{% endif %}
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Application Type Filter -->
+      <div class="filter-group {% if form.application_type.value %}active{% endif %}">
+        <label for="id_application_type">{% trans "Application Type" %}</label>
+        <select name="application_type" id="id_application_type" onchange="this.form.submit()">
+          <option value="">{% trans "All Document Types" %}</option>
+          {% for val, label in form.fields.application_type.choices %}
+            {% if val %}<option value="{{ val }}" {% if form.application_type.value == val %}selected{% endif %}>{{ label }}</option>{% endif %}
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Department Filter (if present in form) -->
+      {% if form.department %}
+      <div class="filter-group {% if form.department.value %}active{% endif %}">
+        <label for="id_department">{% trans "Department" %}</label>
+        <select name="department" id="id_department" onchange="this.form.submit()">
+          <option value="">{% trans "All Departments" %}</option>
+          {% for obj in form.fields.department.queryset %}
+            <option value="{{ obj.pk }}" {% if form.department.value|stringformat:"s" == obj.pk|stringformat:"s" %}selected{% endif %}>{{ obj.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Date From -->
+      <div class="filter-group {% if form.date_from.value %}active{% endif %}">
+        <label for="id_date_from">{% trans "Submitted From" %}</label>
+        <input type="date" name="date_from" id="id_date_from" value="{{ form.date_from.value|default:'' }}">
+      </div>
+
+      <!-- Date To -->
+      <div class="filter-group {% if form.date_to.value %}active{% endif %}">
+        <label for="id_date_to">{% trans "Submitted To" %}</label>
+        <input type="date" name="date_to" id="id_date_to" value="{{ form.date_to.value|default:'' }}">
+      </div>
+
+      <!-- Filter Buttons -->
+      <div class="filter-actions">
+        <button type="submit" class="btn-filter-submit">
+          <i class="fas fa-filter mr-1.5"></i>{% trans "Filter Results" %}
+        </button>
+        <a href="{% url 'coe_application_list' %}" class="btn-filter-reset" title="{% trans 'Reset All Filters' %}">
+          <i class="fas fa-redo-alt"></i>
+        </a>
+      </div>
+
+    </div>
+  </form>
 </div>
 
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title">
-      <strong>{{ total }}</strong> {% trans "applications found" %}
+<!-- Results Card -->
+<div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+  
+  <!-- Summary Bar -->
+  <div class="summary-bar">
+    <h3 class="summary-title">
+      <i class="fas fa-list-alt text-indigo mr-1.5"></i>
+      {% trans "Applications Directory" %}
+      <span class="total-count-pill">{{ total }} {% trans "Total" %}</span>
     </h3>
+    {% if request.GET.q or request.GET.status or request.GET.application_type or request.GET.date_from or request.GET.date_to %}
+    <span class="text-xs text-light font-weight-bold">
+      <i class="fas fa-info-circle mr-1"></i>{% trans "Filtered results active" %}
+    </span>
+    {% endif %}
   </div>
+
+  <!-- Premium Table Wrapper with Sticky Header and Visible Grid -->
   <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm mb-0">
-        <thead class="thead-light">
+    <div class="table-scroll-container">
+      <table class="table app-list-table align-middle">
+        <thead>
           <tr>
-            <th>{% trans "Tracking #" %}</th>
-            <th>{% trans "Type" %}</th>
-            <th>{% trans "Student" %}</th>
-            <th>{% trans "Student ID" %}</th>
-            <th>{% trans "Dept." %}</th>
-            <th>{% trans "Status" %}</th>
-            <th>{% trans "Assigned To" %}</th>
-            <th>{% trans "Submitted" %}</th>
-            <th></th>
+            <th style="min-width: 130px;">{% trans "Tracking #" %}</th>
+            <th style="min-width: 170px;">{% trans "Student Info" %}</th>
+            <th style="min-width: 150px;">{% trans "Document Type" %}</th>
+            <th style="min-width: 95px;">{% trans "Dept." %}</th>
+            <th style="min-width: 140px;">{% trans "Status" %}</th>
+            <th style="min-width: 140px;">{% trans "Assigned Officer" %}</th>
+            <th style="min-width: 105px;">{% trans "Submitted" %}</th>
+            <th class="text-right" style="min-width: 145px;">{% trans "Actions" %}</th>
           </tr>
         </thead>
         <tbody>
           {% for app in page_obj %}
           <tr>
-            <td><code><a href="{% url 'coe_application_detail' app.pk %}">{{ app.application_number }}</a></code></td>
-            <td><small>{{ app.get_application_type_display|truncatechars:35 }}</small></td>
-            <td>{{ app.student_name }}</td>
-            <td><small>{{ app.student_id }}</small></td>
-            <td><small>{{ app.department.short_name|default:app.department }}</small></td>
             <td>
-              <span class="badge {{ app.get_status_badge_class }}">
+              <code style="font-size: 0.94rem;"><a href="{% url 'coe_application_detail' app.pk %}" class="font-weight-bold text-indigo">{{ app.application_number }}</a></code>
+            </td>
+            <td>
+              <span class="font-weight-bold text-dark d-block text-truncate" style="font-size: 0.92rem; max-width: 200px;">{{ app.student_name }}</span>
+              <small class="text-muted" style="font-size: 0.82rem;"><i class="fas fa-id-card mr-1 text-xs"></i><code>{{ app.student_id }}</code></small>
+            </td>
+            <td>
+              <span class="font-weight-semibold text-dark" style="font-size: 0.88rem;">{{ app.get_application_type_display }}</span>
+            </td>
+            <td>
+              <span class="badge badge-light border text-dark px-2 py-0.5" style="font-size: 0.82rem;"><i class="fas fa-university mr-1 text-muted"></i>{{ app.department.short_name|default:app.department }}</span>
+            </td>
+            <td>
+              <span class="badge {{ app.get_status_badge_class }} px-2 py-1" style="border-radius: 6px; font-size: 0.82rem;">
                 <i class="{{ app.get_status_icon }} mr-1"></i>
                 {{ app.get_status_display }}
               </span>
-              {% if app.is_stalled %}<i class="fas fa-fire text-danger ml-1" title="Stalled > 48h"></i>{% endif %}
             </td>
-            <td><small>{{ app.assigned_to.get_full_name|default:"—" }}</small></td>
-            <td><small>{{ app.submitted_at|date:"d M Y" }}</small></td>
             <td>
-              <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-xs btn-outline-primary">
-                <i class="fas fa-eye"></i>
-              </a>
+              {% if app.assigned_to %}
+                <span class="font-weight-bold text-dark" style="font-size: 0.86rem;"><i class="fas fa-user-check text-success mr-1"></i>{{ app.assigned_to.get_full_name|default:app.assigned_to.username }}</span>
+              {% else %}
+                <span class="text-muted" style="font-size: 0.84rem;"><i class="fas fa-user-clock mr-1 text-muted"></i>{% trans "Unassigned" %}</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="text-muted font-weight-medium" style="font-size: 0.85rem;">{{ app.submitted_at|date:"d M Y" }}</span>
+            </td>
+            <td class="text-right">
+              <div class="d-inline-flex" style="gap: 0.25rem;">
+                <!-- Details Modal Trigger Button -->
+                <button type="button" class="btn btn-xs btn-indigo rounded-lg font-weight-bold px-2 py-0.5" style="font-size: 0.82rem;"
+                        data-toggle="modal" data-target="#appDetailModal{{ app.pk }}" title="{% trans 'Quick Details & Analytics' %}">
+                  <i class="fas fa-info-circle mr-1"></i>{% trans "Details" %}
+                </button>
+                <!-- Direct Workstation Link -->
+                <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-xs btn-outline-primary rounded-lg font-weight-bold px-2 py-0.5" style="font-size: 0.82rem;" title="{% trans 'Open Full Page' %}">
+                  <i class="fas fa-external-link-alt"></i>
+                </a>
+              </div>
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="9" class="text-center text-muted py-5">{% trans "No applications found." %}</td></tr>
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">
+              <i class="fas fa-folder-open fa-2x text-muted mb-2 d-block"></i>
+              <h5 class="font-weight-bold">{% trans "No Applications Found" %}</h5>
+              <p class="text-sm mb-0">{% trans "Try adjusting your search query or filter dropdowns above." %}</p>
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+
+  <!-- Pagination Footnote -->
   {% if page_obj.has_other_pages %}
-  <div class="card-footer">
+  <div class="card-footer bg-light py-2">
     <ul class="pagination pagination-sm mb-0 justify-content-center">
       {% if page_obj.has_previous %}
-      <li class="page-item"><a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+      <li class="page-item">
+        <a class="page-link" href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">&laquo;</a>
+      </li>
       {% endif %}
+
       {% for p in page_obj.paginator.page_range %}
       <li class="page-item {% if page_obj.number == p %}active{% endif %}">
-        <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ p }}">{{ p }}</a>
+        <a class="page-link" href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ p }}">{{ p }}</a>
       </li>
       {% endfor %}
+
       {% if page_obj.has_next %}
-      <li class="page-item"><a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>
+      <li class="page-item">
+        <a class="page-link" href="?{% for key, val in request.GET.items %}{% if key != 'page' %}{{ key }}={{ val }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">&raquo;</a>
+      </li>
       {% endif %}
     </ul>
   </div>
   {% endif %}
+
 </div>
+
+<!-- Application Details Modals (Placed outside table to prevent browser DOM hoisting) -->
+{% for app in page_obj %}
+<div class="modal fade" id="appDetailModal{{ app.pk }}" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{ app.pk }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header bg-dark text-white py-3 px-4">
+        <h5 class="modal-title font-weight-bold mb-0" id="modalLabel{{ app.pk }}">
+          <i class="fas fa-file-alt text-indigo mr-2"></i>
+          {% trans "Application Details" %} — <code>{{ app.application_number }}</code>
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-4 text-left">
+        
+        <!-- SLA & Turnaround Analytics Row (Removed Columns Info) -->
+        <div class="row mb-4">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="p-3 rounded-lg border bg-light h-100">
+              <span class="text-xs font-weight-bold text-uppercase text-muted d-block mb-1">
+                <i class="fas fa-hourglass-half text-primary mr-1"></i>{% trans "Current Stage SLA Duration" %}
+              </span>
+              {% if app.sla_level == 'danger' %}
+                <span class="badge badge-danger px-3 py-1.5 rounded-pill" style="font-size: 0.95rem; font-weight:700;"><i class="fas fa-fire mr-1"></i>🔥 {{ app.current_stage_duration }}</span>
+              {% elif app.sla_level == 'warning' %}
+                <span class="badge badge-warning text-dark px-3 py-1.5 rounded-pill" style="font-size: 0.95rem; font-weight:700;"><i class="fas fa-exclamation-circle mr-1"></i>⚠️ {{ app.current_stage_duration }}</span>
+              {% else %}
+                <span class="badge badge-success px-3 py-1.5 rounded-pill" style="font-size: 0.95rem; font-weight:700;"><i class="fas fa-stopwatch mr-1"></i>⏱️ {{ app.current_stage_duration }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="p-3 rounded-lg border bg-light h-100">
+              <span class="text-xs font-weight-bold text-uppercase text-muted d-block mb-1">
+                <i class="fas fa-clock text-indigo mr-1"></i>{% trans "Total Turnaround Time (TAT)" %}
+              </span>
+              <span class="h5 font-weight-bold text-dark mb-0 d-block">{{ app.total_turnaround_time }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="row">
+          <div class="col-md-6 border-right">
+            <h6 class="font-weight-bold text-uppercase text-indigo mb-3" style="font-size: 0.82rem; letter-spacing: 0.05em;">
+              <i class="fas fa-user-graduate mr-1.5"></i>{% trans "Student Details" %}
+            </h6>
+            <table class="table table-sm table-borderless mb-0">
+              <tr><th class="text-muted" width="120">{% trans "Name" %}:</th><td class="font-weight-bold text-dark">{{ app.student_name }}</td></tr>
+              <tr><th class="text-muted">{% trans "Student ID" %}:</th><td><code>{{ app.student_id }}</code></td></tr>
+              <tr><th class="text-muted">{% trans "Department" %}:</th><td>{{ app.department.name|default:app.department }}</td></tr>
+              <tr><th class="text-muted">{% trans "Mobile" %}:</th>
+                <td>
+                  {{ app.mobile_number|default:"—" }}
+                  {% if app.mobile_number %}
+                    {% whatsapp_btn app.mobile_number label="WhatsApp" css_class="btn btn-xs text-white font-weight-bold ml-1.5" %}
+                  {% endif %}
+                </td>
+              </tr>
+              <tr><th class="text-muted">{% trans "Email" %}:</th><td>{{ app.email|default:"—" }}</td></tr>
+              <tr><th class="text-muted">{% trans "Session/Batch" %}:</th><td>{{ app.session|default:"—" }} / {{ app.admission_batch|default:"—" }}</td></tr>
+            </table>
+          </div>
+
+          <div class="col-md-6">
+            <h6 class="font-weight-bold text-uppercase text-indigo mb-3" style="font-size: 0.82rem; letter-spacing: 0.05em;">
+              <i class="fas fa-tasks mr-1.5"></i>{% trans "Workflow Details" %}
+            </h6>
+            <table class="table table-sm table-borderless mb-0">
+              <tr><th class="text-muted" width="130">{% trans "Document Type" %}:</th><td class="font-weight-semibold">{{ app.get_application_type_display }}</td></tr>
+              <tr><th class="text-muted">{% trans "Current Status" %}:</th>
+                <td>
+                  <span class="badge {{ app.get_status_badge_class }} px-2.5 py-1">
+                    <i class="{{ app.get_status_icon }} mr-1"></i>{{ app.get_status_display }}
+                  </span>
+                </td>
+              </tr>
+              <tr><th class="text-muted">{% trans "Assigned Officer" %}:</th>
+                <td>
+                  {% if app.assigned_to %}
+                    <strong>{{ app.assigned_to.get_full_name|default:app.assigned_to.username }}</strong>
+                    {% if app.assigned_to.profile.phone_number %}
+                      {% whatsapp_btn app.assigned_to.profile.phone_number css_class="btn btn-xs text-white font-weight-bold ml-1.5" %}
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted">{% trans "Unassigned" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr><th class="text-muted">{% trans "Submitted Date" %}:</th><td>{{ app.submitted_at|date:"d F Y, h:i A" }}</td></tr>
+              <tr><th class="text-muted">{% trans "Last Updated" %}:</th><td>{{ app.updated_at|date:"d F Y, h:i A" }}</td></tr>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light py-2 px-4">
+        <button type="button" class="btn btn-secondary btn-sm rounded-lg px-3" data-dismiss="modal">{% trans "Close" %}</button>
+        <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-primary btn-sm rounded-lg font-weight-bold px-3">
+          <i class="fas fa-external-link-alt mr-1.5"></i>{% trans "Open Workstation Page" %}
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% block extra_js %}
+<script>
+  // Ensure filter groups highlight active state if they contain a value
+  document.querySelectorAll('.filter-group select, .filter-group input').forEach(function(el) {
+    el.addEventListener('change', function() {
+      var fg = this.closest('.filter-group');
+      if (fg) {
+        if (this.value) {
+          fg.classList.add('active');
+        } else {
+          fg.classList.remove('active');
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}
+
 {% endblock %}

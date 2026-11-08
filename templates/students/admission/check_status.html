@@ -1,0 +1,358 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Application Status & Admit Card | BAUST Online Admission</title>
+
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 4.6 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <style>
+        :root {
+            --baust-navy: #0b2545;
+            --baust-blue: #134074;
+            --baust-teal: #008080;
+            --baust-green: #2d6a4f;
+            --baust-gold: #d4af37;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        .top-brand-bar {
+            background: var(--baust-navy);
+            color: #ffffff;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--baust-gold);
+        }
+
+        .header-main {
+            background: #ffffff;
+            padding: 18px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+
+        .crest-img {
+            max-height: 68px;
+            margin-right: 16px;
+        }
+
+        .nav-portal {
+            background: var(--baust-blue);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+
+        .nav-portal .nav-link {
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 12px 16px;
+            text-transform: uppercase;
+        }
+
+        .search-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 650px;
+        }
+
+        .result-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid #cbd5e1;
+            overflow: hidden;
+            margin: 25px auto 50px;
+            max-width: 850px;
+        }
+
+        .result-header {
+            background: var(--baust-navy);
+            color: #ffffff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .candidate-photo {
+            width: 130px;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .status-badge-lg {
+            font-size: 1rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        .footer-portal {
+            background: var(--baust-navy);
+            color: #cbd5e1;
+            padding: 25px 0;
+            font-size: 0.88rem;
+            text-align: center;
+            border-top: 3px solid var(--baust-gold);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- University Name Bar -->
+    <div class="top-brand-bar d-flex justify-content-between">
+        <div>
+            <i class="fas fa-university mr-2"></i> Bangladesh Army University of Science and Technology (BAUST), Saidpur
+        </div>
+        <div>
+            <span><i class="fas fa-phone mr-1"></i> Helpline: 01769675554, 01769675556</span>
+        </div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="header-main">
+        <div class="container">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <img src="{{ sys_settings.logo_url|default:'/media/branding/logo.png' }}" 
+                         onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}'; if (!this.complete) { this.src='{% static 'img/baust_logo.png' %}'; }" 
+                         alt="BAUST Logo" class="crest-img">
+                    <div>
+                        <h4 class="font-weight-bold text-dark mb-0">BAUST Online Admission System</h4>
+                        <p class="text-muted mb-0 small">Application Status Tracker & Admit Card Download Desk</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{% url 'public_requirements' %}" class="btn btn-outline-secondary btn-sm mr-1">
+                        <i class="fas fa-home mr-1"></i> Home
+                    </a>
+                    <a href="{% url 'public_apply_form' %}" class="btn btn-teal btn-sm text-white font-weight-bold">
+                        <i class="fas fa-pen-alt mr-1"></i> Apply Online
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark nav-portal">
+        <div class="container">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a class="nav-link" href="{% url 'public_requirements' %}">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'public_apply_form' %}">Apply Now</a></li>
+                <li class="nav-item active"><a class="nav-link" href="{% url 'public_application_status' %}">Application Status</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'public_requirements' %}">Requirements</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://baust.edu.bd" target="_blank">Main Site</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container my-4">
+
+        <!-- Flash Messages -->
+        {% if messages %}
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle mr-2"></i> {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Search Form Card -->
+        <div class="search-card">
+            <h4 class="font-weight-bold text-center text-dark mb-2">
+                <i class="fas fa-search-location text-primary mr-2"></i> Track Your Application Status
+            </h4>
+            <p class="text-muted text-center small mb-4">
+                Select your admission semester and enter the mobile number used during online registration.
+            </p>
+
+            <form method="GET" action="{% url 'public_application_status' %}">
+                <div class="form-group mb-3">
+                    <label for="intake" class="font-weight-bold">Admission Semester:</label>
+                    <select class="custom-select" id="intake" name="intake">
+                        <option value="">-- All Semesters / Latest --</option>
+                        {% for item in all_intakes %}
+                        <option value="{{ item.id }}" {% if selected_intake_id == item.id|stringformat:"s" %}selected{% endif %}>
+                            {{ item.intake_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label for="mobile" class="font-weight-bold">Registered Mobile Number: <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-phone-alt"></i></span>
+                        </div>
+                        <input type="tel" class="form-control form-control-lg font-weight-bold" id="mobile" name="mobile" 
+                            placeholder="01XXXXXXXXX" value="{{ mobile }}" inputmode="tel" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg font-weight-bold shadow-sm">
+                    <i class="fas fa-search mr-2"></i> Check Status
+                </button>
+            </form>
+        </div>
+
+        <!-- Search Results Section -->
+        {% if has_searched %}
+            {% if applicant %}
+            <div class="result-card">
+                <div class="result-header">
+                    <div>
+                        <h5 class="mb-0 font-weight-bold">{{ applicant.name }}</h5>
+                        <span class="small text-light" style="opacity: 0.9;">App No: {{ applicant.application_no }} &bull; Semester: {{ applicant.intake_name }}</span>
+                    </div>
+                    <div>
+                        {% if applicant.status == 'APPROVED' %}
+                            <span class="badge badge-success status-badge-lg"><i class="fas fa-check-circle mr-1"></i> APPROVED</span>
+                        {% elif applicant.status == 'ADMITTED' %}
+                            <span class="badge badge-primary status-badge-lg"><i class="fas fa-user-graduate mr-1"></i> ADMITTED (ENROLLED)</span>
+                        {% elif applicant.status == 'VERIFIED' %}
+                            <span class="badge badge-info status-badge-lg"><i class="fas fa-clipboard-check mr-1"></i> UNDER REVIEW</span>
+                        {% elif applicant.status == 'REJECTED' %}
+                            <span class="badge badge-danger status-badge-lg"><i class="fas fa-times-circle mr-1"></i> REJECTED</span>
+                        {% else %}
+                            <span class="badge badge-warning text-dark status-badge-lg"><i class="fas fa-clock mr-1"></i> PENDING REVIEW</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="p-4">
+                    <div class="row align-items-center mb-4">
+                        <div class="col-md-3 col-12 text-center mb-3 mb-md-0">
+                            {% if applicant.photo %}
+                            <img src="{{ applicant.photo.url }}" alt="{{ applicant.name }}" class="candidate-photo shadow-sm">
+                            {% else %}
+                            <img src="{% static 'img/default_avatar.jpg' %}" alt="Default Avatar" class="candidate-photo shadow-sm">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9 col-12">
+                            <table class="table table-sm table-bordered mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="bg-light" style="width: 30%;">Exam Roll:</th>
+                                        <td class="font-weight-bold text-success" style="font-size: 1.1rem;">
+                                            {{ applicant.exam_roll|default:"Generated upon approval" }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Desired Program:</th>
+                                        <td><strong>{{ applicant.desired_program }}</strong> ({{ applicant.program_category }})</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Exam Venue:</th>
+                                        <td>{{ applicant.exam_venue }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">bKash Payment:</th>
+                                        <td>
+                                            <code>{{ applicant.payment_trx_id }}</code> &bull; 
+                                            {% if applicant.payment_status == 'VERIFIED' %}
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Verified</span>
+                                            {% elif applicant.payment_status == 'INVALID' %}
+                                                <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Invalid TrxID</span>
+                                            {% else %}
+                                                <span class="badge badge-warning text-dark"><i class="fas fa-clock mr-1"></i> Verification Pending</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Academic Standing:</th>
+                                        <td>SSC GPA: <strong>{{ applicant.ssc_gpa }}</strong> &bull; HSC GPA: <strong>{{ applicant.hsc_gpa }}</strong> &bull; Total: <strong>{{ applicant.total_gpa }}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Action Box based on Status -->
+                    {% if applicant.status == 'APPROVED' or applicant.status == 'ADMITTED' %}
+                    <div class="alert alert-success d-flex align-items-center justify-content-between flex-wrap py-3 px-4">
+                        <div>
+                            <h6 class="font-weight-bold mb-1 text-success"><i class="fas fa-award mr-2"></i> Your Admit Card is Ready!</h6>
+                            <p class="mb-0 text-muted small">Your application and payment have been verified. Download and print your official Admit Card for the admission test.</p>
+                        </div>
+                        <div class="mt-2 mt-md-0">
+                            <a href="{% url 'public_admitcard_download' %}?exam_roll={{ applicant.exam_roll }}&mobile={{ applicant.mobile }}" 
+                               class="btn btn-success btn-lg font-weight-bold shadow">
+                                <i class="fas fa-download mr-2"></i> Download Admit Card
+                            </a>
+                        </div>
+                    </div>
+                    {% elif applicant.status == 'REJECTED' %}
+                    <div class="alert alert-danger py-3 px-4">
+                        <h6 class="font-weight-bold mb-1"><i class="fas fa-times-circle mr-2"></i> Application Not Approved</h6>
+                        <p class="mb-0 small">
+                            {{ applicant.office_remarks|default:"Your application could not be approved due to eligibility or documentation criteria. Please contact the admission office for guidance." }}
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning py-3 px-4">
+                        <h6 class="font-weight-bold mb-1"><i class="fas fa-hourglass-half mr-2"></i> Application Under Review</h6>
+                        <p class="mb-0 small">
+                            Your application and bKash TrxID ({{ applicant.payment_trx_id }}) are currently being reviewed by the Admission Office. Your Admit Card will become available here immediately upon approval.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning text-center my-4 py-4 max-w-650 mx-auto shadow-sm" style="max-width: 650px;">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2 text-warning"></i>
+                <h5 class="font-weight-bold">No Application Record Found</h5>
+                <p class="text-muted mb-3">
+                    We could not find any active online application matching mobile number <strong>{{ mobile }}</strong>{% if selected_intake_id %} in the selected semester{% endif %}.
+                </p>
+                <a href="{% url 'public_apply_form' %}" class="btn btn-primary btn-sm font-weight-bold">
+                    <i class="fas fa-pen mr-1"></i> Submit New Application
+                </a>
+            </div>
+            {% endif %}
+        {% endif %}
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-portal">
+        <div class="container">
+            <p class="mb-1 font-weight-bold">Bangladesh Army University of Science and Technology (BAUST)</p>
+            <p class="mb-0 text-muted">Saidpur Cantonment, Saidpur, Nilphamari, Bangladesh &bull; Website: <a href="https://baust.edu.bd" target="_blank" class="text-light">www.baust.edu.bd</a></p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap & jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

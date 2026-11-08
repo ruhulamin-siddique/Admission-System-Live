@@ -1,0 +1,1146 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ছাত্র-ছাত্রীদের আবেদনপত্র পোর্টাল | Student Applications - BAUST</title>
+    
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 4.6 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2a4365;
+            --secondary: #2b6cb0;
+            --accent: #d69e2e;
+            --accent-green: #38a169;
+            --bg-body: #f7fafc;
+            --card-border: #e2e8f0;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+        }
+
+        body, input, select, textarea, button {
+            font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', 'Noto Sans Bengali', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        body {
+            background: linear-gradient(135deg, #ebf4ff 0%, #f7fafc 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+
+        .portal-header {
+            background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+            color: #fff;
+            padding: 30px 24px 24px;
+            box-shadow: 0 4px 15px rgba(26, 54, 93, 0.2);
+            margin-bottom: 30px;
+            position: relative;
+            text-align: center;
+        }
+
+        .portal-header::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #10b981, #06b6d4, #6366f1);
+        }
+
+        .header-top-bar {
+            position: absolute;
+            top: 18px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .portal-back-btn, .portal-action-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 30px;
+            padding: 5px 14px;
+            color: #ffffff;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+        }
+
+        .portal-back-btn:hover, .portal-action-pill:hover {
+            background: #ffffff;
+            color: var(--primary);
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-top-right {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .lang-switcher-box {
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 30px;
+            padding: 3px;
+        }
+
+        .lang-switch-btn {
+            border: none;
+            background: transparent;
+            color: #ffffff;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .lang-switch-btn.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .portal-brand-center {
+            max-width: 820px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .portal-brand-title {
+            font-size: 1.55rem;
+            font-weight: 800;
+            margin: 10px 0 4px;
+            letter-spacing: -0.5px;
+            line-height: 1.25;
+        }
+
+        .portal-brand-sub {
+            font-size: 0.95rem;
+            opacity: 0.92;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .portal-header {
+                padding: 16px 14px 20px;
+            }
+            .header-top-bar {
+                position: static;
+                margin-bottom: 14px;
+                pointer-events: auto;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .portal-brand-title {
+                font-size: 1.2rem;
+            }
+            .portal-brand-sub {
+                font-size: 0.85rem;
+            }
+        }
+
+        .mode-toggle-tabs {
+            display: flex;
+            background: #edf2f7;
+            border-radius: 12px;
+            padding: 5px;
+            margin-bottom: 25px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .mode-tab-btn {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 9px;
+            color: var(--text-muted);
+            transition: all 0.25s ease;
+            text-align: center;
+        }
+
+        .mode-tab-btn.active {
+            background: #fff;
+            color: var(--primary);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .main-card {
+            background: #fff;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .autofill-box {
+            background: #ebf8ff;
+            border: 1.5px dashed #63b3ed;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .warning-banner {
+            background: #fffaf0;
+            border-left: 4px solid #dd6b20;
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.92rem;
+            color: #7b341e;
+            display: none;
+        }
+
+        .form-section-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-control, .custom-select {
+            border-radius: 8px;
+            border: 1.5px solid #cbd5e0;
+            padding: 10px 14px;
+            height: auto;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-control:focus, .custom-select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
+        }
+
+        .chip-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .chip-btn {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 0.85rem;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chip-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .chip-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .btn-submit-main {
+            background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+            color: white;
+            font-weight: 700;
+            padding: 12px 28px;
+            border-radius: 10px;
+            border: none;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 12px rgba(26, 54, 93, 0.25);
+            transition: all 0.2s;
+        }
+
+        .btn-submit-main:hover {
+            background: linear-gradient(135deg, #2a4365 0%, #3182ce 100%);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .btn-template-download {
+            border-radius: 9px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 9px 16px;
+        }
+
+        .spinner-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            z-index: 10;
+            display: none;
+        }
+
+        .preview-letter-box {
+            background: #fff;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 25px;
+            font-family: 'Times New Roman', serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #111;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Portal Top Header -->
+    <header class="portal-header">
+        <!-- Top Bar: Left Back Button & Right Actions (Symmetric) -->
+        <div class="header-top-bar">
+            <!-- Top Left: Back to Campus Connect / Login -->
+            <a href="{% url 'login' %}" class="portal-back-btn" title="Back to Campus Connect Login">
+                <i class="fas fa-arrow-left"></i>
+                <span data-i18n="campus_connect_btn">ক্যাম্পাস কানেক্ট (লগইন)</span>
+            </a>
+
+            <!-- Top Right: Track Application & Language Switcher -->
+            <div class="header-top-right">
+                <a href="{% url 'public_track_application' %}" class="portal-action-pill" title="Track Application Status">
+                    <i class="fas fa-search-location"></i>
+                    <span data-i18n="track_btn">আবেদন ট্র্যাকিং</span>
+                </a>
+                <div class="lang-switcher-box">
+                    <button type="button" class="lang-switch-btn" id="langBnBtn" onclick="setLanguage('bn')">🇧🇩 বাংলা</button>
+                    <button type="button" class="lang-switch-btn" id="langEnBtn" onclick="setLanguage('en')">🇬🇧 English</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Logo + University Name + Subtitle -->
+        <div class="container">
+            <div class="portal-brand-center">
+                <div class="portal-logo-box">
+                    {% if sys_settings and sys_settings.logo_url %}
+                        <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo" style="height: 62px; width: 62px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 3px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);">
+                    {% else %}
+                        <img src="/media/branding/logo.png" onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}';" alt="BAUST Logo" style="height: 62px; width: 62px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 3px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);">
+                    {% endif %}
+                </div>
+                <h1 class="portal-brand-title">
+                    <span data-i18n="header_title">বাংলাদেশ আর্মি ইউনিভার্সিটি অব সায়েন্স অ্যান্ড টেকনোলজি (BAUST)</span>
+                </h1>
+                <p class="portal-brand-sub">
+                    <span data-i18n="header_sub">ভর্তি ও শিক্ষার্থী আবেদনপত্র সেবা পোর্টাল &bull; সৈয়দপুর সেনানিবাস</span>
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+                <!-- Mode Selector Toggle Tabs (F7) -->
+                <div class="mode-toggle-tabs">
+                    <button type="button" class="mode-tab-btn active" id="tabManual" onclick="switchMode('manual')">
+                        <i class="fas fa-pen-fancy mr-1"></i>
+                        <span data-i18n="tab_manual">✍️ হাতে পূরণ করুন / Type Manually</span>
+                    </button>
+                    <button type="button" class="mode-tab-btn" id="tabAutofill" onclick="switchMode('autofill')">
+                        <i class="fas fa-bolt mr-1 text-warning"></i>
+                        <span data-i18n="tab_autofill">⚡ বিশ্ববিদ্যালয় রেকর্ড থেকে অটো-ফিল (ভর্তিকৃত ছাত্র/ছাত্রী)</span>
+                    </button>
+                </div>
+
+                <!-- Main Application Card -->
+                <div class="main-card">
+
+                    <!-- Auto-Fill Section (Visible in Autofill Tab) -->
+                    <div class="autofill-box" id="autofillBox" style="display: none;">
+                        <div class="spinner-overlay" id="autofillSpinner">
+                            <div class="spinner-border text-primary mb-2" role="status"></div>
+                            <div class="font-weight-bold text-primary" data-i18n="checking_records">রেকর্ড যাচাই করা হচ্ছে...</div>
+                        </div>
+
+                        <h6 class="font-weight-bold text-primary mb-3">
+                            <i class="fas fa-shield-alt mr-1"></i>
+                            <span data-i18n="autofill_heading">নিরাপদ তথ্য যাচাই (Security Verification)</span>
+                        </h6>
+                        <p class="small text-muted mb-3" data-i18n="autofill_subtext">
+                            আপনার নিবন্ধিত স্টুডেন্ট আইডি এবং মোবাইল নম্বর / জন্মতারিখ প্রদান করে সরাসরি বিশ্ববিদ্যালয়ের ডাটাবেজ থেকে তথ্য পূরণ করুন।
+                        </p>
+
+                        <div class="form-row align-items-end">
+                            <div class="col-md-4 mb-2">
+                                <label class="small font-weight-bold" data-i18n="label_student_id">স্টুডেন্ট আইডি / Student ID *</label>
+                                <input type="text" class="form-control form-control-sm" id="afStudentId" placeholder="e.g. 210101001">
+                            </div>
+                            <div class="col-md-5 mb-2">
+                                <label class="small font-weight-bold">
+                                    <span data-i18n="label_verification_cred">যাচাইকরণ মাধ্যম (Verification) *</span>
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <select class="custom-select" id="afVerifyType" style="border-top-right-radius: 0; border-bottom-right-radius: 0; width: 110px;">
+                                            <option value="mobile">মোবাইল নং</option>
+                                            <option value="dob">জন্মতারিখ</option>
+                                        </select>
+                                    </div>
+                                    <input type="text" class="form-control" id="afVerifyValue" placeholder="e.g. 01712345678 বা YYYY-MM-DD">
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button type="button" class="btn btn-sm btn-primary btn-block font-weight-bold py-2" onclick="performAutofill()">
+                                    <i class="fas fa-search mr-1"></i>
+                                    <span data-i18n="btn_fetch_data">ডাটা লোড করুন</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="autofillFeedback" class="small mt-2" style="display: none;"></div>
+                    </div>
+
+                    <!-- Auto-Fill Data Warning Banner (User Request #3) -->
+                    <div class="warning-banner" id="mismatchWarningBanner">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-2x mr-3 text-warning"></i>
+                            <div>
+                                <strong data-i18n="warning_title">সতর্কবার্তা / Notice:</strong><br>
+                                <span id="warningBannerText" data-i18n="warning_text">
+                                    আপনার তথ্য বিশ্ববিদ্যালয় ডাটাবেজ থেকে স্বয়ংক্রিয়ভাবে যুক্ত করা হয়েছে। আবেদনপত্রটি দাখিল করার পূর্বে প্রতিটি ফিল্ড অত্যন্ত সতর্কতার সাথে পুনরায় দেখে নিন। কোনো তথ্য সংশোধন বা অমিল থাকলে তা দপ্তর কর্তৃক যাচাই করা হবে।
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Application Form -->
+                    <form id="applicationForm" method="POST" onsubmit="handleFormPreSubmit(event)">
+                        {% csrf_token %}
+                        <input type="hidden" name="confirm_duplicate" id="confirmDuplicateInput" value="false">
+
+                        <!-- Step 1: Application Type Selection -->
+                        <div class="form-section-title">
+                            <i class="fas fa-file-signature text-secondary"></i>
+                            <span data-i18n="sec_app_type">১. আবেদনপত্রের ধরন নির্বাচন করুন (Select Application Format)</span>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold" data-i18n="label_select_type">আবেদনের বিষয় / Application Type *</label>
+                            <select class="custom-select" name="application_type" id="applicationTypeSelect" onchange="onApplicationTypeChanged()" required>
+                                <option value="" data-i18n="select_type_placeholder">-- আবেদনপত্রের ধরন নির্বাচন করুন (১৫টি ফরম্যাট) --</option>
+                                {% for item in app_types %}
+                                <option value="{{ item.code }}" data-order="{{ item.order }}">
+                                    {{ item.order|stringformat:"02d" }}. {{ item.title_bn }} ({{ item.title_en }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Blank Templates Download Shortcuts -->
+                        <div class="d-flex justify-content-between align-items-center flex-wrap p-3 mb-4 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <div>
+                                <span class="font-weight-bold text-muted small" data-i18n="blank_template_prompt">হাতে লিখে জমা দেওয়ার জন্য খালি ফরম দরকার?</span>
+                            </div>
+                            <div class="d-flex gap-2 mt-2 mt-sm-0">
+                                <button type="button" class="btn btn-outline-danger btn-sm btn-template-download mr-2" id="downloadBlankPdfBtn" onclick="downloadCurrentBlankPdf()">
+                                    <i class="fas fa-file-pdf mr-1"></i>
+                                    <span data-i18n="btn_blank_pdf">খালি PDF ফরম ডাউনলোড</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm btn-template-download" id="downloadBlankDocxBtn" onclick="downloadCurrentBlankDocx()">
+                                    <i class="fas fa-file-word mr-1"></i>
+                                    <span data-i18n="btn_blank_docx">Word (.docx) টেমপ্লেট</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Student Identity Section -->
+                        <div class="form-section-title">
+                            <i class="fas fa-user-graduate text-secondary"></i>
+                            <span data-i18n="sec_student_info">২. শিক্ষার্থীর পরিচিতি (Student Information)</span>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="col-md-6 mb-3">
+                                <label class="font-weight-bold" data-i18n="label_name">শিক্ষার্থীর পূর্ণ নাম / Full Name *</label>
+                                <input type="text" class="form-control" name="student_name" id="studentNameInput" placeholder="e.g. Md. Ashraful Islam" required>
+                            </div>
+                            <div class="col-md-6 mb-3" id="studentIdContainer">
+                                <label class="font-weight-bold">
+                                    <span data-i18n="label_student_id">স্টুডেন্ট আইডি / Student ID</span>
+                                    <span id="idRequiredStar" class="text-danger">*</span>
+                                    <span id="idOptionalBadge" class="badge badge-secondary ml-1" style="display:none;" data-i18n="badge_optional">ঐচ্ছিক</span>
+                                </label>
+                                <input type="text" class="form-control" name="student_id" id="studentIdInput" placeholder="e.g. 210101001" onblur="validateStudentIdOnBlur()">
+                                <small id="idValidationMsg" class="form-text text-muted"></small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="col-md-6 mb-3">
+                                <label class="font-weight-bold" data-i18n="label_dept">বিভাগ / Department *</label>
+                                <select class="custom-select" name="department" id="departmentInput" required>
+                                    <option value="" data-i18n="select_dept_placeholder">-- বিভাগ নির্বাচন করুন --</option>
+                                    {% for prog in programs %}
+                                    <option value="{{ prog.short_name|default:prog.name }}">{{ prog.name }} ({{ prog.short_name|default:prog.name }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="font-weight-bold" data-i18n="label_phone">মোবাইল নম্বর / Contact Phone *</label>
+                                <input type="tel" class="form-control" name="phone_no" id="phoneInput" placeholder="e.g. 01712345678" pattern="[0-9+ -]{11,15}" required>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Dynamic Application Fields -->
+                        <div id="dynamicFieldsSection" style="display: none;">
+                            <div class="form-section-title">
+                                <i class="fas fa-list-alt text-secondary"></i>
+                                <span data-i18n="sec_app_specific">৩. আবেদনের বিবরণ ও প্রাসঙ্গিক তথ্য (Application Specific Details)</span>
+                            </div>
+
+                            <div class="form-row" id="dynamicFieldsRow">
+                                <!-- Dynamically generated by JS based on selected app type -->
+                            </div>
+                        </div>
+
+                        <!-- Addressee Preview Badge -->
+                        <div class="alert alert-light border d-flex align-items-center mb-4 mt-3" id="recipientPreviewBar" style="display: none !important;">
+                            <i class="fas fa-envelope-open-text fa-lg text-primary mr-3"></i>
+                            <div>
+                                <strong class="small text-muted" data-i18n="lbl_addressed_to">আবেদনপত্রটি যার বরাবর প্রেরিত হবে (Addressed To):</strong>
+                                <div class="font-weight-bold text-dark" id="recipientText">The Registrar</div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Submission Actions -->
+                        <div class="text-center mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-submit-main px-5 py-3" id="submitBtn">
+                                <i class="fas fa-paper-plane mr-2"></i>
+                                <span data-i18n="btn_preview_submit">আবেদনপত্র দাখিল করুন (Preview & Submit)</span>
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Preview Modal (F2) -->
+    <div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius: 16px;">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title font-weight-bold text-primary">
+                        <i class="fas fa-eye mr-2"></i>
+                        <span data-i18n="modal_preview_title">আবেদনপত্রের খসড়া পর্যালোচনা (Application Letter Preview)</span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <span data-i18n="modal_preview_hint">দয়া করে আবেদনপত্রের প্রতিটি অংশ ভালোভাবে দেখে নিন। দাখিল করার পর একটি ট্র্যাকিং নম্বর সহ অফিশিয়াল PDF তৈরি হবে।</span>
+                    </div>
+
+                    <div class="preview-letter-box" id="letterPreviewContainer">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                        <span data-i18n="btn_edit">সংশোধন করুন (Edit)</span>
+                    </button>
+                    <button type="button" class="btn btn-success rounded-pill px-4 font-weight-bold" onclick="executeFinalSubmit()">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        <span data-i18n="btn_confirm_submit">নিশ্চিত করে দাখিল করুন (Confirm & Submit)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Duplicate Warning Modal (CC1) -->
+    <div class="modal fade" id="duplicateWarningModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius: 16px;">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title font-weight-bold">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span data-i18n="modal_duplicate_title">পুনরাবৃত্ত আবেদন সতর্কবার্তা (Duplicate Submission)</span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <p class="mb-3" id="duplicateModalText"></p>
+                    <div class="badge badge-light border p-2 font-weight-bold text-primary mb-3" style="font-size: 1rem;" id="duplicateTrackingBadge"></div>
+                    <p class="small text-muted" data-i18n="modal_duplicate_prompt">
+                        আপনি কি একই ফরম্যাটে আরেকটি নতুন আবেদন দাখিল করতে চান?
+                    </p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-dismiss="modal" data-i18n="btn_cancel">বাতিল</button>
+                    <button type="button" class="btn btn-warning rounded-pill font-weight-bold" onclick="confirmDuplicateAndSubmit()">
+                        <span data-i18n="btn_submit_anyway">হ্যাঁ, আবার দাখিল করুন</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submission Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content text-center p-4" style="border-radius: 20px;">
+                <div class="mb-3">
+                    <div class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                        <i class="fas fa-check fa-2x"></i>
+                    </div>
+                </div>
+                <h4 class="font-weight-bold text-success" data-i18n="success_heading">আবেদনপত্র সফলভাবে গৃহীত হয়েছে!</h4>
+                <p class="text-muted small" data-i18n="success_sub">আপনার আবেদনপত্রের ট্র্যাকিং নম্বর নিচে দেওয়া হলো:</p>
+                
+                <div class="p-3 bg-light rounded-lg border mb-3">
+                    <span class="font-weight-bold text-primary" style="font-size: 1.4rem; letter-spacing: 1px;" id="successTrackingNo">ADMN-2026-0001</span>
+                </div>
+
+                <p class="small text-muted mb-4" data-i18n="success_instructions">
+                    অনুগ্রহ করে নিচের বাটনে ক্লিক করে পূরণকৃত আবেদনপত্রটি ডাউনলোড ও প্রিন্ট করে সংশ্লিষ্ট বিভাগে জমা দিন।
+                </p>
+
+                <div class="d-flex flex-column gap-2">
+                    <a href="#" id="successPdfDownloadBtn" target="_blank" class="btn btn-danger btn-block rounded-pill py-2 font-weight-bold mb-2">
+                        <i class="fas fa-file-pdf mr-1"></i>
+                        <span data-i18n="btn_download_filled_pdf">পূরণকৃত PDF ডাউনলোড করুন</span>
+                    </a>
+                    <a href="{% url 'public_track_application' %}" id="successTrackLink" class="btn btn-outline-primary btn-block rounded-pill py-2">
+                        <i class="fas fa-search-location mr-1"></i>
+                        <span data-i18n="btn_track_status">আবেদনের অগ্রগতি ট্র্যাক করুন</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts: jQuery, Bootstrap, i18n & App Logic -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Preloaded Application Types JSON
+        const appTypes = {{ app_types_json|safe }};
+        let currentAppType = null;
+        let activeLang = localStorage.getItem('baust_app_lang') || 'bn';
+
+        // Translation Dictionary (F6)
+        const i18nDict = {
+            bn: {
+                header_title: "বাংলাদেশ আর্মি ইউনিভার্সিটি অব সায়েন্স অ্যান্ড টেকনোলজি (BAUST)",
+                header_sub: "ভর্তি ও শিক্ষার্থী আবেদনপত্র সেবা পোর্টাল • সৈয়দপুর সেনানিবাস",
+                campus_connect_btn: "ক্যাম্পাস কানেক্ট (লগইন)",
+                track_btn: "আবেদন ট্র্যাকিং",
+                tab_manual: "✍️ হাতে পূরণ করুন / Type Manually",
+                tab_autofill: "⚡ বিশ্ববিদ্যালয় রেকর্ড থেকে অটো-ফিল (ভর্তিকৃত ছাত্র/ছাত্রী)",
+                autofill_heading: "নিরাপদ তথ্য যাচাই (Security Verification)",
+                autofill_subtext: "আপনার নিবন্ধিত স্টুডেন্ট আইডি এবং মোবাইল নম্বর / জন্মতারিখ প্রদান করে সরাসরি বিশ্ববিদ্যালয়ের ডাটাবেজ থেকে তথ্য পূরণ করুন।",
+                checking_records: "রেকর্ড যাচাই করা হচ্ছে...",
+                label_student_id: "স্টুডেন্ট আইডি / Student ID",
+                label_verification_cred: "যাচাইকরণ মাধ্যম (Verification) *",
+                btn_fetch_data: "ডাটা লোড করুন",
+                warning_title: "সতর্কবার্তা / Notice:",
+                warning_text: "আপনার তথ্য বিশ্ববিদ্যালয় ডাটাবেজ থেকে স্বয়ংক্রিয়ভাবে যুক্ত করা হয়েছে। আবেদনপত্রটি দাখিল করার পূর্বে প্রতিটি ফিল্ড অত্যন্ত সতর্কতার সাথে পুনরায় দেখে নিন। কোনো তথ্য সংশোধন বা অমিল থাকলে তা দপ্তর কর্তৃক যাচাই করা হবে।",
+                sec_app_type: "১. আবেদনপত্রের ধরন নির্বাচন করুন (Select Application Format)",
+                label_select_type: "আবেদনের বিষয় / Application Type *",
+                select_type_placeholder: "-- আবেদনপত্রের ধরন নির্বাচন করুন (১৫টি ফরম্যাট) --",
+                blank_template_prompt: "হাতে লিখে জমা দেওয়ার জন্য খালি ফরম দরকার?",
+                btn_blank_pdf: "খালি PDF ফরম ডাউনলোড",
+                btn_blank_docx: "Word (.docx) টেমপ্লেট",
+                sec_student_info: "২. শিক্ষার্থীর পরিচিতি (Student Information)",
+                label_name: "শিক্ষার্থীর পূর্ণ নাম / Full Name *",
+                badge_optional: "ঐচ্ছিক",
+                label_dept: "বিভাগ / Department *",
+                select_dept_placeholder: "-- বিভাগ নির্বাচন করুন --",
+                label_phone: "মোবাইল নম্বর / Contact Phone *",
+                sec_app_specific: "৩. আবেদনের বিবরণ ও প্রাসঙ্গিক তথ্য (Application Specific Details)",
+                lbl_addressed_to: "আবেদনপত্রটি যার বরাবর প্রেরিত হবে (Addressed To):",
+                btn_preview_submit: "আবেদনপত্র দাখিল করুন (Preview & Submit)",
+                modal_preview_title: "আবেদনপত্রের খসড়া পর্যালোচনা (Application Letter Preview)",
+                modal_preview_hint: "দয়া করে আবেদনপত্রের প্রতিটি অংশ ভালোভাবে দেখে নিন। দাখিল করার পর একটি ট্র্যাকিং নম্বর সহ অফিশিয়াল PDF তৈরি হবে।",
+                btn_edit: "সংশোধন করুন (Edit)",
+                btn_confirm_submit: "নিশ্চিত করে দাখিল করুন (Confirm & Submit)",
+                modal_duplicate_title: "পুনরাবৃত্ত আবেদন সতর্কবার্তা (Duplicate Submission)",
+                modal_duplicate_prompt: "আপনি কি একই ফরম্যাটে আরেকটি নতুন আবেদন দাখিল করতে চান?",
+                btn_cancel: "বাতিল",
+                btn_submit_anyway: "হ্যাঁ, আবার দাখিল করুন",
+                success_heading: "আবেদনপত্র সফলভাবে গৃহীত হয়েছে!",
+                success_sub: "আপনার আবেদনপত্রের ট্র্যাকিং নম্বর নিচে দেওয়া হলো:",
+                success_instructions: "অনুগ্রহ করে নিচের বাটনে ক্লিক করে পূরণকৃত আবেদনপত্রটি ডাউনলোড ও প্রিন্ট করে সংশ্লিষ্ট বিভাগে জমা দিন।",
+                btn_download_filled_pdf: "পূরণকৃত PDF ডাউনলোড করুন",
+                btn_track_status: "আবেদনের অগ্রগতি ট্র্যাক করুন"
+            },
+            en: {
+                header_title: "Bangladesh Army University of Science & Technology (BAUST)",
+                header_sub: "Student Admission Applications Portal • Saidpur Cantonment",
+                campus_connect_btn: "Campus Connect",
+                track_btn: "Application Tracking",
+                tab_manual: "✍️ Type Manually",
+                tab_autofill: "⚡ Auto-Fill from University Records (Enrolled)",
+                autofill_heading: "Secure Student Data Verification",
+                autofill_subtext: "Enter your registered Student ID and Mobile / DOB to auto-populate from university records.",
+                checking_records: "Checking records...",
+                label_student_id: "Student ID",
+                label_verification_cred: "Verification Credential *",
+                btn_fetch_data: "Fetch My Data",
+                warning_title: "Important Notice:",
+                warning_text: "Data has been auto-populated from official university records. Please review all fields carefully before submitting. Any modified values will be flagged for staff verification.",
+                sec_app_type: "1. Select Application Format",
+                label_select_type: "Application Type *",
+                select_type_placeholder: "-- Select an Application Type (All 15 Formats) --",
+                blank_template_prompt: "Need a blank form for manual handwritten submission?",
+                btn_blank_pdf: "Download Blank PDF",
+                btn_blank_docx: "Word (.docx) Template",
+                sec_student_info: "2. Student Identity Information",
+                label_name: "Full Name of Student *",
+                badge_optional: "Optional",
+                label_dept: "Department / Program *",
+                select_dept_placeholder: "-- Select Department --",
+                label_phone: "Contact Mobile Number *",
+                sec_app_specific: "3. Application Details & Specific Information",
+                lbl_addressed_to: "Application Addressed To:",
+                btn_preview_submit: "Review & Submit Application",
+                modal_preview_title: "Review Application Letter",
+                modal_preview_hint: "Please inspect each detail carefully. Upon confirmation, an official tracking ID and PDF letter will be generated.",
+                btn_edit: "Edit Fields",
+                btn_confirm_submit: "Confirm & Submit",
+                modal_duplicate_title: "Duplicate Application Warning",
+                modal_duplicate_prompt: "Do you still wish to submit another application of this type?",
+                btn_cancel: "Cancel",
+                btn_submit_anyway: "Yes, Submit Again",
+                success_heading: "Application Submitted Successfully!",
+                success_sub: "Your official tracking number is:",
+                success_instructions: "Please download and print your official application PDF and submit it to the designated office.",
+                btn_download_filled_pdf: "Download Filled Application PDF",
+                btn_track_status: "Track Application Status"
+            }
+        };
+
+        function setLanguage(lang) {
+            activeLang = lang;
+            localStorage.setItem('baust_app_lang', lang);
+            document.documentElement.lang = lang;
+
+            if (lang === 'bn') {
+                $('#langBnBtn').addClass('active');
+                $('#langEnBtn').removeClass('active');
+            } else {
+                $('#langEnBtn').addClass('active');
+                $('#langBnBtn').removeClass('active');
+            }
+
+            // Update elements with data-i18n
+            $('[data-i18n]').each(function() {
+                const key = $(this).attr('data-i18n');
+                if (i18nDict[lang] && i18nDict[lang][key]) {
+                    $(this).text(i18nDict[lang][key]);
+                }
+            });
+
+            // Re-render dynamic fields for language labels
+            if (currentAppType) {
+                renderDynamicFields(currentAppType);
+            }
+        }
+
+        // Switch between manual and auto-fill mode (F7)
+        function switchMode(mode) {
+            if (mode === 'autofill') {
+                $('#tabAutofill').addClass('active');
+                $('#tabManual').removeClass('active');
+                $('#autofillBox').slideDown();
+            } else {
+                $('#tabManual').addClass('active');
+                $('#tabAutofill').removeClass('active');
+                $('#autofillBox').slideUp();
+                $('#mismatchWarningBanner').slideUp();
+                // Clear inputs to avoid mixing state
+                $('#applicationForm')[0].reset();
+                $('#dynamicFieldsSection').hide();
+                currentAppType = null;
+            }
+        }
+
+        // Secure Auto-Fill Fetch
+        function performAutofill() {
+            const studentId = $('#afStudentId').val().trim();
+            const verifyType = $('#afVerifyType').val();
+            const verifyValue = $('#afVerifyValue').val().trim();
+
+            if (!studentId || !verifyValue) {
+                alert('Please enter both Student ID and verification credential.');
+                return;
+            }
+
+            $('#autofillSpinner').show();
+            $('#autofillFeedback').hide();
+
+            $.ajax({
+                url: '{% url "api_secure_autofill" %}',
+                type: 'POST',
+                data: {
+                    student_id: studentId,
+                    verify_type: verifyType,
+                    verify_value: verifyValue,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(resp) {
+                    $('#autofillSpinner').hide();
+                    if (resp.status === 'success') {
+                        // Populate Student Info
+                        $('#studentIdInput').val(resp.student_id);
+                        $('#studentNameInput').val(resp.student_name);
+                        $('#phoneInput').val(resp.phone_no);
+
+                        // Select department if matches
+                        if (resp.department) {
+                            $("#departmentInput option").each(function() {
+                                if ($(this).text().toLowerCase().includes(resp.department.toLowerCase())) {
+                                    $(this).prop('selected', true);
+                                }
+                            });
+                        }
+
+                        // Show Warning Banner (User request #3)
+                        $('#warningBannerText').text(resp.warning);
+                        $('#mismatchWarningBanner').slideDown();
+
+                        $('#autofillFeedback').html('<span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> Data loaded for: ' + resp.student_name + '</span>').show();
+                    }
+                },
+                error: function(xhr) {
+                    $('#autofillSpinner').hide();
+                    let errMsg = 'Verification failed.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    $('#autofillFeedback').html('<span class="text-danger font-weight-bold"><i class="fas fa-times-circle mr-1"></i> ' + errMsg + '</span>').show();
+                }
+            });
+        }
+
+        // Live validation on blur
+        function validateStudentIdOnBlur() {
+            const sid = $('#studentIdInput').val().trim();
+            if (!sid) return;
+
+            $.get('{% url "api_validate_id" %}', { student_id: sid }, function(res) {
+                if (res.valid) {
+                    $('#idValidationMsg').html('<span class="text-success"><i class="fas fa-check-circle"></i> ' + res.name + ' (' + res.dept + ')</span>');
+                } else {
+                    if (res.policy === 'STRICT') {
+                        $('#idValidationMsg').html('<span class="text-danger"><i class="fas fa-exclamation-circle"></i> ID not found in university records (Strict Mode Active).</span>');
+                    } else {
+                        $('#idValidationMsg').html('<span class="text-warning"><i class="fas fa-info-circle"></i> Unrecorded ID. Will be submitted for manual verification.</span>');
+                    }
+                }
+            });
+        }
+
+        // Application type selection event
+        function onApplicationTypeChanged() {
+            const code = $('#applicationTypeSelect').val();
+            if (!code) {
+                $('#dynamicFieldsSection').hide();
+                $('#recipientPreviewBar').hide();
+                currentAppType = null;
+                return;
+            }
+
+            currentAppType = appTypes.find(t => t.code === code);
+            if (!currentAppType) return;
+
+            // Handle optional Student ID (Apps 01, 04, 14, 15 - CC3)
+            if (currentAppType.is_id_optional) {
+                $('#idRequiredStar').hide();
+                $('#idOptionalBadge').show();
+                $('#studentIdInput').removeAttr('required');
+            } else {
+                $('#idRequiredStar').show();
+                $('#idOptionalBadge').hide();
+                $('#studentIdInput').attr('required', 'required');
+            }
+
+            // Recipient block
+            $('#recipientText').text(currentAppType.addressed_to);
+            $('#recipientPreviewBar').show();
+
+            // Render Dynamic Fields
+            renderDynamicFields(currentAppType);
+            $('#dynamicFieldsSection').slideDown();
+        }
+
+        // Dynamically renders fields_schema (F1, F9, CC8)
+        function renderDynamicFields(appDef) {
+            const container = $('#dynamicFieldsRow');
+            container.empty();
+
+            if (!appDef.fields_schema || appDef.fields_schema.length === 0) {
+                // CC5 graceful fallback
+                container.html('<div class="col-12"><div class="alert alert-warning">This format has standard academic letter fields. Proceed below.</div></div>');
+                return;
+            }
+
+            appDef.fields_schema.forEach(field => {
+                const colClass = field.col_class || 'col-md-6';
+                const label = (activeLang === 'bn' ? (field.label_bn || field.label_en) : field.label_en);
+                const reqStar = field.required ? '<span class="text-danger">*</span>' : '';
+                const reqAttr = field.required ? 'required' : '';
+                const inputModeAttr = field.inputmode ? `inputmode="${field.inputmode}" pattern="[0-9.]*"` : '';
+
+                let fieldHtml = `<div class="${colClass} mb-3">`;
+                fieldHtml += `<label class="font-weight-bold small mb-1">${label} ${reqStar}</label>`;
+
+                if (field.type === 'select') {
+                    fieldHtml += `<select class="custom-select" name="${field.name}" id="field_${field.name}" ${reqAttr}>`;
+                    fieldHtml += `<option value="">-- ${activeLang === 'bn' ? 'নির্বাচন করুন' : 'Select'} --</option>`;
+                    field.options.forEach(opt => {
+                        fieldHtml += `<option value="${opt}">${opt}</option>`;
+                    });
+                    fieldHtml += `</select>`;
+                } else if (field.type === 'textarea') {
+                    fieldHtml += `<textarea class="form-control" name="${field.name}" id="field_${field.name}" rows="2" ${reqAttr}></textarea>`;
+                } else if (field.type === 'chips') {
+                    fieldHtml += `<input type="hidden" name="${field.name}" id="field_${field.name}" ${reqAttr}>`;
+                    fieldHtml += `<div class="chip-group" data-target="field_${field.name}">`;
+                    field.options.forEach(opt => {
+                        fieldHtml += `<span class="chip-btn" onclick="selectChip('field_${field.name}', '${opt}', this)">${opt}</span>`;
+                    });
+                    fieldHtml += `</div>`;
+                } else if (field.type === 'date') {
+                    let minDateAttr = '';
+                    if (field.name === 'resubmit_date') {
+                        // CC8: min date = today + 7 days
+                        const minDate = new Date();
+                        minDate.setDate(minDate.getDate() + 7);
+                        minDateAttr = `min="${minDate.toISOString().split('T')[0]}"`;
+                    }
+                    fieldHtml += `<input type="date" class="form-control" name="${field.name}" id="field_${field.name}" ${minDateAttr} ${reqAttr}>`;
+                } else {
+                    fieldHtml += `<input type="text" class="form-control" name="${field.name}" id="field_${field.name}" ${inputModeAttr} ${reqAttr}>`;
+                }
+
+                // Sibling Check Live Validation Hook for App 09 (CC2)
+                if (field.name === 'sibling_id') {
+                    fieldHtml += `<small id="siblingCheckMsg" class="form-text text-muted"></small>`;
+                }
+
+                fieldHtml += `</div>`;
+                container.append(fieldHtml);
+            });
+
+            // Bind Sibling Check listener
+            if (appDef.code === 'sibling_waiver') {
+                $('#field_sibling_id').on('blur', function() {
+                    checkSiblingId($(this).val());
+                });
+            }
+
+            // Hall name dropdown dynamic recipient update (F9)
+            if (appDef.code === 'hall_cancel' || appDef.code === 'seat_in_hostel') {
+                $('#field_hall_name').on('change', function() {
+                    const hVal = $(this).val();
+                    if (hVal) {
+                        $('#recipientText').text('The Hall Provost, ' + hVal);
+                    } else {
+                        $('#recipientText').text('The Hall Provost');
+                    }
+                });
+            }
+        }
+
+        function selectChip(targetId, value, el) {
+            $(`#${targetId}`).val(value);
+            $(el).siblings().removeClass('active');
+            $(el).addClass('active');
+        }
+
+        // CC2: Sibling Check
+        function checkSiblingId(siblingId) {
+            const studentId = $('#studentIdInput').val().trim();
+            if (!siblingId) return;
+
+            if (studentId && siblingId.toLowerCase() === studentId.toLowerCase()) {
+                $('#siblingCheckMsg').html('<span class="text-danger"><i class="fas fa-ban mr-1"></i> You cannot list yourself as a sibling.</span>');
+                return;
+            }
+
+            $.get('{% url "api_check_sibling" %}', { sibling_id: siblingId, student_id: studentId }, function(res) {
+                if (res.status === 'found') {
+                    $('#siblingCheckMsg').html('<span class="text-success"><i class="fas fa-check-circle mr-1"></i> ' + res.message + '</span>');
+                    $('#field_sibling_name').val(res.sibling_name);
+                    $('#field_sibling_dept').val(res.sibling_dept);
+                    $('#field_sibling_batch').val(res.sibling_batch);
+                } else if (res.status === 'self_reference') {
+                    $('#siblingCheckMsg').html('<span class="text-danger"><i class="fas fa-ban mr-1"></i> ' + res.message + '</span>');
+                } else {
+                    $('#siblingCheckMsg').html('<span class="text-warning"><i class="fas fa-info-circle mr-1"></i> ' + res.message + '</span>');
+                }
+            });
+        }
+
+        // Blank template downloads
+        function downloadCurrentBlankPdf() {
+            const code = $('#applicationTypeSelect').val();
+            if (!code) {
+                alert('Please select an application type first.');
+                return;
+            }
+            window.open('/apply/blank-pdf/' + code + '/', '_blank');
+        }
+
+        function downloadCurrentBlankDocx() {
+            const code = $('#applicationTypeSelect').val();
+            if (!code) {
+                alert('Please select an application type first.');
+                return;
+            }
+            window.open('/apply/blank-docx/' + code + '/', '_blank');
+        }
+
+        // Preview & Pre-Submit Handler (F2)
+        function handleFormPreSubmit(e) {
+            e.preventDefault();
+
+            if (!currentAppType) {
+                alert('Please select an application type.');
+                return;
+            }
+
+            // Build letterhead preview
+            const studentName = $('#studentNameInput').val();
+            const studentId = $('#studentIdInput').val();
+            const dept = $('#departmentInput').val();
+            const phone = $('#phoneInput').val();
+
+            let previewHtml = `
+                <div style="text-align: center; border-bottom: 2px solid #1a365d; padding-bottom: 8px; margin-bottom: 15px;">
+                    <h5 style="margin: 0; font-weight: bold; color: #1a365d;">BANGLADESH ARMY UNIVERSITY OF SCIENCE AND TECHNOLOGY</h5>
+                    <p style="margin: 0; font-size: 10pt; color: #4a5568;">Saidpur Cantonment, Saidpur • Office of the Registrar</p>
+                </div>
+                <p><strong>To:</strong> ${$('#recipientText').text()}<br>
+                BAUST, Saidpur Cantonment.</p>
+                ${currentAppType.through_dept_head ? `<p><strong>Through:</strong> The Head of the Department, Department of ${dept}.</p>` : ''}
+                <p style="text-decoration: underline; font-weight: bold;">Subject: ${currentAppType.subject}</p>
+                <p>Sir,</p>
+                <p style="text-indent: 30px;">${currentAppType.body_template}</p>
+                <p style="text-indent: 30px;">I, therefore, pray and hope that you would be kind enough to grant my application and oblige thereby.</p>
+                <div style="margin-top: 30px; text-align: right;">
+                    <p>Yours obediently,<br>
+                    <strong>${studentName}</strong><br>
+                    Department: ${dept}<br>
+                    ${studentId ? `Student ID: ${studentId}<br>` : ''}
+                    Phone: ${phone}</p>
+                </div>
+            `;
+
+            $('#letterPreviewContainer').html(previewHtml);
+            $('#previewModal').modal('show');
+        }
+
+        // Final Submission
+        function executeFinalSubmit() {
+            $('#previewModal').modal('hide');
+            const formData = $('#applicationForm').serialize();
+
+            $.ajax({
+                url: '{% url "public_apply" %}',
+                type: 'POST',
+                data: formData,
+                success: function(res) {
+                    if (res.status === 'duplicate_warning') {
+                        // CC1 Duplicate submission warning
+                        $('#duplicateModalText').text(res.message);
+                        $('#duplicateTrackingBadge').text(res.tracking_number);
+                        $('#duplicateWarningModal').modal('show');
+                    } else if (res.status === 'success') {
+                        $('#successTrackingNo').text(res.tracking_number);
+                        $('#successPdfDownloadBtn').attr('href', res.pdf_url);
+                        $('#successTrackLink').attr('href', '/apply/track/?tracking=' + res.tracking_number);
+                        $('#successModal').modal('show');
+                    }
+                },
+                error: function(xhr) {
+                    let errMsg = 'Submission failed.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    alert(errMsg);
+                }
+            });
+        }
+
+        // Duplicate confirmed
+        function confirmDuplicateAndSubmit() {
+            $('#duplicateWarningModal').modal('hide');
+            $('#confirmDuplicateInput').val('true');
+            executeFinalSubmit();
+        }
+
+        // Initialize on page load
+        $(document).ready(function() {
+            setLanguage(activeLang);
+        });
+    </script>
+</body>
+</html>

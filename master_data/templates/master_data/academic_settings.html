@@ -23,6 +23,19 @@
         background: #007bff !important;
         box-shadow: 0 4px 10px rgba(0, 123, 255, 0.15);
     }
+    .duplicate-row {
+        background-color: #fff3cd !important;
+        box-shadow: inset 4px 0 0 #ffc107;
+    }
+    .duplicate-badge {
+        background-color: #ffeeba;
+        color: #856404;
+        border: 1px solid #ffeeba;
+        font-size: 80%;
+        font-weight: 600;
+        border-radius: 4px;
+        padding: 2px 6px;
+    }
 </style>
 
 <div class="row">
@@ -34,16 +47,19 @@
                     <li class="nav-item m-1">
                         <a class="nav-link active py-2 font-weight-bold" id="clusters-tab" data-toggle="pill" href="#clusters" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
                             <i class="fas fa-layer-group mr-2"></i> Clusters
+                            {% if has_duplicate_clusters %}<span class="badge badge-warning text-dark ml-1" title="Duplicate codes detected">!</span>{% endif %}
                         </a>
                     </li>
                     <li class="nav-item m-1">
                         <a class="nav-link py-2 font-weight-bold" id="programs-tab" data-toggle="pill" href="#programs" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
                             <i class="fas fa-graduation-cap mr-2"></i> Programs
+                            {% if has_duplicate_programs %}<span class="badge badge-warning text-dark ml-1" title="Duplicate UGC codes detected">!</span>{% endif %}
                         </a>
                     </li>
                     <li class="nav-item m-1">
                         <a class="nav-link py-2 font-weight-bold" id="halls-tab" data-toggle="pill" href="#halls" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
                             <i class="fas fa-hotel mr-2"></i> Halls
+                            {% if has_duplicate_halls %}<span class="badge badge-warning text-dark ml-1" title="Duplicate codes detected">!</span>{% endif %}
                         </a>
                     </li>
                     <li class="nav-item m-1">
@@ -54,11 +70,13 @@
                     <li class="nav-item m-1">
                         <a class="nav-link py-2 font-weight-bold" id="semesters-tab" data-toggle="pill" href="#semesters" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
                             <i class="fas fa-clock mr-2"></i> Semesters
+                            {% if has_duplicate_semesters %}<span class="badge badge-warning text-dark ml-1" title="Duplicate codes detected">!</span>{% endif %}
                         </a>
                     </li>
                     <li class="nav-item m-1">
                         <a class="nav-link py-2 font-weight-bold" id="batches-tab" data-toggle="pill" href="#batches" role="tab" style="border-radius: 6px; transition: all 0.3s ease;">
                             <i class="fas fa-users mr-2"></i> Batches
+                            {% if has_duplicate_batches %}<span class="badge badge-warning text-dark ml-1" title="Duplicate batches detected">!</span>{% endif %}
                         </a>
                     </li>
                 </ul>
@@ -75,6 +93,12 @@
                             <h4 class="m-0 font-weight-bold">Clusters</h4>
                             <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addClusterModal"><i class="fas fa-plus mr-1"></i> Add Cluster</button>
                         </div>
+                        {% if has_duplicate_clusters %}
+                        <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center" role="alert" style="border-radius: 8px;">
+                            <i class="fas fa-exclamation-triangle mr-2 text-warning"></i>
+                            <span><strong>Notice:</strong> Multiple clusters share identical UGC codes (highlighted in yellow).</span>
+                        </div>
+                        {% endif %}
                         <table class="table table-bordered table-striped">
                             <thead>
                                 <tr>
@@ -85,9 +109,14 @@
                             </thead>
                             <tbody>
                                 {% for item in clusters %}
-                                <tr>
+                                <tr {% if item.is_duplicate %}class="duplicate-row"{% endif %}>
                                     <td>{{ item.name }}</td>
-                                    <td><code>{{ item.code }}</code></td>
+                                    <td>
+                                        <code>{{ item.code }}</code>
+                                        {% if item.is_duplicate %}
+                                            <span class="duplicate-badge ml-1"><i class="fas fa-exclamation-triangle mr-1"></i>Duplicate Code</span>
+                                        {% endif %}
+                                    </td>
                                     <td class="text-center">
                                         <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editClusterModal{{ item.id }}"><i class="fas fa-edit"></i></button>
                                         <a href="{% url 'delete_master_data' 'cluster' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this cluster?')"><i class="fas fa-trash"></i></a>
@@ -109,6 +138,12 @@
                                 <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addProgramModal"><i class="fas fa-plus mr-1"></i> Add Program</button>
                             </div>
                         </div>
+                        {% if has_duplicate_programs %}
+                        <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center" role="alert" style="border-radius: 8px;">
+                            <i class="fas fa-exclamation-triangle mr-2 text-warning"></i>
+                            <span><strong>Notice:</strong> Multiple programs share identical 5-digit UGC codes (highlighted in yellow). Please review and ensure unique identifiers.</span>
+                        </div>
+                        {% endif %}
                         <table class="table table-bordered table-striped">
                             <thead>
                                 <tr>
@@ -124,11 +159,21 @@
                             </thead>
                             <tbody>
                                 {% for item in programs %}
-                                <tr>
-                                    <td><span data-toggle="tooltip" title="Code: {{ item.full_ugc_code }}">{{ item.name }}</span></td>
+                                <tr {% if item.is_duplicate %}class="duplicate-row"{% endif %}>
+                                    <td>
+                                        <span data-toggle="tooltip" title="Code: {{ item.full_ugc_code }}">{{ item.name }}</span>
+                                        {% if item.is_duplicate %}
+                                            <span class="duplicate-badge ml-1"><i class="fas fa-exclamation-triangle mr-1"></i>Duplicate UGC</span>
+                                        {% endif %}
+                                    </td>
                                     <td><strong>{{ item.short_name|default:"-" }}</strong></td>
                                     <td><code>{{ item.ugc_code }}</code></td>
-                                    <td><code>{{ item.full_ugc_code }}</code></td>
+                                    <td>
+                                        <code class="{% if item.is_duplicate %}text-danger font-weight-bold{% endif %}">{{ item.full_ugc_code }}</code>
+                                        {% if item.is_duplicate %}
+                                            <span class="badge badge-danger ml-1" title="Conflicting 5-digit UGC Code">Conflict</span>
+                                        {% endif %}
+                                    </td>
                                     <td><span data-toggle="tooltip" title="Cluster: {{ item.cluster.name }}">{{ item.cluster.name }}</span></td>
                                     <td><span class="badge badge-secondary">{{ item.get_level_code_display }}</span></td>
                                     <td><span class="badge badge-info">{{ item.sort_order }}</span></td>
@@ -148,6 +193,12 @@
                             <h4 class="m-0 font-weight-bold">Residential Halls</h4>
                             <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addHallModal"><i class="fas fa-plus mr-1"></i> Add Hall</button>
                         </div>
+                        {% if has_duplicate_halls %}
+                        <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center" role="alert" style="border-radius: 8px;">
+                            <i class="fas fa-exclamation-triangle mr-2 text-warning"></i>
+                            <span><strong>Notice:</strong> Multiple residential halls share identical hall codes (highlighted in yellow).</span>
+                        </div>
+                        {% endif %}
                         <table class="table table-bordered table-striped">
                             <thead>
                                 <tr>
@@ -159,10 +210,15 @@
                             </thead>
                             <tbody>
                                 {% for item in halls %}
-                                <tr>
+                                <tr {% if item.is_duplicate %}class="duplicate-row"{% endif %}>
                                     <td><strong>{{ item.full_name|default:"-" }}</strong></td>
                                     <td>{{ item.short_name }}</td>
-                                    <td><code>{{ item.code }}</code></td>
+                                    <td>
+                                        <code>{{ item.code }}</code>
+                                        {% if item.is_duplicate %}
+                                            <span class="duplicate-badge ml-1"><i class="fas fa-exclamation-triangle mr-1"></i>Duplicate Code</span>
+                                        {% endif %}
+                                    </td>
                                     <td class="text-center">
                                         <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editHallModal{{ item.id }}"><i class="fas fa-edit"></i></button>
                                         <a href="{% url 'delete_master_data' 'hall' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this hall?')"><i class="fas fa-trash"></i></a>
@@ -214,6 +270,12 @@
                             <h4 class="m-0 font-weight-bold">Semesters</h4>
                             <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addSemesterModal"><i class="fas fa-plus mr-1"></i> Add Semester</button>
                         </div>
+                        {% if has_duplicate_semesters %}
+                        <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center" role="alert" style="border-radius: 8px;">
+                            <i class="fas fa-exclamation-triangle mr-2 text-warning"></i>
+                            <span><strong>Notice:</strong> Multiple semesters share identical codes (highlighted in yellow).</span>
+                        </div>
+                        {% endif %}
                         <table class="table table-bordered table-striped">
                             <thead>
                                 <tr>
@@ -224,9 +286,14 @@
                             </thead>
                             <tbody>
                                 {% for item in semesters %}
-                                <tr>
+                                <tr {% if item.is_duplicate %}class="duplicate-row"{% endif %}>
                                     <td>{{ item.name }}</td>
-                                    <td><code>{{ item.code }}</code></td>
+                                    <td>
+                                        <code>{{ item.code }}</code>
+                                        {% if item.is_duplicate %}
+                                            <span class="duplicate-badge ml-1"><i class="fas fa-exclamation-triangle mr-1"></i>Duplicate Code</span>
+                                        {% endif %}
+                                    </td>
                                     <td class="text-center">
                                         <button class="btn btn-info btn-xs" data-toggle="modal" data-target="#editSemesterModal{{ item.id }}"><i class="fas fa-edit"></i></button>
                                         <a href="{% url 'delete_master_data' 'semester' item.id %}" class="btn btn-danger btn-xs" onclick="return confirm('Delete this semester?')"><i class="fas fa-trash"></i></a>
@@ -246,6 +313,12 @@
                                 <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addBatchModal"><i class="fas fa-plus mr-1"></i> Add Batch</button>
                             </div>
                         </div>
+                        {% if has_duplicate_batches %}
+                        <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center" role="alert" style="border-radius: 8px;">
+                            <i class="fas fa-exclamation-triangle mr-2 text-warning"></i>
+                            <span><strong>Notice:</strong> Multiple batches share the same name in the same admission year (highlighted in yellow).</span>
+                        </div>
+                        {% endif %}
                         <table class="table table-bordered table-striped">
                             <thead>
                                 <tr>
@@ -257,8 +330,13 @@
                             </thead>
                             <tbody>
                                 {% for item in batches %}
-                                <tr>
-                                    <td><strong>{{ item.name }}</strong></td>
+                                <tr {% if item.is_duplicate %}class="duplicate-row"{% endif %}>
+                                    <td>
+                                        <strong>{{ item.name }}</strong>
+                                        {% if item.is_duplicate %}
+                                            <span class="duplicate-badge ml-1"><i class="fas fa-exclamation-triangle mr-1"></i>Duplicate</span>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ item.admission_year.year }}</td>
                                     <td><span class="badge badge-info">{{ item.sort_order }}</span></td>
                                     <td class="text-center">

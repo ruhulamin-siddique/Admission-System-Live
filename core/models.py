@@ -86,6 +86,10 @@ class SystemSettings(models.Model):
     sms_sender_id = models.CharField(max_length=100, blank=True, null=True)
     sms_api_url = models.URLField(max_length=500, blank=True, null=True, help_text="The endpoint for the SMS gateway (e.g. BulkSMSBD, GreenWeb)")
     sms_is_active = models.BooleanField(default=False)
+    show_online_admission_on_login = models.BooleanField(
+        default=True,
+        help_text="Show or hide the Online Admission Application featured row on the public login page."
+    )
 
     ID_MODE_CHOICES = [
         ('auto',      'Auto — System generates full 16-digit ID automatically'),
@@ -119,13 +123,13 @@ class SystemSettings(models.Model):
     def logo_url(self):
         if self.institution_logo:
             return self.institution_logo.url
-        return self.institution_logo_url
+        return self.institution_logo_url or '/media/branding/logo.png'
 
     @property
     def favicon_url(self):
         if self.institution_favicon:
             return self.institution_favicon.url
-        return None
+        return '/media/branding/logo.ico'
 
     def __str__(self):
         return "System Settings"
@@ -164,6 +168,8 @@ class ActivityLog(models.Model):
 # Signal to ensure UserProfile exists for every User
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
+    if kwargs.get('raw', False):
+        return
     if created:
         UserProfile.objects.get_or_create(user=instance)
     else:
@@ -335,3 +341,55 @@ class Achievement(models.Model):
 
     class Meta:
         ordering = ['sort_order', '-date_earned']
+
+
+class SMSProfile(models.Model):
+    AUTH_TYPE_CHOICES = [
+        ('api_key', 'API Key / Token Based'),
+        ('user_pass', 'Username & Password Based'),
+    ]
+    METHOD_CHOICES = [
+        ('GET', 'HTTP GET'),
+        ('POST', 'HTTP POST'),
+    ]
+
+    profile_name = models.CharField(max_length=100, unique=True)
+    api_url = models.URLField(help_text="Gateway API Endpoint URL")
+    auth_type = models.CharField(max_length=20, choices=AUTH_TYPE_CHOICES, default='api_key')
+    http_method = models.CharField(max_length=10, choices=METHOD_CHOICES, default='GET')
+    
+    # API Key Auth
+    api_key = models.CharField(max_length=255, blank=True)
+    sender_id = models.CharField(max_length=100, blank=True)
+    
+    # Parameter Mappings
+    number_param = models.CharField(max_length=100, default='number', help_text="Param name for receiver number e.g. number, msisdn, commaSeperatedReceiverNumbers")
+    message_param = models.CharField(max_length=100, default='message', help_text="Param name for message text e.g. message, smstext, smsText")
+    sender_param = models.CharField(max_length=100, default='senderid', help_text="Param name for sender ID e.g. senderid, sender")
+    
+    # Username / Password Auth
+    user_id = models.CharField(max_length=100, blank=True)
+    user_id_param = models.CharField(max_length=100, default='userId', help_text="Param name for User ID e.g. userId")
+    password = models.CharField(max_length=255, blank=True)
+    password_param = models.CharField(max_length=100, default='password', help_text="Param name for Password e.g. password")
+    
+    # Additional Configuration
+    extra_params = models.TextField(blank=True, help_text="Optional key=val lines or JSON for extra parameters")
+    balance_url = models.URLField(blank=True, help_text="Optional API URL for checking account balance")
+    is_active = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.is_active:
+            # Enforce single active profile rule
+            SMSProfile.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        return f"{self.profile_name} ({self.http_method}) - {status}"
+
+    class Meta:
+        ordering = ['-is_active', 'profile_name']

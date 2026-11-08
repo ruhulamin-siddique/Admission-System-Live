@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>অ্যাপয়েন্টমেন্ট নিশ্চিতকরণ | বাউস্ট কাউন্সেলিং কেন্দ্র</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #065f46 50%, #0f172a 100%);
+      font-family: 'Hind Siliguri', 'Outfit', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 15px;
+      line-height: 1.5;
+    }
+    .receipt-card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      max-width: 620px;
+      width: 100%;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .receipt-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      padding: 32px 30px;
+    }
+    .receipt-body {
+      padding: 32px 35px;
+    }
+    .token-badge {
+      background: #eff6ff;
+      border: 2px dashed #93c5fd;
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .secret-token-box {
+      background: #ffffff;
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="receipt-card">
+  <div class="receipt-header">
+    <i class="fas fa-check-circle fa-4x mb-2 text-white"></i>
+    <h3 class="font-weight-bold mb-1">অ্যাপয়েন্টমেন্ট সফলভাবে তালিকাভুক্ত হয়েছে!</h3>
+    <p class="mb-0 text-white-50">বাউস্ট শিক্ষার্থী মানসিক স্বাস্থ্য ও কাউন্সেলিং কেন্দ্র</p>
+  </div>
+
+  <div class="receipt-body">
+    <p class="lead text-dark font-weight-bold mb-3">
+      প্রিয় শিক্ষার্থী <strong>{{ token.student_name }}</strong>, আপনার গোপনীয় কাউন্সেলিং অনুরোধ সফলভাবে জমা হয়েছে।
+    </p>
+
+    <!-- Secret Token Box -->
+    <div class="token-badge">
+      <div class="small text-muted font-weight-bold mb-1">আপনার গোপন ট্র্যাকিং কোড (Secret Tracking Code):</div>
+      <div class="secret-token-box">
+        <span class="font-weight-bold text-primary font-monospace" style="font-size: 1.25rem; letter-spacing: 1px;" id="secretTokenText">{{ token.secret_token|default:"CARE-2026-CONF" }}</span>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold" onclick="copyToken()" id="copyTokenBtn">
+          <i class="fas fa-copy mr-1"></i> কপি করুন
+        </button>
+      </div>
+      <small class="text-muted d-block mt-2">
+        <i class="fas fa-info-circle mr-1 text-primary"></i> এই কোডটি সংরক্ষণ করে রাখুন। পোর্টালের <strong>স্ট্যাটাস ট্র্যাকার</strong> ট্যাবে এই কোড দিয়ে আপনি লাইভ আপডেট ও তথ্য দেখতে পারবেন।
+      </small>
+    </div>
+
+    <!-- Appointment Summary -->
+    <div class="token-badge" style="background: #f8fafc; border: 1.5px solid #e2e8f0;">
+      <div class="d-flex justify-content-between mb-2">
+        <span class="text-muted">কেস আইডি (Case ID):</span>
+        <strong class="text-primary font-weight-bold">{{ token.case_number }}</strong>
+      </div>
+      <div class="d-flex justify-content-between mb-2">
+        <span class="text-muted">নির্ধারিত তারিখ:</span>
+        <strong class="text-dark">{{ token.date }}</strong>
+      </div>
+      <div class="d-flex justify-content-between mb-2">
+        <span class="text-muted">নির্ধারিত সময়সূচি:</span>
+        <strong class="text-primary">{{ token.time }}</strong>
+      </div>
+      <div class="d-flex justify-content-between mb-2">
+        <span class="text-muted">কাউন্সেলিং চেম্বার:</span>
+        <strong class="text-dark">{{ token.room }}</strong>
+      </div>
+      {% if token.contact_mobile %}
+      <div class="d-flex justify-content-between">
+        <span class="text-muted">যোগাযোগের মোবাইল:</span>
+        <strong class="text-dark font-monospace">{{ token.contact_mobile }}</strong>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if token.sms_sent %}
+    <div class="alert alert-success text-left small mb-3 rounded-lg">
+      <i class="fas fa-sms mr-2 fa-lg text-success"></i> আপনার মোবাইল নম্বরে একটি গোপনীয় নিশ্চিতকরণ এসএমএস পাঠানো হয়েছে।
+    </div>
+    {% else %}
+    <div class="alert alert-info text-left small mb-3 rounded-lg">
+      <i class="fas fa-info-circle mr-2 fa-lg text-info"></i> অনুগ্রহ করে নির্ধারিত তারিখ ও সময়ের তথ্যটি সংরক্ষণ করে রাখুন।
+    </div>
+    {% endif %}
+
+    <p class="small text-muted mb-4">
+      অনুগ্রহ করে নির্ধারিত সময়ের ৫ মিনিট পূর্বে চেম্বারে উপস্থিত থাকুন। সেবা ১০০% গোপন ও বিনামূল্যে।
+    </p>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'counseling_public_book' %}" class="btn btn-outline-primary btn-block py-2 font-weight-bold" style="border-radius: 12px;">
+        <i class="fas fa-arrow-left mr-2"></i> পোর্টালে ফিরে যান
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function copyToken() {
+    const text = document.getElementById('secretTokenText').textContent.trim();
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const area = document.createElement('textarea');
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      document.body.removeChild(area);
+    }
+    const btn = document.getElementById('copyTokenBtn');
+    btn.innerHTML = '<i class="fas fa-check mr-1"></i> কপি হয়েছে!';
+    btn.classList.replace('btn-primary', 'btn-success');
+    setTimeout(() => {
+      btn.innerHTML = '<i class="fas fa-copy mr-1"></i> কপি করুন';
+      btn.classList.replace('btn-success', 'btn-primary');
+    }, 2500);
+  }
+</script>
+
+</body>
+</html>

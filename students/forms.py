@@ -21,7 +21,13 @@ BOARD_CHOICES = [
 class StudentForm(forms.ModelForm):
     class Meta:
         model = Student
-        exclude = ['created_at', 'last_updated', 'photo_path']
+        exclude = [
+            'created_at', 'last_updated', 'photo_path',
+            # Additional Institutional Fees (managed exclusively via Financial tab)
+            'medical_scout_paid', 'medical_scout_amount', 'medical_scout_receipt', 'medical_scout_date',
+            'uniform_status', 'uniform_package', 'uniform_amount', 'uniform_paid_amount',
+            'uniform_receipt', 'uniform_date', 'uniform_remarks'
+        ]
         labels = {
             'program_type': 'Program Type',
             'admission_year': 'Admission Year',
@@ -90,17 +96,23 @@ class StudentForm(forms.ModelForm):
             'emergency_contact': forms.TextInput(attrs={'class': 'form-control'}),
             'present_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'permanent_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'ssc_system': forms.Select(attrs={'class': 'form-control system-toggle', 'id': 'id_ssc_system'}),
             'ssc_school': forms.TextInput(attrs={'class': 'form-control', 'list': 'school_list', 'placeholder': 'Start typing school name...'}),
             'ssc_year': forms.TextInput(attrs={'class': 'form-control', 'list': 'year_list'}),
             'ssc_board': forms.Select(attrs={'class': 'form-control'}, choices=BOARD_CHOICES),
             'ssc_roll': forms.TextInput(attrs={'class': 'form-control'}),
             'ssc_reg': forms.TextInput(attrs={'class': 'form-control'}),
+            'ssc_division': forms.Select(attrs={'class': 'form-control', 'id': 'id_ssc_division'}),
+            'ssc_marks': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_ssc_marks', 'min': '0', 'max': '1000', 'placeholder': 'e.g. 680'}),
             'ssc_gpa': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'hsc_system': forms.Select(attrs={'class': 'form-control system-toggle', 'id': 'id_hsc_system'}),
             'hsc_college': forms.TextInput(attrs={'class': 'form-control', 'list': 'college_list', 'placeholder': 'Start typing college name...'}),
             'hsc_year': forms.TextInput(attrs={'class': 'form-control', 'list': 'year_list'}),
             'hsc_board': forms.Select(attrs={'class': 'form-control'}, choices=BOARD_CHOICES),
             'hsc_roll': forms.TextInput(attrs={'class': 'form-control'}),
             'hsc_reg': forms.TextInput(attrs={'class': 'form-control'}),
+            'hsc_division': forms.Select(attrs={'class': 'form-control', 'id': 'id_hsc_division'}),
+            'hsc_marks': forms.NumberInput(attrs={'class': 'form-control', 'id': 'id_hsc_marks', 'min': '0', 'max': '1000', 'placeholder': 'e.g. 640'}),
             'hsc_gpa': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'hall_attached': forms.Select(attrs={'class': 'form-control'}),
             'hall_residential': forms.Select(attrs={'class': 'form-control'}),
@@ -340,3 +352,47 @@ class StudentForm(forms.ModelForm):
             if len(mobile) != 11:
                 raise forms.ValidationError("Bangladeshi mobile number must be exactly 11 digits")
         return mobile
+
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # SSC Validation
+        ssc_sys = cleaned_data.get('ssc_system') or 'GPA'
+        cleaned_data['ssc_system'] = ssc_sys
+        ssc_gpa = cleaned_data.get('ssc_gpa')
+        ssc_div = cleaned_data.get('ssc_division')
+        ssc_marks = cleaned_data.get('ssc_marks')
+        
+        if ssc_sys == 'GPA':
+            if ssc_gpa is not None and (ssc_gpa < 0.0 or ssc_gpa > 5.0):
+                self.add_error('ssc_gpa', 'SSC GPA must be between 0.00 and 5.00.')
+        elif ssc_sys == 'DIVISION':
+            if not ssc_div:
+                self.add_error('ssc_division', 'Please select a Division for pre-GPA SSC result.')
+            if ssc_marks is not None and (ssc_marks < 0 or ssc_marks > 1000):
+                self.add_error('ssc_marks', 'SSC Marks must be between 0 and 1000.')
+            # Auto-assign equivalent GPA if ssc_gpa not manually supplied
+            if not ssc_gpa and ssc_div:
+                from .utils import get_division_equivalent_gpa
+                cleaned_data['ssc_gpa'] = get_division_equivalent_gpa(ssc_div, ssc_marks)
+                
+        # HSC Validation
+        hsc_sys = cleaned_data.get('hsc_system') or 'GPA'
+        cleaned_data['hsc_system'] = hsc_sys
+        hsc_gpa = cleaned_data.get('hsc_gpa')
+        hsc_div = cleaned_data.get('hsc_division')
+        hsc_marks = cleaned_data.get('hsc_marks')
+        
+        if hsc_sys == 'GPA':
+            if hsc_gpa is not None and (hsc_gpa < 0.0 or hsc_gpa > 5.0):
+                self.add_error('hsc_gpa', 'HSC GPA must be between 0.00 and 5.00.')
+        elif hsc_sys == 'DIVISION':
+            if not hsc_div:
+                self.add_error('hsc_division', 'Please select a Division for pre-GPA HSC result.')
+            if hsc_marks is not None and (hsc_marks < 0 or hsc_marks > 1000):
+                self.add_error('hsc_marks', 'HSC Marks must be between 0 and 1000.')
+            if not hsc_gpa and hsc_div:
+                from .utils import get_division_equivalent_gpa
+                cleaned_data['hsc_gpa'] = get_division_equivalent_gpa(hsc_div, hsc_marks)
+                
+        return cleaned_data

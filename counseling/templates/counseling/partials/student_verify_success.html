@@ -1,0 +1,8 @@
+{% load i18n %}
+<div class="mt-2 p-2 px-3 rounded-lg d-flex align-items-center animate__animated animate__fadeIn" style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #065f46; font-size: 0.88rem; font-weight: 600;">
+  <i class="fas fa-check-circle mr-2 text-success" style="font-size: 1.1rem;"></i>
+  <div>
+    <span class="d-none lang-bn-inline">✓ শিক্ষার্থী যাচাইকৃত: <strong>{{ prog }}</strong> {% if batch %}· <span class="badge badge-success px-2">{{ batch }}</span>{% endif %}</span>
+    <span class="lang-en-inline">✓ Verified Student: <strong>{{ prog }}</strong> {% if batch %}· <span class="badge badge-success px-2">{{ batch }}</span>{% endif %}</span>
+  </div>
+</div>

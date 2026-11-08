@@ -1,0 +1,530 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admission Requirements & Eligibility | BAUST Online Admission</title>
+
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 4.6 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <style>
+        :root {
+            --baust-navy: #0b2545;
+            --baust-blue: #134074;
+            --baust-teal: #008080;
+            --baust-green: #2d6a4f;
+            --baust-gold: #d4af37;
+            --baust-light: #eef4f8;
+            --card-border: #d0dbe5;
+        }
+
+        body {
+            font-family: 'Inter', 'Hind Siliguri', sans-serif;
+            background-color: #f4f7fa;
+            color: #2b2d42;
+            min-height: 100vh;
+        }
+
+        /* Top University Brand Bar */
+        .top-brand-bar {
+            background: var(--baust-navy);
+            color: #ffffff;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--baust-gold);
+        }
+
+        /* Header Area */
+        .header-main {
+            background: #ffffff;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+
+        .university-logo-block {
+            display: flex;
+            align-items: center;
+        }
+
+        .crest-img {
+            max-height: 72px;
+            margin-right: 18px;
+        }
+
+        .header-titles h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--baust-navy);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .header-titles p {
+            margin: 3px 0 0;
+            color: #6c757d;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .header-quick-actions .btn {
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-teal {
+            background-color: var(--baust-teal);
+            color: #ffffff;
+            border: none;
+        }
+        .btn-teal:hover {
+            background-color: #006666;
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        /* Navigation Bar */
+        .nav-portal {
+            background: var(--baust-blue);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+
+        .nav-portal .nav-link {
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 12px 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            transition: background 0.2s;
+        }
+
+        .nav-portal .nav-link:hover, .nav-portal .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #ffde59 !important;
+        }
+
+        /* Intake Status Banner */
+        .status-banner {
+            border-radius: 8px;
+            padding: 16px 22px;
+            margin: 25px 0 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+
+        .status-banner.open {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border-left: 6px solid #2e7d32;
+            color: #1b5e20;
+        }
+
+        .status-banner.closed {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-left: 6px solid #e65100;
+            color: #bf360c;
+        }
+
+        /* Criteria Cards */
+        .criteria-card {
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .criteria-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .criteria-header {
+            background: var(--baust-navy);
+            color: #ffffff;
+            padding: 14px 20px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .criteria-header.non-eng {
+            background: #1e3d59;
+        }
+
+        .criteria-header.docs {
+            background: #17b978;
+        }
+
+        .criteria-body {
+            padding: 22px;
+            line-height: 1.65;
+            font-size: 0.93rem;
+        }
+
+        .criteria-body ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+
+        .criteria-body li {
+            margin-bottom: 10px;
+        }
+
+        .badge-pill-custom {
+            background-color: #e2e8f0;
+            color: #334155;
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin: 2px;
+            display: inline-block;
+        }
+
+        /* CTA Section */
+        .cta-box {
+            background: #ffffff;
+            border: 2px dashed #008080;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0 50px;
+            box-shadow: 0 4px 15px rgba(0,128,128,0.08);
+        }
+
+        .btn-apply-hero {
+            background: linear-gradient(135deg, #008080 0%, #0b5351 100%);
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding: 14px 42px;
+            border-radius: 30px;
+            box-shadow: 0 6px 20px rgba(0, 128, 128, 0.35);
+            border: none;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-apply-hero:hover {
+            color: #ffffff;
+            transform: scale(1.03);
+            box-shadow: 0 8px 25px rgba(0, 128, 128, 0.45);
+        }
+
+        .footer-portal {
+            background: var(--baust-navy);
+            color: #cbd5e1;
+            padding: 25px 0;
+            font-size: 0.88rem;
+            text-align: center;
+            border-top: 3px solid var(--baust-gold);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- University Name Bar -->
+    <div class="top-brand-bar">
+        <div>
+            <i class="fas fa-university mr-2"></i> Bangladesh Army University of Science and Technology (BAUST), Saidpur
+        </div>
+        <div>
+            <span class="mr-3"><i class="fas fa-phone mr-1"></i> Admission Helpline: 01769675554, 01769675556</span>
+            <span><i class="fas fa-envelope mr-1"></i> admission@baust.edu.bd</span>
+        </div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="header-main">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-7 col-12 mb-3 mb-md-0">
+                    <div class="university-logo-block">
+                        <img src="{{ sys_settings.logo_url|default:'/media/branding/logo.png' }}" 
+                             onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}'; if (!this.complete) { this.src='{% static 'img/baust_logo.png' %}'; }" 
+                             alt="BAUST Logo" class="crest-img">
+                        <div class="header-titles">
+                            <h1>BAUST Online Admission System</h1>
+                            <p>Undergraduate & Graduate Online Application & Tracking Desk</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5 col-12 text-md-right header-quick-actions">
+                    {% if is_open %}
+                    <a href="{% url 'public_apply_form' %}" class="btn btn-teal mr-2">
+                        <i class="fas fa-edit mr-1"></i> Online Application
+                    </a>
+                    {% else %}
+                    <button class="btn btn-secondary mr-2" disabled>
+                        <i class="fas fa-lock mr-1"></i> Application Closed
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'public_application_status' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-id-card mr-1"></i> Admitcard Download
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark nav-portal">
+        <div class="container">
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#admissionNavbar" aria-controls="admissionNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="admissionNavbar">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'public_requirements' %}"><i class="fas fa-home mr-1"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'public_apply_form' %}"><i class="fas fa-pen-alt mr-1"></i> Apply Now</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'public_application_status' %}"><i class="fas fa-search-location mr-1"></i> Application Status</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'public_application_status' %}"><i class="fas fa-download mr-1"></i> Admitcard Download</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#documents-section"><i class="fas fa-file-alt mr-1"></i> How To Apply</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://baust.edu.bd" target="_blank"><i class="fas fa-globe mr-1"></i> Visit Main Site</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light btn-sm px-3 ml-2 text-white" href="{% url 'login' %}">
+                            <i class="fas fa-sign-in-alt mr-1"></i> Staff Login
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container my-4">
+
+        <!-- Flash Messages -->
+        {% if messages %}
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle mr-2"></i> {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Admission Intake Status Banner -->
+        {% if is_open and active_intake %}
+        <div class="status-banner open">
+            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                <div>
+                    <h5 class="font-weight-bold mb-1">
+                        <i class="fas fa-check-circle mr-2"></i> Online Admission is Currently OPEN for: {{ active_intake.intake_name }}
+                    </h5>
+                    <p class="mb-0 text-muted">
+                        Application Deadline: <strong>{{ active_intake.application_deadline|date:"d F Y, h:i A"|default:"To be announced" }}</strong> 
+                        &bull; Admission Form Fee: <strong>BDT. {{ active_intake.form_fee_bdt }}</strong> (bKash Charge: BDT. {{ active_intake.bkash_charge_bdt }}, Total: BDT. {{ active_intake.total_fee_bdt }})
+                        &bull; Exam Venue: <strong>{{ active_intake.exam_venue }}</strong>
+                    </p>
+                </div>
+                <div class="mt-2 mt-md-0">
+                    <a href="{% url 'public_apply_form' %}?intake_id={{ active_intake.id }}" class="btn btn-success btn-sm font-weight-bold px-3 py-2">
+                        <i class="fas fa-paper-plane mr-1"></i> Apply for {{ active_intake.intake_name }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="status-banner closed">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle fa-2x mr-3"></i>
+                <div>
+                    <h5 class="font-weight-bold mb-1">Online Admission is Currently Closed</h5>
+                    <p class="mb-0">
+                        Applications for the previous session ({{ latest_intake.intake_name|default:"the current semester" }}) have concluded. The schedule for the upcoming admission intake will be announced shortly.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if active_intake and active_intake.notice_html %}
+        <div class="alert alert-info shadow-sm mb-4">
+            <h6 class="font-weight-bold"><i class="fas fa-bullhorn mr-1"></i> Admission Notice:</h6>
+            <div>{{ active_intake.notice_html|safe }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Section 1: Programs & Academic Eligibility (Screenshot 1 alignment) -->
+        <div class="row">
+            
+            <!-- Engineering Programs Card -->
+            <div class="col-lg-6 col-12">
+                <div class="criteria-card h-100">
+                    <div class="criteria-header">
+                        <span><i class="fas fa-microchip mr-2"></i> Engineering & Technology Programs</span>
+                        <span class="badge badge-warning text-dark font-weight-bold">4-Year B.Sc</span>
+                    </div>
+                    <div class="criteria-body">
+                        <div class="mb-3">
+                            <strong>Offered Disciplines:</strong><br>
+                            {% for prog in eng_programs %}
+                            <span class="badge-pill-custom">{{ prog.short_name|default:prog.name }}</span>
+                            {% empty %}
+                            <span class="badge-pill-custom">CSE</span>
+                            <span class="badge-pill-custom">EEE</span>
+                            <span class="badge-pill-custom">ME</span>
+                            <span class="badge-pill-custom">IPE</span>
+                            <span class="badge-pill-custom">CE</span>
+                            <span class="badge-pill-custom">ICT</span>
+                            {% endfor %}
+                        </div>
+                        <hr>
+                        <h6 class="font-weight-bold text-primary mb-2"><i class="fas fa-graduation-cap mr-1"></i> Minimum Academic Requirements:</h6>
+                        <ul>
+                            <li><strong>HSC / Alim (Science):</strong> Must have passed HSC or equivalent examination from Science group with Mathematics, Physics, and Chemistry. Minimum GPA 3.00 in each of SSC & HSC.</li>
+                            <li><strong>Combined GPA:</strong> Total GPA of SSC and HSC must be at least <strong>7.00</strong> (including 4th subject).</li>
+                            <li><strong>Subject Requirement:</strong> Minimum Grade Point (GP) of <strong>3.00</strong> individually in Mathematics, Physics, and Chemistry in HSC examination.</li>
+                            <li><strong>English Medium (GCE):</strong> Minimum 5 subjects in O-Level and 2 subjects (Physics, Chemistry & Math) in A-Level with minimum GPA 2.50 in each.</li>
+                            <li><strong>Diploma Candidates:</strong> Diploma in Engineering holders from Bangladesh Technical Education Board (BTEB) with minimum CGPA <strong>3.00</strong> out of 4.00 are eligible to apply.</li>
+                            <li><strong>Direct Admission:</strong> Candidates having combined GPA <strong>9.00 or above</strong> in SSC & HSC may be eligible for Direct Admission without Admission Test (subject to seat availability).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Non-Engineering Programs Card -->
+            <div class="col-lg-6 col-12">
+                <div class="criteria-card h-100">
+                    <div class="criteria-header non-eng">
+                        <span><i class="fas fa-briefcase mr-2"></i> Business, Arts & General Programs</span>
+                        <span class="badge badge-light text-dark font-weight-bold">BBA, BA, MBA, MA</span>
+                    </div>
+                    <div class="criteria-body">
+                        <div class="mb-3">
+                            <strong>Offered Disciplines:</strong><br>
+                            {% for prog in non_eng_programs %}
+                            <span class="badge-pill-custom">{{ prog.short_name|default:prog.name }}</span>
+                            {% empty %}
+                            <span class="badge-pill-custom">BBA</span>
+                            <span class="badge-pill-custom">BBA in AIS</span>
+                            <span class="badge-pill-custom">BA (Hons) in English</span>
+                            <span class="badge-pill-custom">MBA</span>
+                            <span class="badge-pill-custom">MA in English</span>
+                            {% endfor %}
+                        </div>
+                        <hr>
+                        <h6 class="font-weight-bold text-info mb-2"><i class="fas fa-graduation-cap mr-1"></i> Minimum Academic Requirements:</h6>
+                        <ul>
+                            <li><strong>BBA & BBA in AIS:</strong> Candidates from Science, Business Studies, or Humanities group. Minimum GPA 3.00 in each of SSC and HSC, with a combined total GPA of at least <strong>6.00</strong>.</li>
+                            <li><strong>BA (Hons) in English:</strong> Candidates from any discipline with minimum GPA 3.00 in each of SSC & HSC (combined GPA >= <strong>6.00</strong>) and minimum Grade Point 3.00 in English.</li>
+                            <li><strong>Direct Admission:</strong> Combined GPA <strong>8.00 or above</strong> in SSC and HSC allows direct admission without written test.</li>
+                            <li><strong>Graduate Programs (MBA / MA):</strong> Bachelor's degree from any recognized university with minimum CGPA 2.50 or 2nd division in graduation.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Section 2: Required Documents & Application Guidelines -->
+        <div class="row mt-2" id="documents-section">
+            <div class="col-12">
+                <div class="criteria-card">
+                    <div class="criteria-header docs">
+                        <span><i class="fas fa-clipboard-check mr-2"></i> Mandatory Documents & Application Checklist</span>
+                        <span class="badge badge-light text-dark">Required for Admission</span>
+                    </div>
+                    <div class="criteria-body">
+                        <p class="text-muted">
+                            Applicants are required to keep the following documents and information ready before filling out the online application form:
+                        </p>
+                        <div class="row">
+                            <div class="col-md-6 col-12">
+                                <ul>
+                                    <li><strong>1. Digital Passport Size Photograph:</strong> Recent passport-sized color photo (300 x 300 pixels, formal attire, clean white background, maximum size <strong>300 KB</strong> in JPG/PNG format).</li>
+                                    <li><strong>2. SSC / Equivalent Details:</strong> Roll number, registration number, board name, passing year, and achieved GPA.</li>
+                                    <li><strong>3. HSC / Equivalent Details:</strong> Roll number, registration number, board name, passing year, and achieved GPA.</li>
+                                    <li><strong>4. Active Mobile Number:</strong> A valid personal mobile number. <em>(Crucial: This mobile number will be used for two-factor admit card download and all official SMS updates).</em></li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <ul>
+                                    <li><strong>5. bKash Transaction ID (TRXID):</strong> Complete payment of the application form fee via bKash "Send Money" to the university bKash merchant/agent number ({{ active_intake.bkash_number|default:"01769675556" }}) and copy the Transaction ID.</li>
+                                    <li><strong>6. National ID / Birth Certificate:</strong> NID or Birth Registration Certificate number.</li>
+                                    <li><strong>7. Guardian Information:</strong> Father's and Mother's full name, occupation, and contact mobile numbers.</li>
+                                    <li><strong>8. Addresses:</strong> Detailed Present and Permanent address (House, Village/Street, Post Code, Police Station, and District).</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Call to Action -->
+        <div class="cta-box">
+            <h3 class="font-weight-bold text-dark mb-2">Ready to Join the BAUST Family?</h3>
+            <p class="text-muted mb-4">
+                Please make sure you meet the criteria and have your bKash Transaction ID ready before proceeding.
+            </p>
+            {% if is_open %}
+            <a href="{% url 'public_apply_form' %}{% if active_intake %}?intake_id={{ active_intake.id }}{% endif %}" class="btn btn-apply-hero">
+                <i class="fas fa-check-circle mr-2"></i> I Agree and Apply Now
+            </a>
+            {% else %}
+            <button class="btn btn-secondary btn-lg" disabled>
+                <i class="fas fa-lock mr-2"></i> Application Currently Closed
+            </button>
+            {% endif %}
+            <div class="mt-3">
+                <a href="{% url 'public_application_status' %}" class="text-secondary font-weight-bold">
+                    <i class="fas fa-search mr-1"></i> Already Applied? Check Application Status & Download Admit Card
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-portal">
+        <div class="container">
+            <p class="mb-1 font-weight-bold">Bangladesh Army University of Science and Technology (BAUST)</p>
+            <p class="mb-0 text-muted">Saidpur Cantonment, Saidpur, Nilphamari, Bangladesh &bull; Website: <a href="https://baust.edu.bd" target="_blank" class="text-light">www.baust.edu.bd</a> &bull; Technical Support: admission@baust.edu.bd</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap & jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

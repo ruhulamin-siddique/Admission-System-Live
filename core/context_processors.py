@@ -32,10 +32,20 @@ def system_branding(request):
         else:
             notifications = ActivityLog.objects.none()
         
+        # Pending User Registrations Count for authorized management staff
+        pending_user_count = 0
+        if request.user.is_authenticated and hasattr(request.user, 'profile'):
+            if request.user.is_superuser or request.user.profile.has_access('security', 'manage_users'):
+                from django.contrib.auth.models import User
+                pending_user_count = User.objects.filter(profile__registration_status='PENDING').count()
+        
+        total_notification_count = notifications.count() + (1 if pending_user_count > 0 else 0)
+
         return {
             'sys_settings': settings,
             'recent_notifications': notifications,
-            'notification_count': notifications.count()
+            'notification_count': total_notification_count,
+            'pending_user_count': pending_user_count
         }
     except Exception:
         return {'sys_settings': None}

@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n coe_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,7 +64,12 @@
         <td><strong>{{ app.student_name }}</strong></td>
         <td>{{ app.student_id }}</td>
         <td>{{ app.get_application_type_display }}</td>
-        <td>{{ app.mobile_number }}</td>
+        <td>
+          {{ app.mobile_number }}
+          {% if app.mobile_number %}
+            {% whatsapp_btn app.mobile_number css_class="btn btn-xs text-white font-weight-bold ml-1" %}
+          {% endif %}
+        </td>
         <td class="text-center">{{ app.delivered_at|date:"h:i A" }}</td>
         <td>{{ app.delivered_by.get_full_name|default:app.delivered_by.username }}</td>
         <td class="text-center" style="vertical-align: bottom; height: 45px;">

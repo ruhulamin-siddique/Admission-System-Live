@@ -450,11 +450,197 @@ def track_application(request):
         ApplicationStatus.DELIVERED,
     ]
 
+    steps_data = []
+    progress_width = 0
+    contacts = []
+    stage_title = ""
+    stage_note = ""
+    
+    if application:
+        status_order = {
+            ApplicationStatus.SUBMITTED: 1,
+            ApplicationStatus.UNDER_HOD_REVIEW: 2,
+            ApplicationStatus.PENDING_COE_ASSIGNMENT: 3,
+            ApplicationStatus.IN_PROCESSING: 4,
+            ApplicationStatus.DISPATCHED_TO_DELIVERY: 4,
+            ApplicationStatus.RECEIVED_BY_CLERK: 4,
+            ApplicationStatus.ACTION_REQUIRED: 5,
+            ApplicationStatus.READY_FOR_DELIVERY: 6,
+            ApplicationStatus.DELIVERED: 7,
+        }
+        
+        current_val = status_order.get(application.status, 7)
+        for step_key in status_steps:
+            step_val = status_order.get(step_key, 7)
+            
+            if step_key == ApplicationStatus.IN_PROCESSING and application.status in [ApplicationStatus.IN_PROCESSING, ApplicationStatus.DISPATCHED_TO_DELIVERY, ApplicationStatus.RECEIVED_BY_CLERK]:
+                css_class = 'active'
+            elif application.status == step_key:
+                css_class = 'active'
+            elif current_val > step_val:
+                css_class = 'completed'
+            else:
+                css_class = ''
+                
+            steps_data.append({
+                'key': step_key,
+                'class': css_class
+            })
+            
+        width_map = {
+            ApplicationStatus.SUBMITTED: 15,
+            ApplicationStatus.UNDER_HOD_REVIEW: 30,
+            ApplicationStatus.PENDING_COE_ASSIGNMENT: 45,
+            ApplicationStatus.IN_PROCESSING: 60,
+            ApplicationStatus.DISPATCHED_TO_DELIVERY: 68,
+            ApplicationStatus.RECEIVED_BY_CLERK: 76,
+            ApplicationStatus.ACTION_REQUIRED: 84,
+            ApplicationStatus.READY_FOR_DELIVERY: 92,
+            ApplicationStatus.DELIVERED: 100,
+        }
+        progress_width = width_map.get(application.status, 100)
+
+        status = application.status
+        from django.contrib.auth.models import User
+        
+        def clean_str(val):
+            if not val:
+                return ''
+            val = val.lower().replace('&', 'and')
+            return ''.join(c for c in val if c.isalnum())
+            
+        # Default values — prevent UnboundLocalError if status falls through
+        contacts = []
+        stage_title = _("Processing")
+        stage_note = _("Your application is being processed.")
+
+        if status == ApplicationStatus.SUBMITTED:
+            stage_title = _("Submission Received")
+            stage_note = _("Your application has been received and is queued for verification.")
+            
+        elif status == ApplicationStatus.UNDER_HOD_REVIEW:
+            stage_title = _("Department Head Review (HoD)")
+            stage_note = _("The application is pending review and sign-off by your Department Head.")
+            dept = application.department
+            hods = User.objects.filter(
+                profile__role__name__icontains="Department Head",
+                is_active=True
+            ).select_related('profile')
+            
+            matched_hods = []
+            if dept:
+                c_short = clean_str(dept.short_name)
+                c_full = clean_str(dept.name)
+                for u in hods:
+                    u_scope = clean_str(u.profile.department_scope)
+                    u_dept = clean_str(u.profile.department)
+                    
+                    is_match = False
+                    if u_scope and (u_scope == c_short or u_scope == c_full):
+                        is_match = True
+                    elif u_dept and (c_short in u_dept or c_full in u_dept or u_dept in c_full):
+                        is_match = True
+                        
+                    if is_match:
+                        matched_hods.append(u)
+            
+            if not matched_hods:
+                matched_hods = list(hods)
+                
+            for u in matched_hods:
+                contacts.append({
+                    'name': u.get_full_name() or u.username,
+                    'designation': u.profile.designation or _("Head of Department"),
+                    'mobile': u.profile.phone_number or _("N/A"),
+                    'email': u.email or _("N/A"),
+                })
+                
+        elif status == ApplicationStatus.PENDING_COE_ASSIGNMENT:
+            stage_title = _("Pending CoE Office Assignment")
+            stage_note = _("The application is pending processing queue allocation by the Deputy Controller.")
+            dcoes = User.objects.filter(
+                profile__role__name__icontains="Deputy Controller",
+                is_active=True
+            ).select_related('profile')
+            for u in dcoes:
+                contacts.append({
+                    'name': u.get_full_name() or u.username,
+                    'designation': u.profile.designation or _("Deputy Controller of Examinations"),
+                    'mobile': u.profile.phone_number or _("N/A"),
+                    'email': u.email or _("N/A"),
+                })
+                
+        elif status == ApplicationStatus.IN_PROCESSING:
+            stage_title = _("Academic Document Processing")
+            stage_note = _("Your document is currently being verified and prepared by the assigned officer.")
+            u = application.assigned_to
+            if u:
+                contacts.append({
+                    'name': u.get_full_name() or u.username,
+                    'designation': u.profile.designation or _("Processing Officer"),
+                    'mobile': u.profile.phone_number or _("N/A"),
+                    'email': u.email or _("N/A"),
+                })
+                
+        elif status in [ApplicationStatus.DISPATCHED_TO_DELIVERY, ApplicationStatus.RECEIVED_BY_CLERK]:
+            stage_title = _("Delivery Desk (Sorting & Packaging)")
+            stage_note = _("Verification is complete. The physical copy is being packaged and sorted at the delivery desk.")
+            clerks = User.objects.filter(
+                profile__role__name__icontains="Delivery Desk",
+                is_active=True
+            ).select_related('profile')
+            for u in clerks:
+                contacts.append({
+                    'name': u.get_full_name() or u.username,
+                    'designation': u.profile.designation or _("Delivery Desk Clerk"),
+                    'mobile': u.profile.phone_number or _("N/A"),
+                    'email': u.email or _("N/A"),
+                })
+                
+        elif status == ApplicationStatus.READY_FOR_DELIVERY:
+            stage_title = _("Ready for Delivery / Collection")
+            stage_note = _("Document is ready for pickup! Please visit the Delivery Desk with your verification OTP code.")
+            clerks = User.objects.filter(
+                profile__role__name__icontains="Delivery Desk",
+                is_active=True
+            ).select_related('profile')
+            for u in clerks:
+                contacts.append({
+                    'name': u.get_full_name() or u.username,
+                    'designation': u.profile.designation or _("Delivery Desk Clerk"),
+                    'mobile': u.profile.phone_number or _("N/A"),
+                    'email': u.email or _("N/A"),
+                })
+                
+        elif status == ApplicationStatus.ACTION_REQUIRED:
+            stage_title = _("Action Required (Student correction)")
+            stage_note = _("One or more uploaded attachments did not pass inspection. Please log in to the correction portal and re-upload.")
+            
+        elif status == ApplicationStatus.DELIVERED:
+            stage_title = _("Document Delivered")
+            stage_note = _("Your document has been physically delivered. Thank you!")
+            
+        elif status in [ApplicationStatus.REJECTED, ApplicationStatus.CANCELLED]:
+            stage_title = _("Application Closed")
+            stage_note = _("This request has been cancelled or rejected by administration.")
+
+        if not contacts:
+            contacts.append({
+                'name': _("CoE Help Desk"),
+                'designation': _("General Support Desk"),
+                'mobile': _("01780780780"),
+                'email': _("coe.support@baust.edu.bd"),
+            })
+
     return render(request, 'coe/track_application.html', {
         'form': form,
         'application': application,
         'error': error,
-        'status_steps': status_steps,
+        'steps_data': steps_data,
+        'progress_width': progress_width,
+        'contacts': contacts,
+        'stage_title': stage_title,
+        'stage_note': stage_note,
     })
 
 
@@ -501,6 +687,8 @@ def dashboard(request):
         ApplicationStatus.PENDING_COE_ASSIGNMENT,
         ApplicationStatus.IN_PROCESSING,
         ApplicationStatus.ACTION_REQUIRED,
+        ApplicationStatus.DISPATCHED_TO_DELIVERY,
+        ApplicationStatus.RECEIVED_BY_CLERK,
     ]
     stalled = qs_all.filter(status__in=active_statuses, updated_at__lt=cutoff_48h)
 
@@ -619,13 +807,43 @@ def hod_dashboard(request):
         status=ApplicationStatus.UNDER_HOD_REVIEW
     ).select_related('department')
 
-    if dept_scope and not request.user.is_superuser:
+    # Check explicitly assigned HoD departments in CoE Settings
+    from .models import CoeUserRoleAssignment, CoeRoleType
+    hod_depts = CoeUserRoleAssignment.objects.filter(role_type=CoeRoleType.HOD, user=request.user).values_list('department_id', flat=True)
+    if hod_depts and not request.user.is_superuser:
+        qs = qs.filter(department_id__in=hod_depts)
+    elif dept_scope and not request.user.is_superuser:
         qs = qs.filter(
             Q(department__short_name__iexact=dept_scope)
             | Q(department__code__iexact=dept_scope)
             | Q(department__name__icontains=dept_scope)
         )
 
+    q = request.GET.get('q', '').strip()
+    app_type = request.GET.get('application_type', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
+
+    if q:
+        qs = qs.filter(
+            Q(application_number__icontains=q)
+            | Q(student_name__icontains=q)
+            | Q(student_id__icontains=q)
+        )
+    if app_type:
+        qs = qs.filter(application_type=app_type)
+    if date_from:
+        qs = qs.filter(submitted_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(submitted_at__date__lte=date_to)
+
+    from master_data.models import Program
+    assigned_hod_dept_ids = CoeUserRoleAssignment.objects.filter(
+        role_type=CoeRoleType.HOD, user__is_active=True
+    ).values_list('department_id', flat=True)
+    unassigned_hod_depts = Program.objects.exclude(id__in=assigned_hod_dept_ids)
+
+    from .models import ApplicationType
     paginator = Paginator(qs.order_by('-submitted_at'), 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
@@ -633,6 +851,12 @@ def hod_dashboard(request):
         'page_obj': page_obj,
         'total': qs.count(),
         'dept_scope': dept_scope,
+        'ApplicationType': ApplicationType,
+        'query': q,
+        'app_type': app_type,
+        'date_from': date_from,
+        'date_to': date_to,
+        'unassigned_hod_depts': unassigned_hod_depts,
     })
 
 
@@ -768,15 +992,19 @@ def kanban_board(request):
 
     pending = DocumentApplication.objects.filter(
         status=ApplicationStatus.PENDING_COE_ASSIGNMENT
-    ).select_related('department').order_by('-submitted_at')
+    ).select_related('department').prefetch_related('status_logs', 'status_logs__changed_by').order_by('-submitted_at')
 
     in_processing = DocumentApplication.objects.filter(
         status=ApplicationStatus.IN_PROCESSING
-    ).select_related('department', 'assigned_to').order_by('-updated_at')
+    ).select_related('department', 'assigned_to').prefetch_related('status_logs', 'status_logs__changed_by').order_by('-updated_at')
+
+    action_required = DocumentApplication.objects.filter(
+        status=ApplicationStatus.ACTION_REQUIRED
+    ).select_related('department', 'assigned_to').prefetch_related('status_logs', 'status_logs__changed_by').order_by('-updated_at')
 
     ready = DocumentApplication.objects.filter(
         status=ApplicationStatus.READY_FOR_DELIVERY
-    ).select_related('department', 'assigned_to').order_by('-updated_at')
+    ).select_related('department', 'assigned_to').prefetch_related('status_logs', 'status_logs__changed_by').order_by('-updated_at')
 
     # Officers specifically designated for CoE processing
     from .utils import get_coe_processing_officers
@@ -806,6 +1034,7 @@ def kanban_board(request):
     return render(request, 'coe/kanban_board.html', {
         'pending': pending,
         'in_processing': in_processing,
+        'action_required': action_required,
         'ready': ready,
         'officers': officers,
         'officer_workloads': officer_workloads,
@@ -821,6 +1050,7 @@ def assign_officer(request, pk):
         status__in=[
             ApplicationStatus.PENDING_COE_ASSIGNMENT,
             ApplicationStatus.IN_PROCESSING,
+            ApplicationStatus.ACTION_REQUIRED,
             ApplicationStatus.READY_FOR_DELIVERY
         ]
     )
@@ -1002,9 +1232,37 @@ def request_reupload(request, pk):
 
 @require_access('coe', 'processing_officer')
 @require_POST
-def mark_ready(request, pk):
-    """Generate OTP and mark application as Ready for Delivery."""
+def dispatch_to_delivery(request, pk):
+    """Mark application as dispatched to delivery desk clerk."""
     app = get_object_or_404(DocumentApplication, pk=pk, status=ApplicationStatus.IN_PROCESSING)
+    transition_status(
+        app, ApplicationStatus.DISPATCHED_TO_DELIVERY,
+        changed_by=request.user,
+        note=_('Verification complete. Dispatched to Delivery Desk clerk.'),
+    )
+    messages.success(request, _('Application sent to the Delivery Desk queue.'))
+    return redirect('coe_process', pk=pk)
+
+
+@require_access('coe', 'delivery_desk')
+@require_POST
+def clerk_receive(request, pk):
+    """Mark application as physically received by clerk at delivery desk."""
+    app = get_object_or_404(DocumentApplication, pk=pk, status=ApplicationStatus.DISPATCHED_TO_DELIVERY)
+    transition_status(
+        app, ApplicationStatus.RECEIVED_BY_CLERK,
+        changed_by=request.user,
+        note=_(f'Document physically received by clerk {request.user.get_full_name() or request.user.username} for packaging.'),
+    )
+    messages.success(request, _('Document marked as received. Start sorting & packaging.'))
+    return redirect('coe_delivery_dashboard')
+
+
+@require_access('coe', 'delivery_desk')
+@require_POST
+def clerk_mark_ready(request, pk):
+    """Generate OTP and mark application as Ready for Delivery (sending SMS notifications)."""
+    app = get_object_or_404(DocumentApplication, pk=pk, status=ApplicationStatus.RECEIVED_BY_CLERK)
     otp = generate_delivery_otp()
     app.delivery_otp = otp
     app.save(update_fields=['delivery_otp'])
@@ -1022,8 +1280,8 @@ def mark_ready(request, pk):
     if cfg.sms_delivery_otp:
         send_coe_sms(app.mobile_number, 'delivery_otp', {'otp': otp})
 
-    messages.success(request, _(f'Application marked as ready. OTP dispatched to {app.mobile_number}.'))
-    return redirect('coe_process', pk=pk)
+    messages.success(request, _(f'Application marked as ready. OTP sent to student ({app.mobile_number}).'))
+    return redirect('coe_delivery_dashboard')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1032,12 +1290,21 @@ def mark_ready(request, pk):
 
 @require_access('coe', 'delivery_desk')
 def delivery_dashboard(request):
-    """Delivery clerk queue — search + list Ready for Delivery applications."""
+    """Delivery clerk queue — search + list applications at delivery desk stages."""
     query = request.GET.get('q', '').strip()
+    app_type = request.GET.get('application_type', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
 
+    target_statuses = [
+        ApplicationStatus.DISPATCHED_TO_DELIVERY,
+        ApplicationStatus.RECEIVED_BY_CLERK,
+        ApplicationStatus.READY_FOR_DELIVERY,
+    ]
+    
     qs = DocumentApplication.objects.filter(
-        status=ApplicationStatus.READY_FOR_DELIVERY
-    ).select_related('department').order_by('-updated_at')
+        status__in=target_statuses
+    ).select_related('department').prefetch_related('status_logs', 'status_logs__changed_by').order_by('-updated_at')
 
     if query:
         qs = qs.filter(
@@ -1045,11 +1312,37 @@ def delivery_dashboard(request):
             | Q(student_name__icontains=query)
             | Q(student_id__icontains=query)
         )
+    if app_type:
+        qs = qs.filter(application_type=app_type)
+    if date_from:
+        qs = qs.filter(updated_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(updated_at__date__lte=date_to)
+
+    pending_receipt = qs.filter(status=ApplicationStatus.DISPATCHED_TO_DELIVERY)
+    received_sorting = qs.filter(status=ApplicationStatus.RECEIVED_BY_CLERK)
+    ready_delivery = qs.filter(status=ApplicationStatus.READY_FOR_DELIVERY)
+
+    from .models import ApplicationType, CoeUserRoleAssignment, CoeRoleType
+    has_delivery_clerks = CoeUserRoleAssignment.objects.filter(
+        role_type=CoeRoleType.DELIVERY_CLERK, user__is_active=True
+    ).exists()
 
     return render(request, 'coe/delivery_dashboard.html', {
-        'applications': qs,
         'query': query,
-        'count': qs.count(),
+        'app_type': app_type,
+        'date_from': date_from,
+        'date_to': date_to,
+        'ApplicationType': ApplicationType,
+        'pending_receipt': pending_receipt,
+        'received_sorting': received_sorting,
+        'ready_delivery': ready_delivery,
+        'has_delivery_clerks': has_delivery_clerks,
+        
+        'count_receipt': pending_receipt.count(),
+        'count_sorting': received_sorting.count(),
+        'count_ready': ready_delivery.count(),
+        'total_count': qs.count(),
     })
 
 
@@ -1188,20 +1481,23 @@ def export_excel(request):
 
 @require_access('coe', 'manage_settings')
 def coe_settings_view(request):
-    """CoE module configuration — singleton settings."""
-    from .models import CoeAssignmentRule, ApplicationType
-    from .utils import get_coe_processing_officers
+    """CoE module configuration — singleton settings & role designations."""
+    from master_data.models import Program
+    from .models import CoeAssignmentRule, ApplicationType, CoeUserRoleAssignment, CoeRoleType
+    from .utils import get_coe_processing_officers, get_coe_module_candidate_users
     
     settings_obj = CoeSettings.get_settings()
+    candidate_users = get_coe_module_candidate_users()
     officers = get_coe_processing_officers()
+    departments = Program.objects.all().order_by('short_name')
 
     if request.method == 'POST':
         form = CoeSettingsForm(request.POST, instance=settings_obj)
         if form.is_valid():
             form.save()
             
-            # Process assignment rules
-            for app_type_code, _ in ApplicationType.choices:
+            # 1. Process Auto-Assignment Type Rules
+            for app_type_code, app_label in ApplicationType.choices:
                 officer_id = request.POST.get(f'rule_{app_type_code}')
                 if officer_id:
                    CoeAssignmentRule.objects.update_or_create(
@@ -1210,14 +1506,37 @@ def coe_settings_view(request):
                    )
                 else:
                    CoeAssignmentRule.objects.filter(application_type=app_type_code).delete()
+
+            # 2. Process Multi-Account Role Assignments
+            # Global Roles: Controller, DCoE, Officer, Clerk
+            global_roles = [
+                (CoeRoleType.CONTROLLER, 'role_controller'),
+                (CoeRoleType.DEPUTY_CONTROLLER, 'role_dcoe'),
+                (CoeRoleType.PROCESSING_OFFICER, 'role_officer'),
+                (CoeRoleType.DELIVERY_CLERK, 'role_clerk'),
+            ]
+            for role_type, post_param in global_roles:
+                selected_ids = [int(uid) for uid in request.POST.getlist(post_param) if uid.isdigit()]
+                # Sync: Delete existing assignments for role and re-create
+                CoeUserRoleAssignment.objects.filter(role_type=role_type, department__isnull=True).delete()
+                for uid in selected_ids:
+                    CoeUserRoleAssignment.objects.create(role_type=role_type, user_id=uid)
+
+            # Department HoD Roles
+            for dept in departments:
+                param_name = f'role_hod_{dept.id}'
+                selected_ids = [int(uid) for uid in request.POST.getlist(param_name) if uid.isdigit()]
+                CoeUserRoleAssignment.objects.filter(role_type=CoeRoleType.HOD, department=dept).delete()
+                for uid in selected_ids:
+                    CoeUserRoleAssignment.objects.create(role_type=CoeRoleType.HOD, user_id=uid, department=dept)
             
-            messages.success(request, _('CoE settings updated successfully.'))
+            messages.success(request, _('CoE settings & role assignments updated successfully.'))
             return redirect('coe_settings')
     else:
         form = CoeSettingsForm(instance=settings_obj)
 
+    # Context Data Building
     current_rules = {rule.application_type: rule.officer_id for rule in CoeAssignmentRule.objects.all()}
-    
     app_type_rules = []
     for code, label in ApplicationType.choices:
         app_type_rules.append({
@@ -1226,12 +1545,72 @@ def coe_settings_view(request):
             'assigned_officer_id': current_rules.get(code),
         })
 
+    # Group Current Role Assignments
+    role_assignments = {
+        'controller': set(CoeUserRoleAssignment.objects.filter(role_type=CoeRoleType.CONTROLLER).values_list('user_id', flat=True)),
+        'dcoe':       set(CoeUserRoleAssignment.objects.filter(role_type=CoeRoleType.DEPUTY_CONTROLLER).values_list('user_id', flat=True)),
+        'officer':    set(CoeUserRoleAssignment.objects.filter(role_type=CoeRoleType.PROCESSING_OFFICER).values_list('user_id', flat=True)),
+        'clerk':      set(CoeUserRoleAssignment.objects.filter(role_type=CoeRoleType.DELIVERY_CLERK).values_list('user_id', flat=True)),
+    }
+
+    dept_hod_map = {}
+    for dept in departments:
+        assigned_ids = set(CoeUserRoleAssignment.objects.filter(role_type=CoeRoleType.HOD, department=dept).values_list('user_id', flat=True))
+        dept.assigned_hod_ids = assigned_ids
+        dept_hod_map[dept.id] = assigned_ids
+
     return render(request, 'coe/settings.html', {
         'form': form, 
         'settings_obj': settings_obj,
         'officers': officers,
+        'candidate_users': candidate_users,
+        'departments': departments,
         'app_type_rules': app_type_rules,
+        'role_assignments': role_assignments,
+        'dept_hod_map': dept_hod_map,
     })
+
+
+@require_access('coe', 'manage_settings')
+def test_coe_email(request):
+    """AJAX endpoint to test dynamic SMTP email dispatch."""
+    if request.method == 'POST':
+        import json
+        from django.http import JsonResponse
+        try:
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                data = request.POST
+            recipient = data.get('email', '').strip()
+            if not recipient:
+                return JsonResponse({'success': False, 'message': _('Recipient email address is required.')}, status=400)
+
+            from .utils import send_coe_email
+            success = send_coe_email(
+                recipient_email=recipient,
+                subject="[BAUST CoE] Test Email Gateway Verification",
+                template_name='coe/emails/status_update_email.html',
+                context={
+                    'app': {
+                        'student_name': 'Test Recipient',
+                        'application_number': 'COED-TEST-2026',
+                        'student_id': '20260001',
+                        'department': 'Controller of Examinations',
+                        'get_application_type_display': 'SMTP Gateway Test Verification',
+                        'get_status_display': 'SMTP Connection Verified Successfully',
+                    },
+                    'event': 'submit',
+                    'custom_message': 'This test notification email confirms that your BAUST Controller of Examinations SMTP server settings are correctly configured and working!',
+                }
+            )
+            if success:
+                return JsonResponse({'success': True, 'message': _('Test email dispatched successfully to ') + recipient})
+            else:
+                return JsonResponse({'success': False, 'message': _('SMTP Error: Could not connect to mail server. Please verify your SMTP Host, Port, Username, and Password in settings.')}, status=500)
+        except Exception as exc:
+            return JsonResponse({'success': False, 'message': str(exc)}, status=500)
+    return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=405)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1347,8 +1726,8 @@ def student_reupload_portal(request):
 
             if not app:
                 error = _('Invalid Tracking Number or PIN. Please check your credentials.')
-            elif app.status != ApplicationStatus.ACTION_REQUIRED:
-                error = _(f'Application is currently in status "{app.get_status_display()}". Re-upload is only required for applications in "Action Required" status.')
+            elif app.status not in [ApplicationStatus.ACTION_REQUIRED, ApplicationStatus.IN_PROCESSING]:
+                error = _(f'Application is currently in status "{app.get_status_display()}". Re-upload is only allowed for applications in "Action Required" or "In Processing" status.')
 
         if action == 'reupload' and app and not error:
             if not request.FILES:
@@ -1386,10 +1765,12 @@ def student_reupload_portal(request):
                     success_msg = _(f'Successfully uploaded {count} file(s). Your application is back in processing.')
                     app = None  # reset app view after success
 
+    cfg = CoeSettings.get_settings()
     return render(request, 'coe/reupload_portal.html', {
         'app': app,
         'error': error,
         'success_msg': success_msg,
+        'max_mb': cfg.attachment_max_mb,
     })
 
 
@@ -1471,6 +1852,292 @@ def delivery_handover_register(request):
         'applications': applications,
         'target_date': target_date,
         'count': applications.count(),
+    })
+
+
+@require_access('coe', 'view_all_applications')
+def reports_dashboard(request):
+    """
+    Renders the CoE reports and analytics dashboard.
+    Calculates overview KPIs, SLA metrics, officer throughput, funnel conversion, and department stats.
+    """
+    import datetime
+    from django.db.models import Avg, Count, Q, F, ExpressionWrapper, DurationField
+    from django.utils.dateparse import parse_date
+    from django.contrib.auth.models import User
+    from master_data.models import Program
+
+    # 1. Fetch available filter choices
+    departments = Program.objects.all().order_by('name')
+    officers = User.objects.filter(is_active=True, is_staff=True).order_by('first_name', 'last_name')
+    if not officers.exists():
+        officers = User.objects.filter(is_active=True).order_by('username')
+        
+    app_types = ApplicationType.choices
+
+    # 2. Get query parameters
+    q_date_from = request.GET.get('date_from')
+    q_date_to = request.GET.get('date_to')
+    q_dept = request.GET.get('department')
+    q_type = request.GET.get('application_type')
+    q_officer = request.GET.get('assigned_to')
+    preset = request.GET.get('preset', '')
+
+    # Handle presets
+    today = timezone.localdate()
+    if preset == 'today':
+        q_date_from = today.strftime('%Y-%m-%d')
+        q_date_to = today.strftime('%Y-%m-%d')
+    elif preset == '7days':
+        q_date_from = (today - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
+        q_date_to = today.strftime('%Y-%m-%d')
+    elif preset == '30days':
+        q_date_from = (today - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+        q_date_to = today.strftime('%Y-%m-%d')
+    elif preset == 'this_month':
+        q_date_from = today.replace(day=1).strftime('%Y-%m-%d')
+        q_date_to = today.strftime('%Y-%m-%d')
+
+    # Build filters
+    filters = Q()
+    if q_date_from:
+        parsed_from = parse_date(q_date_from)
+        if parsed_from:
+            dt_from = timezone.make_aware(datetime.datetime.combine(parsed_from, datetime.time.min))
+            filters &= Q(submitted_at__gte=dt_from)
+    if q_date_to:
+        parsed_to = parse_date(q_date_to)
+        if parsed_to:
+            dt_to = timezone.make_aware(datetime.datetime.combine(parsed_to, datetime.time.max))
+            filters &= Q(submitted_at__lte=dt_to)
+    if q_dept:
+        filters &= Q(department_id=q_dept)
+    if q_type:
+        filters &= Q(application_type=q_type)
+    if q_officer:
+        filters &= Q(assigned_to_id=q_officer)
+
+    # 3. Base Querysets
+    qs_all = DocumentApplication.objects.filter(filters)
+    
+    # 4. KPI Calcs
+    total_apps = qs_all.count()
+    completed_apps_qs = qs_all.filter(status__in=[ApplicationStatus.READY_FOR_DELIVERY, ApplicationStatus.DELIVERED])
+    completed_count = completed_apps_qs.count()
+    
+    # Average Resolution Time (TAT)
+    avg_tat_str = "N/A"
+    completed_with_dates = completed_apps_qs.filter(delivered_at__isnull=False)
+    if completed_with_dates.exists():
+        tat_agg = completed_with_dates.annotate(
+            tat=ExpressionWrapper(F('delivered_at') - F('submitted_at'), output_field=DurationField())
+        ).aggregate(Avg('tat'))
+        avg_delta = tat_agg['tat__avg']
+        if avg_delta:
+            days = avg_delta.days
+            hours, remainder = divmod(avg_delta.seconds, 3600)
+            if days > 0:
+                avg_tat_str = f"{days}d {hours}h"
+            else:
+                avg_tat_str = f"{hours}h"
+    
+    # SLA Compliance rate (Target <= 72 hours)
+    sla_hours = 72
+    sla_compliant_count = 0
+    sla_compliance_rate = 0.0
+    if completed_with_dates.exists():
+        all_completed = list(completed_with_dates.only('submitted_at', 'delivered_at'))
+        for app in all_completed:
+            delta = app.delivered_at - app.submitted_at
+            if delta.total_seconds() <= (sla_hours * 3600):
+                sla_compliant_count += 1
+        if len(all_completed) > 0:
+            sla_compliance_rate = round((sla_compliant_count / len(all_completed)) * 100, 1)
+
+    # Stalled applications (> 48 hours in active states)
+    active_statuses = [
+        ApplicationStatus.UNDER_HOD_REVIEW,
+        ApplicationStatus.PENDING_COE_ASSIGNMENT,
+        ApplicationStatus.IN_PROCESSING,
+        ApplicationStatus.ACTION_REQUIRED,
+        ApplicationStatus.DISPATCHED_TO_DELIVERY,
+        ApplicationStatus.RECEIVED_BY_CLERK,
+    ]
+    cutoff_stalled = timezone.now() - datetime.timedelta(hours=48)
+    stalled_qs = qs_all.filter(status__in=active_statuses, updated_at__lt=cutoff_stalled)
+    stalled_count = stalled_qs.count()
+
+    # 5. Report 1: Processing Time by Application Type
+    type_tat_data = []
+    type_completed_list = completed_with_dates.only('application_type', 'submitted_at', 'delivered_at')
+    type_times = {}
+    for app in type_completed_list:
+        delta = app.delivered_at - app.submitted_at
+        if app.application_type not in type_times:
+            type_times[app.application_type] = []
+        type_times[app.application_type].append(delta.total_seconds() / 3600.0) # in hours
+    
+    for t_val, t_lbl in ApplicationType.choices:
+        t_hours = type_times.get(t_val, [])
+        avg_h = round(sum(t_hours) / len(t_hours), 1) if t_hours else 0.0
+        type_tat_data.append({
+            'type_val': t_val,
+            'type_display': str(t_lbl),
+            'avg_hours': avg_h
+        })
+    type_tat_data = sorted(type_tat_data, key=lambda x: x['avg_hours'], reverse=True)
+
+    # Report 3: Departmental Request Share
+    dept_chart = list(
+        qs_all.values('department__name', 'department__short_name')
+              .annotate(count=Count('id'))
+              .order_by('-count')
+    )
+    dept_chart_formatted = []
+    for item in dept_chart:
+        name = item['department__short_name'] or item['department__name'] or 'Unknown'
+        dept_chart_formatted.append({
+            'label': name,
+            'count': item['count']
+        })
+
+    # Report 4: Funnel & Stalled list
+    f_total = total_apps
+    f_approved = qs_all.exclude(status=ApplicationStatus.SUBMITTED).count()
+    f_assigned = qs_all.exclude(status__in=[ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_HOD_REVIEW, ApplicationStatus.PENDING_COE_ASSIGNMENT]).count()
+    f_ready = qs_all.filter(status__in=[ApplicationStatus.READY_FOR_DELIVERY, ApplicationStatus.DELIVERED]).count()
+    f_delivered = qs_all.filter(status=ApplicationStatus.DELIVERED).count()
+
+    funnel_stages = [
+        {'stage': 'Submitted', 'count': f_total},
+        {'stage': 'HOD Approved', 'count': f_approved},
+        {'stage': 'Assigned', 'count': f_assigned},
+        {'stage': 'Ready for Delivery', 'count': f_ready},
+        {'stage': 'Delivered', 'count': f_delivered},
+    ]
+
+    stalled_list = []
+    for app in stalled_qs.select_related('department', 'assigned_to').order_by('updated_at')[:10]:
+        last_log = app.status_logs.order_by('-changed_at').first()
+        start_time = last_log.changed_at if last_log else app.submitted_at
+        delta = timezone.now() - start_time
+        stalled_list.append({
+            'app': app,
+            'days': delta.days,
+            'hours': int(delta.seconds / 3600) % 24,
+        })
+
+    # Report 2: Officer Workload & Speed Leaderboard
+    assigned_officers_ids = DocumentApplication.objects.values_list('assigned_to_id', flat=True).distinct()
+    assigned_users = User.objects.filter(id__in=assigned_officers_ids, is_active=True)
+    
+    officer_leaderboard = []
+    for user in assigned_users:
+        user_fullname = user.get_full_name() or user.username
+        
+        active_queue = qs_all.filter(
+            assigned_to=user,
+            status__in=[ApplicationStatus.IN_PROCESSING, ApplicationStatus.ACTION_REQUIRED]
+        ).count()
+        
+        completed_count_user = qs_all.filter(
+            assigned_to=user,
+            status__in=[ApplicationStatus.READY_FOR_DELIVERY, ApplicationStatus.DELIVERED]
+        ).count()
+        
+        completed_apps_user = qs_all.filter(
+            assigned_to=user,
+            status__in=[ApplicationStatus.READY_FOR_DELIVERY, ApplicationStatus.DELIVERED]
+        )
+        
+        tot_seconds = 0
+        valid_apps = 0
+        for app in completed_apps_user:
+            log_assigned = app.status_logs.filter(new_status=ApplicationStatus.IN_PROCESSING).first()
+            start_t = log_assigned.changed_at if log_assigned else app.submitted_at
+            end_t = app.delivered_at if app.delivered_at else app.updated_at
+            
+            if end_t and start_t:
+                tot_seconds += (end_t - start_t).total_seconds()
+                valid_apps += 1
+                
+        avg_speed_days = round((tot_seconds / valid_apps) / 86400.0, 1) if valid_apps > 0 else 0.0
+        
+        reuploads_requested = ApplicationStatusLog.objects.filter(
+            application__assigned_to=user,
+            new_status=ApplicationStatus.ACTION_REQUIRED
+        ).values('application_id').distinct().count()
+        
+        total_worked_on = qs_all.filter(assigned_to=user).count()
+        return_rate = round((reuploads_requested / total_worked_on) * 100, 1) if total_worked_on > 0 else 0.0
+
+        officer_leaderboard.append({
+            'name': user_fullname,
+            'active_queue': active_queue,
+            'completed': completed_count_user,
+            'avg_speed': avg_speed_days,
+            'return_rate': return_rate
+        })
+    
+    officer_leaderboard = sorted(officer_leaderboard, key=lambda x: (x['completed'], -x['avg_speed']), reverse=True)
+
+    # Report 5: Live Feed & Daily Throughput
+    today_submitted = DocumentApplication.objects.filter(submitted_at__date=today).count()
+    today_delivered = DocumentApplication.objects.filter(status=ApplicationStatus.DELIVERED, delivered_at__date=today).count()
+    today_ready = DocumentApplication.objects.filter(status=ApplicationStatus.READY_FOR_DELIVERY, updated_at__date=today).count()
+    today_outflow = today_delivered + today_ready
+
+    recent_logs = ApplicationStatusLog.objects.select_related('application', 'changed_by').order_by('-changed_at')[:10]
+
+    # Area chart: Inflow vs Outflow over past 7 days
+    trend_labels = []
+    trend_submissions = []
+    trend_completions = []
+    
+    for i in range(6, -1, -1):
+        d = today - datetime.timedelta(days=i)
+        trend_labels.append(d.strftime('%b %d'))
+        sub_c = DocumentApplication.objects.filter(submitted_at__date=d).count()
+        trend_submissions.append(sub_c)
+        
+        comp_c = DocumentApplication.objects.filter(
+            Q(status=ApplicationStatus.DELIVERED, delivered_at__date=d) |
+            Q(status=ApplicationStatus.READY_FOR_DELIVERY, updated_at__date=d)
+        ).count()
+        trend_completions.append(comp_c)
+
+    return render(request, 'coe/reports.html', {
+        'departments': departments,
+        'officers': officers,
+        'app_types': app_types,
+        'q_date_from': q_date_from or '',
+        'q_date_to': q_date_to or '',
+        'q_dept': q_dept or '',
+        'q_type': q_type or '',
+        'q_officer': q_officer or '',
+        'preset': preset,
+        
+        'total_apps': total_apps,
+        'completed_count': completed_count,
+        'avg_tat_str': avg_tat_str,
+        'sla_compliance_rate': sla_compliance_rate,
+        'stalled_count': stalled_count,
+        
+        'officer_leaderboard': officer_leaderboard,
+        'stalled_list': stalled_list,
+        'recent_logs': recent_logs,
+        
+        'type_tat_json': json.dumps(type_tat_data),
+        'dept_chart_json': json.dumps(dept_chart_formatted),
+        'funnel_json': json.dumps(funnel_stages),
+        'trend_json': json.dumps({
+            'labels': trend_labels,
+            'submissions': trend_submissions,
+            'completions': trend_completions
+        }),
+        'today_submitted': today_submitted,
+        'today_outflow': today_outflow,
+        'ApplicationStatus': ApplicationStatus,
     })
 
 

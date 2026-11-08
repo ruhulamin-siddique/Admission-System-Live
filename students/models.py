@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
 
 class ReferenceNode(models.Model):
     reference_id = models.CharField(max_length=50, unique=True, db_index=True, blank=True)
@@ -40,6 +42,19 @@ class ReferenceNode(models.Model):
         if self.baust_id:
             parts.append(self.baust_id)
         return " - ".join(parts)
+
+RESULT_SYSTEM_CHOICES = [
+    ('GPA', 'GPA System (Scale 5.00)'),
+    ('DIVISION', 'Division System (Pre-GPA)'),
+]
+
+DIVISION_CHOICES = [
+    ('FIRST_STAR', '1st Division with Star Marks (≥75%)'),
+    ('FIRST', '1st Division (≥60%)'),
+    ('SECOND', '2nd Division (45%–59%)'),
+    ('THIRD', '3rd Division (33%–44%)'),
+    ('PASS', 'Pass / Compartmental'),
+]
 
 class Student(models.Model):
     # Core Identification
@@ -99,22 +114,60 @@ class Student(models.Model):
     permanent_village = models.CharField(max_length=255, null=True, blank=True)
     
     # Academic History (SSC)
+    ssc_system = models.CharField(
+        max_length=10,
+        choices=RESULT_SYSTEM_CHOICES,
+        default='GPA',
+        blank=True,
+        help_text="Evaluation system: GPA (post-2001) or Division (pre-GPA era)."
+    )
     ssc_school = models.CharField(max_length=255, null=True, blank=True)
     ssc_year = models.CharField(max_length=10, null=True, blank=True)
     ssc_board = models.CharField(max_length=50, null=True, blank=True)
     ssc_roll = models.CharField(max_length=50, null=True, blank=True)
     ssc_reg = models.CharField(max_length=50, null=True, blank=True)
+    ssc_division = models.CharField(
+        max_length=20,
+        choices=DIVISION_CHOICES,
+        null=True,
+        blank=True,
+        help_text="For pre-GPA students: 1st, 2nd, 3rd Division or Pass."
+    )
+    ssc_marks = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Total marks obtained in SSC (out of 1000 for pre-GPA)."
+    )
     ssc_gpa = models.FloatField(null=True, blank=True)
     ssc_physics = models.FloatField(null=True, blank=True)
     ssc_chemistry = models.FloatField(null=True, blank=True)
     ssc_math = models.FloatField(null=True, blank=True)
     
     # Academic History (HSC)
+    hsc_system = models.CharField(
+        max_length=10,
+        choices=RESULT_SYSTEM_CHOICES,
+        default='GPA',
+        blank=True,
+        help_text="Evaluation system: GPA (post-2003) or Division (pre-GPA era)."
+    )
     hsc_college = models.CharField(max_length=255, null=True, blank=True)
     hsc_year = models.CharField(max_length=10, null=True, blank=True)
     hsc_board = models.CharField(max_length=50, null=True, blank=True)
     hsc_roll = models.CharField(max_length=50, null=True, blank=True)
     hsc_reg = models.CharField(max_length=50, null=True, blank=True)
+    hsc_division = models.CharField(
+        max_length=20,
+        choices=DIVISION_CHOICES,
+        null=True,
+        blank=True,
+        help_text="For pre-GPA students: 1st, 2nd, 3rd Division or Pass."
+    )
+    hsc_marks = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Total marks obtained in HSC (out of 1000 for pre-GPA)."
+    )
     hsc_gpa = models.FloatField(null=True, blank=True)
     hsc_physics = models.FloatField(null=True, blank=True)
     hsc_chemistry = models.FloatField(null=True, blank=True)
@@ -128,6 +181,31 @@ class Student(models.Model):
     second_installment = models.FloatField(null=True, blank=True, default=0.0)
     waiver = models.FloatField(null=True, blank=True, default=0.0)
     others = models.FloatField(null=True, blank=True, default=0.0)
+    
+    # Additional Fees Tracking (Medical/BNCC/Scout & Uniform)
+    medical_scout_paid = models.BooleanField(default=False, db_index=True)
+    medical_scout_amount = models.FloatField(default=0.0, blank=True)
+    medical_scout_receipt = models.CharField(max_length=100, blank=True, null=True)
+    medical_scout_date = models.DateField(blank=True, null=True)
+    
+    uniform_status = models.CharField(
+        max_length=30,
+        choices=[
+            ('OPTED_OUT', 'Opted Out (Outside Preparation)'),
+            ('PAID', 'Opted In - Paid'),
+            ('PARTIAL', 'Opted In - Partial Paid'),
+            ('DUE', 'Opted In - Due / Pending')
+        ],
+        default='OPTED_OUT',
+        blank=True,
+        db_index=True
+    )
+    uniform_package = models.CharField(max_length=100, blank=True, null=True)
+    uniform_amount = models.FloatField(default=0.0, blank=True)
+    uniform_paid_amount = models.FloatField(default=0.0, blank=True)
+    uniform_receipt = models.CharField(max_length=100, blank=True, null=True)
+    uniform_date = models.DateField(blank=True, null=True)
+    uniform_remarks = models.CharField(max_length=255, blank=True, null=True)
     
     # Miscellaneous Flags
     reference_legacy = models.CharField(max_length=255, null=True, blank=True)
@@ -313,6 +391,24 @@ class Student(models.Model):
     def __str__(self):
         return f"{self.student_name} ({self.student_id})"
 
+    def get_ssc_result_display_full(self):
+        """Returns human-friendly SSC result regardless of GPA or Division system."""
+        if self.ssc_system == 'DIVISION':
+            div = self.get_ssc_division_display() or self.ssc_division or 'Division System'
+            marks_str = f" ({self.ssc_marks}/1000)" if self.ssc_marks else ""
+            equiv_str = f" [Equiv. GPA: {self.ssc_gpa:.2f}]" if self.ssc_gpa is not None else ""
+            return f"{div}{marks_str}{equiv_str}"
+        return f"GPA {self.ssc_gpa:.2f}" if self.ssc_gpa is not None else "N/A"
+
+    def get_hsc_result_display_full(self):
+        """Returns human-friendly HSC result regardless of GPA or Division system."""
+        if self.hsc_system == 'DIVISION':
+            div = self.get_hsc_division_display() or self.hsc_division or 'Division System'
+            marks_str = f" ({self.hsc_marks}/1000)" if self.hsc_marks else ""
+            equiv_str = f" [Equiv. GPA: {self.hsc_gpa:.2f}]" if self.hsc_gpa is not None else ""
+            return f"{div}{marks_str}{equiv_str}"
+        return f"GPA {self.hsc_gpa:.2f}" if self.hsc_gpa is not None else "N/A"
+
     @property
     def photo_url(self):
         if not self.photo_path:
@@ -337,6 +433,145 @@ class Student(models.Model):
 
         return f"{media_url}{normalized_photo}"
 
+    @property
+    def uniform_due_amount(self):
+        """Returns remaining due amount for uniform package if PARTIAL or DUE."""
+        if self.uniform_status == 'PARTIAL':
+            return max(0.0, (self.uniform_amount or 0.0) - (self.uniform_paid_amount or 0.0))
+        elif self.uniform_status == 'DUE':
+            return self.uniform_amount or 0.0
+        return 0.0
+
+    def get_profile_completeness(self):
+        """
+        Calculates a 100-point weighted profile completeness score.
+        Returns a dict suitable for both Django template context and JSON responses.
+        """
+        score = 0
+        missing_items = []
+
+        def _has(val):
+            """True if the value is meaningfully filled (not None/blank/placeholder)."""
+            if val is None:
+                return False
+            s = str(val).strip()
+            return bool(s) and s.lower() not in ('none', '-', 'n/a', '0', '')
+
+        # ── Personal Information (20 pts, 4 each) ──────────────────────────────
+        personal = [
+            ('student_name',  'Student Name',   self.student_name),
+            ('gender',        'Gender',          self.gender),
+            ('dob',           'Date of Birth',   self.dob),
+            ('blood_group',   'Blood Group',     self.blood_group),
+            ('religion',      'Religion',        self.religion),
+        ]
+        for _field, label, val in personal:
+            if _has(val):
+                score += 4
+            else:
+                missing_items.append(label)
+
+        # ── Family & Contact (25 pts, 5 each) ─────────────────────────────────
+        contact = [
+            ('father_name',    "Father's Name",   self.father_name),
+            ('mother_name',    "Mother's Name",   self.mother_name),
+            ('student_mobile', 'Mobile Number',   self.student_mobile),
+            ('father_mobile',  "Father's Mobile", self.father_mobile),
+            ('student_email',  'Email Address',   self.student_email),
+        ]
+        for _field, label, val in contact:
+            if _has(val):
+                score += 5
+            else:
+                missing_items.append(label)
+
+        # ── Address (15 pts, 7.5 each — stored as int steps of 7 or 8) ────────
+        if _has(self.present_address) or _has(self.present_district):
+            score += 8
+        else:
+            missing_items.append('Present Address')
+
+        if _has(self.permanent_address) or _has(self.permanent_district):
+            score += 7
+        else:
+            missing_items.append('Permanent Address')
+
+        # ── Academic — SSC (12 pts, ~2.4 each rounded to int steps) ──────────
+        ssc_result_val = (self.ssc_division or self.ssc_gpa) if self.ssc_system == 'DIVISION' else self.ssc_gpa
+        ssc_fields = [
+            ('SSC School',    self.ssc_school),
+            ('SSC Board',     self.ssc_board),
+            ('SSC Year',      self.ssc_year),
+            ('SSC Roll',      self.ssc_roll),
+            ('SSC Result',    ssc_result_val),
+        ]
+        ssc_pts = 0
+        for label, val in ssc_fields:
+            if _has(val):
+                ssc_pts += 1
+            else:
+                missing_items.append(label)
+        # Map 0–5 filled fields → 0–12 pts proportionally
+        score += round(ssc_pts * 12 / 5)
+
+        # ── Academic — HSC (13 pts to hit 100 total) ──────────────────────────
+        hsc_result_val = (self.hsc_division or self.hsc_gpa) if self.hsc_system == 'DIVISION' else self.hsc_gpa
+        hsc_fields = [
+            ('HSC College',   self.hsc_college),
+            ('HSC Board',     self.hsc_board),
+            ('HSC Year',      self.hsc_year),
+            ('HSC Roll',      self.hsc_roll),
+            ('HSC Result',    hsc_result_val),
+        ]
+        hsc_pts = 0
+        for label, val in hsc_fields:
+            if _has(val):
+                hsc_pts += 1
+            else:
+                missing_items.append(label)
+        score += round(hsc_pts * 13 / 5)
+
+        # ── Photo (5 pts) ─────────────────────────────────────────────────────
+        if _has(self.photo_path):
+            score += 5
+        else:
+            missing_items.append('Profile Photo')
+
+        # ── Board Verification (5 pts, 2 + 3) ────────────────────────────────
+        if self.ssc_verified:
+            score += 2
+        else:
+            missing_items.append('SSC Board Verified')
+
+        if self.hsc_verified:
+            score += 3
+        else:
+            missing_items.append('HSC Board Verified')
+
+        # Clamp to 100
+        score = min(score, 100)
+
+        # Determine tier
+        if score >= 90:
+            tier = 'Excellent'
+            bar_class = 'success'
+        elif score >= 70:
+            tier = 'Good'
+            bar_class = 'info'
+        elif score >= 50:
+            tier = 'Fair'
+            bar_class = 'warning'
+        else:
+            tier = 'Needs Attention'
+            bar_class = 'danger'
+
+        return {
+            'score': score,
+            'tier': tier,
+            'bar_class': bar_class,
+            'missing_items': missing_items,
+        }
+
 class ProgramChangeHistory(models.Model):
     old_student_id = models.CharField(max_length=50)
     new_student_id = models.CharField(max_length=50)
@@ -349,16 +584,33 @@ class ProgramChangeHistory(models.Model):
         verbose_name_plural = "Program change histories"
 
 class SMSHistory(models.Model):
+    MODULE_CHOICES = [
+        ('ADMISSION', 'Admission Module'),
+        ('COE', 'Controller of Examinations'),
+        ('PUBLIC_RELATIONS', 'Public Relations'),
+        ('ICT_WING', 'ICT Wing'),
+        ('EXAM_BILLING', 'Exam Billing'),
+        ('COUNSELING', 'Psychological Counseling & Wellbeing'),
+        ('SYSTEM', 'System / Security'),
+    ]
+
     recipient_name = models.CharField(max_length=255, null=True, blank=True)
     student_id = models.CharField(max_length=50, null=True, blank=True)
     recipient_contact = models.CharField(max_length=50)
     sms_delivery_type = models.CharField(max_length=50, null=True, blank=True)
+    module_name = models.CharField(max_length=50, choices=MODULE_CHOICES, default='SYSTEM')
+    use_case_event = models.CharField(max_length=100, default='general_notification', help_text="Specific trigger event e.g. hod_approved, delivery_ready, status_change, test_sms")
     message_type = models.CharField(max_length=20) # SMS or Email
     message_body = models.TextField()
     status = models.CharField(max_length=50)
     api_response = models.TextField(null=True, blank=True)
     sent_at = models.DateTimeField(auto_now_add=True)
     api_profile_name = models.CharField(max_length=100, null=True, blank=True)
+    sms_profile = models.ForeignKey('core.SMSProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='sms_logs')
+
+    class Meta:
+        ordering = ['-sent_at']
+
 
 class AdmissionStatusHistory(models.Model):
     REASON_CHOICES = [
@@ -453,3 +705,396 @@ class HallSeatCancellation(models.Model):
 
     def __str__(self):
         return f"{self.student.student_id} - {self.hall.short_name} Cancellation"
+
+
+def validate_app_template_size(file):
+    max_size_mb = 5
+    if file and hasattr(file, 'size') and file.size > max_size_mb * 1024 * 1024:
+        raise ValidationError(f"File size exceeds {max_size_mb}MB limit.")
+
+
+class AdmissionApplicationType(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+    title_en = models.CharField(max_length=255)
+    title_bn = models.CharField(max_length=255)
+    addressed_to = models.CharField(max_length=255, default="The Registrar")
+    through_dept_head = models.BooleanField(default=True)
+    subject = models.CharField(max_length=255)
+    body_template = models.TextField()
+    fields_schema = models.JSONField(default=list, blank=True)
+    docx_template = models.FileField(
+        upload_to='admission_app_templates/docx/',
+        null=True, blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['docx']), validate_app_template_size]
+    )
+    pdf_template = models.FileField(
+        upload_to='admission_app_templates/pdf/',
+        null=True, blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf']), validate_app_template_size]
+    )
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = "Admission Application Type"
+        verbose_name_plural = "Admission Application Types"
+
+    def __str__(self):
+        return f"{self.order:02d}. {self.title_en}"
+
+
+class AdmissionApplicationConfig(models.Model):
+    VALIDATION_POLICIES = [
+        ('FLEXIBLE', 'Flexible — Warn on unrecorded IDs, allow with office flag'),
+        ('STRICT',   'Strict — Block unrecorded IDs for enrolled applications'),
+    ]
+    id_validation_policy = models.CharField(
+        max_length=20, choices=VALIDATION_POLICIES, default='FLEXIBLE'
+    )
+    allow_docx_download = models.BooleanField(default=True)
+
+    @classmethod
+    def get_config(cls):
+        """Singleton accessor — always returns or creates record with pk=1."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    class Meta:
+        verbose_name = "Admission Application Config"
+        verbose_name_plural = "Admission Application Config"
+
+    def __str__(self):
+        return f"Application Config (Policy: {self.id_validation_policy})"
+
+
+class StudentApplication(models.Model):
+    STATUS_CHOICES = [
+        ('SUBMITTED', 'Submitted (Online)'),
+        ('RECEIVED',  'Physical Form Received'),
+        ('VERIFIED',  'Verified / Under Review'),
+        ('APPROVED',  'Approved'),
+        ('REJECTED',  'Rejected'),
+    ]
+    tracking_number = models.CharField(max_length=30, unique=True, db_index=True)
+    application_type = models.ForeignKey(
+        AdmissionApplicationType, on_delete=models.PROTECT,
+        related_name='submissions'
+    )
+    student = models.ForeignKey('Student', on_delete=models.SET_NULL, null=True, blank=True, related_name='admission_applications')
+    student_name = models.CharField(max_length=255)
+    applicant_student_id = models.CharField(max_length=50, blank=True, null=True, db_index=True)
+    is_id_verified = models.BooleanField(default=False)
+    department = models.CharField(max_length=100)
+    phone_no = models.CharField(max_length=30, db_index=True)
+    form_data = models.JSONField(default=dict, blank=True)
+    has_profile_mismatch = models.BooleanField(default=False)
+    mismatch_details = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='SUBMITTED')
+    office_notes = models.TextField(blank=True, null=True)
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='received_admission_applications'
+    )
+    received_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+        verbose_name = "Student Application"
+        verbose_name_plural = "Student Applications"
+
+    @property
+    def display_student_id(self):
+        return self.applicant_student_id or (self.student.student_id if self.student else '')
+
+    def __str__(self):
+        return f"{self.tracking_number} - {self.student_name} ({self.application_type.code})"
+
+
+class AdmissionIntake(models.Model):
+    """Represents one admission event (e.g. 'Winter 2027 Intake')."""
+    intake_name = models.CharField(
+        max_length=100, unique=True,
+        help_text="e.g. 'Winter 2027', 'Summer 2027'"
+    )
+    academic_year = models.ForeignKey(
+        'master_data.AdmissionYear', on_delete=models.PROTECT,
+        null=True, blank=True
+    )
+    is_open_for_application = models.BooleanField(
+        default=True,
+        help_text="Toggle to manually open or close applications"
+    )
+    application_deadline = models.DateTimeField(
+        null=True, blank=True,
+        help_text="If set, applications auto-close after this datetime"
+    )
+    exam_date = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Admission test date & time"
+    )
+    exam_venue = models.CharField(
+        max_length=255, default="BAUST Campus (Saidpur)"
+    )
+    
+    # Financial settings (displayed dynamically on apply form)
+    form_fee_bdt = models.DecimalField(
+        max_digits=10, decimal_places=2, default=750.00
+    )
+    bkash_charge_bdt = models.DecimalField(
+        max_digits=10, decimal_places=2, default=12.00
+    )
+    bkash_number = models.CharField(
+        max_length=30, default="01769675556"
+    )
+    
+    # Exam Roll generation
+    exam_roll_prefix = models.CharField(
+        max_length=50, default="BAUST-",
+        help_text="e.g. 'BAUST-Winter2027-' or 'BAUST-'"
+    )
+    next_roll_number = models.IntegerField(
+        default=1001,
+        help_text="Auto-incremented atomically on each submission"
+    )
+    
+    # Admin notice for public requirements page
+    notice_html = models.TextField(
+        blank=True, null=True,
+        help_text="Optional HTML notice displayed on public requirements page"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def total_fee_bdt(self):
+        return self.form_fee_bdt + self.bkash_charge_bdt
+    
+    @property
+    def is_currently_open(self):
+        """True only if manually open AND deadline has not passed."""
+        if not self.is_open_for_application:
+            return False
+        if self.application_deadline and timezone.now() > self.application_deadline:
+            return False
+        return True
+
+    class Meta:
+        ordering = ['-id']
+        verbose_name = "Admission Intake"
+        verbose_name_plural = "Admission Intakes"
+    
+    def __str__(self):
+        return self.intake_name
+
+
+class OnlineApplicant(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING',  'Pending Review'),
+        ('VERIFIED', 'Verified / Under Review'),
+        ('APPROVED', 'Approved — Admit Card Ready'),
+        ('REJECTED', 'Rejected'),
+        ('ADMITTED', 'Enrolled in University Database'),
+    ]
+    PAYMENT_STATUS_CHOICES = [
+        ('PENDING',  'Pending Verification'),
+        ('VERIFIED', 'Payment Verified'),
+        ('INVALID',  'Invalid / Rejected'),
+    ]
+    
+    # Application identifiers
+    application_no = models.CharField(
+        max_length=50, unique=True, db_index=True
+    )  # e.g. "OA-2027-00123"
+    exam_roll = models.CharField(
+        max_length=80, unique=True, db_index=True, blank=True, null=True
+    )  # e.g. "BAUST-Winter2027-1001"
+    intake = models.ForeignKey(
+        AdmissionIntake, on_delete=models.PROTECT, related_name='applicants'
+    )
+    intake_name = models.CharField(
+        max_length=100, db_index=True
+    )  # Cached for fast filtering even if intake is deleted
+    
+    # Program Selection
+    program_category = models.CharField(
+        max_length=30,
+        choices=[('Engineering', 'Engineering'), ('Non Engineering', 'Non Engineering')]
+    )
+    desired_program = models.CharField(
+        max_length=100, blank=True, null=True
+    )  # e.g. "CSE", "BBA"
+    exam_venue = models.CharField(
+        max_length=255, default="BAUST Campus (Saidpur)"
+    )
+    
+    # Personal Information
+    name = models.CharField(max_length=255)
+    mobile = models.CharField(max_length=15, db_index=True)  # Normalized: 01XXXXXXXXX
+    email = models.EmailField(blank=True, null=True)
+    national_id = models.CharField(max_length=50, blank=True, null=True)
+    place_of_birth = models.CharField(max_length=100, blank=True, null=True)
+    gender = models.CharField(max_length=20, choices=[('Male', 'Male'), ('Female', 'Female')])
+    blood_group = models.CharField(max_length=10, blank=True, null=True)
+    dob = models.DateField(null=True, blank=True)
+    nationality = models.CharField(max_length=50, default='Bangladeshi')
+    marital_status = models.CharField(
+        max_length=20, default='Single',
+        choices=[('Single', 'Single'), ('Married', 'Married')]
+    )
+    student_type = models.CharField(
+        max_length=50, default='Regular',
+        choices=[('Regular', 'Regular'), ('Transfer', 'Transfer'), ('Diploma Holder', 'Diploma Holder')]
+    )
+    
+    # Family Information
+    father_name = models.CharField(max_length=255)
+    father_occupation = models.CharField(max_length=100, blank=True, null=True)
+    father_mobile = models.CharField(max_length=15, blank=True, null=True)
+    mother_name = models.CharField(max_length=255)
+    mother_occupation = models.CharField(max_length=100, blank=True, null=True)  # Stored in applicant only, NOT copied to Student
+    mother_mobile = models.CharField(max_length=15, blank=True, null=True)
+    
+    # Photo (stored as ImageField, converted to photo_path string during enrollment)
+    photo = models.ImageField(
+        upload_to='applicant_photos/%Y/',
+        null=True, blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])]
+    )
+    
+    # Address (Present)
+    present_house = models.CharField(max_length=255, blank=True, null=True)
+    present_post_code = models.CharField(max_length=30, blank=True, null=True)
+    present_police_station = models.CharField(max_length=100, blank=True, null=True)
+    present_district = models.CharField(max_length=100, blank=True, null=True)
+    present_country = models.CharField(max_length=50, default='Bangladesh')
+    
+    # Address (Permanent)
+    same_as_present = models.BooleanField(default=False)
+    permanent_house = models.CharField(max_length=255, blank=True, null=True)
+    permanent_post_code = models.CharField(max_length=30, blank=True, null=True)
+    permanent_police_station = models.CharField(max_length=100, blank=True, null=True)
+    permanent_district = models.CharField(max_length=100, blank=True, null=True)
+    permanent_country = models.CharField(max_length=50, default='Bangladesh')
+    
+    # Academic: SSC
+    ssc_system = models.CharField(
+        max_length=10,
+        choices=RESULT_SYSTEM_CHOICES,
+        default='GPA',
+        blank=True
+    )
+    ssc_school = models.CharField(max_length=255, blank=True, null=True)
+    ssc_board = models.CharField(max_length=50, blank=True, null=True)
+    ssc_roll = models.CharField(max_length=50, blank=True, null=True)
+    ssc_reg = models.CharField(max_length=50, blank=True, null=True)  # Registration No.
+    ssc_year = models.CharField(max_length=10, blank=True, null=True)
+    ssc_division = models.CharField(
+        max_length=20,
+        choices=DIVISION_CHOICES,
+        null=True,
+        blank=True
+    )
+    ssc_marks = models.IntegerField(null=True, blank=True)
+    ssc_gpa = models.FloatField(null=True, blank=True)  # Range 0.00–5.00 or UGC equivalent
+    
+    # Academic: HSC
+    hsc_system = models.CharField(
+        max_length=10,
+        choices=RESULT_SYSTEM_CHOICES,
+        default='GPA',
+        blank=True
+    )
+    hsc_college = models.CharField(max_length=255, blank=True, null=True)
+    hsc_board = models.CharField(max_length=50, blank=True, null=True)
+    hsc_roll = models.CharField(max_length=50, blank=True, null=True)
+    hsc_reg = models.CharField(max_length=50, blank=True, null=True)  # Registration No.
+    hsc_year = models.CharField(max_length=10, blank=True, null=True)
+    hsc_division = models.CharField(
+        max_length=20,
+        choices=DIVISION_CHOICES,
+        null=True,
+        blank=True
+    )
+    hsc_marks = models.IntegerField(null=True, blank=True)
+    hsc_gpa = models.FloatField(null=True, blank=True)  # Range 0.00–5.00 or UGC equivalent
+    
+    total_gpa = models.FloatField(null=True, blank=True)  # ssc_gpa + hsc_gpa (or equiv sum)
+    
+    # Payment (bKash TrxID only for now)
+    payment_method = models.CharField(max_length=50, default='bKash')
+    payment_trx_id = models.CharField(max_length=100, db_index=True)
+    payment_status = models.CharField(
+        max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING'
+    )
+    payment_notes = models.TextField(blank=True, null=True)
+    payment_verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='verified_applicant_payments'
+    )
+    payment_verified_at = models.DateTimeField(null=True, blank=True)
+    
+    # Education Board Verification
+    ssc_verified = models.BooleanField(default=False)
+    hsc_verified = models.BooleanField(default=False)
+    board_verification_logs = models.JSONField(default=dict, blank=True)
+    
+    # Status & Workflow
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True
+    )
+    office_remarks = models.TextField(blank=True, null=True)
+    
+    # Soft Delete
+    is_trashed = models.BooleanField(default=False, db_index=True)
+    trashed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='trashed_applicants'
+    )
+    trashed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Enrollment Bridge
+    admitted_student = models.ForeignKey(
+        'Student', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='source_online_application'
+    )
+    
+    applied_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-applied_at']
+        verbose_name = "Online Applicant"
+        verbose_name_plural = "Online Applicants"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['intake', 'mobile'],
+                condition=models.Q(is_trashed=False),
+                name='unique_active_application_per_mobile_per_intake'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.exam_roll or self.application_no} — {self.name} ({self.intake_name})"
+
+    def get_ssc_result_display_full(self):
+        """Returns human-friendly SSC result regardless of GPA or Division system."""
+        if self.ssc_system == 'DIVISION':
+            div = self.get_ssc_division_display() or self.ssc_division or 'Division System'
+            marks_str = f" ({self.ssc_marks}/1000)" if self.ssc_marks else ""
+            equiv_str = f" [Equiv. GPA: {self.ssc_gpa:.2f}]" if self.ssc_gpa is not None else ""
+            return f"{div}{marks_str}{equiv_str}"
+        return f"GPA {self.ssc_gpa:.2f}" if self.ssc_gpa is not None else "N/A"
+
+    def get_hsc_result_display_full(self):
+        """Returns human-friendly HSC result regardless of GPA or Division system."""
+        if self.hsc_system == 'DIVISION':
+            div = self.get_hsc_division_display() or self.hsc_division or 'Division System'
+            marks_str = f" ({self.hsc_marks}/1000)" if self.hsc_marks else ""
+            equiv_str = f" [Equiv. GPA: {self.hsc_gpa:.2f}]" if self.hsc_gpa is not None else ""
+            return f"{div}{marks_str}{equiv_str}"
+        return f"GPA {self.hsc_gpa:.2f}" if self.hsc_gpa is not None else "N/A"
+

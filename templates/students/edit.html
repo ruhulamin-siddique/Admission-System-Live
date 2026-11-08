@@ -779,39 +779,159 @@
                         <!-- TAB 4: ACADEMIC HISTORY -->
                         <div class="tab-pane fade" id="academic" role="tabpanel">
                             <div class="row">
-                                <div class="col-md-12 d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                <div class="col-md-12 d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
                                     <h6 class="text-primary font-weight-bold mb-0"><i class="fas fa-school mr-2"></i>SSC / Equivalent Level</h6>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" onclick="openVerificationModal('SSC')">
-                                        <i class="fas fa-shield-check mr-1"></i> Verify via Board
-                                    </button>
+                                    <div class="d-flex align-items-center" style="gap:6px;">
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" id="ssc_board_verify_btn" onclick="openVerificationModal('SSC')">
+                                            <i class="fas fa-shield-check mr-1"></i> Verify via Board
+                                        </button>
+                                        <span id="ssc_manual_verify_badge" class="badge badge-warning py-1 px-2 font-weight-normal" style="display:none;" title="Online board verification is not available for pre-2001 examinations. Verify using original physical marksheet/certificate.">
+                                            <i class="fas fa-certificate mr-1"></i> Manual Certificate Verification
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-outline-info rounded-pill font-weight-bold" onclick="copyForExtension('SSC')" title="Copy SSC details for Bookmarklet / Chrome Extension">
+                                            <i class="fas fa-clipboard mr-1"></i> Copy for Extension
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill font-weight-bold" onclick="pasteFromExtension('SSC')" title="Paste verified result from Bookmarklet / Chrome Extension into form">
+                                            <i class="fas fa-paste mr-1"></i> Paste Result
+                                        </button>
+                                    </div>
                                 </div>
+                                <div class="col-md-12 mb-2" id="ssc_ext_status_row" style="display:none;">
+                                    <div id="ssc_ext_status" class="small px-1"></div>
+                                </div>
+
+                                <!-- SSC Evaluation System Toggle -->
+                                <div class="col-md-12 mb-3">
+                                    <div class="p-2 rounded bg-light border d-flex align-items-center" style="gap:12px;">
+                                        <span class="font-weight-bold text-secondary small"><i class="fas fa-sliders-h mr-1"></i> Result System:</span>
+                                        <div class="custom-control custom-radio custom-control-inline mb-0">
+                                            <input type="radio" id="ssc_sys_gpa" name="ssc_system" value="GPA" class="custom-control-input ssc-sys-radio" {% if form.ssc_system.value != 'DIVISION' %}checked{% endif %}>
+                                            <label class="custom-control-label font-weight-bold small" for="ssc_sys_gpa">GPA System (2001 – Present)</label>
+                                        </div>
+                                        <div class="custom-control custom-radio custom-control-inline mb-0">
+                                            <input type="radio" id="ssc_sys_div" name="ssc_system" value="DIVISION" class="custom-control-input ssc-sys-radio" {% if form.ssc_system.value == 'DIVISION' %}checked{% endif %}>
+                                            <label class="custom-control-label font-weight-bold small text-info" for="ssc_sys_div">Division System (Pre-2001 / Older)</label>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="col-md-6"><div class="field-outline-group"><label>School Name <span class="text-danger">*</span></label>{{ form.ssc_school }}</div></div>
-                                <div class="col-md-3"><div class="field-outline-group"><label>Passing Year</label>{{ form.ssc_year }}</div></div>
-                                <div class="col-md-3"><div class="field-outline-group"><label>Board <span class="text-danger">*</span></label>{{ form.ssc_board }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Roll No <span class="text-danger">*</span></label>{{ form.ssc_roll }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Reg No</label>{{ form.ssc_reg }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>GPA <span class="text-danger">*</span></label>{{ form.ssc_gpa }}</div></div>
-                                
-                                <div class="col-md-4"><div class="field-outline-group"><label>Physics</label>{{ form.ssc_physics }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Chemistry</label>{{ form.ssc_chemistry }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Math</label>{{ form.ssc_math }}</div></div>
-                                
-                                <div class="col-md-12 d-flex justify-content-between align-items-center mt-4 mb-3 border-bottom pb-2">
-                                    <h6 class="text-primary font-weight-bold mb-0"><i class="fas fa-graduation-cap mr-2"></i>HSC / Equivalent Level</h6>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" onclick="openVerificationModal('HSC')">
-                                        <i class="fas fa-shield-check mr-1"></i> Verify via Board
-                                    </button>
+                                <div class="col-md-3">
+                                    <div class="field-outline-group">
+                                        <label>Passing Year</label>
+                                        {{ form.ssc_year }}
+                                        <div id="ssc_year_advisor" class="small text-info mt-1" style="display:none;"></div>
+                                    </div>
                                 </div>
+                                <div class="col-md-3"><div class="field-outline-group"><label>Board <span class="text-danger">*</span></label>{{ form.ssc_board }}</div></div>
+                                <div class="col-md-4">
+                                    <div class="field-outline-group">
+                                        <label id="ssc_roll_label">Roll No <span class="text-danger">*</span></label>
+                                        {{ form.ssc_roll }}
+                                        <small id="ssc_roll_hint" class="text-muted" style="display:none;">e.g. Dhk No. 1204</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="field-outline-group">
+                                        <label id="ssc_reg_label">Reg No</label>
+                                        {{ form.ssc_reg }}
+                                        <small id="ssc_reg_hint" class="text-muted" style="display:none;">e.g. 1989-90/34120</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 ssc-gpa-group"><div class="field-outline-group"><label>GPA <span class="text-danger">*</span></label>{{ form.ssc_gpa }}</div></div>
+                                
+                                <!-- SSC Division Fields -->
+                                <div class="col-md-4 ssc-div-group" style="display:none;">
+                                    <div class="field-outline-group"><label>Division <span class="text-danger">*</span></label>{{ form.ssc_division }}</div>
+                                </div>
+                                <div class="col-md-4 ssc-div-group" style="display:none;">
+                                    <div class="field-outline-group">
+                                        <label>Total Marks (out of 1000)</label>
+                                        {{ form.ssc_marks }}
+                                        <small class="text-muted" id="ssc_equiv_gpa_preview"></small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4 ssc-subjects-group"><div class="field-outline-group"><label>Physics</label>{{ form.ssc_physics }}</div></div>
+                                <div class="col-md-4 ssc-subjects-group"><div class="field-outline-group"><label>Chemistry</label>{{ form.ssc_chemistry }}</div></div>
+                                <div class="col-md-4 ssc-subjects-group"><div class="field-outline-group"><label>Math</label>{{ form.ssc_math }}</div></div>
+                                
+                                <div class="col-md-12 d-flex justify-content-between align-items-center mt-4 mb-2 border-bottom pb-2">
+                                    <h6 class="text-primary font-weight-bold mb-0"><i class="fas fa-graduation-cap mr-2"></i>HSC / Equivalent Level</h6>
+                                    <div class="d-flex align-items-center" style="gap:6px;">
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" id="hsc_board_verify_btn" onclick="openVerificationModal('HSC')">
+                                            <i class="fas fa-shield-check mr-1"></i> Verify via Board
+                                        </button>
+                                        <span id="hsc_manual_verify_badge" class="badge badge-warning py-1 px-2 font-weight-normal" style="display:none;" title="Online board verification is not available for pre-2003 examinations. Verify using original physical marksheet/certificate.">
+                                            <i class="fas fa-certificate mr-1"></i> Manual Certificate Verification
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-outline-info rounded-pill font-weight-bold" onclick="copyForExtension('HSC')" title="Copy HSC details for Bookmarklet / Chrome Extension">
+                                            <i class="fas fa-clipboard mr-1"></i> Copy for Extension
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill font-weight-bold" onclick="pasteFromExtension('HSC')" title="Paste verified result from Bookmarklet / Chrome Extension into form">
+                                            <i class="fas fa-paste mr-1"></i> Paste Result
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-12 mb-2" id="hsc_ext_status_row" style="display:none;">
+                                    <div id="hsc_ext_status" class="small px-1"></div>
+                                </div>
+
+                                <!-- HSC Evaluation System Toggle -->
+                                <div class="col-md-12 mb-3">
+                                    <div class="p-2 rounded bg-light border d-flex align-items-center" style="gap:12px;">
+                                        <span class="font-weight-bold text-secondary small"><i class="fas fa-sliders-h mr-1"></i> Result System:</span>
+                                        <div class="custom-control custom-radio custom-control-inline mb-0">
+                                            <input type="radio" id="hsc_sys_gpa" name="hsc_system" value="GPA" class="custom-control-input hsc-sys-radio" {% if form.hsc_system.value != 'DIVISION' %}checked{% endif %}>
+                                            <label class="custom-control-label font-weight-bold small" for="hsc_sys_gpa">GPA System (2003 – Present)</label>
+                                        </div>
+                                        <div class="custom-control custom-radio custom-control-inline mb-0">
+                                            <input type="radio" id="hsc_sys_div" name="hsc_system" value="DIVISION" class="custom-control-input hsc-sys-radio" {% if form.hsc_system.value == 'DIVISION' %}checked{% endif %}>
+                                            <label class="custom-control-label font-weight-bold small text-info" for="hsc_sys_div">Division System (Pre-2003 / Older)</label>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="col-md-6"><div class="field-outline-group"><label>College Name</label>{{ form.hsc_college }}</div></div>
-                                <div class="col-md-3"><div class="field-outline-group"><label>Passing Year</label>{{ form.hsc_year }}</div></div>
+                                <div class="col-md-3">
+                                    <div class="field-outline-group">
+                                        <label>Passing Year</label>
+                                        {{ form.hsc_year }}
+                                        <div id="hsc_year_advisor" class="small text-info mt-1" style="display:none;"></div>
+                                    </div>
+                                </div>
                                 <div class="col-md-3"><div class="field-outline-group"><label>Board</label>{{ form.hsc_board }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Roll No</label>{{ form.hsc_roll }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Reg No</label>{{ form.hsc_reg }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>GPA</label>{{ form.hsc_gpa }}</div></div>
- 
-                                <div class="col-md-4"><div class="field-outline-group"><label>Physics</label>{{ form.hsc_physics }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Chemistry</label>{{ form.hsc_chemistry }}</div></div>
-                                <div class="col-md-4"><div class="field-outline-group"><label>Math</label>{{ form.hsc_math }}</div></div>
+                                <div class="col-md-4">
+                                    <div class="field-outline-group">
+                                        <label id="hsc_roll_label">Roll No</label>
+                                        {{ form.hsc_roll }}
+                                        <small id="hsc_roll_hint" class="text-muted" style="display:none;">e.g. Dhk No. 1204</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="field-outline-group">
+                                        <label id="hsc_reg_label">Reg No</label>
+                                        {{ form.hsc_reg }}
+                                        <small id="hsc_reg_hint" class="text-muted" style="display:none;">e.g. 1991-92/45120</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 hsc-gpa-group"><div class="field-outline-group"><label>GPA</label>{{ form.hsc_gpa }}</div></div>
+
+                                <!-- HSC Division Fields -->
+                                <div class="col-md-4 hsc-div-group" style="display:none;">
+                                    <div class="field-outline-group"><label>Division</label>{{ form.hsc_division }}</div>
+                                </div>
+                                <div class="col-md-4 hsc-div-group" style="display:none;">
+                                    <div class="field-outline-group">
+                                        <label>Total Marks (out of 1000)</label>
+                                        {{ form.hsc_marks }}
+                                        <small class="text-muted" id="hsc_equiv_gpa_preview"></small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 hsc-subjects-group"><div class="field-outline-group"><label>Physics</label>{{ form.hsc_physics }}</div></div>
+                                <div class="col-md-4 hsc-subjects-group"><div class="field-outline-group"><label>Chemistry</label>{{ form.hsc_chemistry }}</div></div>
+                                <div class="col-md-4 hsc-subjects-group"><div class="field-outline-group"><label>Math</label>{{ form.hsc_math }}</div></div>
                             </div>
                             
                             <div class="tab-nav-buttons mt-4">
@@ -2073,6 +2193,16 @@
         $('#captcha_container').html('<div class="spinner-border text-primary spinner-border-sm"></div><span class="ml-2 small text-muted">Loading Secure Captcha...</span>');
         $('#verify_error').addClass('d-none');
         
+        const level = $('#verify_exam_level').val() || 'SSC';
+        const fallbackBtnHtml = `
+            <div class="alert alert-warning p-2 small mb-2 font-weight-bold text-dark text-left" style="background:#fffbe6; border-left:4px solid #f59e0b; font-size:11.5px; border-radius:6px;">
+                <i class="fas fa-exclamation-triangle text-warning mr-1"></i> Direct board captcha blocked by anti-bot security.
+            </div>
+            <button type="button" class="btn btn-sm btn-warning btn-block font-weight-bold rounded-pill shadow-sm py-2" onclick="$('#boardVerificationModal').modal('hide'); copyForExtension('${level}');">
+                <i class="fas fa-puzzle-piece mr-1"></i> Switch to Chrome Extension (100% Works)
+            </button>
+        `;
+
         $.ajax({
             url: "{% url 'api_get_board_captcha' %}",
             type: "GET",
@@ -2081,11 +2211,11 @@
                     $('#captcha_container').html(`<img src="${response.captcha_image}" class="img-fluid rounded border shadow-sm" style="max-height: 60px;">`);
                     $('#btn_submit_verify').prop('disabled', false);
                 } else {
-                    $('#captcha_container').html(`<span class="text-danger small font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> ${response.error}</span>`);
+                    $('#captcha_container').html(fallbackBtnHtml);
                 }
             },
             error: function() {
-                $('#captcha_container').html('<span class="text-danger small font-weight-bold">Network Error. Please try again.</span>');
+                $('#captcha_container').html(fallbackBtnHtml);
             }
         });
     }
@@ -2194,13 +2324,19 @@
                     $('#btn_accept_result').removeClass('d-none');
                     $('#btn_copy_result').removeClass('d-none');
                 } else {
+                    const level = $('#verify_exam_level').val() || 'SSC';
                     $('#verify_error').removeClass('d-none').html(`
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-exclamation-circle fa-2x mr-3 text-danger"></i>
-                            <div>
-                                <h6 class="mb-0 font-weight-bold">Verification Failed</h6>
-                                <p class="mb-0 small">${response.error || 'Invalid credentials or portal unreachable.'}</p>
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle fa-2x mr-3 text-danger"></i>
+                                <div>
+                                    <h6 class="mb-0 font-weight-bold">Verification Failed / Portal Blocked</h6>
+                                    <p class="mb-0 small">${response.error || 'Direct board captcha is blocked by education board anti-bot protection.'}</p>
+                                </div>
                             </div>
+                            <button type="button" class="btn btn-sm btn-warning font-weight-bold rounded-pill shadow-sm px-3 mt-1" onclick="$('#boardVerificationModal').modal('hide'); copyForExtension('${level}');">
+                                <i class="fas fa-puzzle-piece mr-1"></i> Switch to Extension (100% Works)
+                            </button>
                         </div>
                     `);
                     $('#verify_placeholder').removeClass('d-none');
@@ -2210,7 +2346,15 @@
                 }
             },
             error: function() {
-                $('#verify_error').removeClass('d-none').html('<i class="fas fa-wifi mr-1"></i> Network error connecting to verification server.');
+                const level = $('#verify_exam_level').val() || 'SSC';
+                $('#verify_error').removeClass('d-none').html(`
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div><i class="fas fa-wifi mr-1"></i> Connection failed or board portal blocked server IP.</div>
+                        <button type="button" class="btn btn-sm btn-warning font-weight-bold rounded-pill px-3" onclick="$('#boardVerificationModal').modal('hide'); copyForExtension('${level}');">
+                            <i class="fas fa-puzzle-piece mr-1"></i> Switch to Extension
+                        </button>
+                    </div>
+                `);
                 btn.html(originalText).prop('disabled', false);
             }
         });
@@ -2438,5 +2582,462 @@
         
         closeCameraModal();
     }
+
+    // =====================================================================
+    // EXTENSION / BOOKMARKLET INTEGRATION — Edit Student Page
+    // Phase 2+4 Implementation: copyForExtension() + pasteFromExtension()
+    // Key difference from add.html: uses REAL student_id so the extension
+    // widget can sync verified data directly back to the server via
+    // api_manual_verify_student after board portal lookup.
+    // =====================================================================
+
+    function _extSetStatus(prefix, html, type) {
+        var rowEl = document.getElementById(prefix + '_ext_status_row');
+        var statusEl = document.getElementById(prefix + '_ext_status');
+        if (!statusEl) return;
+        var colorMap = { info: 'text-info', success: 'text-success', warning: 'text-warning', danger: 'text-danger' };
+        statusEl.innerHTML = '<span class="' + (colorMap[type] || 'text-muted') + '">' + html + '</span>';
+        if (rowEl) rowEl.style.display = 'block';
+        clearTimeout(statusEl._hideTimer);
+        statusEl._hideTimer = setTimeout(function() {
+            statusEl.innerHTML = '';
+            if (rowEl) rowEl.style.display = 'none';
+        }, 7000);
+    }
+
+    function copyForExtension(level) {
+        var prefix = level.toLowerCase();
+        var roll  = $('[name="' + prefix + '_roll"]').val() || '';
+        var reg   = $('[name="' + prefix + '_reg"]').val() || '';
+        var board = $('[name="' + prefix + '_board"] option:selected').text() || $('[name="' + prefix + '_board"]').val() || '';
+        var year  = $('[name="' + prefix + '_year"]').val() || '';
+
+        // Phase 4: edit.html has a REAL student_id — extension can sync directly to DB.
+        var studentId = '{{ student.student_id }}';
+        var serverUrl = window.location.origin;
+
+        if (!roll) {
+            _extSetStatus(prefix, '<i class="fas fa-exclamation-circle mr-1"></i>Please fill in the ' + level + ' Roll Number first.', 'warning');
+            return;
+        }
+
+        var clipText = [
+            'ServerURL: ' + serverUrl,
+            'StudentID: ' + studentId,
+            'Mode: SINGLE',
+            'Exam: ' + level,
+            'Roll: ' + roll,
+            'Reg: ' + reg,
+            'Board: ' + board.trim(),
+            'Year: ' + year
+        ].join(' | ');
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(clipText).then(function() {
+                _extSetStatus(prefix,
+                    '<i class="fas fa-check-circle mr-1"></i>Copied with Student ID! The extension will sync data directly to the server after verification. Opening eBoard portal...',
+                    'info');
+                window.open('https://eboardresults.com/v2/home', '_blank');
+            }).catch(function() {
+                prompt('Copy this text manually, then paste it in the extension:', clipText);
+            });
+        } else {
+            prompt('Copy this text manually, then paste it in the extension:', clipText);
+        }
+    }
+
+    function _markFieldUpdated($el) {
+        if (!$el || !$el.length) return;
+        $el.removeClass('is-invalid').addClass('is-valid').attr('style', 'border-color: #10b981 !important; background-color: #f0fdf4 !important;');
+        var parent = $el.closest('.field-outline-group, .form-group');
+        if (!parent.length) parent = $el.parent();
+        if (parent.length) {
+            var $label = parent.find('label');
+            if ($label.length && !$label.find('.paste-label-check').length) {
+                $label.css('color', '#059669').append(' <i class="fas fa-check-circle text-success ml-1 paste-label-check" title="Updated from Board Data"></i>');
+            }
+            parent.find('.paste-check-badge').remove();
+            parent.css('position', 'relative');
+            parent.append('<span class="paste-check-badge badge badge-success position-absolute" style="top:-9px; right:15px; font-size:10px; z-index:10; border-radius:10px; padding:3px 8px; box-shadow:0 2px 6px rgba(16,185,129,0.3); background:#10b981; color:#fff; font-weight:bold;"><i class="fas fa-check-circle mr-1"></i>Board Updated</span>');
+        }
+    }
+
+    function _processPastedBoardData(level, text, skipMismatchCheck) {
+        var prefix = level.toLowerCase();
+        if (!text || text.trim() === '') {
+            _extSetStatus(prefix,
+                '<i class="fas fa-exclamation-circle mr-1"></i>No text provided. After verifying on the board portal, copy the result text first.',
+                'warning');
+            return;
+        }
+
+        function parse(pattern) {
+            var m = text.match(new RegExp('(?:' + pattern + ')[:\\s]+([^|\\n\\r]+)', 'i'));
+            return (m && m[1]) ? m[1].trim() : '';
+        }
+
+        // ===================================================================
+        // EXAM LEVEL & ROLL MISMATCH PROTECTION (4-Layer Security)
+        // Prevents accidentally pasting SSC data into HSC section or vice versa!
+        // ===================================================================
+        if (!skipMismatchCheck) {
+            var targetLevel = level.toUpperCase(); // 'SSC' or 'HSC'
+            var detectedExam = parse('Exam|Examination|Exam Name|Exam Type');
+            if (!detectedExam) {
+                if (/Secondary\s*School\s*Certificate|\bSSC\b|\bDakhil\b/i.test(text)) {
+                    detectedExam = 'SSC';
+                } else if (/Higher\s*Secondary|\bHSC\b|\bAlim\b/i.test(text)) {
+                    detectedExam = 'HSC';
+                }
+            }
+
+            var copiedRoll = parse('Roll');
+            var copiedYear = parse('Year|Passing Year');
+            var copiedInst = parse('Institute|School|College');
+
+            var sscRoll = $('[name="ssc_roll"]').val() || '';
+            var hscRoll = $('[name="hsc_roll"]').val() || '';
+
+            var sscYear = $('[name="ssc_year"]').val() || '';
+            var hscYear = $('[name="hsc_year"]').val() || '';
+
+            var isMismatch = false;
+            var mismatchReason = '';
+            var suggestedLevel = targetLevel === 'SSC' ? 'HSC' : 'SSC';
+
+            // Layer 1: Exam tag check
+            if (detectedExam) {
+                var dUpper = detectedExam.toUpperCase();
+                if (targetLevel === 'HSC' && (dUpper.includes('SSC') || dUpper.includes('DAKHIL'))) {
+                    isMismatch = true;
+                    mismatchReason = 'Copied result is for <strong>' + detectedExam + '</strong>, but you clicked Paste under <strong>HSC</strong>.';
+                    suggestedLevel = 'SSC';
+                } else if (targetLevel === 'SSC' && (dUpper.includes('HSC') || dUpper.includes('ALIM'))) {
+                    isMismatch = true;
+                    mismatchReason = 'Copied result is for <strong>' + detectedExam + '</strong>, but you clicked Paste under <strong>SSC</strong>.';
+                    suggestedLevel = 'HSC';
+                }
+            }
+
+            // Layer 2: Roll number check (with digit-only normalization for division era)
+            if (!isMismatch && copiedRoll) {
+                var normCopiedRoll = (copiedRoll.replace(/\D/g, '') || copiedRoll).trim();
+                var normSscRoll = (sscRoll.replace(/\D/g, '') || sscRoll).trim();
+                var normHscRoll = (hscRoll.replace(/\D/g, '') || hscRoll).trim();
+                if (targetLevel === 'HSC' && normSscRoll && normCopiedRoll === normSscRoll && normCopiedRoll !== normHscRoll) {
+                    isMismatch = true;
+                    mismatchReason = 'Copied Roll No (<strong>' + copiedRoll + '</strong>) matches your <strong>SSC Roll</strong> field, not HSC.';
+                    suggestedLevel = 'SSC';
+                } else if (targetLevel === 'SSC' && normHscRoll && normCopiedRoll === normHscRoll && normCopiedRoll !== normSscRoll) {
+                    isMismatch = true;
+                    mismatchReason = 'Copied Roll No (<strong>' + copiedRoll + '</strong>) matches your <strong>HSC Roll</strong> field, not SSC.';
+                    suggestedLevel = 'HSC';
+                }
+            }
+
+            // Layer 3: Passing Year check
+            if (!isMismatch && copiedYear) {
+                if (targetLevel === 'HSC' && sscYear && copiedYear === sscYear && copiedYear !== hscYear) {
+                    isMismatch = true;
+                    mismatchReason = 'Copied Passing Year (<strong>' + copiedYear + '</strong>) matches your <strong>SSC Year</strong> field, not HSC.';
+                    suggestedLevel = 'SSC';
+                } else if (targetLevel === 'SSC' && hscYear && copiedYear === hscYear && copiedYear !== sscYear) {
+                    isMismatch = true;
+                    mismatchReason = 'Copied Passing Year (<strong>' + copiedYear + '</strong>) matches your <strong>HSC Year</strong> field, not SSC.';
+                    suggestedLevel = 'HSC';
+                }
+            }
+
+            // Layer 4: Institute Name check (High School vs College)
+            if (!isMismatch && copiedInst) {
+                var instUpper = copiedInst.toUpperCase();
+                var isHighSchool = instUpper.includes('HIGH SCHOOL') || instUpper.includes('MODEL SCHOOL');
+                var isCollege = instUpper.includes('COLLEGE') || instUpper.includes('POLYTECHNIC');
+
+                if (targetLevel === 'HSC' && isHighSchool && !isCollege) {
+                    isMismatch = true;
+                    mismatchReason = 'Copied institute (<strong>' + copiedInst + '</strong>) appears to be a High School, but you clicked Paste under <strong>HSC</strong>.';
+                    suggestedLevel = 'SSC';
+                } else if (targetLevel === 'SSC' && isCollege && !isHighSchool) {
+                    isMismatch = true;
+                    mismatchReason = 'Copied institute (<strong>' + copiedInst + '</strong>) appears to be a College, but you clicked Paste under <strong>SSC</strong>.';
+                    suggestedLevel = 'HSC';
+                }
+            }
+
+            if (isMismatch) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⚠️ Exam Level Mismatch Warning',
+                        html: '<p class="small text-muted mb-2">' + mismatchReason + '</p>' +
+                              '<div class="alert alert-warning p-2 small mb-0 font-weight-bold">Where would you like to apply this result data?</div>',
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: '<i class="fas fa-check-circle mr-1"></i> Paste into ' + suggestedLevel + ' Section (Recommended)',
+                        denyButtonText: 'Paste into ' + targetLevel + ' Anyway',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#10b981',
+                        denyButtonColor: '#f59e0b'
+                    }).then(function(result) {
+                        if (result.isConfirmed) {
+                            _processPastedBoardData(suggestedLevel, text, true);
+                        } else if (result.isDenied) {
+                            _processPastedBoardData(targetLevel, text, true);
+                        }
+                    });
+                    return;
+                } else {
+                    var confirmOverride = confirm('⚠️ Warning: ' + mismatchReason.replace(/<[^>]+>/g, '') + '\n\nClick OK to paste into ' + suggestedLevel + ' section (recommended), or Cancel to abort.');
+                    if (confirmOverride) {
+                        _processPastedBoardData(suggestedLevel, text, true);
+                    }
+                    return;
+                }
+            }
+        }
+
+        var name      = parse('Name of Examinee|Student Name|Name');
+        var father    = parse("Father'?s?\\s*Name|Father");
+        var mother    = parse("Mother'?s?\\s*Name|Mother");
+        var dob       = parse('Date of Birth|DOB');
+        var gender    = parse('Gender|Sex');
+        var gpa       = parse('GPA');
+        var inst      = parse('Institute|School|College');
+        var physics   = parse('Physics');
+        var chemistry = parse('Chemistry');
+        var math      = parse('Math(?:ematics)?');
+
+        var applied = [];
+
+        if (gpa) {
+            var gpaParsed = parseFloat(gpa);
+            if (!isNaN(gpaParsed)) {
+                var $f = $('[name="' + prefix + '_gpa"]');
+                $f.val(gpaParsed.toFixed(2));
+                _markFieldUpdated($f);
+                applied.push('GPA (' + gpaParsed.toFixed(2) + ')');
+            }
+        }
+        if (inst) {
+            var schoolField = prefix === 'ssc' ? $('[name="ssc_school"]') : $('[name="hsc_college"]');
+            schoolField.val(inst);
+            _markFieldUpdated(schoolField);
+            applied.push('School/College');
+        }
+        function _gradeToFloat(val) {
+            if (!val) return '';
+            var v = val.trim().toUpperCase();
+            var map = { 'A+': '5.00', 'A': '4.00', 'A-': '3.50', 'B': '3.00', 'C': '2.00', 'D': '1.00', 'F': '0.00' };
+            if (map[v]) return map[v];
+            var num = parseFloat(v);
+            return !isNaN(num) ? num.toFixed(2) : '';
+        }
+
+        function _formatDateForInput(dateStr) {
+            if (!dateStr) return '';
+            var str = dateStr.trim();
+            var parts = str.split(/[-\/\s]+/);
+            if (parts.length !== 3) return str;
+            var months = {
+                'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04', 'MAY': '05', 'JUN': '06',
+                'JUL': '07', 'AUG': '08', 'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
+            };
+            if (parts[0].length === 4) {
+                var m = months[parts[1].toUpperCase()] || parts[1].padStart(2, '0');
+                return parts[0] + '-' + m + '-' + parts[2].padStart(2, '0');
+            } else if (parts[2].length === 4) {
+                var m = months[parts[1].toUpperCase()] || parts[1].padStart(2, '0');
+                return parts[2] + '-' + m + '-' + parts[0].padStart(2, '0');
+            }
+            return str;
+        }
+
+        if (physics) {
+            var pVal = _gradeToFloat(physics);
+            if (pVal) { var $f = $('[name="' + prefix + '_physics"]'); $f.val(pVal); _markFieldUpdated($f); applied.push('Physics (' + pVal + ')'); }
+        }
+        if (chemistry) {
+            var cVal = _gradeToFloat(chemistry);
+            if (cVal) { var $f = $('[name="' + prefix + '_chemistry"]'); $f.val(cVal); _markFieldUpdated($f); applied.push('Chemistry (' + cVal + ')'); }
+        }
+        if (math) {
+            var mVal = _gradeToFloat(math);
+            if (mVal) { var $f = $('[name="' + prefix + '_math"]'); $f.val(mVal); _markFieldUpdated($f); applied.push('Math (' + mVal + ')'); }
+        }
+
+        if (name)   { var $f = $('[name="student_name"]'); $f.val(name.toUpperCase());  _markFieldUpdated($f); applied.push('Name'); }
+        if (father) { var $f = $('[name="father_name"]');  $f.val(father.toUpperCase());_markFieldUpdated($f); applied.push("Father's Name"); }
+        if (mother) { var $f = $('[name="mother_name"]');  $f.val(mother.toUpperCase());_markFieldUpdated($f); applied.push("Mother's Name"); }
+
+        if (dob) {
+            var formattedDate = _formatDateForInput(dob);
+            if (formattedDate) {
+                var $f = $('[name="dob"]');
+                $f.val(formattedDate);
+                _markFieldUpdated($f);
+                applied.push('Date of Birth');
+            }
+        }
+
+        if (gender) {
+            var gVal = gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
+            if (gVal === 'Male' || gVal === 'Female' || gVal === 'Other') {
+                var $f = $('[name="gender"]');
+                $f.val(gVal).trigger('change');
+                _markFieldUpdated($f);
+                applied.push('Gender');
+            }
+        }
+
+        // Mark as verified
+        $('#id_' + prefix + '_verified').val('True').prop('checked', true);
+        $('button[onclick="openVerificationModal(\'' + level + '\')"]')
+            .removeClass('btn-outline-primary')
+            .addClass('btn-success')
+            .html('<i class="fas fa-check-double mr-1"></i> Board Verified');
+
+        if (applied.length > 0) {
+            _extSetStatus(prefix,
+                '<i class="fas fa-check-circle mr-1"></i>' + level + ' data applied from extension: <strong>' + applied.join(', ') + '</strong> — Save the form to persist.',
+                'success');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success',
+                    title: level + ' Board Data Applied',
+                    html: applied.join(' &middot; ') + '<br><small>Save the form to persist changes.</small>',
+                    showConfirmButton: false, timer: 5000 });
+            }
+        } else {
+            _extSetStatus(prefix,
+                '<i class="fas fa-exclamation-circle mr-1"></i>No parseable data found. Ensure the extension copied the board result correctly.',
+                'warning');
+        }
+    }
+
+    function _showPasteFallbackModal(level) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '📥 Paste ' + level + ' Board Result',
+                html: '<p class="small text-muted mb-2">Browser automatic clipboard reading is restricted in your current connection.<br><strong>Press Ctrl + V inside the box below to paste your copied result:</strong></p>' +
+                      '<textarea id="manual_result_paste_area" class="form-control" rows="4" placeholder="Paste result text here (Ctrl+V)..." style="font-size:12px; font-family:monospace;"></textarea>',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check-circle mr-1"></i> Apply Result Data',
+                cancelButtonText: 'Cancel',
+                focusConfirm: false,
+                didOpen: function() {
+                    var area = document.getElementById('manual_result_paste_area');
+                    if (area) area.focus();
+                },
+                preConfirm: function() {
+                    var val = document.getElementById('manual_result_paste_area').value;
+                    if (!val || !val.trim()) {
+                        Swal.showValidationMessage('Please paste the copied board result text into the box first.');
+                        return false;
+                    }
+                    return val;
+                }
+            }).then(function(res) {
+                if (res.isConfirmed && res.value) {
+                    _processPastedBoardData(level, res.value);
+                }
+            });
+        } else {
+            var txt = prompt('Automatic clipboard reading restricted by browser. Please paste (Ctrl+V) your copied board result text below:');
+            if (txt) {
+                _processPastedBoardData(level, txt);
+            }
+        }
+    }
+
+    function pasteFromExtension(level) {
+        if (navigator.clipboard && navigator.clipboard.readText && window.isSecureContext) {
+            navigator.clipboard.readText().then(function(text) {
+                if (text && text.trim()) {
+                    _processPastedBoardData(level, text);
+                } else {
+                    _showPasteFallbackModal(level);
+                }
+            }).catch(function() {
+                _showPasteFallbackModal(level);
+            });
+        } else {
+            _showPasteFallbackModal(level);
+        }
+    }
+    function initResultSystemToggle(prefix, cutYear) {
+        function updateSystem() {
+            var isDiv = $('input[name="' + prefix + '_system"]:checked').val() === 'DIVISION';
+            if (isDiv) {
+                $('.' + prefix + '-gpa-group').hide();
+                $('.' + prefix + '-div-group').show();
+                $('.' + prefix + '-subjects-group').hide();
+                $('#' + prefix + '_board_verify_btn').hide();
+                $('#' + prefix + '_manual_verify_badge').show();
+                $('#' + prefix + '_roll_hint').show();
+                $('#' + prefix + '_reg_hint').show();
+                var preBoards = ['', 'Dhaka', 'Rajshahi', 'Comilla', 'Jessore', 'Madrasah', 'Technical', 'Other'];
+                $('#id_' + prefix + '_board option').each(function() {
+                    if ($(this).val() && preBoards.indexOf($(this).val()) === -1) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                });
+            } else {
+                $('.' + prefix + '-gpa-group').show();
+                $('.' + prefix + '-div-group').hide();
+                $('.' + prefix + '-subjects-group').show();
+                $('#' + prefix + '_board_verify_btn').show();
+                $('#' + prefix + '_manual_verify_badge').hide();
+                $('#' + prefix + '_roll_hint').hide();
+                $('#' + prefix + '_reg_hint').hide();
+                $('#id_' + prefix + '_board option').show();
+            }
+        }
+
+        $('input[name="' + prefix + '_system"]').on('change', updateSystem);
+        updateSystem();
+
+        $('[name="' + prefix + '_year"]').on('input change', function() {
+            var yr = parseInt($(this).val(), 10);
+            if (yr && yr < cutYear) {
+                $('#' + prefix + '_year_advisor').html(
+                    '<i class="fas fa-info-circle mr-1"></i> Passing year ' + yr + ' is before ' + cutYear + '. Consider switching to <strong>Division System</strong>.'
+                ).show();
+            } else {
+                $('#' + prefix + '_year_advisor').hide();
+            }
+        });
+
+        function updateEquivPreview() {
+            var div = $('#id_' + prefix + '_division').val();
+            var marks = parseFloat($('#id_' + prefix + '_marks').val()) || null;
+            var equivMap = {'FIRST_STAR': 4.00, 'FIRST': 3.50, 'SECOND': 2.75, 'THIRD': 2.00, 'PASS': 1.50};
+            var gpa = equivMap[div] || null;
+            if (gpa !== null && marks) {
+                if (div === 'FIRST' && marks >= 600 && marks < 750) {
+                    gpa = (3.50 + ((marks - 600) / 150) * 0.49).toFixed(2);
+                } else if (div === 'SECOND' && marks >= 450 && marks < 600) {
+                    gpa = (2.75 + ((marks - 450) / 150) * 0.74).toFixed(2);
+                } else if (div === 'THIRD' && marks >= 330 && marks < 450) {
+                    gpa = (2.00 + ((marks - 330) / 120) * 0.74).toFixed(2);
+                }
+            }
+            if (gpa) {
+                $('#' + prefix + '_equiv_gpa_preview').text('≈ UGC Equiv. GPA: ' + gpa);
+            } else {
+                $('#' + prefix + '_equiv_gpa_preview').text('');
+            }
+        }
+
+        $('#id_' + prefix + '_division, #id_' + prefix + '_marks').on('change input', updateEquivPreview);
+        updateEquivPreview();
+    }
+
+    $(document).ready(function() {
+        initResultSystemToggle('ssc', 2001);
+        initResultSystemToggle('hsc', 2003);
+    });
 </script>
 {% endblock %}
+

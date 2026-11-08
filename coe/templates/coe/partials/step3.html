@@ -69,12 +69,23 @@
 <script>
 function showFileName(input, idx) {
   const label = document.getElementById('zone_label_' + idx);
+  const zone = document.getElementById('zone_' + idx);
+  const maxMb = parseFloat('{{ max_mb|default:2 }}');
+  
   if (input.files.length > 0) {
     const f = input.files[0];
+    if (f.size > maxMb * 1024 * 1024) {
+      label.innerHTML = '<i class="fas fa-exclamation-triangle text-danger mr-1"></i><strong class="text-danger">' + f.name + '</strong> exceeds the ' + maxMb + ' MB limit!';
+      zone.style.borderColor = '#ef4444';
+      zone.style.background = '#fef2f2';
+      input.value = ''; // Reset input selection
+      return;
+    }
+    
     const kb = (f.size / 1024).toFixed(1);
     label.innerHTML = '<i class="fas fa-check-circle text-success mr-1"></i><strong>' + f.name + '</strong> (' + kb + ' KB)';
-    document.getElementById('zone_' + idx).style.borderColor = '#10b981';
-    document.getElementById('zone_' + idx).style.background = '#ecfdf5';
+    zone.style.borderColor = '#10b981';
+    zone.style.background = '#ecfdf5';
   }
 }
 function handleDrop(event, idx) {

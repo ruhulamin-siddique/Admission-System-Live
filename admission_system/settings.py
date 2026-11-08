@@ -40,12 +40,28 @@ if not SECRET_KEY:
 elif not DEBUG and SECRET_KEY.startswith('django-insecure-'):
     raise RuntimeError('A production SECRET_KEY must not use Django insecure development prefixes.')
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'portal.baust.edu.bd,www.portal.baust.edu.bd,localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '*').split(',') if h.strip()]
 
-CSRF_TRUSTED_ORIGINS = os.environ.get(
-    'CSRF_TRUSTED_ORIGINS',
-    'https://portal.baust.edu.bd,https://www.portal.baust.edu.bd,http://localhost:8000,http://127.0.0.1:8000'
-).split(',')
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get(
+        'CSRF_TRUSTED_ORIGINS',
+        'https://portal.baust.edu.bd,https://www.portal.baust.edu.bd,http://localhost:8000,http://127.0.0.1:8000'
+    ).split(',') if o.strip()
+]
+
+# Auto-add local LAN IPs when in DEBUG mode for seamless portability across office computers
+if DEBUG:
+    import socket
+    try:
+        _hostname = socket.gethostname()
+        for _ip in socket.gethostbyname_ex(_hostname)[2]:
+            for _scheme in ('http://', 'https://'):
+                for _port in ('', ':8000', ':80'):
+                    _origin = f"{_scheme}{_ip}{_port}"
+                    if _origin not in CSRF_TRUSTED_ORIGINS:
+                        CSRF_TRUSTED_ORIGINS.append(_origin)
+    except Exception:
+        pass
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -67,10 +83,12 @@ INSTALLED_APPS = [
     'ict_wing',
     'public_relations',  # PR Office Management Module
     'coe',               # Controller of Examinations — Academic Document Processing
+    'counseling',        # Psychological Counseling & Student Wellbeing Module
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',  # Activates bilingual translation switching
     'django.middleware.common.CommonMiddleware',
@@ -116,13 +134,33 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', ''),
-        # utf8mb4 ensures Bangla and all Unicode characters store correctly in MySQL.
-        # This setting is safely ignored by SQLite.
+        # Database options tailored for high-concurrency SQLite WAL and MySQL
         'OPTIONS': {
+            'timeout': 20,  # 20-second lock retry timeout for SQLite
+        } if os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3') == 'django.db.backends.sqlite3' else {
             'charset': 'utf8mb4',
-        } if os.environ.get('DB_ENGINE', '') == 'django.db.backends.mysql' else {},
+        },
     }
 }
+
+# SQLite Production Concurrency & WAL Performance Optimization
+from django.db.backends.signals import connection_created
+from django.dispatch import receiver
+
+@receiver(connection_created)
+def configure_sqlite_pragmas(sender, connection, **kwargs):
+    """
+    Enforces Write-Ahead Logging (WAL) and high-concurrency PRAGMAs on every SQLite connection.
+    Guarantees that Google Drive background file indexing or multi-threaded Waitress workers
+    never cause 'database is locked' errors.
+    """
+    if connection.vendor == 'sqlite':
+        with connection.cursor() as cursor:
+            cursor.execute('PRAGMA journal_mode = WAL;')
+            cursor.execute('PRAGMA synchronous = NORMAL;')
+            cursor.execute('PRAGMA busy_timeout = 20000;')  # 20-second retry buffer
+            cursor.execute('PRAGMA wal_autocheckpoint = 1000;')
+            cursor.execute('PRAGMA cache_size = -64000;')  # 64MB memory cache
 
 
 # Password validation
@@ -178,11 +216,20 @@ LOCALE_PATHS = [
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+WHITENOISE_USE_FINDERS = True
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
@@ -200,6 +247,11 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 1800  # 30 Minutes Inactivity Timeout
 SESSION_SAVE_EVERY_REQUEST = True  # Ensures timeout resets on interaction
 
+# CSRF & Session Cookie Hardening for Mobile Browsers
+CSRF_COOKIE_SAMESITE = 'Lax'      # Fixes network-switch CSRF failures on mobile
+SESSION_COOKIE_SAMESITE = 'Lax'  # Keeps session stable across mobile network changes
+CSRF_COOKIE_HTTPONLY = False       # Required: lets Django's JS access the CSRF token correctly
+
 # Production security defaults. Local development stays HTTP-friendly while
 # DEBUG=False becomes fail-safe unless explicitly overridden.
 SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', str(not DEBUG)) == 'True'
@@ -214,3 +266,5 @@ EXTERNAL_API_REQUIRE_HTTPS = os.environ.get('EXTERNAL_API_REQUIRE_HTTPS', str(no
 
 # Allow loading local files (PDFs, screenshots) inside iframe previews
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# Reload trigger

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notice - Admission Cancel - BAUST</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            font-family: 'Times New Roman', Times, Georgia, serif;
+            color: #000;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px 0;
+            font-size: 14.5px;
+            line-height: 1.6;
+        }
+        .page-container {
+            width: 95%;
+            max-width: 850px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 55px 75px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-radius: 4px;
+            min-height: 1050px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Top Action Toolbar */
+        .print-toolbar {
+            width: 95%;
+            max-width: 850px;
+            margin: 0 auto 15px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f172a;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 6px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #dc2626; color: #fff; }
+        .btn-primary:hover { background: #b91c1c; }
+        .btn-warning { background: #f59e0b; color: #000; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-light { background: #e2e8f0; color: #1e293b; }
+        .btn-light:hover { background: #cbd5e1; }
+
+        /* Floating drawer toggle on right side */
+        .floating-drawer-toggle {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #0f172a;
+            color: #fff;
+            border: 2px solid #ef4444;
+            border-radius: 50px;
+            padding: 12px 18px;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.2s ease;
+        }
+        .floating-drawer-toggle:hover {
+            background: #1e293b;
+            transform: translateY(-50%) scale(1.04);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+        }
+
+        /* Sidebar Drawer */
+        .drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: transparent;
+            z-index: 1040;
+            display: none;
+        }
+        .drawer-overlay.open {
+            display: block;
+        }
+        .print-drawer {
+            position: fixed;
+            top: 0; right: -460px;
+            width: 440px;
+            max-width: 92vw;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: -10px 0 35px rgba(0, 0, 0, 0.15);
+            border-left: 1px solid #e2e8f0;
+            z-index: 1050;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+        }
+        .print-drawer.open {
+            right: 0;
+        }
+        .drawer-header {
+            padding: 18px 24px;
+            background: #0f172a;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .drawer-header h5 { margin: 0; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .drawer-header .close-btn { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; opacity: 0.8; }
+        .drawer-header .close-btn:hover { opacity: 1; }
+        .drawer-body {
+            padding: 20px 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .drawer-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            gap: 10px;
+        }
+        .drawer-section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #64748b;
+            margin: 18px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .drawer-section-title:first-child { margin-top: 0; }
+        .form-group-sleek { margin-bottom: 12px; }
+        .form-group-sleek label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #334155; }
+        .form-control-sleek {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 13px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-control-sleek:focus { border-color: #dc2626; }
+        .chip-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .chip {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #475569;
+        }
+        .chip:hover, .chip.active {
+            background: #dc2626;
+            color: #fff;
+            border-color: #dc2626;
+        }
+
+        /* Notice Content Typography matching Screenshot 3 */
+        .classification-header, .classification-footer {
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            font-size: 14px;
+        }
+        .top-inst-header {
+            text-align: center;
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+        .top-inst-header h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        .top-inst-header p {
+            margin: 2px 0 0 0;
+            font-size: 14px;
+        }
+        .correspondence-meta {
+            margin-bottom: 25px;
+        }
+        .correspondence-meta .tag {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .correspondence-meta .ref {
+            font-size: 14px;
+        }
+        .notice-title {
+            text-align: left;
+            font-weight: bold;
+            font-size: 15px;
+            text-decoration: underline;
+            margin: 25px 0 20px 0;
+            letter-spacing: 0.5px;
+        }
+        .notice-body {
+            text-align: justify;
+            margin-bottom: 30px;
+        }
+        .notice-body p {
+            margin-bottom: 16px;
+            text-indent: -20px;
+            padding-left: 20px;
+        }
+
+        /* Signature block */
+        .signature-block {
+            margin-left: auto;
+            width: 330px;
+            text-align: left;
+            margin-top: 40px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            line-height: 1.35;
+        }
+        .signature-block .sig-name {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .signature-block .sig-date {
+            margin-top: 15px;
+        }
+
+        /* Enclosure & Distribution lists */
+        .enclosure-line {
+            font-size: 13.5px;
+            margin-bottom: 15px;
+        }
+        .distribution-section {
+            font-size: 13.5px;
+            line-height: 1.4;
+        }
+        .distribution-section .dist-group {
+            margin-bottom: 12px;
+        }
+        .distribution-section .dist-group strong {
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        @media print {
+            body {
+                background: #fff !important;
+                padding: 0 !important;
+                font-size: 13.5px;
+            }
+            .page-container {
+                width: 100% !important;
+                max-width: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                padding: 12mm 18mm !important;
+                min-height: auto;
+            }
+            .no-print, .print-toolbar, .print-drawer, .drawer-overlay, .floating-drawer-toggle {
+                display: none !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 12mm 14mm;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Toggle Button for Drawer -->
+    <button class="floating-drawer-toggle no-print" onclick="openPrintDrawer()">
+        <i class="fas fa-sliders-h text-warning"></i> Notice & Date Controls
+    </button>
+
+    <!-- Top Action Bar -->
+    <div class="print-toolbar no-print">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="{% url 'cancellation_hub' %}" class="btn btn-light"><i class="fas fa-arrow-left"></i> Hub</a>
+            <span style="font-size: 14px; font-weight: 600;">Official BAUST Administrative Notice</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 12.5px; opacity: 0.85;">Total: <strong>{{ total_count }}</strong> (Temp: {{ temp_count }}, Reg: {{ perm_count }})</span>
+            <button onclick="openPrintDrawer()" class="btn btn-warning"><i class="fas fa-edit"></i> Edit Notice & Dates</button>
+            <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> Print Notice (A4)</button>
+        </div>
+    </div>
+
+    <!-- Official Notice A4 Paper Container -->
+    <div class="page-container">
+        <div>
+            <!-- Top Classification -->
+            <div class="classification-header">RESTRICTED</div>
+
+            <!-- University Branch Header -->
+            <div class="top-inst-header">
+                <h2>BAUST, Saidpur</h2>
+                <p>(Registrar's Office, Admission Branch)</p>
+            </div>
+
+            <!-- Correspondence Ref -->
+            <div class="correspondence-meta">
+                <div class="tag">Internal Correspondence</div>
+                <div class="ref">{{ ref_no }}</div>
+            </div>
+
+            <!-- Notice Title -->
+            <div class="notice-title">NOTICE- ADMISSION CANCEL</div>
+
+            <!-- Notice Paragraphs -->
+            <div class="notice-body">
+                <p>1.&nbsp;&nbsp;&nbsp;&nbsp;{{ body_1 }}</p>
+                <p>2.&nbsp;&nbsp;&nbsp;&nbsp;{{ body_2 }}</p>
+            </div>
+
+            <!-- Right-aligned Signature Block -->
+            <div class="signature-block">
+                <div class="sig-name">{{ signatory_name }}</div>
+                <div>{{ signatory_title }}</div>
+                <div>For Vice Chancellor</div>
+                <div class="sig-date">{{ issue_month_year }}</div>
+            </div>
+
+            <!-- Enclosures Line -->
+            <div class="enclosure-line">
+                <strong>Encl:</strong> {{ enclosure_text }}
+            </div>
+
+            <!-- Distribution Lists -->
+            <div class="distribution-section">
+                <div class="dist-group">
+                    <strong>To:</strong>
+                    Treasurer, BAUST<br>
+                    Controller of Examinations, BAUST<br>
+                    Deans (S&H, BS, ME)<br>
+                    Head of the concerned departments.
+                </div>
+                <div class="dist-group">
+                    <strong>Info:</strong>
+                    Acting Director (Finance), BAUST<br>
+                    PS to VC, BAUST<br>
+                    ICT Wing (With request to take necessary action please)<br>
+                    Office Copy/ Master copy
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Classification -->
+        <div class="classification-footer">RESTRICTED</div>
+    </div>
+
+    <!-- Print Control Sidebar Drawer Overlay & Container -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closePrintDrawer()"></div>
+
+    <div class="print-drawer" id="printDrawer">
+        <div class="drawer-header">
+            <h5><i class="fas fa-sliders-h text-warning"></i> Notice & Print Controls</h5>
+            <button class="close-btn" onclick="closePrintDrawer()">&times;</button>
+        </div>
+
+        <div class="drawer-body">
+            <form id="noticeDrawerForm" method="GET" action="{% url 'cancellation_document_notice' %}">
+                
+                <!-- Quick Date Range Presets -->
+                <div class="drawer-section-title">📅 Date Range Presets</div>
+                <div class="chip-grid">
+                    <button type="button" class="chip" onclick="setDrawerDate('all')">All Time</button>
+                    <button type="button" class="chip" onclick="setDrawerDate('today')">Today</button>
+                    <button type="button" class="chip" onclick="setDrawerDate('7days')">Last 7 Days</button>
+                    <button type="button" class="chip" onclick="setDrawerDate('month')">This Month</button>
+                    <button type="button" class="chip" onclick="setDrawerDate('cutoff')">Up to 24/08/2026</button>
+                </div>
+
+                <!-- Date Inputs -->
+                <div class="row" style="display: flex; gap: 8px;">
+                    <div class="form-group-sleek" style="flex: 1;">
+                        <label>Start Date (From)</label>
+                        <input type="date" name="start_date" id="drawer_start_date" class="form-control-sleek" value="{{ filters.start_date }}">
+                    </div>
+                    <div class="form-group-sleek" style="flex: 1;">
+                        <label>End Date (To)</label>
+                        <input type="date" name="end_date" id="drawer_end_date" class="form-control-sleek" value="{{ filters.end_date }}">
+                    </div>
+                </div>
+
+                <!-- Administrative Details Section -->
+                <div class="drawer-section-title">📜 Correspondence & Signatory</div>
+                
+                <div class="form-group-sleek">
+                    <label>Reference Number</label>
+                    <input type="text" name="ref_no" class="form-control-sleek" value="{{ ref_no }}">
+                </div>
+
+                <div class="form-group-sleek">
+                    <label>Signatory Name</label>
+                    <input type="text" name="signatory_name" class="form-control-sleek" value="{{ signatory_name }}">
+                </div>
+
+                <div class="form-group-sleek">
+                    <label>Signatory Title</label>
+                    <input type="text" name="signatory_title" class="form-control-sleek" value="{{ signatory_title }}">
+                </div>
+
+                <div class="form-group-sleek">
+                    <label>Issue Month & Year</label>
+                    <input type="text" name="issue_month_year" class="form-control-sleek" value="{{ issue_month_year }}">
+                </div>
+
+                <!-- Dynamic Text Body Editor -->
+                <div class="drawer-section-title">✍️ Notice Paragraph 1</div>
+                <div class="form-group-sleek">
+                    <label>Body Text (Auto-computed from selected dataset)</label>
+                    <textarea name="body_text" class="form-control-sleek" rows="4">{{ body_1 }}</textarea>
+                </div>
+
+                <!-- Department / Batch Filter Scope -->
+                <div class="drawer-section-title">🎓 Scoped Data Filters</div>
+                
+                <div class="form-group-sleek">
+                    <label>Department / Program</label>
+                    <select name="program" class="form-control-sleek">
+                        <option value="">All Departments</option>
+                        {% for prog in programs %}
+                        <option value="{{ prog }}" {% if prog == filters.program %}selected{% endif %}>{{ prog }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group-sleek">
+                    <label>Batch</label>
+                    <select name="batch" class="form-control-sleek">
+                        <option value="">All Batches</option>
+                        {% for b in batches %}
+                        <option value="{{ b }}" {% if b == filters.batch %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <div class="drawer-footer">
+            <button type="button" class="btn btn-light" style="flex: 1;" onclick="closePrintDrawer()">Cancel</button>
+            <button type="button" class="btn btn-primary" style="flex: 2;" onclick="document.getElementById('noticeDrawerForm').submit()">
+                <i class="fas fa-sync-alt mr-1"></i> Apply & Update Notice
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function openPrintDrawer() {
+            document.getElementById('printDrawer').classList.add('open');
+            document.getElementById('drawerOverlay').classList.add('open');
+        }
+        function closePrintDrawer() {
+            document.getElementById('printDrawer').classList.remove('open');
+            document.getElementById('drawerOverlay').classList.remove('open');
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePrintDrawer();
+        });
+
+        // Date Preset helper
+        function setDrawerDate(type) {
+            const today = new Date();
+            const startInp = document.getElementById('drawer_start_date');
+            const endInp = document.getElementById('drawer_end_date');
+
+            if (type === 'all') {
+                startInp.value = '';
+                endInp.value = '';
+            } else if (type === 'today') {
+                const d = today.toISOString().split('T')[0];
+                startInp.value = d;
+                endInp.value = d;
+            } else if (type === '7days') {
+                const past = new Date(today);
+                past.setDate(past.getDate() - 7);
+                startInp.value = past.toISOString().split('T')[0];
+                endInp.value = today.toISOString().split('T')[0];
+            } else if (type === 'month') {
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                startInp.value = firstDay.toISOString().split('T')[0];
+                endInp.value = today.toISOString().split('T')[0];
+            } else if (type === 'cutoff') {
+                startInp.value = '';
+                endInp.value = '2026-08-24';
+            }
+        }
+    </script>
+</body>
+</html>

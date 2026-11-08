@@ -2,116 +2,890 @@
 {% load i18n %}
 
 {% block title %}{% trans "Delivery Desk" %} | CoE{% endblock %}
-{% block page_title %}<i class="fas fa-box-open mr-2"></i>{% trans "Delivery Desk" %}{% endblock %}
+{% block page_title %}<i class="fas fa-box-open mr-2 text-indigo"></i>{% trans "CoE Desk — Delivery & Handover Desk" %}{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'coe_handover_register' %}" target="_blank" class="btn btn-sm btn-dark font-weight-bold shadow-sm px-3 py-2" style="border-radius: 8px; font-size: 0.9rem;">
+    <i class="fas fa-print mr-1.5"></i>{% trans "Print Handover Register" %}
+  </a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Student Directory Style Floating-Label Filter System
+     ────────────────────────────────────────────────────────────────────────────── */
+  .filter-section-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    padding: 1rem 1rem 0.6rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+    gap: 0.75rem;
+    align-items: end;
+  }
+
+  .filter-group {
+    position: relative;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 2px 10px;
+    background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+  }
+
+  .filter-group label {
+    position: absolute;
+    top: -9px;
+    left: 10px;
+    background: #ffffff;
+    padding: 0 5px;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #475569;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    line-height: 1;
+    margin: 0;
+    pointer-events: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .filter-group select,
+  .filter-group input {
+    border: none !important;
+    width: 100%;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: #0f172a;
+    height: 38px;
+    padding: 0;
+  }
+
+  .filter-group:focus-within {
+    border-color: #4f46e5 !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14) !important;
+  }
+
+  .filter-group:focus-within label {
+    color: #4f46e5 !important;
+  }
+
+  /* Active Filter Highlight State */
+  .filter-group.active {
+    border-color: #4f46e5 !important;
+    background-color: #f5f3ff !important;
+  }
+
+  .filter-group.active label {
+    color: #4338ca !important;
+    background: #f5f3ff !important;
+  }
+
+  .filter-group .input-icon {
+    color: #64748b;
+    margin-right: 6px;
+    font-size: 0.88rem;
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .btn-filter-submit {
+    background: linear-gradient(135deg, #4f46e5 0%, #0284c7 100%);
+    color: #ffffff !important;
+    border: none;
+    border-radius: 8px;
+    height: 46px;
+    padding: 0 1.15rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  }
+
+  .btn-filter-submit:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #0369a1 100%);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+  }
+
+  .btn-filter-reset {
+    background: #f1f5f9;
+    color: #64748b !important;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    height: 46px;
+    width: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.92rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-filter-reset:hover {
+    background: #e2e8f0;
+    color: #1e293b !important;
+    border-color: #94a3b8;
+  }
+
+  /* Dark Mode Extensions for Filter Bar */
+  body.dark-mode .filter-section-card {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  body.dark-mode .filter-group {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  body.dark-mode .filter-group label {
+    background: #0f172a;
+    color: #94a3b8;
+  }
+
+  body.dark-mode .filter-group select,
+  body.dark-mode .filter-group input {
+    color: #f8fafc;
+  }
+
+  body.dark-mode .filter-group.active {
+    border-color: #818cf8 !important;
+    background-color: #1e1b4b !important;
+  }
+
+  body.dark-mode .filter-group.active label {
+    color: #a5b4fc !important;
+    background: #1e1b4b !important;
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Premium Tab Bar Styling for Delivery Desk
+     ────────────────────────────────────────────────────────────────────────────── */
+  .premium-assignment-tabs-container {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    margin-bottom: 1.25rem;
+  }
+
+  .premium-assignment-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+
+  .premium-assignment-tabs .nav-link {
+    border-radius: 12px !important;
+    font-weight: 700;
+    font-size: 0.92rem;
+    padding: 0.7rem 1.35rem !important;
+    color: #475569 !important;
+    border: 1px solid transparent !important;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    white-space: nowrap;
+    background: transparent;
+  }
+
+  .premium-assignment-tabs .nav-link:hover {
+    background: #f8fafc;
+    color: #1e293b !important;
+  }
+
+  .premium-assignment-tabs .nav-link.active {
+    background: linear-gradient(135deg, #4f46e5 0%, #0284c7 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35) !important;
+  }
+
+  .premium-assignment-tabs .nav-link.active .badge-pill-count {
+    background: #ffffff !important;
+    color: #4f46e5 !important;
+  }
+
+  .badge-pill-count {
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+  }
+
+  /* Dark Mode for Tabs */
+  body.dark-mode .premium-assignment-tabs-container {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  body.dark-mode .premium-assignment-tabs .nav-link {
+    color: #cbd5e1 !important;
+  }
+
+  body.dark-mode .premium-assignment-tabs .nav-link:hover {
+    background: #0f172a;
+    color: #ffffff !important;
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Compact Summary Bar & Ultra-Compact Table Grid
+     ────────────────────────────────────────────────────────────────────────────── */
+  .summary-bar {
+    background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+    color: #ffffff;
+    padding: 0.65rem 1.15rem;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .summary-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .total-count-pill {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 16px;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+  }
+
+  .table-scroll-container {
+    max-height: 72vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #cbd5e1;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+
+  .app-list-table {
+    margin-bottom: 0;
+    width: 100%;
+    border-collapse: separate !important;
+    border-spacing: 0;
+  }
+
+  /* Compact Sticky Table Header */
+  .app-list-table thead th {
+    position: sticky !important;
+    top: 0;
+    z-index: 12;
+    background: #f8fafc !important;
+    color: #1e293b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.55rem 0.75rem;
+    border-right: 1px solid #cbd5e1 !important;
+    border-bottom: 2px solid #94a3b8 !important;
+    border-top: none !important;
+    white-space: normal;
+    word-break: break-word;
+    vertical-align: middle;
+    box-shadow: inset 0 -2px 0 #cbd5e1;
+  }
+
+  .app-list-table thead th:last-child {
+    border-right: none !important;
+  }
+
+  /* Compact Grid Cells & Fit Height */
+  .app-list-table tbody td {
+    padding: 0.45rem 0.75rem;
+    vertical-align: middle;
+    border-right: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    font-size: 0.88rem;
+    line-height: 1.3;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .app-list-table tbody td:last-child {
+    border-right: none !important;
+  }
+
+  .app-list-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  /* Timeline Styles inside Modal */
+  .timeline-track-list {
+    position: relative;
+    padding-left: 28px;
+    margin: 0;
+    list-style: none;
+  }
+
+  .timeline-track-list::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 9px;
+    width: 2.5px;
+    background: #cbd5e1;
+  }
+
+  .timeline-track-item {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+
+  .timeline-track-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .timeline-icon-dot {
+    position: absolute;
+    left: -28px;
+    top: 2px;
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    background: #4f46e5;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    box-shadow: 0 0 0 4px #ffffff;
+  }
+
+  .timeline-content-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Dark Mode Table Overrides */
+  body.dark-mode .table-scroll-container {
+    border-color: #334155;
+  }
+
+  body.dark-mode .app-list-table thead th {
+    background: #0f172a !important;
+    color: #f8fafc;
+    border-right-color: #334155 !important;
+    border-bottom-color: #475569 !important;
+    box-shadow: inset 0 -2px 0 #334155;
+  }
+
+  body.dark-mode .app-list-table tbody td {
+    border-right-color: #1e293b !important;
+    border-bottom-color: #1e293b !important;
+  }
+
+  body.dark-mode .app-list-table tbody tr:hover {
+    background-color: #1e293b;
+  }
+
+  /* Responsive Mobile Tweaks */
+  @media (max-width: 768px) {
+    .filter-grid {
+      grid-template-columns: 1fr;
+    }
+    .filter-actions {
+      width: 100%;
+    }
+    .btn-filter-submit {
+      flex: 1;
+    }
+    .app-list-table thead th,
+    .app-list-table tbody td {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.82rem;
+    }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card mb-3">
-  <div class="card-body py-2 d-flex justify-content-between align-items-center">
-    <form method="get" class="form-inline">
-      <div class="input-group" style="width:400px;">
-        <input type="text" name="q" value="{{ query }}" class="form-control"
-               placeholder="{% trans 'Search by Tracking #, Name, or Student ID…' %}"
-               autofocus>
-        <div class="input-group-append">
-          <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
-          {% if query %}<a href="{% url 'coe_delivery_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-times"></i></a>{% endif %}
-        </div>
+{% if not has_delivery_clerks %}
+<div class="alert alert-info border-info font-weight-semibold p-3 mb-3 shadow-sm" style="border-radius: 12px; background: #f0f9ff; border-color: #bae6fd !important;">
+  <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 10px;">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-info-circle text-info fa-2x mr-3" style="color: #0284c7 !important;"></i>
+      <div>
+        <h6 class="font-weight-bold text-dark mb-0.5" style="font-size: 0.92rem;">{% trans "Delivery Clerk Designation Notice" %}</h6>
+        <p class="small text-muted mb-0">
+          {% trans "No dedicated Delivery Clerks are designated in CoE Settings yet. Staff users with delivery desk privileges are handling counter operations." %}
+        </p>
       </div>
-      <small class="text-muted ml-3">
-        <i class="fas fa-qrcode mr-1"></i>{% trans "Supports QR scanner input" %}
-      </small>
-    </form>
-
-    <a href="{% url 'coe_handover_register' %}" target="_blank" class="btn btn-outline-dark font-weight-bold">
-      <i class="fas fa-print mr-1"></i>{% trans "Print Daily Handover Register" %}
+    </div>
+    <a href="{% url 'coe_settings' %}#roles" class="btn btn-xs btn-info font-weight-bold px-3 py-1.5 shadow-sm" style="border-radius: 20px;">
+      <i class="fas fa-sliders-h mr-1.5"></i>{% trans "Designate Delivery Clerks →" %}
     </a>
   </div>
 </div>
+{% endif %}
+<!-- Student Directory Style Filter Toolbar -->
+<div class="filter-section-card">
+  <form method="get" id="deliveryFilterForm">
+    <div class="filter-grid">
+      
+      <!-- Search Input (Supports QR Scanner) -->
+      <div class="filter-group {% if query %}active{% endif %}">
+        <label for="id_q">{% trans "Search Query" %}</label>
+        <i class="fas fa-qrcode input-icon" title="{% trans 'Supports QR Scanner' %}"></i>
+        <input type="text" name="q" id="id_q" value="{{ query|default:'' }}"
+               placeholder="{% trans 'Name, ID, Tracking #…' %}" autocomplete="off" autofocus>
+      </div>
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between">
-    <h3 class="card-title">
-      <strong>{{ count }}</strong> {% trans "application(s) ready for delivery" %}
-    </h3>
-    <span class="badge badge-success px-3">{% trans "Ready for Delivery" %}</span>
-  </div>
-  <div class="card-body p-0">
-    <table class="table table-hover table-sm mb-0">
-      <thead class="thead-light">
-        <tr>
-          <th>{% trans "Tracking #" %}</th>
-          <th>{% trans "Type" %}</th>
-          <th>{% trans "Student" %}</th>
-          <th>{% trans "Student ID" %}</th>
-          <th>{% trans "Dept." %}</th>
-          <th>{% trans "Ready Since" %}</th>
-          <th>{% trans "OTP Status" %}</th>
-          <th>{% trans "Action" %}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for app in applications %}
-        <tr>
-          <td><code>{{ app.application_number }}</code></td>
-          <td><small>{{ app.get_application_type_display|truncatechars:30 }}</small></td>
-          <td><strong>{{ app.student_name }}</strong></td>
-          <td><small>{{ app.student_id }}</small></td>
-          <td><small>{{ app.department.short_name|default:app.department }}</small></td>
-          <td><small>{{ app.updated_at|date:"d M Y, h:i A" }}</small></td>
-          <td>
-            {% if app.delivery_otp_verified %}
-            <span class="badge badge-success"><i class="fas fa-check mr-1"></i>{% trans "Verified" %}</span>
-            {% elif app.delivery_otp %}
-            <span class="badge badge-warning">{% trans "OTP Sent" %}</span>
-            {% else %}
-            <span class="badge badge-secondary">{% trans "No OTP" %}</span>
-            {% endif %}
-          </td>
-          <td class="text-nowrap">
-            {% if app.delivery_otp_verified %}
-            <form method="post" action="{% url 'coe_mark_delivered' app.pk %}" style="display:inline;">
-              {% csrf_token %}
-              <input type="hidden" name="identity_note" value="">
-              <button type="submit" class="btn btn-xs btn-success">
-                <i class="fas fa-check-circle mr-1"></i>{% trans "Mark Delivered" %}
-              </button>
-            </form>
-            {% else %}
-            <button class="btn btn-xs btn-primary"
-                    hx-get="{% url 'coe_verify_otp' app.pk %}"
-                    hx-target="#otpModal .modal-body"
-                    hx-swap="innerHTML"
-                    data-toggle="modal" data-target="#otpModal">
-              <i class="fas fa-key mr-1"></i>{% trans "Verify OTP" %}
-            </button>
-            {% endif %}
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="8" class="text-center text-muted py-5">
-          <i class="fas fa-inbox fa-2x mb-2"></i><br>
-          {% if query %}{% trans "No results for your search." %}{% else %}{% trans "No applications ready for delivery." %}{% endif %}
-        </td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+      <!-- Application Type Filter -->
+      <div class="filter-group {% if app_type %}active{% endif %}">
+        <label for="id_application_type">{% trans "Application Type" %}</label>
+        <select name="application_type" id="id_application_type" onchange="this.form.submit()">
+          <option value="">{% trans "All Document Types" %}</option>
+          {% for val, label in ApplicationType.choices %}
+            <option value="{{ val }}" {% if app_type == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Date From -->
+      <div class="filter-group {% if date_from %}active{% endif %}">
+        <label for="id_date_from">{% trans "Updated From" %}</label>
+        <input type="date" name="date_from" id="id_date_from" value="{{ date_from|default:'' }}">
+      </div>
+
+      <!-- Date To -->
+      <div class="filter-group {% if date_to %}active{% endif %}">
+        <label for="id_date_to">{% trans "Updated To" %}</label>
+        <input type="date" name="date_to" id="id_date_to" value="{{ date_to|default:'' }}">
+      </div>
+
+      <!-- Filter Buttons -->
+      <div class="filter-actions">
+        <button type="submit" class="btn-filter-submit">
+          <i class="fas fa-filter mr-1.5"></i>{% trans "Filter Results" %}
+        </button>
+        <a href="{% url 'coe_delivery_dashboard' %}" class="btn-filter-reset" title="{% trans 'Reset All Filters' %}">
+          <i class="fas fa-redo-alt"></i>
+        </a>
+      </div>
+
+    </div>
+  </form>
 </div>
 
-<!-- OTP Modal -->
-<div class="modal fade" id="otpModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-key mr-2"></i>{% trans "Verify Delivery OTP" %}</h5>
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+<!-- Premium Delivery Stage Tabs Navigation Container -->
+<div class="premium-assignment-tabs-container" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+  <ul class="nav nav-pills premium-assignment-tabs flex-nowrap" id="deliveryTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link active" id="receipt-tab" data-toggle="tab" href="#receipt" role="tab" aria-controls="receipt" aria-selected="true">
+        <i class="fas fa-shipping-fast text-warning"></i>
+        {% trans "Awaiting Clerk Receipt" %}
+        <span class="badge badge-warning badge-pill-count text-dark">{{ count_receipt }}</span>
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="sorting-tab" data-toggle="tab" href="#sorting" role="tab" aria-controls="sorting" aria-selected="false">
+        <i class="fas fa-box text-primary"></i>
+        {% trans "Sorting & Packaging" %}
+        <span class="badge badge-primary badge-pill-count text-white">{{ count_sorting }}</span>
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="handover-tab" data-toggle="tab" href="#handover" role="tab" aria-controls="handover" aria-selected="false">
+        <i class="fas fa-box-open text-success"></i>
+        {% trans "Ready for Handover" %}
+        <span class="badge badge-success badge-pill-count text-white">{{ count_ready }}</span>
+      </a>
+    </li>
+  </ul>
+</div>
+
+<!-- Tab Contents -->
+<div class="tab-content" id="deliveryTabContent">
+  
+  <!-- TAB 1: Pending Receipt -->
+  <div class="tab-pane fade show active" id="receipt" role="tabpanel" aria-labelledby="receipt-tab">
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+      
+      <div class="summary-bar">
+        <h3 class="summary-title">
+          <i class="fas fa-shipping-fast text-warning mr-1.5"></i>
+          {% trans "Applications Dispatched — Pending Desk Receipt" %}
+          <span class="total-count-pill">{{ count_receipt }} {% trans "Items" %}</span>
+        </h3>
       </div>
-      <div class="modal-body">
-        <div class="text-center py-3">
+
+      <div class="card-body p-0">
+        <div class="table-scroll-container">
+          <table class="table app-list-table align-middle">
+            <thead>
+              <tr>
+                <th style="min-width: 130px;">{% trans "Tracking #" %}</th>
+                <th style="min-width: 170px;">{% trans "Student Info" %}</th>
+                <th style="min-width: 150px;">{% trans "Document Type" %}</th>
+                <th style="min-width: 90px;">{% trans "Dept." %}</th>
+                <th style="min-width: 140px;">{% trans "Dispatched At" %}</th>
+                <th class="text-right" style="min-width: 170px;">{% trans "Actions" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in pending_receipt %}
+              <tr>
+                <td>
+                  <code style="font-size: 0.94rem;"><a href="{% url 'coe_application_detail' app.pk %}" class="font-weight-bold text-indigo">{{ app.application_number }}</a></code>
+                </td>
+                <td>
+                  <span class="font-weight-bold text-dark d-block text-truncate" style="font-size: 0.92rem; max-width: 190px;">{{ app.student_name }}</span>
+                  <small class="text-muted" style="font-size: 0.82rem;"><i class="fas fa-id-card mr-1 text-xs"></i><code>{{ app.student_id }}</code></small>
+                </td>
+                <td>
+                  <span class="font-weight-semibold text-dark" style="font-size: 0.88rem;">{{ app.get_application_type_display }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-light border text-dark px-2 py-0.5" style="font-size: 0.82rem;"><i class="fas fa-university mr-1 text-muted"></i>{{ app.department.short_name|default:app.department }}</span>
+                </td>
+                <td>
+                  <span class="text-muted font-weight-medium d-block" style="font-size: 0.85rem;">{{ app.updated_at|date:"d M Y, h:i A" }}</span>
+                </td>
+                <td class="text-right">
+                  <div class="d-inline-flex" style="gap: 0.25rem;">
+                    <!-- Receive Action Button -->
+                    <form method="post" action="{% url 'coe_clerk_receive' app.pk %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-xs btn-primary font-weight-bold px-2 py-0.5 rounded-lg" style="font-size: 0.82rem;">
+                        <i class="fas fa-check mr-1"></i>{% trans "Receive" %}
+                      </button>
+                    </form>
+                    <!-- Track Stage Modal Button -->
+                    <button type="button" class="btn btn-xs btn-outline-info rounded-lg font-weight-bold px-2 py-0.5" style="font-size: 0.82rem;"
+                            data-toggle="modal" data-target="#trackModal{{ app.pk }}" title="{% trans 'View Stage Tracking Timeline' %}">
+                      <i class="fas fa-route"></i>
+                    </button>
+                    <!-- Quick Details Modal Button -->
+                    <button type="button" class="btn btn-xs btn-indigo rounded-lg font-weight-bold px-2 py-0.5" style="font-size: 0.82rem;"
+                            data-toggle="modal" data-target="#appDetailModal{{ app.pk }}" title="{% trans 'Quick Details & Analytics' %}">
+                      <i class="fas fa-info-circle"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-5">
+                  <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                  <h5 class="font-weight-bold">{% trans "No Applications Pending Receipt" %}</h5>
+                  <p class="text-sm mb-0">{% trans "All dispatched documents have been received by the delivery desk." %}</p>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Sorting & Packaging -->
+  <div class="tab-pane fade" id="sorting" role="tabpanel" aria-labelledby="sorting-tab">
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+      
+      <div class="summary-bar">
+        <h3 class="summary-title">
+          <i class="fas fa-box text-primary mr-1.5"></i>
+          {% trans "Received Documents — Sorting & Packaging Stage" %}
+          <span class="total-count-pill">{{ count_sorting }} {% trans "Items" %}</span>
+        </h3>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-scroll-container">
+          <table class="table app-list-table align-middle">
+            <thead>
+              <tr>
+                <th style="min-width: 130px;">{% trans "Tracking #" %}</th>
+                <th style="min-width: 170px;">{% trans "Student Info" %}</th>
+                <th style="min-width: 150px;">{% trans "Document Type" %}</th>
+                <th style="min-width: 90px;">{% trans "Dept." %}</th>
+                <th style="min-width: 140px;">{% trans "Received At" %}</th>
+                <th class="text-right" style="min-width: 200px;">{% trans "Actions" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in received_sorting %}
+              <tr>
+                <td>
+                  <code style="font-size: 0.94rem;"><a href="{% url 'coe_application_detail' app.pk %}" class="font-weight-bold text-indigo">{{ app.application_number }}</a></code>
+                </td>
+                <td>
+                  <span class="font-weight-bold text-dark d-block text-truncate" style="font-size: 0.92rem; max-width: 190px;">{{ app.student_name }}</span>
+                  <small class="text-muted" style="font-size: 0.82rem;"><i class="fas fa-id-card mr-1 text-xs"></i><code>{{ app.student_id }}</code></small>
+                </td>
+                <td>
+                  <span class="font-weight-semibold text-dark" style="font-size: 0.88rem;">{{ app.get_application_type_display }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-light border text-dark px-2 py-0.5" style="font-size: 0.82rem;"><i class="fas fa-university mr-1 text-muted"></i>{{ app.department.short_name|default:app.department }}</span>
+                </td>
+                <td>
+                  <span class="text-muted font-weight-medium d-block" style="font-size: 0.85rem;">{{ app.updated_at|date:"d M Y, h:i A" }}</span>
+                </td>
+                <td class="text-right">
+                  <div class="d-inline-flex" style="gap: 0.25rem;">
+                    <!-- Mark Ready Action Button -->
+                    <form method="post" action="{% url 'coe_clerk_mark_ready' app.pk %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-xs btn-success font-weight-bold px-2 py-0.5 rounded-lg" style="font-size: 0.82rem;"
+                              onclick="return confirm('{% trans "Mark this document as Ready for Delivery? This will generate OTP and send SMS." %}')">
+                        <i class="fas fa-box-open mr-1"></i>{% trans "Mark Ready" %}
+                      </button>
+                    </form>
+                    <!-- Track Stage Modal Button -->
+                    <button type="button" class="btn btn-xs btn-outline-info rounded-lg font-weight-bold px-2 py-0.5" style="font-size: 0.82rem;"
+                            data-toggle="modal" data-target="#trackModal{{ app.pk }}" title="{% trans 'View Stage Tracking Timeline' %}">
+                      <i class="fas fa-route"></i>
+                    </button>
+                    <!-- Quick Details Modal Button -->
+                    <button type="button" class="btn btn-xs btn-indigo rounded-lg font-weight-bold px-2 py-0.5" style="font-size: 0.82rem;"
+                            data-toggle="modal" data-target="#appDetailModal{{ app.pk }}" title="{% trans 'Quick Details & Analytics' %}">
+                      <i class="fas fa-info-circle"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-5">
+                  <i class="fas fa-box fa-3x text-muted mb-3 d-block"></i>
+                  <h5 class="font-weight-bold">{% trans "No Documents in Packaging Stage" %}</h5>
+                  <p class="text-sm mb-0">{% trans "Receive new applications to proceed to sorting and packaging." %}</p>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Ready for Handover -->
+  <div class="tab-pane fade" id="handover" role="tabpanel" aria-labelledby="handover-tab">
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+      
+      <div class="summary-bar">
+        <h3 class="summary-title">
+          <i class="fas fa-box-open text-success mr-1.5"></i>
+          {% trans "Ready for Counter Handover to Students" %}
+          <span class="total-count-pill">{{ count_ready }} {% trans "Ready" %}</span>
+        </h3>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-scroll-container">
+          <table class="table app-list-table align-middle">
+            <thead>
+              <tr>
+                <th style="min-width: 130px;">{% trans "Tracking #" %}</th>
+                <th style="min-width: 170px;">{% trans "Student Info" %}</th>
+                <th style="min-width: 150px;">{% trans "Document Type" %}</th>
+                <th style="min-width: 90px;">{% trans "Dept." %}</th>
+                <th style="min-width: 140px;">{% trans "Ready Since / SLA" %}</th>
+                <th style="min-width: 120px;">{% trans "OTP Status" %}</th>
+                <th class="text-right" style="min-width: 180px;">{% trans "Actions" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in ready_delivery %}
+              <tr>
+                <td>
+                  <code style="font-size: 0.94rem;"><a href="{% url 'coe_application_detail' app.pk %}" class="font-weight-bold text-indigo">{{ app.application_number }}</a></code>
+                </td>
+                <td>
+                  <span class="font-weight-bold text-dark d-block text-truncate" style="font-size: 0.92rem; max-width: 190px;">{{ app.student_name }}</span>
+                  <small class="text-muted" style="font-size: 0.82rem;"><i class="fas fa-id-card mr-1 text-xs"></i><code>{{ app.student_id }}</code></small>
+                </td>
+                <td>
+                  <span class="font-weight-semibold text-dark" style="font-size: 0.88rem;">{{ app.get_application_type_display }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-light border text-dark px-2 py-0.5" style="font-size: 0.82rem;"><i class="fas fa-university mr-1 text-muted"></i>{{ app.department.short_name|default:app.department }}</span>
+                </td>
+                <td>
+                  <span class="text-muted font-weight-medium d-block" style="font-size: 0.85rem;">{{ app.updated_at|date:"d M Y, h:i A" }}</span>
+                  {% if app.sla_level == 'danger' %}
+                    <span class="badge badge-danger px-2 py-0.5 rounded-pill" style="font-size: 0.78rem; font-weight:700;"><i class="fas fa-fire mr-1"></i>🔥 {{ app.current_stage_duration }}</span>
+                  {% elif app.sla_level == 'warning' %}
+                    <span class="badge badge-warning text-dark px-2 py-0.5 rounded-pill" style="font-size: 0.78rem; font-weight:700;"><i class="fas fa-exclamation-circle mr-1"></i>⚠️ {{ app.current_stage_duration }}</span>
+                  {% else %}
+                    <span class="badge badge-success px-2 py-0.5 rounded-pill" style="font-size: 0.78rem; font-weight:700;"><i class="fas fa-stopwatch mr-1"></i>⏱️ {{ app.current_stage_duration }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if app.delivery_otp_verified %}
+                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check mr-1"></i>{% trans "Verified" %}</span>
+                  {% elif app.delivery_otp %}
+                    <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-key mr-1"></i>{% trans "OTP Sent" %}</span>
+                  {% else %}
+                    <span class="badge badge-secondary px-2 py-1">{% trans "No OTP" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right">
+                  <div class="d-inline-flex" style="gap: 0.25rem;">
+                    <!-- OTP / Delivered Button -->
+                    {% if app.delivery_otp_verified %}
+                    <form method="post" action="{% url 'coe_mark_delivered' app.pk %}" style="display:inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="identity_note" value="">
+                      <button type="submit" class="btn btn-xs btn-success font-weight-bold px-2 py-0.5 rounded-lg" style="font-size: 0.82rem;">
+                        <i class="fas fa-check-circle mr-1"></i>{% trans "Mark Delivered" %}
+                      </button>
+                    </form>
+                    {% else %}
+                    <button class="btn btn-xs btn-primary font-weight-bold px-2 py-0.5 rounded-lg" style="font-size: 0.82rem;"
+                            hx-get="{% url 'coe_verify_otp' app.pk %}"
+                            hx-target="#otpModal .modal-body"
+                            hx-swap="innerHTML"
+                            data-toggle="modal" data-target="#otpModal">
+                      <i class="fas fa-key mr-1"></i>{% trans "Verify OTP" %}
+                    </button>
+                    {% endif %}
+                    <!-- Track Stage Modal Button -->
+                    <button type="button" class="btn btn-xs btn-outline-info rounded-lg font-weight-bold px-2 py-0.5" style="font-size: 0.82rem;"
+                            data-toggle="modal" data-target="#trackModal{{ app.pk }}" title="{% trans 'View Stage Tracking Timeline' %}">
+                      <i class="fas fa-route"></i>
+                    </button>
+                    <!-- Quick Details Modal Button -->
+                    <button type="button" class="btn btn-xs btn-indigo rounded-lg font-weight-bold px-2 py-0.5" style="font-size: 0.82rem;"
+                            data-toggle="modal" data-target="#appDetailModal{{ app.pk }}" title="{% trans 'Quick Details & Analytics' %}">
+                      <i class="fas fa-info-circle"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-5">
+                  <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                  <h5 class="font-weight-bold">{% trans "No Applications Ready for Handover" %}</h5>
+                  <p class="text-sm mb-0">{% trans "Applications marked as ready will appear here for student handover." %}</p>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OTP Verification HTMX Modal -->
+<div class="modal fade" id="otpModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header bg-dark text-white py-3 px-4">
+        <h5 class="modal-title font-weight-bold mb-0"><i class="fas fa-key text-warning mr-2"></i>{% trans "Verify Delivery OTP" %}</h5>
+        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="text-center py-4">
           <div class="spinner-border text-primary"></div>
+          <p class="mt-2 text-muted mb-0">{% trans "Loading OTP verification form..." %}</p>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- ──────────────────────────────────────────────────────────────────────────────
+     Modals Outside Table Grid (Quick Details & Stage Tracking)
+     ────────────────────────────────────────────────────────────────────────────── -->
+
+<!-- Pending Receipt Modals -->
+{% for app in pending_receipt %}
+{% include "coe/includes/delivery_app_modals.html" %}
+{% endfor %}
+
+<!-- Received Sorting Modals -->
+{% for app in received_sorting %}
+{% include "coe/includes/delivery_app_modals.html" %}
+{% endfor %}
+
+<!-- Ready Delivery Modals -->
+{% for app in ready_delivery %}
+{% include "coe/includes/delivery_app_modals.html" %}
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var activeTab = localStorage.getItem('deliveryActiveTab');
+    if (activeTab) {
+      var tabEl = document.querySelector('#deliveryTab a[href="' + activeTab + '"]');
+      if (tabEl) {
+        tabEl.click();
+      }
+    }
+    
+    document.querySelectorAll('#deliveryTab a').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        localStorage.setItem('deliveryActiveTab', this.getAttribute('href'));
+      });
+    });
+
+    // Active state listener for filter groups
+    document.querySelectorAll('.filter-group select, .filter-group input').forEach(function(el) {
+      el.addEventListener('change', function() {
+        var fg = this.closest('.filter-group');
+        if (fg) {
+          if (this.value) {
+            fg.classList.add('active');
+          } else {
+            fg.classList.remove('active');
+          }
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

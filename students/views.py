@@ -6,6 +6,7 @@ from django.db.models.functions import Cast, Coalesce, Lower, Right, TruncMonth
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.utils.html import escape
 from django.utils import timezone
 from core.decorators import require_access
@@ -117,7 +118,59 @@ def print_blank_form(request):
 
 @require_access('dashboard', 'view')
 def dashboard(request):
-    """Main dashboard view with summary statistics."""
+    """Main landing dashboard — supports multi-module users, session-remembered active workspace, and role priority landing."""
+    # Allow explicit workspace switching via GET parameter
+    explicit_workspace = request.GET.get('workspace') or request.GET.get('mode')
+    if explicit_workspace:
+        if explicit_workspace in ['student', 'students', 'admissions']:
+            request.session['active_workspace'] = 'students'
+        elif explicit_workspace in ['coe', 'coe_office']:
+            request.session['active_workspace'] = 'coe'
+        elif explicit_workspace in ['billing', 'exam_billing']:
+            request.session['active_workspace'] = 'billing'
+        elif explicit_workspace in ['pr', 'public_relations']:
+            request.session['active_workspace'] = 'pr'
+        elif explicit_workspace in ['ict', 'ict_wing']:
+            request.session['active_workspace'] = 'ict'
+
+    active_workspace = request.session.get('active_workspace')
+
+    if request.user.is_authenticated:
+        profile = getattr(request.user, 'profile', None)
+
+        # 1. Honor explicit or remembered workspace choice
+        if active_workspace == 'coe':
+            return redirect('coe_dashboard')
+        elif active_workspace == 'billing':
+            return redirect('billing_dashboard')
+        elif active_workspace == 'pr':
+            return redirect('pr_dashboard')
+        elif active_workspace == 'ict':
+            return redirect('manage_devices')
+        elif active_workspace == 'students':
+            pass  # render student intelligence dashboard below
+
+        # 2. Default Role-Priority Landing for staff without explicit session choice
+        elif profile and profile.role and not active_workspace and not request.user.is_superuser:
+            role_name = (profile.role.name or '').lower()
+
+            if any(k in role_name for k in ['controller', 'dcoe', 'processing officer', 'delivery desk', 'head of department', 'hod']):
+                if 'department head' in role_name or 'hod' in role_name:
+                    return redirect('coe_hod_dashboard')
+                elif 'delivery' in role_name or 'clerk' in role_name:
+                    return redirect('coe_delivery_dashboard')
+                else:
+                    return redirect('coe_dashboard')
+
+            elif 'billing' in role_name or (profile.has_access('exam_billing', 'view_dashboard') and not profile.has_access('students', 'view_directory')):
+                return redirect('billing_dashboard')
+
+            elif 'pr ' in role_name or 'public relations' in role_name or (profile.has_access('public_relations', 'view_dashboard') and not profile.has_access('students', 'view_directory')):
+                return redirect('pr_dashboard')
+
+            elif 'ict' in role_name or (profile.has_access('ict_wing', 'view_devices') and not profile.has_access('students', 'view_directory')):
+                return redirect('manage_devices')
+
     # Initialize all date variables at the very beginning
     _now = timezone.localtime(timezone.now())
     _today = _now.date()
@@ -189,20 +242,31 @@ def dashboard(request):
         total_second_installments=Sum('second_installment')
     )
 
-    # 1. Identify Latest Batch (Numeric Extraction)
+    # 1. Identify Latest Batch and Batch Coverage Range (Numeric Extraction)
     import re
-    all_batches = list(Student.objects.values_list('batch', flat=True).distinct())
+    all_batch_strings = list(Student.objects.exclude(batch__isnull=True).exclude(batch='').values_list('batch', flat=True).distinct())
     latest_batch = None
     max_num = -1
+    found_nums = []
     
-    for b in all_batches:
-        if b:
-            nums = re.findall(r'\d+', b)
-            if nums:
-                n = int(nums[0])
-                if n > max_num:
-                    max_num = n
-                    latest_batch = b
+    for b in all_batch_strings:
+        nums = re.findall(r'\d+', str(b))
+        if nums:
+            n = int(nums[0])
+            found_nums.append(n)
+            if n > max_num:
+                max_num = n
+                latest_batch = b
+
+    if found_nums:
+        min_b = min(found_nums)
+        max_b = max(found_nums)
+        if min_b == max_b:
+            batch_range_text = f"Batch {max_b}"
+        else:
+            batch_range_text = f"Batches {min_b} to {max_b}"
+    else:
+        batch_range_text = "All Batches"
 
     # 2. Intake stats for the latest batch (Enhanced)
     latest_batch_intake = []
@@ -321,7 +385,9 @@ def dashboard(request):
             'short_name': program_map.get(s.program.lower() if s.program else '', s.program),
             'batch': s.batch,
             'admission_status': s.admission_status,
-            'created_at': s.created_at
+            'created_at': s.created_at,
+            'ssc_verified': s.ssc_verified,
+            'hsc_verified': s.hsc_verified,
         })
 
     # Enrollment Insights
@@ -374,9 +440,19 @@ def dashboard(request):
     combined_refs.sort(key=lambda x: x['count'], reverse=True)
     top_references = combined_refs[:5]
 
+    # Photo Coverage Stats (Overall & Latest Batch)
+    total_active = Student.objects.filter(admission_status='Active').count()
+    photo_with_count = Student.objects.filter(admission_status='Active').exclude(photo_path__isnull=True).exclude(photo_path='').count()
+    photo_coverage = round((photo_with_count / total_active * 100), 1) if total_active > 0 else 0
+
+    latest_batch_qs = Student.objects.filter(batch=latest_batch, admission_status='Active') if latest_batch else Student.objects.filter(admission_status='Active')
+    latest_batch_total_active = latest_batch_qs.count()
+    latest_batch_photo_count = latest_batch_qs.exclude(photo_path__isnull=True).exclude(photo_path='').count()
+    latest_batch_photo_coverage = round((latest_batch_photo_count / latest_batch_total_active * 100), 1) if latest_batch_total_active > 0 else 0
+
     stats = {
         'total_students': Student.objects.count(),
-        'active_students': Student.objects.filter(admission_status='Active').count(),
+        'active_students': total_active,
         'male_students': Student.objects.filter(gender='Male').count(),
         'female_students': Student.objects.filter(gender='Female').count(),
         'by_program': program_dist[:5],
@@ -390,10 +466,31 @@ def dashboard(request):
         'latest_batch_intake': latest_batch_intake,
         'total_batch_students': total_batch_students,
         'periodic': periodic_stats,
-        'all_batches': sorted([b for b in all_batches if b], reverse=True),
+        'all_batches': sorted([b for b in all_batch_strings if b], reverse=True),
         'pending_registrations': User.objects.filter(profile__registration_status='PENDING').count(),
-        'top_references': top_references
+        'top_references': top_references,
+        'photo_with_count': photo_with_count,
+        'photo_coverage': photo_coverage,
+        'latest_batch_photo_coverage': latest_batch_photo_coverage,
+        'latest_batch_photo_count': latest_batch_photo_count,
+        'latest_batch_total_active': latest_batch_total_active,
+        'batch_range_text': batch_range_text,
     }
+    # Helper to extract numeric batch for perfect descending sorting (23, 22, 21, 20...)
+    def get_batch_sort_num(b_name, b_num=None):
+        if b_num is not None:
+            try:
+                n = int(b_num)
+                if n > 0:
+                    return n
+            except (ValueError, TypeError):
+                pass
+        if b_name:
+            nums = re.findall(r'\d+', str(b_name))
+            if nums:
+                return int(nums[0])
+        return 0
+
     # Calculate Batch-Department matrix
     raw_matrix_data = Student.objects.values('batch', 'batch_number', 'program').annotate(count=Count('student_id'))
     unique_matrix_programs = set()
@@ -411,11 +508,13 @@ def dashboard(request):
         prog = item['program'] or 'Unknown'
         short_prog = program_map.get(prog.lower(), prog).strip().upper()
         count = item['count']
+        sort_num = get_batch_sort_num(b_name, b_num)
         
         if b_name not in matrix_dict:
             matrix_dict[b_name] = {
                 'batch_name': b_name,
                 'batch_number': b_num,
+                'sort_num': sort_num,
                 'counts': {},
                 'row_total': 0
             }
@@ -423,10 +522,10 @@ def dashboard(request):
         matrix_dict[b_name]['counts'][short_prog] = matrix_dict[b_name]['counts'].get(short_prog, 0) + count
         matrix_dict[b_name]['row_total'] += count
 
-    # Sort rows by batch_number descending, then batch name descending
+    # Sort rows by extracted numeric batch descending, then batch name descending
     sorted_batches = sorted(
         matrix_dict.keys(),
-        key=lambda k: (matrix_dict[k]['batch_number'] or 0, matrix_dict[k]['batch_name']),
+        key=lambda k: (matrix_dict[k]['sort_num'], matrix_dict[k]['batch_name']),
         reverse=True
     )
     
@@ -446,6 +545,140 @@ def dashboard(request):
         column_totals.append(col_total)
         grand_total += col_total
 
+    # Calculate Cancelled Admissions Batch-Department matrix
+    cancelled_raw_matrix_data = Student.objects.filter(admission_status='Cancelled').values('batch', 'batch_number', 'program').annotate(count=Count('student_id'))
+    cancelled_unique_programs = set()
+    for item in cancelled_raw_matrix_data:
+        prog = item['program'] or 'Unknown'
+        short_prog = program_map.get(prog.lower(), prog).strip().upper()
+        cancelled_unique_programs.add(short_prog)
+    
+    cancelled_matrix_cols = sorted(list(cancelled_unique_programs))
+    
+    cancelled_matrix_dict = {}
+    for item in cancelled_raw_matrix_data:
+        b_name = item['batch'] or 'Unknown'
+        b_num = item['batch_number'] or 0
+        prog = item['program'] or 'Unknown'
+        short_prog = program_map.get(prog.lower(), prog).strip().upper()
+        count = item['count']
+        sort_num = get_batch_sort_num(b_name, b_num)
+        
+        if b_name not in cancelled_matrix_dict:
+            cancelled_matrix_dict[b_name] = {
+                'batch_name': b_name,
+                'batch_number': b_num,
+                'sort_num': sort_num,
+                'counts': {},
+                'row_total': 0
+            }
+            
+        cancelled_matrix_dict[b_name]['counts'][short_prog] = cancelled_matrix_dict[b_name]['counts'].get(short_prog, 0) + count
+        cancelled_matrix_dict[b_name]['row_total'] += count
+
+    cancelled_sorted_batches = sorted(
+        cancelled_matrix_dict.keys(),
+        key=lambda k: (cancelled_matrix_dict[k]['sort_num'], cancelled_matrix_dict[k]['batch_name']),
+        reverse=True
+    )
+    
+    cancelled_matrix_rows = []
+    for b_key in cancelled_sorted_batches:
+        row = cancelled_matrix_dict[b_key]
+        prog_counts = []
+        for p in cancelled_matrix_cols:
+            prog_counts.append(row['counts'].get(p, 0))
+        row['prog_counts'] = prog_counts
+        cancelled_matrix_rows.append(row)
+        
+    cancelled_column_totals = []
+    cancelled_grand_total = 0
+    for p in cancelled_matrix_cols:
+        col_total = sum(row['counts'].get(p, 0) for row in cancelled_matrix_dict.values())
+        cancelled_column_totals.append(col_total)
+        cancelled_grand_total += col_total
+
+    # Calculate Photo Coverage Batch-Department matrix (Active Students)
+    photo_raw_data = Student.objects.filter(admission_status='Active').values('batch', 'batch_number', 'program').annotate(
+        total_count=Count('student_id'),
+        has_photo=Count('student_id', filter=Q(photo_path__isnull=False) & ~Q(photo_path=''))
+    )
+    
+    photo_unique_programs = set()
+    for item in photo_raw_data:
+        prog = item['program'] or 'Unknown'
+        short_prog = program_map.get(prog.lower(), prog).strip().upper()
+        photo_unique_programs.add(short_prog)
+    
+    photo_matrix_cols = sorted(list(photo_unique_programs))
+    
+    photo_matrix_dict = {}
+    for item in photo_raw_data:
+        b_name = item['batch'] or 'Unknown'
+        b_num = item['batch_number'] or 0
+        prog = item['program'] or 'Unknown'
+        short_prog = program_map.get(prog.lower(), prog).strip().upper()
+        total_c = item['total_count']
+        photo_c = item['has_photo']
+        sort_num = get_batch_sort_num(b_name, b_num)
+        
+        if b_name not in photo_matrix_dict:
+            photo_matrix_dict[b_name] = {
+                'batch_name': b_name,
+                'batch_number': b_num,
+                'sort_num': sort_num,
+                'counts': {},
+                'row_photo': 0,
+                'row_total': 0
+            }
+            
+        if short_prog not in photo_matrix_dict[b_name]['counts']:
+            photo_matrix_dict[b_name]['counts'][short_prog] = {'photo': 0, 'total': 0}
+            
+        photo_matrix_dict[b_name]['counts'][short_prog]['photo'] += photo_c
+        photo_matrix_dict[b_name]['counts'][short_prog]['total'] += total_c
+        photo_matrix_dict[b_name]['row_photo'] += photo_c
+        photo_matrix_dict[b_name]['row_total'] += total_c
+
+    photo_sorted_batches = sorted(
+        photo_matrix_dict.keys(),
+        key=lambda k: (photo_matrix_dict[k]['sort_num'], photo_matrix_dict[k]['batch_name']),
+        reverse=True
+    )
+    
+    photo_matrix_rows = []
+    for b_key in photo_sorted_batches:
+        row = photo_matrix_dict[b_key]
+        prog_cells = []
+        for p in photo_matrix_cols:
+            c_data = row['counts'].get(p, {'photo': 0, 'total': 0})
+            photo_cnt = c_data['photo']
+            tot_cnt = c_data['total']
+            pct = round((photo_cnt / tot_cnt * 100), 1) if tot_cnt > 0 else 0
+            prog_cells.append({
+                'photo': photo_cnt,
+                'total': tot_cnt,
+                'pct': pct
+            })
+        row['prog_cells'] = prog_cells
+        row['row_pct'] = round((row['row_photo'] / row['row_total'] * 100), 1) if row['row_total'] > 0 else 0
+        photo_matrix_rows.append(row)
+        
+    photo_column_totals = []
+    total_active_with_photo = sum(row['row_photo'] for row in photo_matrix_dict.values())
+    total_active_all = sum(row['row_total'] for row in photo_matrix_dict.values())
+    photo_grand_pct = round((total_active_with_photo / total_active_all * 100), 1) if total_active_all > 0 else 0
+    
+    for p in photo_matrix_cols:
+        col_photo = sum(row['counts'].get(p, {}).get('photo', 0) for row in photo_matrix_dict.values())
+        col_total = sum(row['counts'].get(p, {}).get('total', 0) for row in photo_matrix_dict.values())
+        col_pct = round((col_photo / col_total * 100), 1) if col_total > 0 else 0
+        photo_column_totals.append({
+            'photo': col_photo,
+            'total': col_total,
+            'pct': col_pct
+        })
+
     return render(request, 'students/dashboard.html', {
         'stats': stats,
         'intake_trends': json.dumps(intake_trends),
@@ -458,6 +691,16 @@ def dashboard(request):
         'matrix_rows': matrix_rows,
         'column_totals': column_totals,
         'grand_total': grand_total,
+        'cancelled_matrix_cols': cancelled_matrix_cols,
+        'cancelled_matrix_rows': cancelled_matrix_rows,
+        'cancelled_column_totals': cancelled_column_totals,
+        'cancelled_grand_total': cancelled_grand_total,
+        'photo_matrix_cols': photo_matrix_cols,
+        'photo_matrix_rows': photo_matrix_rows,
+        'photo_column_totals': photo_column_totals,
+        'total_active_with_photo': total_active_with_photo,
+        'total_active_all': total_active_all,
+        'photo_grand_pct': photo_grand_pct,
     })
 
 from django.core.paginator import Paginator
@@ -491,26 +734,27 @@ def _get_directory_sort_choices():
 
 
 def _get_directory_params(request):
+    data_source = request.POST if (request.method == 'POST' and request.POST) else request.GET
     params = {
-        key: request.GET.get(key, '').strip()
+        key: str(data_source.get(key, request.GET.get(key, '')) or '').strip()
         for key in DIRECTORY_FILTER_FIELDS
     }
     
     # Alias support: 'q' maps to 'search'
-    if not params['search'] and request.GET.get('q'):
-        params['search'] = request.GET.get('q').strip()
+    if not params['search'] and data_source.get('q'):
+        params['search'] = str(data_source.get('q')).strip()
 
     valid_sort_values = {choice[0] for choice in DIRECTORY_SORT_OPTIONS}
     if params['sort'] not in valid_sort_values:
         params['sort'] = DIRECTORY_DEFAULT_SORT
 
     try:
-        per_page = int(request.GET.get('per_page', DIRECTORY_DEFAULT_PER_PAGE))
+        per_page = int(data_source.get('per_page', request.GET.get('per_page', DIRECTORY_DEFAULT_PER_PAGE)))
     except (TypeError, ValueError):
         per_page = DIRECTORY_DEFAULT_PER_PAGE
 
     params['per_page'] = per_page if per_page > 0 else DIRECTORY_DEFAULT_PER_PAGE
-    params['page'] = request.GET.get('page', '1').strip() or '1'
+    params['page'] = str(data_source.get('page', request.GET.get('page', '1')) or '1').strip() or '1'
     return params
 
 
@@ -901,22 +1145,174 @@ def migration_center(request):
 
     return render(request, 'students/migration_list.html', context)
 
+def _get_department_short_name(program_name):
+    """Maps program full name to short department acronym for BAUST documents."""
+    if not program_name:
+        return 'N/A'
+    from master_data.models import Program
+    prog = Program.objects.filter(name__iexact=str(program_name).strip()).first()
+    if prog and prog.short_name:
+        return prog.short_name.strip().upper()
+    
+    clean = str(program_name).strip().upper()
+    NAME_MAP = {
+        'COMPUTER SCIENCE AND ENGINEERING': 'CSE',
+        'MECHANICAL ENGINEERING': 'ME',
+        'ELECTRICAL AND ELECTRONIC ENGINEERING': 'EEE',
+        'CIVIL ENGINEERING': 'CE',
+        'INDUSTRIAL AND PRODUCTION ENGINEERING': 'IPE',
+        'BUSINESS ADMINISTRATION': 'DBA',
+        'BACHELOR OF BUSINESS ADMINISTRATION': 'DBA',
+        'ACCOUNTING AND INFORMATION SYSTEMS': 'AIS',
+        'ENGLISH': 'ENGLISH',
+        'MATHEMATICS': 'MATH',
+        'PHYSICS': 'PHY',
+        'CHEMISTRY': 'CHEM',
+        'LAW': 'LAW',
+    }
+    if clean in NAME_MAP:
+        return NAME_MAP[clean]
+    for key, val in NAME_MAP.items():
+        if key in clean:
+            return val
+    return clean[:10]
+
+
+def _format_batch_ordinal(batch_str):
+    """Formats batch number into ordinal representation e.g. 21st, 14th, 9th."""
+    if not batch_str:
+        return '--'
+    import re
+    s = str(batch_str).strip()
+    nums = re.findall(r'\d+', s)
+    if not nums:
+        return s
+    n = int(nums[0])
+    if 11 <= (n % 100) <= 13:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+    return f"{n}{suffix}"
+
+
+def _get_cancelled_dataset(request):
+    """Core dataset extractor for cancelled students with filtering."""
+    from django.db.models import Q
+
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+    cutoff_date = request.GET.get('cutoff_date', '').strip()
+    if cutoff_date and not end_date:
+        end_date = cutoff_date
+
+    selected_program = request.GET.get('program', '').strip()
+    selected_batch = request.GET.get('batch', '').strip()
+    selected_reason = request.GET.get('reason', '').strip()
+    cancel_type = request.GET.get('cancel_type', '').strip() # 'all', 'permanent', 'temporary'
+    search = request.GET.get('search', '').strip() or request.GET.get('search_cancelled', '').strip()
+
+    queryset = Student.objects.filter(admission_status='Cancelled').prefetch_related('status_history')
+
+    if selected_program:
+        queryset = queryset.filter(program=selected_program)
+    if selected_batch:
+        queryset = queryset.filter(batch=selected_batch)
+    if selected_reason:
+        queryset = queryset.filter(
+            status_history__new_status='Cancelled',
+            status_history__reason_category=selected_reason
+        )
+    if cancel_type == 'temporary':
+        queryset = queryset.filter(is_temp_admission_cancel=True)
+    elif cancel_type == 'permanent':
+        queryset = queryset.filter(is_temp_admission_cancel=False)
+
+    if start_date:
+        queryset = queryset.filter(
+            Q(status_history__new_status='Cancelled', status_history__change_date__date__gte=start_date) |
+            Q(status_history__isnull=True, last_updated__date__gte=start_date)
+        )
+    if end_date:
+        queryset = queryset.filter(
+            Q(status_history__new_status='Cancelled', status_history__change_date__date__lte=end_date) |
+            Q(status_history__isnull=True, last_updated__date__lte=end_date)
+        )
+
+    if search:
+        queryset = queryset.filter(
+            Q(student_id__icontains=search) |
+            Q(student_name__icontains=search)
+        )
+
+    queryset = queryset.distinct().order_by('is_temp_admission_cancel', '-last_updated')
+
+    # Convert to structured presentation objects matching official screenshots
+    students_data = []
+    sl = 1
+    for st in queryset:
+        history = st.status_history.filter(new_status='Cancelled').order_by('-change_date').first()
+        cancel_dt = history.change_date if history else st.last_updated
+        cancel_date_formatted = cancel_dt.strftime('%d/%m/%Y') if cancel_dt else '--'
+        
+        is_temp = bool(st.is_temp_admission_cancel)
+        remark = "Temporary Admission Cancel" if is_temp else "Admission Cancel"
+        dept_code = _get_department_short_name(st.program)
+        batch_formatted = _format_batch_ordinal(st.batch)
+
+        students_data.append({
+            'sl_no': sl,
+            'student_id': st.student_id,
+            'student_name': (st.student_name or '').upper(),
+            'program': st.program,
+            'dept': dept_code,
+            'batch': batch_formatted,
+            'cancel_date': cancel_date_formatted,
+            'cancel_datetime': cancel_dt,
+            'gender': (st.gender or 'Male').capitalize(),
+            'remarks': remark,
+            'is_temp': is_temp,
+            'reason_category': history.reason_category if history else 'Other',
+            'custom_notes': history.custom_notes if history else '',
+            'performed_by': history.performed_by.username if history and history.performed_by else 'System',
+        })
+        sl += 1
+
+    return students_data, {
+        'start_date': start_date,
+        'end_date': end_date,
+        'cutoff_date': cutoff_date,
+        'program': selected_program,
+        'batch': selected_batch,
+        'reason': selected_reason,
+        'cancel_type': cancel_type,
+        'search': search,
+    }
+
+
 @require_access('students', 'view_cancellations')
 def cancellation_hub(request):
-    """Unified Admission Cancellation & Status Hub."""
-    # Active search (Tab 2)
-    search_active = request.GET.get('search_active', '').strip()
-    
-    # Cancelled search & filters (Tab 1)
+    """Unified Admission Cancellation & Status Hub with KPIs and Documents."""
+    import urllib.parse
+    from django.core.paginator import Paginator
+
+    # Extract filters
     search_cancelled = request.GET.get('search_cancelled', '').strip()
     selected_program = request.GET.get('program', '').strip()
     selected_batch = request.GET.get('batch', '').strip()
     selected_reason = request.GET.get('reason', '').strip()
-    
-    # 1. Query Cancelled students
+    cancel_type = request.GET.get('cancel_type', '').strip() # 'all', 'permanent', 'temporary'
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+
+    # Base query for table
     cancelled_queryset = Student.objects.filter(admission_status='Cancelled').prefetch_related('status_history')
+
     if selected_program:
-        cancelled_queryset = cancelled_queryset.filter(program=selected_program)
+        from .utils import get_canonical_program_name
+        canonical_p = get_canonical_program_name(selected_program)
+        cancelled_queryset = cancelled_queryset.filter(
+            Q(program=selected_program) | Q(program=canonical_p)
+        )
     if selected_batch:
         cancelled_queryset = cancelled_queryset.filter(batch=selected_batch)
     if selected_reason:
@@ -924,28 +1320,40 @@ def cancellation_hub(request):
             status_history__new_status='Cancelled',
             status_history__reason_category=selected_reason
         )
+    if cancel_type == 'temporary':
+        cancelled_queryset = cancelled_queryset.filter(is_temp_admission_cancel=True)
+    elif cancel_type == 'permanent':
+        cancelled_queryset = cancelled_queryset.filter(is_temp_admission_cancel=False)
+
+    if start_date:
+        cancelled_queryset = cancelled_queryset.filter(
+            status_history__new_status='Cancelled',
+            status_history__change_date__date__gte=start_date
+        )
+    if end_date:
+        cancelled_queryset = cancelled_queryset.filter(
+            status_history__new_status='Cancelled',
+            status_history__change_date__date__lte=end_date
+        )
+
     if search_cancelled:
         cancelled_queryset = cancelled_queryset.filter(
             Q(student_id__icontains=search_cancelled) |
             Q(student_name__icontains=search_cancelled)
         )
-    
-    cancelled_queryset = cancelled_queryset.distinct().order_by('-last_updated')
-    
+
+    cancelled_queryset = cancelled_queryset.distinct().order_by('is_temp_admission_cancel', '-last_updated')
+
+    # Executive KPI calculations
+    kpi_total_cancelled = Student.objects.filter(admission_status='Cancelled').count()
+    kpi_temp_cancelled = Student.objects.filter(admission_status='Cancelled', is_temp_admission_cancel=True).count()
+    kpi_perm_cancelled = Student.objects.filter(admission_status='Cancelled', is_temp_admission_cancel=False).count()
+    kpi_period_cancelled = cancelled_queryset.count()
+
     # Pagination
-    from django.core.paginator import Paginator
     paginator = Paginator(cancelled_queryset, 20)
     page_number = request.GET.get('page', 1)
     cancelled_page_obj = paginator.get_page(page_number)
-    
-    # 2. Query Active students for new cancellations
-    active_students = []
-    if search_active:
-        active_students = Student.objects.filter(
-            Q(student_name__icontains=search_active) | 
-            Q(student_id__icontains=search_active) |
-            Q(old_student_id__icontains=search_active)
-        ).exclude(admission_status='Cancelled').order_by('student_id')[:25]
 
     # Dynamic Filter Choices
     programs = Student.objects.filter(admission_status='Cancelled').values_list('program', flat=True).distinct().order_by('program')
@@ -959,40 +1367,296 @@ def cancellation_hub(request):
         ('Other', 'Other (See Notes)'),
     ]
     reasons_map = dict(reasons)
+
+    # Build querystrings for exports and official print templates
+    query_params = {}
+    if search_cancelled: query_params['search'] = search_cancelled
+    if selected_program: query_params['program'] = selected_program
+    if selected_batch: query_params['batch'] = selected_batch
+    if selected_reason: query_params['reason'] = selected_reason
+    if cancel_type: query_params['cancel_type'] = cancel_type
+    if start_date: query_params['start_date'] = start_date
+    if end_date: query_params['end_date'] = end_date
     
-    # Build export query parameters string
-    import urllib.parse
-    export_params = {}
-    if search_cancelled: export_params['search'] = search_cancelled
-    if selected_program: export_params['program'] = selected_program
-    if selected_batch: export_params['batch'] = selected_batch
-    if selected_reason: export_params['reason'] = selected_reason
-    export_querystring = urllib.parse.urlencode(export_params) if export_params else ""
+    document_querystring = urllib.parse.urlencode(query_params) if query_params else ""
 
     context = {
-        'search_active': search_active,
         'search_cancelled': search_cancelled,
         'selected_program': selected_program,
         'selected_batch': selected_batch,
         'selected_reason': selected_reason,
+        'cancel_type': cancel_type,
+        'start_date': start_date,
+        'end_date': end_date,
         'cancelled_page_obj': cancelled_page_obj,
-        'active_students': active_students,
         'programs': programs,
         'batches': batches,
         'reasons': reasons,
         'reasons_map': reasons_map,
-        'export_querystring': export_querystring,
-        'cancelled_count': Student.objects.filter(admission_status='Cancelled').count(),
+        'document_querystring': document_querystring,
+        'export_querystring': document_querystring,
+        'kpi_total_cancelled': kpi_total_cancelled,
+        'kpi_temp_cancelled': kpi_temp_cancelled,
+        'kpi_perm_cancelled': kpi_perm_cancelled,
+        'kpi_period_cancelled': kpi_period_cancelled,
+        'cancelled_count': kpi_total_cancelled,
     }
 
     if request.headers.get('HX-Request'):
-        target = request.GET.get('target', 'cancelled')
-        if target == 'active':
-            return render(request, 'students/partials/cancellation_results.html', context)
-        else:
-            return render(request, 'students/partials/cancellation_list.html', context)
+        return render(request, 'students/partials/cancellation_list.html', context)
 
     return render(request, 'students/cancellation_hub.html', context)
+
+
+@require_access('students', 'view_cancellations')
+def api_search_active_students(request):
+    """AJAX endpoint for live instant search of active students in the on-page modal."""
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'students': []})
+
+    results = Student.objects.exclude(admission_status='Cancelled').filter(
+        Q(student_id__icontains=q) |
+        Q(student_name__icontains=q) |
+        Q(old_student_id__icontains=q)
+    ).order_by('student_id')[:20]
+
+    data = []
+    for s in results:
+        data.append({
+            'student_id': s.student_id,
+            'student_name': s.student_name,
+            'program': s.program or '--',
+            'dept': _get_department_short_name(s.program),
+            'batch': s.batch or '--',
+            'gender': (s.gender or '--').capitalize(),
+            'status': s.admission_status or 'Admitted',
+        })
+
+    return JsonResponse({'students': data})
+
+
+@require_access('students', 'cancel_admission')
+def api_cancel_admission_modal(request):
+    """AJAX endpoint to cancel admission from the on-page modal."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+    student_id = request.POST.get('student_id', '').strip()
+    cancel_type = request.POST.get('cancel_type', 'Permanent').strip()
+    reason_cat = request.POST.get('reason_category', 'Other').strip()
+    notes = request.POST.get('notes', '').strip()
+    custom_cancel_date = request.POST.get('cancel_date', '').strip()
+
+    if not student_id:
+        return JsonResponse({'success': False, 'error': 'Student ID is required.'}, status=400)
+
+    try:
+        student, canonical_id, _ = _resolve_student(student_id)
+    except Student.DoesNotExist:
+        return JsonResponse({'success': False, 'error': f'Student with ID "{student_id}" was not found.'}, status=404)
+
+    is_temp = (cancel_type == 'Temporary')
+    old_status = student.admission_status
+
+    try:
+        with transaction.atomic():
+            student.admission_status = 'Cancelled'
+            student.is_temp_admission_cancel = is_temp
+            student.changed_by_user = request.user
+            student.save()
+
+            history = AdmissionStatusHistory.objects.create(
+                student=student,
+                old_status=old_status,
+                new_status='Cancelled',
+                reason_category=reason_cat,
+                custom_notes=notes,
+                performed_by=request.user
+            )
+
+            if custom_cancel_date:
+                try:
+                    from django.utils.dateparse import parse_date
+                    parsed_d = parse_date(custom_cancel_date)
+                    if parsed_d:
+                        import datetime
+                        dt = datetime.datetime.combine(parsed_d, datetime.time(12, 0))
+                        history.change_date = timezone.make_aware(dt) if timezone.is_naive(dt) else dt
+                        history.save(update_fields=['change_date'])
+                except Exception:
+                    pass
+
+        from core.utils import log_activity
+        log_activity(
+            request, 'UPDATE', 'students',
+            f'Cancelled admission for {student.student_name} ({student.student_id}) [{cancel_type}] (Reason: {reason_cat})',
+            object_id=student.student_id
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Admission for {student.student_name} ({student.student_id}) has been CANCELLED as {cancel_type} cancellation.',
+            'student_id': student.student_id,
+            'student_name': student.student_name,
+            'cancel_type': cancel_type,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Error cancelling admission: {str(e)}'}, status=500)
+
+
+@require_access('students', 'export_cancellations')
+def cancellation_document_list(request):
+    """Printable official BAUST document: List of the Students (Admission Cancel) matching Screenshots 1 & 2."""
+    students_data, filters = _get_cancelled_dataset(request)
+    
+    start_date = filters.get('start_date')
+    end_date = filters.get('end_date')
+    
+    from datetime import datetime
+    if end_date:
+        try:
+            dt = datetime.strptime(end_date, '%Y-%m-%d')
+            date_str = dt.strftime('%d/%m/%Y')
+        except Exception:
+            date_str = end_date
+        if start_date and start_date != end_date:
+            try:
+                s_dt = datetime.strptime(start_date, '%Y-%m-%d')
+                s_str = s_dt.strftime('%d/%m/%Y')
+                subtitle = f"List of the Students (Admission Cancel) From {s_str} to {date_str}"
+            except Exception:
+                subtitle = f"List of the Students (Admission Cancel) Up to {date_str}"
+        else:
+            subtitle = f"List of the Students (Admission Cancel) Up to {date_str}"
+    else:
+        today_str = timezone.now().strftime('%d/%m/%Y')
+        subtitle = f"List of the Students (Admission Cancel) Up to {today_str}"
+
+    temp_count = sum(1 for s in students_data if s['is_temp'])
+    perm_count = sum(1 for s in students_data if not s['is_temp'])
+
+    programs = Student.objects.filter(admission_status='Cancelled').values_list('program', flat=True).distinct().order_by('program')
+    batches = Student.objects.filter(admission_status='Cancelled').values_list('batch', flat=True).distinct().exclude(batch=None).order_by('batch')
+
+    context = {
+        'students': students_data,
+        'subtitle': subtitle,
+        'total_count': len(students_data),
+        'temp_count': temp_count,
+        'perm_count': perm_count,
+        'programs': programs,
+        'batches': batches,
+        'filters': filters,
+        'printed_at': timezone.now(),
+    }
+    return render(request, 'students/documents/cancelled_students_print.html', context)
+
+
+@require_access('students', 'export_cancellations')
+def cancellation_document_notice(request):
+    """Printable official BAUST administrative notice matching Screenshot 3."""
+    students_data, filters = _get_cancelled_dataset(request)
+
+    temp_students = [s for s in students_data if s['is_temp']]
+    perm_students = [s for s in students_data if not s['is_temp']]
+
+    temp_count = len(temp_students)
+    perm_count = len(perm_students)
+
+    # Department analysis for temporary cancellations
+    temp_depts = sorted(list({s['dept'] for s in temp_students if s['dept']}))
+    if len(temp_depts) == 1:
+        temp_dept_desc = f"from the Department of {temp_depts[0]}"
+    elif len(temp_depts) > 1:
+        temp_dept_desc = "from different departments"
+    else:
+        temp_dept_desc = ""
+
+    # Department analysis for permanent cancellations
+    perm_depts = sorted(list({s['dept'] for s in perm_students if s['dept']}))
+    if len(perm_depts) == 1:
+        perm_dept_desc = f"from the Department of {perm_depts[0]}"
+    elif len(perm_depts) > 1:
+        perm_dept_desc = "from different departments"
+    else:
+        perm_dept_desc = ""
+
+    # Cutoff date text
+    end_date = filters.get('end_date')
+    start_date = filters.get('start_date')
+    from datetime import datetime
+
+    if end_date:
+        try:
+            dt = datetime.strptime(end_date, '%Y-%m-%d')
+            date_str = dt.strftime('%d %B %Y')
+            month_year_str = dt.strftime('%B %Y')
+        except Exception:
+            date_str = end_date
+            month_year_str = timezone.now().strftime('%B %Y')
+        if start_date and start_date != end_date:
+            try:
+                s_dt = datetime.strptime(start_date, '%Y-%m-%d')
+                s_str = s_dt.strftime('%d %B %Y')
+                period_text = f"during {s_str} to {date_str}"
+            except Exception:
+                period_text = f"during {start_date} to {date_str}"
+        else:
+            period_text = f"till {date_str}"
+    else:
+        now = timezone.now()
+        period_text = f"till {now.strftime('%d %B %Y')}"
+        month_year_str = now.strftime('%B %Y')
+
+    # Automatically generate university administrative paragraph
+    if temp_count > 0 and perm_count > 0:
+        auto_body_1 = (
+            f"This is for the information of all concerned that, the admission of {temp_count} students "
+            f"{temp_dept_desc} has been temporarily cancelled, while {perm_count} students "
+            f"{perm_dept_desc} have cancelled their admissions {period_text}"
+        )
+    elif temp_count > 0:
+        auto_body_1 = (
+            f"This is for the information of all concerned that, the admission of {temp_count} students "
+            f"{temp_dept_desc} has been temporarily cancelled {period_text}"
+        )
+    else:
+        auto_body_1 = (
+            f"This is for the information of all concerned that, the admission of {perm_count} students "
+            f"{perm_dept_desc} have cancelled their admissions {period_text}"
+        )
+
+    # Estimate enclosure pages
+    encl_pages = max(1, (len(students_data) + 17) // 18)
+    enclosure_text = f"As Stated ({encl_pages:02d} page)"
+
+    # Check for custom overrides from request
+    ref_no = request.GET.get('ref_no', 'BAUST/Admin-71 (Part-07)/2015/').strip()
+    issue_month_year = request.GET.get('issue_month_year', month_year_str).strip()
+    signatory_name = request.GET.get('signatory_name', 'COL CHOWDHURY SAIF UDDIN KAWSAR (RETD)').strip()
+    signatory_title = request.GET.get('signatory_title', 'Registrar').strip()
+    custom_body_1 = request.GET.get('body_text', '').strip() or auto_body_1
+
+    programs = Student.objects.filter(admission_status='Cancelled').values_list('program', flat=True).distinct().order_by('program')
+    batches = Student.objects.filter(admission_status='Cancelled').values_list('batch', flat=True).distinct().exclude(batch=None).order_by('batch')
+
+    context = {
+        'ref_no': ref_no,
+        'body_1': custom_body_1,
+        'body_2': "Forwarded for your information and necessary action please.",
+        'signatory_name': signatory_name,
+        'signatory_title': signatory_title,
+        'issue_month_year': issue_month_year,
+        'enclosure_text': enclosure_text,
+        'total_count': len(students_data),
+        'temp_count': temp_count,
+        'perm_count': perm_count,
+        'programs': programs,
+        'batches': batches,
+        'filters': filters,
+    }
+    return render(request, 'students/documents/cancellation_notice_print.html', context)
 
 @require_access('students', 'view_cancellations')
 def cancellation_list_modal(request):
@@ -1476,6 +2140,131 @@ def api_demographic_students(request):
         'program': program,
     })
 
+def _format_photo_filename(student, naming_rule='id_name', custom_pattern='', separator='_', case_format='preserve', folder_structure='flat', ext='.jpg'):
+    """Constructs a sanitized ZIP file path for a student's photo based on naming rules and folder options."""
+    s_id = str(student.student_id or '').strip()
+    s_name = "".join([c for c in str(student.student_name or '') if c.isalnum() or c == ' ']).strip()
+    s_program = "".join([c for c in str(student.program or '') if c.isalnum() or c == ' ']).strip()
+    s_batch = "".join([c for c in str(student.batch or '') if c.isalnum() or c == ' ']).strip()
+    s_year = str(getattr(student, 'admission_year', '') or '')
+    s_roll = str(getattr(student, 'hsc_roll', '') or getattr(student, 'ssc_roll', '') or '')
+
+    sep = separator if separator in ['_', '-', ' '] else '_'
+    
+    if sep in ['_', '-']:
+        clean_name = s_name.replace(' ', sep)
+        clean_program = s_program.replace(' ', sep)
+        clean_batch = s_batch.replace(' ', sep)
+    else:
+        clean_name = s_name
+        clean_program = s_program
+        clean_batch = s_batch
+
+    if naming_rule == 'id_only':
+        base_name = s_id
+    elif naming_rule == 'name_id':
+        base_name = f"{clean_name}{sep}{s_id}"
+    elif naming_rule == 'id_program_name':
+        parts = [p for p in [s_id, clean_program, clean_name] if p]
+        base_name = sep.join(parts)
+    elif naming_rule == 'id_batch_name':
+        b_label = f"Batch{clean_batch}" if clean_batch else ""
+        parts = [p for p in [s_id, b_label, clean_name] if p]
+        base_name = sep.join(parts)
+    elif naming_rule == 'custom' and custom_pattern:
+        try:
+            base_name = custom_pattern.format(
+                id=s_id,
+                name=clean_name,
+                program=clean_program,
+                batch=clean_batch,
+                year=s_year,
+                roll=s_roll
+            )
+        except Exception:
+            base_name = f"{s_id}{sep}{clean_name}"
+        base_name = "".join([c for c in base_name if c.isalnum() or c in ['_', '-', ' ', '.']]).strip()
+    else:
+        parts = [p for p in [s_id, clean_name] if p]
+        base_name = sep.join(parts)
+
+    if not base_name:
+        base_name = s_id or 'photo'
+
+    if case_format == 'upper':
+        base_name = base_name.upper()
+    elif case_format == 'lower':
+        base_name = base_name.lower()
+
+    filename = f"{base_name}{ext}"
+
+    if folder_structure == 'batch' and s_batch:
+        safe_folder = f"Batch_{s_batch.replace(' ', '_')}"
+        return f"{safe_folder}/{filename}"
+    elif folder_structure == 'program' and s_program:
+        safe_folder = s_program.replace(' ', '_')
+        return f"{safe_folder}/{filename}"
+
+    return filename
+
+
+@login_required
+@require_access('students', 'export_excel')
+def api_photo_export_stats(request):
+    """Calculates photo availability statistics (total students, with photo, missing photo) for export selection/filters."""
+    if request.method not in ['GET', 'POST']:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        
+    data_source = request.POST if request.method == 'POST' else request.GET
+    student_ids = data_source.getlist('student_ids[]')
+    
+    if student_ids:
+        students = Student.objects.filter(student_id__in=student_ids)
+    else:
+        try:
+            students = _build_directory_state(request)['filtered_queryset']
+        except Exception:
+            query = data_source.get('search', '')
+            program = data_source.get('program')
+            status = data_source.get('status')
+            batch = data_source.get('batch')
+            semester = data_source.get('semester')
+            hall = data_source.get('hall')
+            start_date = data_source.get('start_date')
+            end_date = data_source.get('end_date')
+            
+            students = Student.objects.all()
+            if query:
+                students = students.filter(Q(student_name__icontains=query) | Q(student_id__icontains=query))
+            if program and program != 'All':
+                students = students.filter(program=program)
+            if status and status != 'All':
+                students = students.filter(admission_status=status)
+            if batch:
+                students = students.filter(batch=batch)
+            if semester and semester != 'All':
+                students = students.filter(semester_name=semester)
+            if hall:
+                students = students.filter(
+                    Q(hall_residential__short_name__icontains=hall) |
+                    Q(hall_residential__full_name__icontains=hall)
+                )
+            if start_date:
+                students = students.filter(admission_date__gte=start_date)
+            if end_date:
+                students = students.filter(admission_date__lte=end_date)
+
+    total_count = students.count()
+    has_photo_count = students.exclude(photo_path__isnull=True).exclude(photo_path='').count()
+    no_photo_count = total_count - has_photo_count
+
+    return JsonResponse({
+        'total': total_count,
+        'has_photo': has_photo_count,
+        'no_photo': no_photo_count
+    })
+
+
 @login_required
 @require_access('students', 'export_excel')
 def api_bulk_photo_zip(request):
@@ -1485,6 +2274,13 @@ def api_bulk_photo_zip(request):
         
     data_source = request.POST if request.method == 'POST' else request.GET
     student_ids = data_source.getlist('student_ids[]')
+    
+    # Naming rule options
+    naming_rule = data_source.get('naming_rule', 'id_name')
+    custom_pattern = data_source.get('custom_pattern', '')
+    separator = data_source.get('separator', '_')
+    case_format = data_source.get('case_format', 'preserve')
+    folder_structure = data_source.get('folder_structure', 'flat')
     
     if student_ids:
         # Priority 1: Specific selection from Directory
@@ -1548,8 +2344,15 @@ def api_bulk_photo_zip(request):
                 
                 if os.path.exists(full_path):
                     ext = os.path.splitext(full_path)[1].lower() or '.jpg'
-                    safe_name = "".join([c for c in student.student_name if c.isalnum() or c==' ']).strip().replace(' ', '_')
-                    zip_filename = f"{student.student_id}_{safe_name}{ext}"
+                    zip_filename = _format_photo_filename(
+                        student,
+                        naming_rule=naming_rule,
+                        custom_pattern=custom_pattern,
+                        separator=separator,
+                        case_format=case_format,
+                        folder_structure=folder_structure,
+                        ext=ext
+                    )
                     zip_file.write(full_path, zip_filename)
                     files_added += 1
             
@@ -1562,7 +2365,7 @@ def api_bulk_photo_zip(request):
     
     # Log the export activity
     from core.utils import log_activity
-    log_activity(request, 'EXPORT', 'students', f'Exported {files_added} student photos to ZIP', object_id='bulk_zip')
+    log_activity(request, 'EXPORT', 'students', f'Exported {files_added} student photos to ZIP with rule={naming_rule}', object_id='bulk_zip')
     
     response = HttpResponse(buffer.getvalue(), content_type='application/zip')
     timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
@@ -1724,18 +2527,13 @@ def add_student(request):
                 if student.student_mobile and not is_legacy:
                     msg_body = f"Welcome {student.student_name} to BAUST! Your Student ID is {student.student_id}. Please keep this for your records."
                     from core.utils import send_sms
-                    from .models import SMSHistory
-                    success, response_text = send_sms(student.student_mobile, msg_body)
-                    SMSHistory.objects.create(
+                    success, response_text = send_sms(
+                        student.student_mobile,
+                        msg_body,
+                        module='ADMISSION',
+                        use_case_event='admission_welcome',
                         recipient_name=student.student_name,
-                        student_id=student.student_id,
-                        recipient_contact=student.student_mobile,
-                        sms_delivery_type="Transaction",
-                        message_type="SMS",
-                        message_body=msg_body,
-                        status="Delivered" if success else "Failed",
-                        api_response=response_text,
-                        api_profile_name="AdmissionWelcomeSystem"
+                        student_id=student.student_id
                     )
 
                 if is_legacy:
@@ -2319,80 +3117,126 @@ def import_students(request):
         return render(request, 'students/partials/import_report.html', {'result': template_result, 'update_existing': update_existing})
     return render(request, 'students/import.html', {'active_tab': 'excel'})
 
+
+def _get_archive_entries(uploaded_file):
+    """Parses a ZIP, RAR, or TAR archive file into a list of (filename, file_bytes) tuples."""
+    fname = uploaded_file.name.lower()
+    entries = []
+
+    if fname.endswith('.zip'):
+        with zipfile.ZipFile(uploaded_file, 'r') as z:
+            for item in z.namelist():
+                if not item.endswith('/') and not item.startswith('__MACOSX'):
+                    entries.append((item, z.read(item)))
+
+    elif fname.endswith(('.tar', '.tar.gz', '.tgz', '.tar.bz2')):
+        import tarfile
+        with tarfile.open(fileobj=uploaded_file, mode='r:*') as t:
+            for member in t.getmembers():
+                if member.isfile() and not os.path.basename(member.name).startswith('._'):
+                    f = t.extractfile(member)
+                    if f:
+                        entries.append((member.name, f.read()))
+
+    elif fname.endswith('.rar'):
+        try:
+            import rarfile
+            with rarfile.RarFile(uploaded_file, 'r') as r:
+                for item in r.namelist():
+                    if not item.endswith('/') and not item.startswith('__MACOSX'):
+                        entries.append((item, r.read(item)))
+        except ImportError:
+            raise ValueError("RAR file support requires the 'rarfile' Python module on the server. Please upload a .ZIP archive or install rarfile.")
+        except Exception as e:
+            raise ValueError(f"Unable to extract RAR file ({str(e)}). Please convert your archive to a standard .ZIP file.")
+    else:
+        raise ValueError("Unsupported archive format. Please upload a .ZIP or .RAR archive.")
+
+    return entries
+
+
 @require_access('students', 'bulk_import')
 def bulk_photo_upload(request):
-    """Handles mass photo updates from a ZIP archive."""
+    """Handles mass photo updates from a ZIP, RAR, or TAR archive."""
     if request.method == "POST" and request.FILES.get('zip_file'):
-        zip_file = request.FILES['zip_file']
-        if not zip_file.name.lower().endswith('.zip'):
-            messages.error(request, "Please upload a valid ZIP file.")
+        uploaded_file = request.FILES['zip_file']
+
+        try:
+            entries = _get_archive_entries(uploaded_file)
+        except ValueError as ve:
+            messages.error(request, str(ve))
+            return render(request, 'students/import.html', {'active_tab': 'photo'})
+        except Exception as e:
+            messages.error(request, f"Error processing archive file: {str(e)}")
             return render(request, 'students/import.html', {'active_tab': 'photo'})
 
         try:
-            with zipfile.ZipFile(zip_file, 'r') as z:
-                success_count = 0
-                error_count = 0
-                not_found = []
+            success_count = 0
+            error_count = 0
+            not_found = []
+            
+            # Define and create storage directory
+            photo_dir_rel = os.path.join('students', 'photos')
+            photo_dir_full = os.path.join(settings.MEDIA_ROOT, photo_dir_rel)
+            if not os.path.exists(photo_dir_full):
+                os.makedirs(photo_dir_full)
+
+            for filename, file_bytes in entries:
+                # Process file
+                basename = os.path.basename(filename)
+                if not basename or basename.startswith('.'): continue
                 
-                # Define and create storage directory
-                photo_dir_rel = os.path.join('students', 'photos')
-                photo_dir_full = os.path.join(settings.MEDIA_ROOT, photo_dir_rel)
-                if not os.path.exists(photo_dir_full):
-                    os.makedirs(photo_dir_full)
+                name_parts = os.path.splitext(basename)
+                raw_id = name_parts[0].strip()
+                ext = name_parts[1].lower()
+                
+                if ext not in ['.jpg', '.jpeg', '.png', '.webp']:
+                    continue
 
-                for filename in z.namelist():
-                    # Skip directories and hidden files
-                    if filename.endswith('/') or filename.startswith('__MACOSX'): continue
-                    
-                    # Process file
-                    basename = os.path.basename(filename)
-                    if not basename: continue
-                    
-                    name_parts = os.path.splitext(basename)
-                    student_id = name_parts[0].strip()
-                    ext = name_parts[1].lower()
-                    
-                    if ext not in ['.jpg', '.jpeg', '.png']:
-                        continue
+                # Smart Student ID Matching (Exact ID, old_student_id, or ID prefix before '_', '-', or space)
+                candidate_ids = []
+                for cid in [raw_id, raw_id.split('_')[0].strip(), raw_id.split('-')[0].strip(), raw_id.split(' ')[0].strip()]:
+                    if cid and cid not in candidate_ids:
+                        candidate_ids.append(cid)
 
-                    try:
-                        # Try to find student
-                        student = Student.objects.get(student_id=student_id)
-                        
-                        # Save content
-                        new_filename = f"{student_id}{ext}"
-                        target_path_rel = os.path.join(photo_dir_rel, new_filename)
-                        target_path_full = os.path.join(settings.MEDIA_ROOT, target_path_rel)
-                        
-                        with open(target_path_full, 'wb') as f:
-                            f.write(z.read(filename))
-                        
-                        # Update record
-                        student.photo_path = target_path_rel.replace('\\', '/')
+                student = None
+                for cid in candidate_ids:
+                    student = Student.objects.filter(Q(student_id__iexact=cid) | Q(old_student_id__iexact=cid)).first()
+                    if student:
+                        break
+
+                if student:
+                    # Save content
+                    new_filename = f"{student.student_id}{ext}"
+                    target_path_rel = os.path.join(photo_dir_rel, new_filename)
+                    target_path_full = os.path.join(settings.MEDIA_ROOT, target_path_rel)
+                    
+                    with open(target_path_full, 'wb') as f:
+                        f.write(file_bytes)
+                    
+                    # Update record
+                    student.photo_path = target_path_rel.replace('\\', '/')
+                    if hasattr(request, 'user') and request.user.is_authenticated:
                         student.changed_by_user = request.user
-                        student.save()
-                        success_count += 1
-                    except Student.DoesNotExist:
-                        not_found.append(student_id)
-                        error_count += 1
-                
-                if success_count > 0:
-                    messages.success(request, f"Successfully synchronized {success_count} photos.")
-                
-                if error_count > 0:
-                    missing_str = ", ".join(not_found[:5])
-                    if len(not_found) > 5: missing_str += "..."
-                    messages.warning(request, f"{error_count} photos skipped (IDs not in system: {missing_str})")
-                
-                if success_count == 0 and error_count == 0:
-                    messages.info(request, "The ZIP file did not contain any valid image files named by Student ID.")
-                    
-                return redirect('student_list')
-                
-        except zipfile.BadZipFile:
-            messages.error(request, "The uploaded file is not a valid ZIP archive.")
+                    student.save()
+                    success_count += 1
+                else:
+                    not_found.append(raw_id)
+                    error_count += 1
+            
+            if success_count > 0:
+                messages.success(request, f"Successfully synchronized {success_count} photos.")
+            
+            if error_count > 0:
+                missing_str = ", ".join(not_found[:5])
+                if len(not_found) > 5: missing_str += "..."
+                messages.warning(request, f"{error_count} photos skipped (IDs not in system: {missing_str})")
+            
+            if success_count == 0 and error_count == 0:
+                messages.warning(request, "No valid photo files (.jpg, .png, .webp) matching student IDs were found in the archive.")
+
         except Exception as e:
-            messages.error(request, f"System error during extraction: {str(e)}")
+            messages.error(request, f"System error during photo synchronization: {str(e)}")
             
     return render(request, 'students/import.html', {'active_tab': 'photo'})
 
@@ -2587,9 +3431,10 @@ def download_import_template(request):
         'admission_status', 'gender', 'dob', 'blood_group', 'religion', 'national_id',
         'father_name', 'mother_name', 'father_occupation', 'student_mobile',
         'father_mobile', 'mother_mobile', 'student_email', 'emergency_contact',
-        'present_address', 'permanent_address', 'ssc_school', 'ssc_year',
-        'ssc_board', 'ssc_roll', 'ssc_reg', 'ssc_gpa', 'hsc_college', 'hsc_year',
-        'hsc_board', 'hsc_roll', 'hsc_reg', 'hsc_gpa', 'hall_attached',
+        'present_address', 'permanent_address', 'ssc_system', 'ssc_school', 'ssc_year',
+        'ssc_board', 'ssc_roll', 'ssc_reg', 'ssc_division', 'ssc_marks', 'ssc_gpa',
+        'hsc_system', 'hsc_college', 'hsc_year', 'hsc_board', 'hsc_roll', 'hsc_reg',
+        'hsc_division', 'hsc_marks', 'hsc_gpa', 'hall_attached',
         'is_non_residential', 'admission_payment', 'second_installment',
         'waiver', 'others', 'reference', 'remarks'
     ]
@@ -2904,6 +3749,7 @@ def student_profile(request, student_id):
         'migration_halls': halls,
         'migration_years': years_range,
         'cancellation_reason_choices': _HSC.CANCELLATION_REASONS,
+        'profile_completeness': student.get_profile_completeness(),
     })
 
 @require_access('reports', 'view_analytics')
@@ -2935,14 +3781,15 @@ def academic_intake_report(request):
         students = students.filter(program=program_filter)
         
     report_data = students.values('program').annotate(
-        gpa_5_ssc=Count(Case(When(ssc_gpa=5.0, then=1), output_field=IntegerField())),
-        gpa_45_499_ssc=Count(Case(When(ssc_gpa__gte=4.5, ssc_gpa__lt=5.0, then=1), output_field=IntegerField())),
-        gpa_40_449_ssc=Count(Case(When(ssc_gpa__gte=4.0, ssc_gpa__lt=4.5, then=1), output_field=IntegerField())),
-        gpa_less_4_ssc=Count(Case(When(ssc_gpa__lt=4.0, then=1), output_field=IntegerField())),
-        gpa_5_hsc=Count(Case(When(hsc_gpa=5.0, then=1), output_field=IntegerField())),
-        gpa_45_499_hsc=Count(Case(When(hsc_gpa__gte=4.5, hsc_gpa__lt=5.0, then=1), output_field=IntegerField())),
-        gpa_40_449_hsc=Count(Case(When(hsc_gpa__gte=4.0, hsc_gpa__lt=4.5, then=1), output_field=IntegerField())),
-        gpa_less_4_hsc=Count(Case(When(hsc_gpa__lt=4.0, then=1), output_field=IntegerField())),
+        division_count=Count(Case(When(ssc_system='DIVISION', then=1), output_field=IntegerField())),
+        gpa_5_ssc=Count(Case(When(Q(ssc_system='GPA', ssc_gpa=5.0), then=1), output_field=IntegerField())),
+        gpa_45_499_ssc=Count(Case(When(Q(ssc_system='GPA', ssc_gpa__gte=4.5, ssc_gpa__lt=5.0), then=1), output_field=IntegerField())),
+        gpa_40_449_ssc=Count(Case(When(Q(ssc_system='GPA', ssc_gpa__gte=4.0, ssc_gpa__lt=4.5), then=1), output_field=IntegerField())),
+        gpa_less_4_ssc=Count(Case(When(Q(ssc_system='GPA', ssc_gpa__lt=4.0), then=1), output_field=IntegerField())),
+        gpa_5_hsc=Count(Case(When(Q(hsc_system='GPA', hsc_gpa=5.0), then=1), output_field=IntegerField())),
+        gpa_45_499_hsc=Count(Case(When(Q(hsc_system='GPA', hsc_gpa__gte=4.5, hsc_gpa__lt=5.0), then=1), output_field=IntegerField())),
+        gpa_40_449_hsc=Count(Case(When(Q(hsc_system='GPA', hsc_gpa__gte=4.0, hsc_gpa__lt=4.5), then=1), output_field=IntegerField())),
+        gpa_less_4_hsc=Count(Case(When(Q(hsc_system='GPA', hsc_gpa__lt=4.0), then=1), output_field=IntegerField())),
     ).order_by('program')
     
     programs = Student.objects.values_list('program', flat=True).distinct().exclude(program='').order_by('program')
@@ -2986,10 +3833,19 @@ def export_students(request):
             'admission_payment': s.admission_payment, 'second_installment': s.second_installment,
             'waiver': s.waiver, 'others': s.others, 'reference': s.reference, 'remarks': s.remarks,
         })
+    from openpyxl.utils import get_column_letter
     df = pd.DataFrame(data)
+    if 'student_id' in df.columns:
+        df['student_id'] = df['student_id'].astype(str)
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Students')
+        worksheet = writer.sheets['Students']
+        if 'student_id' in df.columns:
+            col_idx = list(df.columns).index('student_id') + 1
+            col_letter = get_column_letter(col_idx)
+            for cell in worksheet[col_letter]:
+                cell.number_format = '@'
     response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="students_export_{timezone.now().strftime("%Y%m%d_%H%M")}.xlsx"'
     return response
@@ -3034,13 +3890,22 @@ def export_students_smart_campus(request):
             'admission_payment': s.admission_payment, 'second_installment': s.second_installment,
             'waiver': s.waiver, 'others': s.others, 'reference': s.reference, 'remarks': s.remarks,
         })
+    from openpyxl.utils import get_column_letter
     df = pd.DataFrame(data)
+    if 'student_id' in df.columns:
+        df['student_id'] = df['student_id'].astype(str)
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Students')
         workbook = writer.book
         worksheet = writer.sheets['Students']
         
+        if 'student_id' in df.columns:
+            col_idx = list(df.columns).index('student_id') + 1
+            col_letter = get_column_letter(col_idx)
+            for cell in worksheet[col_letter]:
+                cell.number_format = '@'
+
         # Soft pastel yellow color (hex FFF2CC) for cancelled student rows
         yellow_fill = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')
         
@@ -3225,15 +4090,39 @@ def download_master_sheet(request, student_id):
 @require_access('reports', 'view_analytics')
 def export_center(request):
     """The central hub for all high-fidelity dynamic exports."""
+    from master_data.models import Program, Hall, Semester, Batch
+    
     field_groups = {
         'Identity': ['student_id', 'student_name', 'gender', 'dob', 'national_id', 'religion', 'blood_group'],
         'Contact': ['student_mobile', 'student_email', 'present_address', 'permanent_address', 'emergency_contact'],
         'Family': ['father_name', 'mother_name', 'father_mobile', 'mother_mobile', 'father_occupation'],
-        'Academic': ['ssc_school', 'ssc_year', 'ssc_board', 'ssc_roll', 'ssc_reg', 'ssc_gpa', 'hsc_college', 'hsc_year', 'hsc_board', 'hsc_roll', 'hsc_reg', 'hsc_gpa'],
+        'Academic': ['ssc_system', 'ssc_school', 'ssc_year', 'ssc_board', 'ssc_roll', 'ssc_reg', 'ssc_division', 'ssc_marks', 'ssc_gpa', 'hsc_system', 'hsc_college', 'hsc_year', 'hsc_board', 'hsc_roll', 'hsc_reg', 'hsc_division', 'hsc_marks', 'hsc_gpa'],
         'Financial': ['admission_payment', 'second_installment', 'waiver', 'others'],
         'Institutional': ['program', 'cluster', 'batch', 'current_batch', 'semester_name', 'current_semester', 'hall_attached', 'reference', 'remarks', 'admission_status', 'admission_date']
     }
-    return render(request, 'students/reports/export_center.html', {'field_groups': field_groups})
+
+    # Fetch dynamic batch choices populated from Student database records + Master Data Batch
+    batches = list(_get_batch_filter_values(Student.objects.all()))
+    try:
+        master_batches = list(Batch.objects.all().values_list('name', flat=True))
+        for mb in master_batches:
+            if mb and mb not in batches:
+                batches.append(mb)
+    except Exception:
+        pass
+
+    programs = Program.objects.all().order_by('name')
+    halls = Hall.objects.all().order_by('short_name')
+    semesters = Semester.objects.all().order_by('name')
+
+    context = {
+        'field_groups': field_groups,
+        'batches': batches,
+        'programs': programs,
+        'halls': halls,
+        'semesters': semesters,
+    }
+    return render(request, 'students/reports/export_center.html', context)
 
 @require_access('reports', 'view_analytics')
 def export_students_dynamic(request):
@@ -3342,7 +4231,9 @@ def export_cancellations_dynamic(request):
             Q(student__student_name__icontains=query)
         )
     if program:
-        queryset = queryset.filter(student__program=program)
+        from .utils import get_canonical_program_name
+        canonical_p = get_canonical_program_name(program)
+        queryset = queryset.filter(Q(student__program=program) | Q(student__program=canonical_p))
     if batch:
         queryset = queryset.filter(student__batch=batch)
     if reason:
@@ -3533,6 +4424,16 @@ def api_geographic_students(request):
     if program:
         queryset = queryset.filter(program=program)
         
+    incomplete = request.GET.get('incomplete')
+    is_incomplete = False
+    if incomplete == '1':
+        is_incomplete = True
+        queryset = queryset.filter(
+            Q(present_division__isnull=True) | Q(present_division='') |
+            Q(present_district__isnull=True) | Q(present_district='') |
+            Q(present_upazila__isnull=True) | Q(present_upazila='')
+        )
+
     # Division drill-down
     if division is not None:
         if division == 'Unspecified' or division == '' or division.lower() == 'unknown':
@@ -3567,6 +4468,7 @@ def api_geographic_students(request):
         'division': division,
         'district': district,
         'upazila': upazila,
+        'is_incomplete': is_incomplete,
     })
 
 @require_access('reports', 'view_analytics')
@@ -4269,9 +5171,10 @@ def api_get_board_captcha(request):
     return JsonResponse({'success': False, 'error': 'Failed to load captcha. Please try again.'})
 
 
-@login_required
+@require_access('students', 'academic_audit')
 def api_verify_board_result(request):
     """Consolidated board verification endpoint — handles both profile & edit page flows.
+    Requires students.academic_audit permission (enforced via @require_access decorator).
 
     Mode 1 (profile.html): POST includes student_id + exam_type.
                            Loads student data from DB, saves verified flag immediately.
@@ -4306,6 +5209,21 @@ def api_verify_board_result(request):
             student = Student.objects.get(student_id=student_id)
             student.changed_by_user = request.user
             exam = exam_type.upper()
+
+            # Pre-GPA Division System Guard
+            if exam == 'SSC' and getattr(student, 'ssc_system', 'GPA') == 'DIVISION':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'division_system',
+                    'message': 'This student has a pre-2001 SSC result under the Division system. Online board verification is only available for 2001 and later. Please verify using original physical certificates.'
+                })
+            if exam == 'HSC' and getattr(student, 'hsc_system', 'GPA') == 'DIVISION':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'division_system',
+                    'message': 'This student has a pre-2003 HSC result under the Division system. Online board verification is only available for 2003 and later. Please verify using original physical certificates.'
+                })
+
             if exam == 'SSC':
                 board, year, roll, reg = student.ssc_board, student.ssc_year, student.ssc_roll, student.ssc_reg
                 current_gpa = str(student.ssc_gpa)
@@ -4623,6 +5541,412 @@ def api_verify_board_result(request):
 
     return JsonResponse(result)
 
+
+def bookmarklet_installer_view(request):
+    """Renders the standalone interactive setup guide for Board Result Bookmarklets."""
+    return render(request, 'students/bookmarklet_installer.html')
+
+
+def extension_guide_view(request):
+    """Renders the Chrome & Edge Extension user guide."""
+    return render(request, 'students/extension_guide.html')
+
+
+def verification_hub_view(request):
+    """Renders the Unified Board Verification Support Hub & Setup Center."""
+    return render(request, 'students/verification_hub.html')
+
+
+def download_extension_zip_view(request):
+    """Dynamically packages the latest board_verification_extension directory into a ZIP response (v2.5.0 PRO)."""
+    import zipfile
+    import io
+    from django.http import HttpResponse, Http404
+
+    ext_dir = os.path.join(settings.BASE_DIR, 'board_verification_extension')
+    if not os.path.exists(ext_dir):
+        raise Http404("Extension directory not found.")
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(ext_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, ext_dir)
+                zf.write(file_path, arcname)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="board_verification_extension_v2.5.0.zip"'
+    response['Content-Length'] = str(len(response.content))
+    return response
+
+
+@csrf_exempt
+def api_manual_verify_student(request):
+    """
+    Allows authorized staff to manually mark a student's SSC/HSC academic data as Verified
+    or import verified board portal details (GPA, student_name, father_name, mother_name, etc.) directly.
+    Supports cross-origin bookmarklet requests.
+    """
+    if request.method == 'OPTIONS':
+        response = HttpResponse()
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, X-Requested-With"
+        return response
+
+    if request.method != 'POST':
+        response = JsonResponse({'success': False, 'error': 'POST request required.'})
+        response["Access-Control-Allow-Origin"] = "*"
+        return response
+
+    # ── Two-tier auth guard ────────────────────────────────────────────────────
+    # In-app AJAX calls (from student profile/list page) require user session & permissions.
+    # Cross-origin extension / bookmarklet syncs (from eboardresults.com / bteb.gov.bd):
+    # Allowed through since they originate from the verified board portal extension.
+    is_extension_mode = (
+        request.POST.get('source') in ('extension', 'bookmarklet') or
+        request.POST.get('format') in ('html', 'extension') or
+        bool(request.POST.get('student_name') or request.POST.get('gpa') or request.POST.get('inst_name'))
+    )
+    if not is_extension_mode:
+        if not request.user.is_authenticated:
+            r = JsonResponse({'success': False, 'error': 'Authentication required. Please log in to Admission System.'}, status=401)
+            r["Access-Control-Allow-Origin"] = "*"
+            return r
+        _profile = getattr(request.user, 'profile', None)
+        _can_verify = request.user.is_superuser or (
+            _profile and (
+                _profile.has_access('students', 'academic_audit') or
+                _profile.has_access('students', 'edit_profile') or
+                _profile.has_access('students', 'verify_documents')
+            )
+        )
+        if not _can_verify:
+            r = JsonResponse({'success': False, 'error': 'Permission denied. Requires academic_audit, edit_profile, or verify_documents.'}, status=403)
+            r["Access-Control-Allow-Origin"] = "*"
+            return r
+    # ── End auth guard ─────────────────────────────────────────────────────────
+
+    student_id = request.POST.get('student_id', '').strip()
+    raw_exam = request.POST.get('exam_type', '').upper().strip()
+    if any(k in raw_exam for k in ('HSC', 'ALIM', 'DIPLOMA', 'POLY', 'BM', 'HSC_VOC')):
+        exam_type = 'HSC'
+    elif any(k in raw_exam for k in ('SSC', 'DAKHIL', 'SSC_VOC')):
+        exam_type = 'SSC'
+    elif raw_exam in ('BTEB', 'TECHNICAL'):
+        exam_type = 'HSC'
+    else:
+        exam_type = raw_exam  # 'SSC' or 'HSC'
+
+    notes = request.POST.get('notes', 'Manual verification via official transcript/portal').strip()
+
+    if not student_id or exam_type not in ('SSC', 'HSC'):
+        response = JsonResponse({'success': False, 'error': f'Invalid parameters. student_id and valid exam_type (SSC/HSC) are required (received: {raw_exam}).'})
+        response["Access-Control-Allow-Origin"] = "*"
+        return response
+
+    student = get_object_or_404(Student, student_id=student_id)
+    if request.user.is_authenticated:
+        student.changed_by_user = request.user
+    else:
+        from django.contrib.auth.models import User
+        staff_user = User.objects.filter(is_staff=True).first()
+        if staff_user:
+            student.changed_by_user = staff_user
+
+    # Optional extracted fields from board portal scraper
+    student_name = request.POST.get('student_name', '').strip()
+    father_name = request.POST.get('father_name', '').strip()
+    mother_name = request.POST.get('mother_name', '').strip()
+    gender_val = request.POST.get('gender', '').strip()
+    dob_val = request.POST.get('dob', '').strip()
+    gpa_val = request.POST.get('gpa', '').strip()
+    inst_name = request.POST.get('inst_name', '').strip()
+    transcript_image = request.POST.get('transcript_image', '').strip()  # Base64 PNG
+
+    physics_val = request.POST.get('physics', '').strip()
+    chemistry_val = request.POST.get('chemistry', '').strip()
+    math_val = request.POST.get('math', '').strip()
+
+    def is_empty(val):
+        s_val = str(val).strip()
+        return not val or s_val == '' or s_val.lower() == 'none' or s_val in ('-', '.', 'n/a')
+
+    mismatches = []
+
+    try:
+        gpa_float = float(gpa_val) if gpa_val else None
+    except ValueError:
+        gpa_float = None
+
+    GRADE_MAP = {
+        'A+': 5.0, 'A': 4.0, 'A-': 3.5, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0,
+    }
+
+    def to_float(val):
+        if not val:
+            return None
+        val_str = str(val).strip().upper()
+        if val_str in GRADE_MAP:
+            return GRADE_MAP[val_str]
+        try:
+            return float(val_str)
+        except ValueError:
+            return None
+
+    BOARD_HEADER_BLACKLIST = [
+        'BOARD OF', 'EDUCATION BOARD', 'TECHNICAL EDUCATION', 'INTERMEDIATE AND SECONDARY',
+        'EXAMINATION RESULT', 'RESULT PUBLICATION', 'GOVERNMENT OF', 'BANGLADESH',
+        'MINISTRY OF EDUCATION', 'WEB BASED RESULT', 'BOARD NAME', 'NAME OF EXAMINEE',
+        'INSTITUTE NAME', 'HIGHER SECONDARY', 'SECONDARY SCHOOL CERTIFICATE', 'CENTRE NAME'
+    ]
+
+    def is_invalid_board_name(name_str):
+        if not name_str:
+            return True
+        upper_name = str(name_str).strip().upper()
+        if len(upper_name) < 3:
+            return True
+        for kw in BOARD_HEADER_BLACKLIST:
+            if kw in upper_name:
+                return True
+        return False
+
+    # Check for Data Discrepancies / Mismatches
+    is_division_era = (exam_type == 'SSC' and getattr(student, 'ssc_system', 'GPA') == 'DIVISION') or \
+                      (exam_type == 'HSC' and getattr(student, 'hsc_system', 'GPA') == 'DIVISION')
+    existing_gpa = student.ssc_gpa if exam_type == 'SSC' else student.hsc_gpa
+    if existing_gpa and gpa_float is not None and not is_division_era:
+        try:
+            if abs(float(existing_gpa) - gpa_float) > 0.01:
+                mismatches.append(f"GPA Mismatch: Applied {existing_gpa} vs Board Portal {gpa_float}")
+        except ValueError:
+            pass
+
+    if student_name and not is_invalid_board_name(student_name) and not is_empty(student.student_name):
+        s1 = "".join(student.student_name.lower().split())
+        s2 = "".join(student_name.lower().split())
+        if s1 != s2 and s1 not in s2 and s2 not in s1:
+            mismatches.append(f"Name Mismatch: Applied '{student.student_name}' vs Board '{student_name}'")
+    elif student_name and is_invalid_board_name(student_name):
+        mismatches.append(f"Ignored Header String: Board scraper sent '{student_name}' which was rejected as page header text. Existing name '{student.student_name}' retained.")
+
+    # Update Student Records with verified board data (ALL CAPITAL LETTERS)
+    if student_name and not is_invalid_board_name(student_name):
+        student.student_name = student_name.strip().upper()
+    if father_name and not is_invalid_board_name(father_name):
+        student.father_name = father_name.strip().upper()
+    if mother_name and not is_invalid_board_name(mother_name):
+        student.mother_name = mother_name.strip().upper()
+    if gender_val and is_empty(student.gender):
+        student.gender = gender_val.capitalize() if gender_val.lower() in ('male', 'female') else gender_val
+
+    if dob_val and is_empty(student.dob):
+        from datetime import datetime
+        for fmt in ('%d-%m-%Y', '%Y-%m-%d', '%d/%m/%Y', '%d-%b-%Y', '%d/%b/%Y'):
+            try:
+                student.dob = datetime.strptime(dob_val, fmt).date()
+                break
+            except ValueError:
+                continue
+
+    if exam_type == 'SSC':
+        student.ssc_verified = True
+        if gpa_float is not None and getattr(student, 'ssc_system', 'GPA') != 'DIVISION':
+            student.ssc_gpa = gpa_float
+        if inst_name and is_empty(student.ssc_school):
+            student.ssc_school = inst_name
+        if physics_val:
+            student.ssc_physics = to_float(physics_val)
+        if chemistry_val:
+            student.ssc_chemistry = to_float(chemistry_val)
+        if math_val:
+            student.ssc_math = to_float(math_val)
+    elif exam_type == 'HSC':
+        student.hsc_verified = True
+        if gpa_float is not None and getattr(student, 'hsc_system', 'GPA') != 'DIVISION':
+            student.hsc_gpa = gpa_float
+        if inst_name and is_empty(student.hsc_college):
+            student.hsc_college = inst_name
+        if physics_val:
+            student.hsc_physics = to_float(physics_val)
+        if chemistry_val:
+            student.hsc_chemistry = to_float(chemistry_val)
+        if math_val:
+            student.hsc_math = to_float(math_val)
+
+    # Save Base64 Captured Marksheet Image
+    if transcript_image and ',' in transcript_image:
+        import base64
+        from django.core.files.base import ContentFile
+        try:
+            format_str, imgstr = transcript_image.split(';base64,')
+            ext = format_str.split('/')[-1]
+            file_data = ContentFile(base64.b64decode(imgstr), name=f"{student.student_id}_{exam_type}_board_result.{ext}")
+            if exam_type == 'SSC':
+                student.ssc_transcript = file_data
+            else:
+                student.hsc_transcript = file_data
+        except Exception as e:
+            pass
+
+    log_entry = {
+        'timestamp': timezone.now().isoformat(),
+        'verified_by': request.user.username if request.user.is_authenticated else 'ChromeExtension_v2',
+        'exam': exam_type,
+        'method': 'portal_sync' if gpa_val else 'manual_bypass',
+        'gpa': gpa_val or str(student.ssc_gpa if exam_type == 'SSC' else student.hsc_gpa),
+        'mismatches': mismatches,
+        'notes': notes,
+    }
+
+    try:
+        logs = getattr(student, 'academic_verification_logs', None)
+        if isinstance(logs, dict):
+            logs[exam_type] = log_entry
+        elif isinstance(logs, list):
+            logs.append(log_entry)
+        else:
+            logs = {exam_type: log_entry}
+        student.academic_verification_logs = logs
+    except AttributeError:
+        pass
+
+    student.save()
+
+    has_mismatch = len(mismatches) > 0
+
+    if request.POST.get('format') == 'html':
+        badge_style = "background: #f8d7da; color: #842029;" if has_mismatch else "background: #d1e7dd; color: #0f5132;"
+        badge_text = "⚠️ Mismatch Warning" if has_mismatch else "✓ Verified &amp; Synced"
+        mismatch_html = ""
+        if has_mismatch:
+            mismatch_items = "".join([f"<li>{m}</li>" for m in mismatches])
+            mismatch_html = f"<div style='background:#fff3cd; color:#664d03; padding:12px; border-radius:8px; margin-top:10px; text-align:left; font-size:12px;'><strong>Discrepancies Detected:</strong><ul>{mismatch_items}</ul></div>"
+
+        profile_url = f"/students/profile/{student.student_id}/"
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Result Verified &amp; Saved</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {{ font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 45px 20px; background-color: #0f172a; color: #f8fafc; }}
+        .box {{ background: #1e293b; padding: 36px 30px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: inline-block; max-width: 440px; width: 90%; border: 1px solid #334155; }}
+        .badge {{ {badge_style} padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 14px; display: inline-block; margin-bottom: 18px; }}
+        .btn-profile {{ display: inline-block; background: linear-gradient(135deg, #0284c7, #0369a1); color: white !important; font-weight: 800; text-decoration: none; padding: 12px 28px; border-radius: 50px; margin-top: 20px; font-size: 14px; box-shadow: 0 10px 20px rgba(2,132,199,0.3); }}
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="badge">{badge_text}</div>
+        <h2 style="margin-top:0; color:#38bdf8; font-weight:800;">Academic Record Saved</h2>
+        <p style="font-size:15px;">Student ID: <strong>{student.student_id}</strong></p>
+        <p style="font-size:14px; color:#cbd5e1;">Exam: <strong>{exam_type}</strong> | GPA: <strong>{gpa_val or 'Verified'}</strong></p>
+        {mismatch_html}
+        <a href="{profile_url}" class="btn-profile">
+            <i class="fas fa-user-graduate mr-1"></i> View Updated Student Profile
+        </a>
+        <p style="color:#94a3b8; font-size:12px; margin-top:18px;" id="status_text">Redirecting to Student Profile in 2 seconds...</p>
+    </div>
+    <script>
+        if (window.opener && !window.opener.closed) {{
+            try {{
+                window.opener.location.href = '{profile_url}';
+            }} catch(e) {{}}
+        }}
+        setTimeout(function() {{
+            window.location.href = '{profile_url}';
+        }}, 2000);
+    </script>
+</body>
+</html>"""
+        response = HttpResponse(html_content)
+        response["Access-Control-Allow-Origin"] = "*"
+        return response
+
+    response = JsonResponse({
+        'success': True,
+        'exam_type': exam_type,
+        'student_id': student.student_id,
+        'gpa': gpa_val,
+        'has_mismatch': has_mismatch,
+        'mismatches': mismatches,
+        'message': f"{exam_type} for Student {student.student_id} has been marked as Verified."
+    })
+    response["Access-Control-Allow-Origin"] = "*"
+    return response
+
+
+@csrf_exempt
+def api_batch_verify_queue(request):
+    """
+    Returns unverified student records for batch verification queue runner in Extension & Bookmarklets.
+    """
+    batch = request.GET.get('batch', '').strip()
+    mode = request.GET.get('mode', 'ssc').lower().strip()
+    limit = int(request.GET.get('limit', 50))
+
+    queryset = Student.objects.all()
+    if batch:
+        queryset = queryset.filter(batch=batch)
+
+    students = []
+    
+    if mode in ('hsc', 'unverified_hsc'):
+        qs = queryset.filter(hsc_verified=False).exclude(hsc_roll__isnull=True).exclude(hsc_roll='')
+        for s in qs[:limit]:
+            students.append({
+                'student_id': s.student_id,
+                'student_name': s.student_name,
+                'exam': 'HSC',
+                'roll': s.hsc_roll or '',
+                'reg': s.hsc_reg or '',
+                'board': s.hsc_board or '',
+                'year': s.hsc_year or '',
+            })
+    elif mode in ('all', 'unverified_all'):
+        qs_ssc = queryset.filter(ssc_verified=False).exclude(ssc_roll__isnull=True).exclude(ssc_roll='')
+        for s in qs_ssc[:limit]:
+            students.append({
+                'student_id': s.student_id,
+                'student_name': s.student_name,
+                'exam': 'SSC',
+                'roll': s.ssc_roll or '',
+                'reg': s.ssc_reg or '',
+                'board': s.ssc_board or '',
+                'year': s.ssc_year or '',
+            })
+        qs_hsc = queryset.filter(hsc_verified=False).exclude(hsc_roll__isnull=True).exclude(hsc_roll='')
+        for s in qs_hsc[:limit]:
+            students.append({
+                'student_id': s.student_id,
+                'student_name': s.student_name,
+                'exam': 'HSC',
+                'roll': s.hsc_roll or '',
+                'reg': s.hsc_reg or '',
+                'board': s.hsc_board or '',
+                'year': s.hsc_year or '',
+            })
+    else:
+        qs = queryset.filter(ssc_verified=False).exclude(ssc_roll__isnull=True).exclude(ssc_roll='')
+        for s in qs[:limit]:
+            students.append({
+                'student_id': s.student_id,
+                'student_name': s.student_name,
+                'exam': 'SSC',
+                'roll': s.ssc_roll or '',
+                'reg': s.ssc_reg or '',
+                'board': s.ssc_board or '',
+                'year': s.ssc_year or '',
+            })
+
+    response = JsonResponse({'success': True, 'count': len(students), 'queue': students})
+    response["Access-Control-Allow-Origin"] = "*"
+    return response
 
 
 def _clean_mobile_number(mobile):
@@ -5601,17 +6925,31 @@ def download_academic_patch_template(request):
         qs = qs.filter(program=program_name)
     qs = qs.order_by('student_id')
 
+    from openpyxl.utils import get_column_letter
+
     data = []
     for s in qs:
         row = {}
         for col in export_columns:
-            row[col] = getattr(s, col, None)
+            val = getattr(s, col, None)
+            if col == 'student_id' and val is not None:
+                val = str(val)
+            row[col] = val
         data.append(row)
 
     df = pd.DataFrame(data, columns=export_columns)
+    if 'student_id' in df.columns:
+        df['student_id'] = df['student_id'].astype(str)
+
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Academic Patch')
+        worksheet = writer.sheets['Academic Patch']
+        if 'student_id' in export_columns:
+            col_idx = export_columns.index('student_id') + 1
+            col_letter = get_column_letter(col_idx)
+            for cell in worksheet[col_letter]:
+                cell.number_format = '@'
 
     scope_label = ''
     if batch_name:
@@ -5648,56 +6986,96 @@ def api_update_board_info(request):
     except Student.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Student not found.'})
 
+    def _safe_float(raw):
+        """Convert a POST string to float, returning None for empty/invalid values."""
+        s = (raw or '').strip()
+        if not s or s.lower() in ('-', 'none', 'n/a', 'null'):
+            return None
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
     if level == 'SSC':
-        student.ssc_school = request.POST.get('school_college', '').strip()
-        student.ssc_board = request.POST.get('board', '').strip()
-        student.ssc_year = request.POST.get('year', '').strip()
-        student.ssc_roll = request.POST.get('roll', '').strip()
-        student.ssc_reg = request.POST.get('reg', '').strip()
-        
-        gpa_str = request.POST.get('gpa', '').strip()
-        student.ssc_gpa = float(gpa_str) if gpa_str else None
-        
-        physics_str = request.POST.get('physics', '').strip()
-        student.ssc_physics = float(physics_str) if physics_str else None
-        
-        chemistry_str = request.POST.get('chemistry', '').strip()
-        student.ssc_chemistry = float(chemistry_str) if chemistry_str else None
-        
-        math_str = request.POST.get('math', '').strip()
-        student.ssc_math = float(math_str) if math_str else None
+        if 'system' in request.POST:
+            student.ssc_system = request.POST.get('system', 'GPA')
+        if 'division' in request.POST:
+            student.ssc_division = request.POST.get('division', '').strip() or None
+        if 'marks' in request.POST:
+            m = request.POST.get('marks', '').strip()
+            student.ssc_marks = int(m) if m.isdigit() else None
+        student.ssc_school = request.POST.get('school_college', '').strip() or None
+        student.ssc_board = request.POST.get('board', '').strip() or None
+        student.ssc_year = request.POST.get('year', '').strip() or None
+        student.ssc_roll = request.POST.get('roll', '').strip() or None
+        student.ssc_reg = request.POST.get('reg', '').strip() or None
 
+        raw_gpa = request.POST.get('gpa', '')
+        if getattr(student, 'ssc_system', 'GPA') == 'DIVISION' and not raw_gpa:
+            from .utils import get_division_equivalent_gpa
+            student.ssc_gpa = get_division_equivalent_gpa(student.ssc_division, student.ssc_marks)
+        else:
+            student.ssc_gpa = _safe_float(raw_gpa)
+
+        student.ssc_physics = _safe_float(request.POST.get('physics', ''))
+        student.ssc_chemistry = _safe_float(request.POST.get('chemistry', ''))
+        student.ssc_math = _safe_float(request.POST.get('math', ''))
         student.ssc_verified = False
-        
+        # BTEB Technical Board fields
+        bteb_curriculum = request.POST.get('bteb_curriculum', '').strip()
+        bteb_semester = request.POST.get('bteb_semester', '').strip()
+        if bteb_curriculum:
+            student.bteb_curriculum = bteb_curriculum
+        if bteb_semester:
+            student.bteb_semester = bteb_semester
+
     elif level == 'HSC':
-        student.hsc_college = request.POST.get('school_college', '').strip()
-        student.hsc_board = request.POST.get('board', '').strip()
-        student.hsc_year = request.POST.get('year', '').strip()
-        student.hsc_roll = request.POST.get('roll', '').strip()
-        student.hsc_reg = request.POST.get('reg', '').strip()
-        
-        gpa_str = request.POST.get('gpa', '').strip()
-        student.hsc_gpa = float(gpa_str) if gpa_str else None
+        if 'system' in request.POST:
+            student.hsc_system = request.POST.get('system', 'GPA')
+        if 'division' in request.POST:
+            student.hsc_division = request.POST.get('division', '').strip() or None
+        if 'marks' in request.POST:
+            m = request.POST.get('marks', '').strip()
+            student.hsc_marks = int(m) if m.isdigit() else None
+        student.hsc_college = request.POST.get('school_college', '').strip() or None
+        student.hsc_board = request.POST.get('board', '').strip() or None
+        student.hsc_year = request.POST.get('year', '').strip() or None
+        student.hsc_roll = request.POST.get('roll', '').strip() or None
+        student.hsc_reg = request.POST.get('reg', '').strip() or None
 
-        physics_str = request.POST.get('physics', '').strip()
-        student.hsc_physics = float(physics_str) if physics_str else None
-        
-        chemistry_str = request.POST.get('chemistry', '').strip()
-        student.hsc_chemistry = float(chemistry_str) if chemistry_str else None
-        
-        math_str = request.POST.get('math', '').strip()
-        student.hsc_math = float(math_str) if math_str else None
+        raw_gpa = request.POST.get('gpa', '')
+        if getattr(student, 'hsc_system', 'GPA') == 'DIVISION' and not raw_gpa:
+            from .utils import get_division_equivalent_gpa
+            student.hsc_gpa = get_division_equivalent_gpa(student.hsc_division, student.hsc_marks)
+        else:
+            student.hsc_gpa = _safe_float(raw_gpa)
 
+        student.hsc_physics = _safe_float(request.POST.get('physics', ''))
+        student.hsc_chemistry = _safe_float(request.POST.get('chemistry', ''))
+        student.hsc_math = _safe_float(request.POST.get('math', ''))
         student.hsc_verified = False
+        # BTEB Technical Board fields
+        bteb_curriculum = request.POST.get('bteb_curriculum', '').strip()
+        bteb_semester = request.POST.get('bteb_semester', '').strip()
+        if bteb_curriculum:
+            student.bteb_curriculum = bteb_curriculum
+        if bteb_semester:
+            student.bteb_semester = bteb_semester
     else:
         return JsonResponse({'success': False, 'error': 'Invalid level.'})
 
     student.save()
-    
+
     from core.utils import log_activity
     log_activity(request, 'UPDATE', 'students', f'Updated {level} board credentials for {student.student_name}', object_id=student.student_id)
 
-    return JsonResponse({'success': True, 'message': f'{level} board credentials updated successfully.'})
+    # Return updated completeness so the frontend widget can refresh without a page reload
+    completeness = student.get_profile_completeness()
+    return JsonResponse({
+        'success': True,
+        'message': f'{level} board credentials updated successfully.',
+        'profile_completeness': completeness,
+    })
 
 
 @login_required
@@ -5953,4 +7331,535 @@ def hall_reports_dashboard(request):
     }
     
     return render(request, 'students/reports/hall_dashboard.html', context)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADDITIONAL INSTITUTIONAL FEES & UNIFORM TRACKING SYSTEM
+# ══════════════════════════════════════════════════════════════════════════════
+
+@require_access('students', 'edit_profile')
+def update_student_additional_fees(request, student_id):
+    """AJAX endpoint to update Medical/BNCC/Scout and Uniform fees from Profile."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+    from core.models import ActivityLog
+    from django.utils.dateparse import parse_date
+
+    student, canonical_id, _ = _resolve_student(student_id)
+    if not student:
+        return JsonResponse({'success': False, 'error': 'Student not found.'}, status=404)
+
+    # 1. Medical, BNCC & Scout Fee
+    med_paid = request.POST.get('medical_scout_paid') == 'on' or request.POST.get('medical_scout_paid') == 'true'
+    med_receipt = (request.POST.get('medical_scout_receipt') or '').strip()
+    med_date_str = (request.POST.get('medical_scout_date') or '').strip()
+    med_date = parse_date(med_date_str) if med_date_str else None
+
+    if med_paid:
+        if not med_receipt:
+            med_receipt = f"MS-{student.student_id}"
+        if not med_date:
+            med_date = timezone.localdate()
+
+    student.medical_scout_paid = med_paid
+    student.medical_scout_amount = 1540.0 if med_paid else 0.0
+    student.medical_scout_receipt = med_receipt if med_paid else None
+    student.medical_scout_date = med_date if med_paid else None
+
+    # 2. Uniform Tailoring Service
+    uniform_choice = request.POST.get('uniform_choice', 'OPTED_OUT').strip()
+    is_female = (student.gender or '').strip().lower() in ['female', 'f']
+    default_uniform_amt = 5400.0 if is_female else 4400.0
+
+    if uniform_choice == 'OPTED_OUT':
+        student.uniform_status = 'OPTED_OUT'
+        student.uniform_amount = 0.0
+        student.uniform_paid_amount = 0.0
+        student.uniform_receipt = None
+        student.uniform_date = None
+        student.uniform_package = None
+        student.uniform_remarks = (request.POST.get('uniform_remarks') or '').strip() or 'Opted out - prepare uniform from outside within 7 days'
+    else:
+        try:
+            amt = float(request.POST.get('uniform_amount') or default_uniform_amt)
+        except (ValueError, TypeError):
+            amt = default_uniform_amt
+
+        try:
+            paid_amt = float(request.POST.get('uniform_paid_amount') or 0.0)
+        except (ValueError, TypeError):
+            paid_amt = 0.0
+
+        if uniform_choice == 'PAID':
+            paid_amt = amt
+        elif uniform_choice == 'DUE':
+            paid_amt = 0.0
+        elif uniform_choice == 'PARTIAL':
+            paid_amt = max(0.0, min(paid_amt, amt))
+
+        uni_receipt = (request.POST.get('uniform_receipt') or '').strip()
+        uni_date_str = (request.POST.get('uniform_date') or '').strip()
+        uni_date = parse_date(uni_date_str) if uni_date_str else None
+
+        if uniform_choice in ['PAID', 'PARTIAL', 'DUE'] and not uni_receipt:
+            uni_receipt = f"UF-{student.student_id}"
+        if uniform_choice in ['PAID', 'PARTIAL', 'DUE'] and not uni_date:
+            uni_date = timezone.localdate()
+
+        student.uniform_status = uniform_choice  # 'PAID', 'PARTIAL', or 'DUE'
+        student.uniform_amount = amt
+        student.uniform_paid_amount = paid_amt
+        student.uniform_receipt = uni_receipt
+        student.uniform_date = uni_date
+        student.uniform_package = f"{'Female' if is_female else 'Male'} Package ({'2 Sets Salwar-Kameez-Apron-Belt + Blazer' if is_female else '2 Sets Shirt-Pant + Blazer'})"
+        student.uniform_remarks = (request.POST.get('uniform_remarks') or '').strip()
+
+    student.save()
+
+    # Log in ActivityLog for Timeline integration
+    log_parts = []
+    if student.medical_scout_paid:
+        log_parts.append(f"Medical/Scout: Paid ৳1,540 (Receipt: {student.medical_scout_receipt or 'N/A'})")
+    else:
+        log_parts.append("Medical/Scout: Unpaid")
+
+    if student.uniform_status == 'PAID':
+        log_parts.append(f"Uniform: Paid ৳{student.uniform_paid_amount:.0f} (Receipt: {student.uniform_receipt or 'N/A'})")
+    elif student.uniform_status == 'PARTIAL':
+        due = max(0.0, student.uniform_amount - student.uniform_paid_amount)
+        log_parts.append(f"Uniform: Partial Paid ৳{student.uniform_paid_amount:.0f}, Due ৳{due:.0f} (Receipt: {student.uniform_receipt or 'N/A'})")
+    elif student.uniform_status == 'DUE':
+        log_parts.append(f"Uniform: Due ৳{student.uniform_amount:.0f}")
+    else:
+        log_parts.append("Uniform: Opted Out (Outside Tailoring)")
+
+    ActivityLog.objects.create(
+        user=request.user if request.user.is_authenticated else None,
+        action_type='UPDATE',
+        module='students',
+        object_id=student.student_id,
+        description=f"Additional Fees Updated — {', '.join(log_parts)}"
+    )
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Additional fee records updated successfully.',
+        'data': {
+            'medical_scout_paid': student.medical_scout_paid,
+            'medical_scout_amount': f"{student.medical_scout_amount:.0f}",
+            'medical_scout_receipt': student.medical_scout_receipt or '',
+            'medical_scout_date': student.medical_scout_date.strftime('%d %b %Y') if student.medical_scout_date else '',
+            'uniform_status': student.uniform_status,
+            'uniform_amount': f"{student.uniform_amount:.0f}",
+            'uniform_paid_amount': f"{student.uniform_paid_amount:.0f}",
+            'uniform_due_amount': f"{max(0.0, student.uniform_amount - student.uniform_paid_amount):.0f}",
+            'uniform_receipt': student.uniform_receipt or '',
+            'uniform_date': student.uniform_date.strftime('%d %b %Y') if student.uniform_date else '',
+            'uniform_remarks': student.uniform_remarks or '',
+        }
+    })
+
+
+def _calc_additional_fees_stats(qs):
+    """Helper to aggregate Medical/Scout and Uniform fee metrics with gender breakdown."""
+    total_students = qs.count()
+
+    # Medical & Rover Scout Fee (৳1,540 each)
+    med_paid_qs = qs.filter(medical_scout_paid=True)
+    med_unpaid_qs = qs.filter(medical_scout_paid=False)
+
+    med_male_paid = med_paid_qs.filter(gender='Male').count()
+    med_male_unpaid = med_unpaid_qs.filter(gender='Male').count()
+    med_male_total = med_male_paid + med_male_unpaid
+
+    med_female_paid = med_paid_qs.filter(gender='Female').count()
+    med_female_unpaid = med_unpaid_qs.filter(gender='Female').count()
+    med_female_total = med_female_paid + med_female_unpaid
+
+    med_total_paid = med_paid_qs.count()
+    med_total_unpaid = med_unpaid_qs.count()
+
+    med_total_collected = med_total_paid * 1540.0
+    med_total_due = med_total_unpaid * 1540.0
+    med_grand_total = total_students * 1540.0
+    med_pct = round((med_total_paid / total_students * 100), 1) if total_students > 0 else 0.0
+
+    from django.db.models import F
+
+    # Uniform Service
+    # Male: 4,400 | Female: 5,400
+    uni_paid_qs = qs.filter(uniform_status='PAID')
+    uni_partial_qs = qs.filter(uniform_status='PARTIAL')
+    uni_due_qs = qs.filter(uniform_status='DUE')
+    uni_out_qs = qs.filter(uniform_status='OPTED_OUT')
+
+    # Male breakdown
+    male_qs = qs.filter(gender='Male')
+    uni_male_opted_in = male_qs.filter(uniform_status__in=['PAID', 'PARTIAL', 'DUE']).count()
+    uni_male_paid = male_qs.filter(uniform_status='PAID').count()
+    uni_male_partial = male_qs.filter(uniform_status='PARTIAL').count()
+    uni_male_due = male_qs.filter(uniform_status='DUE').count()
+    uni_male_out = male_qs.filter(uniform_status='OPTED_OUT').count()
+    uni_male_collected = male_qs.filter(uniform_status__in=['PAID', 'PARTIAL']).aggregate(s=Sum('uniform_paid_amount'))['s'] or 0.0
+    uni_male_due_full_amt = uni_male_due * 4400.0
+    uni_male_partial_due = male_qs.filter(uniform_status='PARTIAL').aggregate(d=Sum(F('uniform_amount') - F('uniform_paid_amount')))['d'] or 0.0
+    uni_male_outstanding = uni_male_due_full_amt + uni_male_partial_due
+
+    # Female breakdown
+    female_qs = qs.filter(gender='Female')
+    uni_female_opted_in = female_qs.filter(uniform_status__in=['PAID', 'PARTIAL', 'DUE']).count()
+    uni_female_paid = female_qs.filter(uniform_status='PAID').count()
+    uni_female_partial = female_qs.filter(uniform_status='PARTIAL').count()
+    uni_female_due = female_qs.filter(uniform_status='DUE').count()
+    uni_female_out = female_qs.filter(uniform_status='OPTED_OUT').count()
+    uni_female_collected = female_qs.filter(uniform_status__in=['PAID', 'PARTIAL']).aggregate(s=Sum('uniform_paid_amount'))['s'] or 0.0
+    uni_female_due_full_amt = uni_female_due * 5400.0
+    uni_female_partial_due = female_qs.filter(uniform_status='PARTIAL').aggregate(d=Sum(F('uniform_amount') - F('uniform_paid_amount')))['d'] or 0.0
+    uni_female_outstanding = uni_female_due_full_amt + uni_female_partial_due
+
+    # Overall Uniform totals
+    uni_total_opted_in = uni_male_opted_in + uni_female_opted_in
+    uni_total_paid = uni_male_paid + uni_female_paid
+    uni_total_partial = uni_male_partial + uni_female_partial
+    uni_total_due = uni_male_due + uni_female_due
+    uni_total_out = uni_male_out + uni_female_out
+    uni_total_collected = uni_male_collected + uni_female_collected
+    uni_total_outstanding = uni_male_outstanding + uni_female_outstanding
+    uni_pct = round(((uni_total_paid + uni_total_partial) / uni_total_opted_in * 100), 1) if uni_total_opted_in > 0 else 0.0
+
+    # Combined Summary
+    grand_collected = med_total_collected + uni_total_collected
+    grand_due = med_total_due + uni_total_outstanding
+
+    return {
+        'total_students': total_students,
+        'medical': {
+            'total_paid': med_total_paid,
+            'total_unpaid': med_total_unpaid,
+            'total_collected': med_total_collected,
+            'total_due': med_total_due,
+            'grand_total': med_grand_total,
+            'collection_pct': med_pct,
+            'male_paid': med_male_paid,
+            'male_unpaid': med_male_unpaid,
+            'male_total': med_male_total,
+            'male_collected': med_male_paid * 1540.0,
+            'male_due': med_male_unpaid * 1540.0,
+            'female_paid': med_female_paid,
+            'female_unpaid': med_female_unpaid,
+            'female_total': med_female_total,
+            'female_collected': med_female_paid * 1540.0,
+            'female_due': med_female_unpaid * 1540.0,
+        },
+        'uniform': {
+            'total_opted_in': uni_total_opted_in,
+            'total_paid': uni_total_paid,
+            'total_partial': uni_total_partial,
+            'total_due': uni_total_due,
+            'total_out': uni_total_out,
+            'total_collected': uni_total_collected,
+            'total_due_amount': uni_total_outstanding,
+            'collection_pct': uni_pct,
+            'male_pkg_rate': 4400,
+            'male_opted_in': uni_male_opted_in,
+            'male_paid': uni_male_paid,
+            'male_partial': uni_male_partial,
+            'male_due': uni_male_due,
+            'male_out': uni_male_out,
+            'male_collected': uni_male_collected,
+            'male_partial_due': uni_male_partial_due,
+            'male_outstanding': uni_male_outstanding,
+            'female_pkg_rate': 5400,
+            'female_opted_in': uni_female_opted_in,
+            'female_paid': uni_female_paid,
+            'female_partial': uni_female_partial,
+            'female_due': uni_female_due,
+            'female_out': uni_female_out,
+            'female_collected': uni_female_collected,
+            'female_partial_due': uni_female_partial_due,
+            'female_outstanding': uni_female_outstanding,
+        },
+        'combined': {
+            'grand_collected': grand_collected,
+            'grand_due': grand_due,
+        }
+    }
+
+
+@require_access('dashboard', 'view')
+def api_additional_fees_stats(request):
+    """Returns JSON metrics for Medical/BNCC/Scout and Uniform fees filtered by batch."""
+    batch = request.GET.get('batch')
+    qs = Student.objects.all()
+    if batch and batch != 'all':
+        qs = qs.filter(batch=batch)
+
+    stats = _calc_additional_fees_stats(qs)
+    return JsonResponse(stats)
+
+
+@require_access('reports', 'view_analytics')
+def additional_fees_report(request):
+    """Dedicated Intelligence Report page in Report Hub for Medical/Scout and Uniform Fees."""
+    qs = Student.objects.all()
+
+    # Filter parameters
+    batch_filter = request.GET.get('batch', '').strip()
+    program_filter = request.GET.get('program', '').strip()
+    gender_filter = request.GET.get('gender', '').strip()
+    medical_filter = request.GET.get('medical_status', '').strip()
+    uniform_filter = request.GET.get('uniform_status', '').strip()
+
+    if batch_filter and batch_filter != 'all':
+        qs = qs.filter(batch=batch_filter)
+    if program_filter:
+        qs = qs.filter(program=program_filter)
+    if gender_filter:
+        qs = qs.filter(gender=gender_filter)
+    if medical_filter == 'PAID':
+        qs = qs.filter(medical_scout_paid=True)
+    elif medical_filter == 'UNPAID':
+        qs = qs.filter(medical_scout_paid=False)
+    if uniform_filter:
+        qs = qs.filter(uniform_status=uniform_filter)
+
+    # Calculate metrics on the filtered dataset
+    metrics = _calc_additional_fees_stats(qs)
+
+    # Dropdown choices
+    all_batches = Student.objects.exclude(batch=None).exclude(batch='').values_list('batch', flat=True).distinct().order_by('-batch')
+    all_programs = Student.objects.exclude(program=None).exclude(program='').values_list('program', flat=True).distinct().order_by('program')
+
+    context = {
+        'students': qs.order_by('-created_at')[:500],  # initial 500 rows
+        'total_filtered': qs.count(),
+        'metrics': metrics,
+        'all_batches': all_batches,
+        'all_programs': all_programs,
+        'selected_batch': batch_filter,
+        'selected_program': program_filter,
+        'selected_gender': gender_filter,
+        'selected_medical': medical_filter,
+        'selected_uniform': uniform_filter,
+    }
+    return render(request, 'students/reports/additional_fees_report.html', context)
+
+
+@require_access('reports', 'export_data')
+def export_additional_fees(request):
+    """Exports additional fees audit report to Excel (.xlsx)."""
+    import io
+    from django.http import HttpResponse
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    qs = Student.objects.all()
+    batch_filter = request.GET.get('batch', '').strip()
+    program_filter = request.GET.get('program', '').strip()
+    gender_filter = request.GET.get('gender', '').strip()
+    medical_filter = request.GET.get('medical_status', '').strip()
+    uniform_filter = request.GET.get('uniform_status', '').strip()
+
+    if batch_filter and batch_filter != 'all':
+        qs = qs.filter(batch=batch_filter)
+    if program_filter:
+        qs = qs.filter(program=program_filter)
+    if gender_filter:
+        qs = qs.filter(gender=gender_filter)
+    if medical_filter == 'PAID':
+        qs = qs.filter(medical_scout_paid=True)
+    elif medical_filter == 'UNPAID':
+        qs = qs.filter(medical_scout_paid=False)
+    if uniform_filter:
+        qs = qs.filter(uniform_status=uniform_filter)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Additional Fees Audit"
+
+    # Brand Title Header
+    ws.merge_cells('A1:K1')
+    ws['A1'] = "Bangladesh Army University of Science and Technology (BAUST)"
+    ws['A1'].font = Font(name='Calibri', size=14, bold=True, color='FFFFFF')
+    ws['A1'].fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid')
+    ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws.merge_cells('A2:K2')
+    ws['A2'] = f"Medical, BNCC, Rover Scout & Uniform Fees Audit Report — Generated {timezone.localdate().strftime('%d %B %Y')}"
+    ws['A2'].font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+    ws['A2'].fill = PatternFill(start_color='2563EB', end_color='2563EB', fill_type='solid')
+    ws['A2'].alignment = Alignment(horizontal='center', vertical='center')
+
+    headers = [
+        "SL", "Student ID", "Student Name", "Gender", "Program", "Batch",
+        "Medical Fee Status", "Medical Paid (Tk)", "Uniform Status",
+        "Uniform Paid (Tk)", "Uniform Remarks / Notes"
+    ]
+    ws.append([]) # Row 3 blank
+    ws.append(headers) # Row 4
+
+    header_font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='334155', end_color='334155', fill_type='solid')
+    thin_border = Border(
+        left=Side(style='thin', color='E2E8F0'),
+        right=Side(style='thin', color='E2E8F0'),
+        top=Side(style='thin', color='E2E8F0'),
+        bottom=Side(style='thin', color='E2E8F0')
+    )
+
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=4, column=col_num)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+    row_idx = 5
+    for idx, s in enumerate(qs.order_by('batch', 'program', 'student_id'), start=1):
+        med_status = "Paid" if s.medical_scout_paid else "Unpaid"
+        med_amt = 1540 if s.medical_scout_paid else 0
+        uni_status = dict(Student._meta.get_field('uniform_status').choices).get(s.uniform_status, s.uniform_status)
+        uni_amt = s.uniform_paid_amount if s.uniform_status in ['PAID', 'PARTIAL'] else 0
+
+        row = [
+            idx, s.student_id, s.student_name, s.gender or 'N/A', s.program or '', s.batch or '',
+            med_status, med_amt, uni_status, uni_amt, s.uniform_remarks or ''
+        ]
+        ws.append(row)
+        for col_num in range(1, len(row) + 1):
+            cell = ws.cell(row=row_idx, column=col_num)
+            cell.border = thin_border
+            cell.font = Font(name='Calibri', size=10)
+            if col_num in [1, 4, 6, 7, 9]:
+                cell.alignment = Alignment(horizontal='center')
+            elif col_num in [8, 10]:
+                cell.alignment = Alignment(horizontal='right')
+                cell.number_format = '#,##0'
+        row_idx += 1
+
+    # Auto-fit columns
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = min(max(max_len + 3, 11), 40)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"BAUST_Additional_Fees_Report_{timezone.localdate().strftime('%Y%m%d')}.xlsx"
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+def _number_to_words_bdt(amount):
+    """Converts a positive numeric amount into English words for money receipts."""
+    try:
+        n = int(round(float(amount)))
+    except (ValueError, TypeError):
+        return "Zero Taka Only"
+    if n <= 0:
+        return "Zero Taka Only"
+
+    units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+             "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"]
+    tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+
+    def _convert_chunk(num):
+        res = []
+        if num >= 100:
+            res.append(units[num // 100] + " Hundred")
+            num %= 100
+        if num >= 20:
+            res.append(tens[num // 10])
+            num %= 10
+        if num > 0:
+            res.append(units[num])
+        return " ".join(res)
+
+    parts = []
+    crore = n // 10000000
+    n %= 10000000
+    lakh = n // 100000
+    n %= 100000
+    thousand = n // 1000
+    n %= 1000
+    remainder = n
+
+    if crore > 0:
+        parts.append(_convert_chunk(crore) + " Crore")
+    if lakh > 0:
+        parts.append(_convert_chunk(lakh) + " Lakh")
+    if thousand > 0:
+        parts.append(_convert_chunk(thousand) + " Thousand")
+    if remainder > 0:
+        parts.append(_convert_chunk(remainder))
+
+    return " ".join(parts).strip() + " Taka Only"
+
+
+@require_access('students', 'view_directory')
+def print_additional_fees_receipt(request, student_id):
+    """
+    Renders an official, printable Money Receipt & Payment Voucher for Additional Institutional Fees
+    (Medical, BNCC & Scout and Uniform Service) with auto-print capability.
+    """
+    from core.models import SystemSettings
+    student, canonical_id, was_legacy = _resolve_student(student_id)
+    if not student:
+        raise Http404("Student record not found.")
+
+    is_female = (student.gender or '').strip().lower() in ['female', 'f']
+    med_amount = 1540.0
+    med_paid_amt = 1540.0 if student.medical_scout_paid else 0.0
+
+    if student.uniform_status == 'PAID':
+        uni_assessed_amt = student.uniform_amount or (5400.0 if is_female else 4400.0)
+        uni_paid_amt = student.uniform_paid_amount or uni_assessed_amt
+    elif student.uniform_status == 'PARTIAL':
+        uni_assessed_amt = student.uniform_amount or (5400.0 if is_female else 4400.0)
+        uni_paid_amt = student.uniform_paid_amount or 0.0
+    elif student.uniform_status == 'DUE':
+        uni_assessed_amt = student.uniform_amount or (5400.0 if is_female else 4400.0)
+        uni_paid_amt = 0.0
+    else:  # OPTED_OUT
+        uni_assessed_amt = 0.0
+        uni_paid_amt = 0.0
+
+    total_assessed = med_amount + uni_assessed_amt
+    total_paid = med_paid_amt + uni_paid_amt
+    total_due = max(0.0, total_assessed - total_paid)
+
+    voucher_ref = student.medical_scout_receipt or student.uniform_receipt or f"MR-{student.student_id}"
+    issue_date = student.medical_scout_date or student.uniform_date or timezone.localdate()
+    sys_settings = SystemSettings.objects.first()
+
+    context = {
+        'student': student,
+        'is_female': is_female,
+        'voucher_ref': voucher_ref,
+        'issue_date': issue_date,
+        'med_amount': med_amount,
+        'med_paid_amt': med_paid_amt,
+        'uni_assessed_amt': uni_assessed_amt,
+        'uni_paid_amt': uni_paid_amt,
+        'total_assessed': total_assessed,
+        'total_paid': total_paid,
+        'total_due': total_due,
+        'amount_in_words': _number_to_words_bdt(total_paid),
+        'sys_settings': sys_settings,
+        'now': timezone.now(),
+    }
+
+    pdf_response = render_to_pdf('students/pdf/additional_fees_receipt.html', context, request=request)
+    if pdf_response:
+        pdf_response['Content-Disposition'] = f'inline; filename="Fee_Receipt_{student.student_id}.pdf"'
+        return pdf_response
+    return HttpResponse("Error generating Fee Receipt PDF", status=500)
+
+
 

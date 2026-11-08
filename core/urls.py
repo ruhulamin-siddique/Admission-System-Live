@@ -7,6 +7,7 @@ urlpatterns = [
 
     # Security Management
     path('security/roles/', views.role_management, name='role_management'),
+    path('security/roles/users/', views.role_users_partial, name='role_users_partial'),
     path('security/users/', views.user_management, name='user_management'),
     
     # User Actions (CRUD)
@@ -20,6 +21,15 @@ urlpatterns = [
     path('security/user/delete/<int:user_id>/', views.user_delete, name='user_delete'),
 
     path('security/settings/', views.system_settings, name='system_settings'),
+    path('security/sms-dashboard/', views.sms_dashboard, name='sms_dashboard'),
+    path('security/sms/activate/<int:profile_id>/', views.sms_activate_profile, name='sms_activate_profile'),
+    path('security/sms/save/', views.sms_save_profile, name='sms_save_profile'),
+    path('security/sms/delete/<int:profile_id>/', views.sms_delete_profile, name='sms_delete_profile'),
+    path('security/sms/balance/<int:profile_id>/', views.sms_get_balance_api, name='sms_get_balance_api'),
+    path('security/sms/send-test/', views.sms_send_test_api, name='sms_send_test_api'),
+    path('security/sms/export-csv/', views.sms_export_report_csv, name='sms_export_report_csv'),
+    path('security/sms/export-all/', views.sms_export_profiles_json, name='sms_export_profiles_json'),
+    path('security/sms/import-all/', views.sms_import_profiles_json, name='sms_import_profiles_json'),
     path('security/audit-logs/', views.audit_logs, name='audit_logs'),
     path('security/audit-logs/export/', views.export_audit_logs, name='export_audit_logs'),
     path('security/toggle-theme/', views.toggle_theme, name='toggle_theme'),

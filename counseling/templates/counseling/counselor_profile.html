@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Psychologist Profile" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+{% endblock %}
+
+{% block page_title %}
+  <i class="fas fa-user-md mr-2 text-primary"></i>{% trans "Counselor Chamber & Consultation Profile" %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title"><i class="fas fa-user-edit text-primary"></i> {% trans "Chamber & Availability Profile" %}</h3>
+      </div>
+      <div class="card-body p-4">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold">{{ form.designation.label }}</label>
+              {{ form.designation }}
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold">{{ form.license_number.label }}</label>
+              {{ form.license_number }}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold">{{ form.room_number.label }}</label>
+              {{ form.room_number }}
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold">{{ form.contact_number.label }}</label>
+              {{ form.contact_number }}
+            </div>
+          </div>
+
+          <div class="custom-control custom-checkbox mb-3 p-2 bg-light rounded">
+            {{ form.is_active_counselor }}
+            <label class="custom-control-label font-weight-bold" for="{{ form.is_active_counselor.id_for_label }}">
+              {{ form.is_active_counselor.label }}
+            </label>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-bold">{{ form.weekly_slots_json.label }}</label>
+            {{ form.weekly_slots_json }}
+            <small class="form-text text-muted">
+              {% trans "Define weekly consultation slots in JSON format by weekday. If left empty, default office hours (Sun–Thu 9:00 AM–3:50 PM) will be used automatically." %}
+            </small>
+          </div>
+
+          <div class="form-group mb-4">
+            <label class="font-weight-bold">{{ form.bio.label }}</label>
+            {{ form.bio }}
+          </div>
+
+          <div class="border-top pt-3 text-right">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="fas fa-save mr-1"></i> {% trans "Save Profile" %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

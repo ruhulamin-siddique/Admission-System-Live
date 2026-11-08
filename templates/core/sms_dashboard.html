@@ -1,0 +1,846 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SMS Gateway & Module Reporting Hub - BAUST{% endblock %}
+
+{% block page_title %}<i class="fas fa-sms text-primary mr-2"></i>SMS Gateway & Period Reporting Hub{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'sms_export_profiles_json' %}" class="btn btn-outline-secondary shadow-sm" title="Export all SMS profiles to JSON">
+    <i class="fas fa-file-export mr-1"></i> Export JSON
+</a>
+<button type="button" class="btn btn-outline-info shadow-sm" data-toggle="modal" data-target="#importProfilesModal" title="Import SMS profiles from JSON file">
+    <i class="fas fa-file-import mr-1"></i> Import JSON
+</button>
+<button type="button" class="btn btn-outline-primary shadow-sm" data-toggle="modal" data-target="#testSmsModal">
+    <i class="fas fa-paper-plane mr-1"></i> Send Test SMS
+</button>
+<button type="button" class="btn btn-primary shadow-sm" data-toggle="modal" data-target="#profileModal" onclick="resetProfileModal()">
+    <i class="fas fa-plus-circle mr-1"></i> Add Gateway Profile
+</button>
+{% endblock %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show shadow-sm mb-3" role="alert">
+                    <i class="fas fa-info-circle mr-2"></i>{{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- DYNAMIC DASHBOARD TABS -->
+        <ul class="nav nav-pills nav-fill mb-4 shadow-sm p-1 bg-white rounded-lg border" id="smsDashboardTabs" role="tablist" style="border-radius: 10px;">
+            <li class="nav-item">
+                <a class="nav-link active font-weight-bold" id="profiles-tab" data-toggle="pill" href="#profiles-pane" role="tab" aria-controls="profiles-pane" aria-selected="true">
+                    <i class="fas fa-network-wired mr-2 text-primary"></i>Gateway Profiles
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold" id="analytics-tab" data-toggle="pill" href="#analytics-pane" role="tab" aria-controls="analytics-pane" aria-selected="false">
+                    <i class="fas fa-chart-pie mr-2 text-info"></i>Reporting & Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold" id="logs-tab" data-toggle="pill" href="#logs-pane" role="tab" aria-controls="logs-pane" aria-selected="false">
+                    <i class="fas fa-list-alt mr-2 text-success"></i>Outbound SMS Logs
+                </a>
+            </li>
+        </ul>
+
+        <!-- GLOBALLY SHARED FILTER PANEL (Dynamically hidden on Profiles tab) -->
+        <div id="filterCard" class="card card-outline card-secondary shadow-sm mb-4" style="border-radius: 12px; {% if active_tab == 'profiles' %}display: none;{% endif %}">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title m-0 font-weight-bold text-dark">
+                    <i class="fas fa-filter text-secondary mr-2"></i>Period & Module Filters
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{% url 'sms_dashboard' %}" id="filterForm">
+                    <input type="hidden" name="tab" id="activeTabInput" value="{{ active_tab }}">
+                    <div class="row align-items-end">
+                        <!-- Presets -->
+                        <div class="col-md-12 mb-3">
+                            <label class="small font-weight-bold text-uppercase text-muted mr-2">Quick Presets:</label>
+                            <a href="{% url 'sms_dashboard' %}?preset=today&tab={{ active_tab }}" class="preset-link btn btn-xs btn-outline-secondary {% if preset == 'today' %}active{% endif %}">Today</a>
+                            <a href="{% url 'sms_dashboard' %}?preset=yesterday&tab={{ active_tab }}" class="preset-link btn btn-xs btn-outline-secondary {% if preset == 'yesterday' %}active{% endif %}">Yesterday</a>
+                            <a href="{% url 'sms_dashboard' %}?preset=7days&tab={{ active_tab }}" class="preset-link btn btn-xs btn-outline-secondary {% if preset == '7days' %}active{% endif %}">Last 7 Days</a>
+                            <a href="{% url 'sms_dashboard' %}?preset=this_month&tab={{ active_tab }}" class="preset-link btn btn-xs btn-outline-secondary {% if preset == 'this_month' %}active{% endif %}">This Month</a>
+                            <a href="{% url 'sms_dashboard' %}?tab={{ active_tab }}" class="preset-link btn btn-xs btn-outline-danger">Reset</a>
+                        </div>
+
+                        <!-- Date Range -->
+                        <div class="col-md-2 col-sm-6 mb-3">
+                            <label class="small font-weight-bold text-uppercase">From Date</label>
+                            <input type="date" name="from_date" class="form-control form-control-sm" value="{{ from_date }}">
+                        </div>
+                        <div class="col-md-2 col-sm-6 mb-3">
+                            <label class="small font-weight-bold text-uppercase">To Date</label>
+                            <input type="date" name="to_date" class="form-control form-control-sm" value="{{ to_date }}">
+                        </div>
+
+                        <!-- Module Filter -->
+                        <div class="col-md-2 col-sm-6 mb-3">
+                            <label class="small font-weight-bold text-uppercase">Module</label>
+                            <select name="module" class="form-control form-control-sm">
+                                <option value="">-- All Modules --</option>
+                                <option value="ADMISSION" {% if module_filter == 'ADMISSION' %}selected{% endif %}>Admission Module</option>
+                                <option value="COE" {% if module_filter == 'COE' %}selected{% endif %}>Controller of Exams (CoE)</option>
+                                <option value="PUBLIC_RELATIONS" {% if module_filter == 'PUBLIC_RELATIONS' %}selected{% endif %}>Public Relations</option>
+                                <option value="ICT_WING" {% if module_filter == 'ICT_WING' %}selected{% endif %}>ICT Wing</option>
+                                <option value="EXAM_BILLING" {% if module_filter == 'EXAM_BILLING' %}selected{% endif %}>Exam Billing</option>
+                                <option value="SYSTEM" {% if module_filter == 'SYSTEM' %}selected{% endif %}>System / Security</option>
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="col-md-2 col-sm-6 mb-3">
+                            <label class="small font-weight-bold text-uppercase">Status</label>
+                            <select name="status" class="form-control form-control-sm">
+                                <option value="">-- All Status --</option>
+                                <option value="Delivered" {% if status_filter == 'Delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="Failed" {% if status_filter == 'Failed' %}selected{% endif %}>Failed</option>
+                            </select>
+                        </div>
+
+                        <!-- Search Box -->
+                        <div class="col-md-2 col-sm-6 mb-3">
+                            <label class="small font-weight-bold text-uppercase">Search Keyword</label>
+                            <input type="text" name="q" class="form-control form-control-sm" value="{{ search_query }}" placeholder="Phone, ID, Name...">
+                        </div>
+
+                        <!-- Submit & Export -->
+                        <div class="col-md-2 col-sm-6 mb-3 text-right">
+                            <button type="submit" class="btn btn-sm btn-primary btn-block mb-1">
+                                <i class="fas fa-search mr-1"></i> Apply Filter
+                            </button>
+                            <a href="{% url 'sms_export_report_csv' %}?from_date={{ from_date }}&to_date={{ to_date }}&module={{ module_filter }}&status={{ status_filter }}&q={{ search_query }}" class="btn btn-sm btn-outline-success btn-block">
+                                <i class="fas fa-file-excel mr-1"></i> Export CSV
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="tab-content" id="smsDashboardTabContent">
+            <!-- ==================== TAB 1: GATEWAY PROFILES ==================== -->
+            <div class="tab-pane fade {% if active_tab == 'profiles' %}show active{% endif %}" id="profiles-pane" role="tabpanel" aria-labelledby="profiles-tab">
+                <!-- 2. SMS GATEWAY PROFILES HUB (GRID OF CARDS) -->
+                <div class="card card-outline card-primary shadow-sm mb-4" style="border-radius: 12px;">
+                    <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
+                        <h5 class="card-title m-0 font-weight-bold text-dark">
+                            <i class="fas fa-network-wired text-primary mr-2"></i>SMS Gateway Profiles
+                        </h5>
+                        <span class="badge badge-soft-info p-2 font-weight-normal">
+                            <i class="fas fa-info-circle mr-1"></i> Active Profile handles all outbound SMS
+                        </span>
+                    </div>
+                    <div class="card-body bg-light">
+                        <div class="row">
+                            {% for p in profiles %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 shadow-sm border-0 {% if p.is_active %}border-left-active{% endif %}" style="border-radius: 10px; border-left: 5px solid {% if p.is_active %}#28a745{% else %}#6c757d{% endif %};">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 class="font-weight-bold mb-0 text-dark">{{ p.profile_name }}</h5>
+                                            {% if p.is_active %}
+                                                <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> ACTIVE</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary px-2 py-1">INACTIVE</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-globe mr-1"></i> <code>{{ p.api_url|truncatechars:35 }}</code>
+                                        </p>
+                                        <div class="mb-3">
+                                            <span class="badge badge-light border"><i class="fas fa-code-branch mr-1"></i> {{ p.http_method }}</span>
+                                            <span class="badge badge-light border"><i class="fas fa-key mr-1"></i> {{ p.get_auth_type_display }}</span>
+                                        </div>
+
+                                        <!-- Balance Indicator -->
+                                        <div class="alert alert-light border small p-2 mb-3 d-flex justify-content-between align-items-center" id="balanceBox-{{ p.id }}">
+                                            <span><i class="fas fa-wallet text-info mr-1"></i> Balance: <strong id="balanceVal-{{ p.id }}">Click check</strong></span>
+                                            {% if p.balance_url %}
+                                                <button type="button" class="btn btn-xs btn-outline-info" onclick="checkBalance({{ p.id }})">
+                                                    <i class="fas fa-sync-alt"></i> Check
+                                                </button>
+                                            {% else %}
+                                                <span class="text-muted small">No Balance URL</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+                                            {% if not p.is_active %}
+                                                <a href="{% url 'sms_activate_profile' p.id %}" class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-power-off mr-1"></i> Set Active
+                                                </a>
+                                            {% else %}
+                                                <span class="text-success font-weight-bold small"><i class="fas fa-circle text-success mr-1"></i> Currently Active</span>
+                                            {% endif %}
+
+                                            <div>
+                                                <button type="button" class="btn btn-sm btn-outline-primary mr-1" title="Test SMS" onclick="openTestModal({{ p.id }}, '{{ p.profile_name|escapejs }}')">
+                                                    <i class="fas fa-vial"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary mr-1" title="Edit Profile" onclick="editProfile({{ p.id }}, '{{ p.profile_name|escapejs }}', '{{ p.api_url|escapejs }}', '{{ p.auth_type|escapejs }}', '{{ p.http_method|escapejs }}', '{{ p.api_key|escapejs }}', '{{ p.sender_id|escapejs }}', '{{ p.number_param|escapejs }}', '{{ p.message_param|escapejs }}', '{{ p.sender_param|escapejs }}', '{{ p.user_id|escapejs }}', '{{ p.user_id_param|escapejs }}', '{{ p.password|escapejs }}', '{{ p.password_param|escapejs }}', '{{ p.extra_params|escapejs }}', '{{ p.balance_url|escapejs }}', {{ p.is_active|yesno:'true,false' }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <a href="{% url 'sms_delete_profile' p.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete profile {{ p.profile_name }}?');" title="Delete Profile">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-12 text-center py-4">
+                                <p class="text-muted mb-0">No SMS Gateway profiles configured yet. Click <strong>Add Gateway Profile</strong> above to get started.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== TAB 2: REPORTING & ANALYTICS ==================== -->
+            <div class="tab-pane fade {% if active_tab == 'analytics' %}show active{% endif %}" id="analytics-pane" role="tabpanel" aria-labelledby="analytics-tab">
+                <!-- 1. SUMMARY STATS CARDS FOR SELECTED PERIOD -->
+                <div class="row mb-4">
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-gradient-info shadow-sm rounded-lg">
+                            <div class="inner">
+                                <h3>{{ total_sent }}</h3>
+                                <p class="font-weight-bold">Total SMS Sent (Period)</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-gradient-success shadow-sm rounded-lg">
+                            <div class="inner">
+                                <h3>{{ delivered_count }}</h3>
+                                <p class="font-weight-bold">Delivered SMS</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-gradient-danger shadow-sm rounded-lg">
+                            <div class="inner">
+                                <h3>{{ failed_count }}</h3>
+                                <p class="font-weight-bold">Failed Attempts</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-gradient-primary shadow-sm rounded-lg">
+                            <div class="inner">
+                                <h3>{{ success_rate }}<sup style="font-size: 20px">%</sup></h3>
+                                <p class="font-weight-bold">Delivery Success Rate</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. MODULE & USE-CASE BREAKDOWN CARDS -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 shadow-sm border-0" style="border-radius: 12px;">
+                            <div class="card-header bg-white py-3">
+                                <h6 class="font-weight-bold m-0 text-dark">
+                                    <i class="fas fa-cubes text-info mr-2"></i>Module-Wise Summary (Period: {{ from_date }} to {{ to_date }})
+                                </h6>
+                            </div>
+                            <div class="card-body p-0 table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Module</th>
+                                            <th class="text-center">Total Sent</th>
+                                            <th class="text-center">Delivered</th>
+                                            <th class="text-center">Failed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for mb in module_breakdown %}
+                                        <tr>
+                                            <td class="font-weight-bold">{{ mb.module_name }}</td>
+                                            <td class="text-center"><span class="badge badge-info px-2 py-1">{{ mb.total }}</span></td>
+                                            <td class="text-center"><span class="badge badge-success px-2 py-1">{{ mb.delivered }}</span></td>
+                                            <td class="text-center"><span class="badge badge-danger px-2 py-1">{{ mb.failed }}</span></td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-3">No SMS sent during this period.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 shadow-sm border-0" style="border-radius: 12px;">
+                            <div class="card-header bg-white py-3">
+                                <h6 class="font-weight-bold m-0 text-dark">
+                                    <i class="fas fa-tags text-warning mr-2"></i>Use-Case / Trigger Event Breakdown
+                                </h6>
+                            </div>
+                            <div class="card-body p-0 table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>Module</th>
+                                            <th>Use Case Event</th>
+                                            <th class="text-center">Count</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for uc in usecase_breakdown %}
+                                        <tr>
+                                            <td class="small text-muted">{{ uc.module_name }}</td>
+                                            <td class="font-weight-bold"><code>{{ uc.use_case_event }}</code></td>
+                                            <td class="text-center"><span class="badge badge-primary px-2 py-1">{{ uc.total }}</span></td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted py-3">No events logged in this period.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== TAB 3: OUTBOUND LOGS ==================== -->
+            <div class="tab-pane fade {% if active_tab == 'logs' %}show active{% endif %}" id="logs-pane" role="tabpanel" aria-labelledby="logs-tab">
+                <!-- 5. DETAILED RECIPIENT SMS AUDIT LOG TABLE -->
+                <div class="card card-outline card-dark shadow-sm" style="border-radius: 12px;">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title m-0 font-weight-bold text-dark">
+                            <i class="fas fa-list-alt text-primary mr-2"></i>Detailed Outbound SMS Log
+                        </h5>
+                        <span class="text-muted small">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries</span>
+                    </div>
+                    <div class="card-body p-0 table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Module</th>
+                                    <th>Use Case</th>
+                                    <th>Recipient</th>
+                                    <th>Mobile Number</th>
+                                    <th>Gateway Profile</th>
+                                    <th>Status</th>
+                                    <th>SMS Text Body</th>
+                                    <th class="text-center">Response</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in page_obj %}
+                                <tr>
+                                    <td class="small text-nowrap">{{ log.sent_at|date:"Y-m-d H:i:s" }}</td>
+                                    <td>
+                                        <span class="badge badge-soft-primary px-2 py-1">{{ log.module_name }}</span>
+                                    </td>
+                                    <td><code class="small">{{ log.use_case_event }}</code></td>
+                                    <td class="small font-weight-bold">
+                                        {{ log.recipient_name|default:"—" }}
+                                        {% if log.student_id %}<br><span class="text-muted font-weight-normal">ID: {{ log.student_id }}</span>{% endif %}
+                                    </td>
+                                    <td class="font-weight-bold text-nowrap">{{ log.recipient_contact }}</td>
+                                    <td class="small text-muted">{{ log.api_profile_name|default:"Legacy" }}</td>
+                                    <td>
+                                        {% if log.status == 'Delivered' %}
+                                            <span class="badge badge-success px-2 py-1"><i class="fas fa-check mr-1"></i> Delivered</span>
+                                        {% else %}
+                                            <span class="badge badge-danger px-2 py-1"><i class="fas fa-times mr-1"></i> {{ log.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-wrap" style="max-width: 250px;">{{ log.message_body }}</td>
+                                    <td class="text-center">
+                                        {% if log.api_response %}
+                                            <button type="button" class="btn btn-xs btn-outline-info" onclick="showResponseModal('{{ log.api_response|escapejs }}')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4 text-muted">
+                                        <i class="fas fa-inbox fa-2x mb-2 text-secondary d-block"></i>
+                                        No SMS logs found matching the selected filters.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if page_obj.has_other_pages %}
+                    <div class="card-footer bg-white py-3">
+                        <ul class="pagination pagination-sm m-0 justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item"><a class="page-link" href="?page=1&from_date={{ from_date }}&to_date={{ to_date }}&module={{ module_filter }}&status={{ status_filter }}&q={{ search_query }}&tab=logs">First</a></li>
+                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&from_date={{ from_date }}&to_date={{ to_date }}&module={{ module_filter }}&status={{ status_filter }}&q={{ search_query }}&tab=logs">Prev</a></li>
+                            {% endif %}
+
+                            <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&from_date={{ from_date }}&to_date={{ to_date }}&module={{ module_filter }}&status={{ status_filter }}&q={{ search_query }}&tab=logs">Next</a></li>
+                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&from_date={{ from_date }}&to_date={{ to_date }}&module={{ module_filter }}&status={{ status_filter }}&q={{ search_query }}&tab=logs">Last</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== MODAL 1: ADD / EDIT PROFILE MODAL ==================== -->
+<div class="modal fade" id="profileModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content style-radius">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="profileModalTitle"><i class="fas fa-network-wired mr-2"></i>Add SMS Gateway Profile</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'sms_save_profile' %}" id="profileForm">
+                {% csrf_token %}
+                <input type="hidden" name="profile_id" id="modal_profile_id" value="">
+                <div class="modal-body">
+                    
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold text-uppercase">Profile Name <span class="text-danger">*</span></label>
+                            <input type="text" name="profile_name" id="modal_profile_name" class="form-control" placeholder="e.g. BULK SMS BD" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold text-uppercase">HTTP Method <span class="text-danger">*</span></label>
+                            <select name="http_method" id="modal_http_method" class="form-control" required>
+                                <option value="GET">HTTP GET</option>
+                                <option value="POST">HTTP POST</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase">Gateway API Endpoint URL <span class="text-danger">*</span></label>
+                        <input type="url" name="api_url" id="modal_api_url" class="form-control" placeholder="http://bulksmsbd.net/api/smsapi" required>
+                    </div>
+
+                    <!-- CRITICAL: DYNAMIC AUTH TYPE SELECTION -->
+                    <div class="form-group bg-light p-3 border rounded mb-3">
+                        <label class="small font-weight-bold text-uppercase text-primary">Authentication Type <span class="text-danger">*</span></label>
+                        <select name="auth_type" id="authTypeSelect" class="form-control font-weight-bold" required>
+                            <option value="api_key">API Key / Token Based (e.g. AUTOMAS, BULK SMS BD)</option>
+                            <option value="user_pass">Username & Password Based (e.g. Durbar SMS)</option>
+                        </select>
+                    </div>
+
+                    <!-- API KEY FIELDS GROUP (SHOWN WHEN api_key SELECTED) -->
+                    <div class="api-key-group border-left pl-3 mb-3 border-info">
+                        <h6 class="font-weight-bold text-info"><i class="fas fa-key mr-1"></i> API Key Settings</h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="small font-weight-bold text-uppercase">API Key / Token <span class="text-danger">*</span></label>
+                                <input type="password" name="api_key" id="modal_api_key" class="form-control" placeholder="••••••••••••">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label class="small font-weight-bold text-uppercase">Sender ID / Masking</label>
+                                <input type="text" name="sender_id" id="modal_sender_id" class="form-control" placeholder="e.g. 8809617612975">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- USERNAME & PASSWORD FIELDS GROUP (SHOWN WHEN user_pass SELECTED) -->
+                    <div class="user-pass-group border-left pl-3 mb-3 border-warning" style="display: none;">
+                        <h6 class="font-weight-bold text-warning"><i class="fas fa-user-lock mr-1"></i> Username & Password Settings</h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="small font-weight-bold text-uppercase">User ID / Username <span class="text-danger">*</span></label>
+                                <input type="text" name="user_id" id="modal_user_id" class="form-control" placeholder="e.g. ruhulamin">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label class="small font-weight-bold text-uppercase">Password <span class="text-danger">*</span></label>
+                                <input type="password" name="password" id="modal_password" class="form-control" placeholder="••••••••••••">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="small font-weight-bold">User ID Param Key Name</label>
+                                <input type="text" name="user_id_param" id="modal_user_id_param" class="form-control" value="userId">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label class="small font-weight-bold">Password Param Key Name</label>
+                                <input type="text" name="password_param" id="modal_password_param" class="form-control" value="password">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PARAMETER MAPPINGS -->
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">Mobile Number Param Key</label>
+                            <input type="text" name="number_param" id="modal_number_param" class="form-control" value="number" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">Message Text Param Key</label>
+                            <input type="text" name="message_param" id="modal_message_param" class="form-control" value="message" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">Sender ID Param Key</label>
+                            <input type="text" name="sender_param" id="modal_sender_param" class="form-control" value="senderid">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase">Account Balance Check API URL (Optional)</label>
+                        <input type="url" name="balance_url" id="modal_balance_url" class="form-control" placeholder="http://bulksmsbd.net/api/getBalanceApi?api_key=...">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase">Extra Parameters (Optional)</label>
+                        <textarea name="extra_params" id="modal_extra_params" class="form-control" rows="2" placeholder="Key=Value lines for additional parameters"></textarea>
+                    </div>
+
+                    <div class="custom-control custom-switch mt-3">
+                        <input type="checkbox" class="custom-control-input" id="modal_is_active" name="is_active" value="1">
+                        <label class="custom-control-label font-weight-bold" for="modal_is_active">Set as Currently Active Profile</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODAL 2: ONE-CLICK TEST SMS MODAL ==================== -->
+<div class="modal fade" id="testSmsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content style-radius">
+            <div class="modal-header bg-gradient-info text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-paper-plane mr-2"></i>Send One-Click Test SMS</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="testSmsForm" onsubmit="executeTestSms(event)">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div id="testAlert" class="alert d-none"></div>
+
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase">Gateway Profile to Test</label>
+                        <select name="profile_id" id="test_profile_id" class="form-control font-weight-bold">
+                            {% for p in profiles %}
+                                <option value="{{ p.id }}" {% if p.is_active %}selected{% endif %}>
+                                    {{ p.profile_name }} ({% if p.is_active %}ACTIVE{% else %}INACTIVE{% endif %})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase">Target Mobile Number <span class="text-danger">*</span></label>
+                        <input type="text" name="number" id="test_number" class="form-control" placeholder="017XXXXXXXX" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase">Test Message Body</label>
+                        <textarea name="message" id="test_message" class="form-control" rows="3" required>BAUST Admission System: Test message sent successfully via SMS Gateway.</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-info font-weight-bold" id="btnTestSubmit">
+                        <i class="fas fa-paper-plane mr-1"></i> Send Test SMS Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODAL 3: API RESPONSE VIEW MODAL ==================== -->
+<div class="modal fade" id="responseModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content style-radius">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-code mr-2"></i>SMS Gateway API Response</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body bg-light">
+                <pre id="responseText" class="p-3 bg-dark text-success rounded mb-0" style="white-space: pre-wrap; font-size: 12px;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODAL 4: IMPORT PROFILES MODAL ==================== -->
+<div class="modal fade" id="importProfilesModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content style-radius">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-file-import mr-2"></i>Import SMS Gateway Profiles</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{% url 'sms_import_profiles_json' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body bg-light">
+                    <div class="form-group">
+                        <label class="small font-weight-bold text-uppercase">Select Profile(s) JSON File <span class="text-danger">*</span></label>
+                        <div class="custom-file">
+                            <input type="file" name="profiles_json" class="custom-file-input" id="profilesJsonFile" accept=".json" required>
+                            <label class="custom-file-label" for="profilesJsonFile" id="profilesJsonFileLabel">Choose JSON file...</label>
+                        </div>
+                        <small class="form-text text-muted mt-2">
+                            Select a previously exported SMS Gateway profiles JSON file to import them.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-info font-weight-bold">
+                        <i class="fas fa-file-import mr-1"></i> Import Profiles
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- INLINE JAVASCRIPT FOR DYNAMIC UI TOGGLES & AJAX API CALLS -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dynamic Form Toggle for Auth Type
+    const authSelect = document.getElementById('authTypeSelect');
+    if (authSelect) {
+        authSelect.addEventListener('change', toggleAuthFields);
+        toggleAuthFields(); // initial state
+    }
+
+    // Custom file input label update
+    const fileInput = document.getElementById('profilesJsonFile');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'Choose JSON file...';
+            document.getElementById('profilesJsonFileLabel').innerText = fileName;
+        });
+    }
+
+    // Tab persistence logic
+    const urlParams = new URLSearchParams(window.location.search);
+    let activeTab = "{{ active_tab }}";
+    if (!activeTab || activeTab === "None" || activeTab === "") {
+        activeTab = urlParams.get('tab') || localStorage.getItem('sms_active_tab') || 'profiles';
+    }
+    
+    // Activate the saved tab
+    $(`#smsDashboardTabs a[href="#${activeTab}-pane"]`).tab('show');
+    
+    // Update hidden inputs, localStorage, and presets on tab change
+    $('#smsDashboardTabs a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
+        const target = $(e.target).attr("href").substring(1).replace('-pane', '');
+        localStorage.setItem('sms_active_tab', target);
+        
+        // Update form activeTabInput
+        const tabInput = document.getElementById('activeTabInput');
+        if (tabInput) {
+            tabInput.value = target;
+        }
+        
+        // Show/hide filter form depending on selected tab
+        if (target === 'profiles') {
+            $('#filterCard').slideUp(200);
+        } else {
+            $('#filterCard').slideDown(200);
+        }
+        
+        // Also update all preset link urls on the fly to match the active tab
+        const presetLinks = document.querySelectorAll('.preset-link');
+        presetLinks.forEach(link => {
+            const url = new URL(link.href, window.location.origin);
+            url.searchParams.set('tab', target);
+            link.href = url.pathname + url.search;
+        });
+    });
+});
+
+function toggleAuthFields() {
+    const authType = document.getElementById('authTypeSelect').value;
+    const apiKeyGroup = document.querySelector('.api-key-group');
+    const userPassGroup = document.querySelector('.user-pass-group');
+
+    if (authType === 'api_key') {
+        apiKeyGroup.style.display = 'block';
+        userPassGroup.style.display = 'none';
+        document.getElementById('modal_api_key').setAttribute('required', 'required');
+        document.getElementById('modal_user_id').removeAttribute('required');
+        document.getElementById('modal_password').removeAttribute('required');
+    } else if (authType === 'user_pass') {
+        apiKeyGroup.style.display = 'none';
+        userPassGroup.style.display = 'block';
+        document.getElementById('modal_api_key').removeAttribute('required');
+        document.getElementById('modal_user_id').setAttribute('required', 'required');
+        document.getElementById('modal_password').setAttribute('required', 'required');
+    }
+}
+
+function resetProfileModal() {
+    document.getElementById('profileForm').reset();
+    document.getElementById('modal_profile_id').value = '';
+    document.getElementById('profileModalTitle').innerHTML = '<i class="fas fa-network-wired mr-2"></i>Add SMS Gateway Profile';
+    toggleAuthFields();
+}
+
+function editProfile(id, name, url, auth_type, method, api_key, sender_id, num_param, msg_param, snd_param, user_id, user_param, pass, pass_param, extra, balance, is_active) {
+    document.getElementById('modal_profile_id').value = id;
+    document.getElementById('modal_profile_name').value = name;
+    document.getElementById('modal_api_url').value = url;
+    document.getElementById('authTypeSelect').value = auth_type;
+    document.getElementById('modal_http_method').value = method;
+    document.getElementById('modal_api_key').value = api_key;
+    document.getElementById('modal_sender_id').value = sender_id;
+    document.getElementById('modal_number_param').value = num_param;
+    document.getElementById('modal_message_param').value = msg_param;
+    document.getElementById('modal_sender_param').value = snd_param;
+    document.getElementById('modal_user_id').value = user_id;
+    document.getElementById('modal_user_id_param').value = user_param;
+    document.getElementById('modal_password').value = pass;
+    document.getElementById('modal_password_param').value = pass_param;
+    document.getElementById('modal_extra_params').value = extra;
+    document.getElementById('modal_balance_url').value = balance;
+    document.getElementById('modal_is_active').checked = is_active;
+
+    document.getElementById('profileModalTitle').innerHTML = '<i class="fas fa-edit mr-2"></i>Edit SMS Gateway Profile: ' + name;
+    toggleAuthFields();
+    $('#profileModal').modal('show');
+}
+
+function checkBalance(profileId) {
+    const valEl = document.getElementById('balanceVal-' + profileId);
+    valEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+
+    const url = "{% url 'sms_get_balance_api' 999999 %}".replace('999999', profileId);
+
+    fetch(url)
+        .then(async response => {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error('HTTP ' + response.status);
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                valEl.innerHTML = '<span class="text-success font-weight-bold">' + data.balance + '</span>';
+            } else {
+                valEl.innerHTML = '<span class="text-danger font-weight-bold">Error: ' + data.message + '</span>';
+            }
+        })
+        .catch(err => {
+            valEl.innerHTML = '<span class="text-danger">Failed to fetch (' + err.message + ')</span>';
+        });
+}
+
+function openTestModal(profileId, profileName) {
+    document.getElementById('test_profile_id').value = profileId;
+    $('#testSmsModal').modal('show');
+}
+
+function executeTestSms(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btnTestSubmit');
+    const alertEl = document.getElementById('testAlert');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sending...';
+    alertEl.className = 'alert alert-info';
+    alertEl.innerHTML = '<i class="fas fa-info-circle mr-1"></i> Dispatching test message...';
+    alertEl.classList.remove('d-none');
+
+    const formData = new FormData(document.getElementById('testSmsForm'));
+
+    fetch("{% url 'sms_send_test_api' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        body: formData
+    })
+    .then(async response => {
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            throw new Error('Server returned invalid response (HTTP ' + response.status + ').');
+        }
+    })
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i> Send Test SMS Now';
+        if (data.success) {
+            alertEl.className = 'alert alert-success';
+            alertEl.innerHTML = '<i class="fas fa-check-circle mr-1"></i> <strong>Success!</strong> ' + data.message + '<br><small>Response: ' + data.response + '</small>';
+        } else {
+            alertEl.className = 'alert alert-danger';
+            alertEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> <strong>Failed:</strong> ' + data.message;
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i> Send Test SMS Now';
+        alertEl.className = 'alert alert-danger';
+        alertEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> Request failed: ' + err.message;
+    });
+}
+
+function showResponseModal(text) {
+    document.getElementById('responseText').innerText = text;
+    $('#responseModal').modal('show');
+}
+</script>
+{% endblock %}

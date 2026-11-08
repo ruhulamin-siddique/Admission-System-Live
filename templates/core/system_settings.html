@@ -121,7 +121,7 @@
             </div>
         </div>
 
-        <!-- 4. Global SMS API Gateway -->
+        <!-- 4. Global SMS Gateway Link -->
         <div class="card card-outline card-success shadow-lg border-0" style="border-radius: 12px;">
             <div class="card-header bg-white">
                 <h3 class="card-title font-weight-bold">
@@ -129,46 +129,17 @@
                 </h3>
             </div>
             <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="institution_name" value="{{ settings.institution_name }}">
-                    <input type="hidden" name="theme_color" value="{{ settings.theme_color }}">
-                    
-                    <div class="custom-control custom-switch mb-4">
-                        <input type="checkbox" class="custom-control-input" id="smsActiveSwitch" name="sms_is_active" {% if settings.sms_is_active %}checked{% endif %}>
-                        <label class="custom-control-label font-weight-bold" for="smsActiveSwitch">Enable Automated Notifications <i class="fas fa-info-circle ml-1 text-info" data-toggle="tooltip" title="When enabled, the system will send live SMS for admissions and department changes."></i></label>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="small font-weight-bold text-uppercase">API Gateway URL</label>
-                        <input type="url" name="sms_api_url" class="form-control" value="{{ settings.sms_api_url|default:'' }}" placeholder="https://api.bulksmsbd.com/api/v3/sendsms">
-                    </div>
-
-                    <div class="row">
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="small font-weight-bold text-uppercase">API Key / Token</label>
-                                <input type="password" name="sms_api_key" class="form-control" value="{{ settings.sms_api_key|default:'' }}" placeholder="••••••••••••">
-                            </div>
+                <div class="alert alert-info border shadow-sm mb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="font-weight-bold mb-1"><i class="fas fa-sms mr-2"></i>Multi-Profile SMS Gateway & Period Reporting Hub</h6>
+                            <p class="small mb-0">SMS Gateways, active provider selection (<strong>AUTOMAS</strong>, <strong>BULK SMS BD</strong>, <strong>Durbar SMS</strong>), live balance checking, test SMS dispatch, and period reporting logs are now managed in the dedicated <strong>SMS Gateway Hub</strong>.</p>
                         </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label class="small font-weight-bold text-uppercase">Sender ID / Masking</label>
-                                <input type="text" name="sms_sender_id" class="form-control" value="{{ settings.sms_sender_id|default:'' }}" placeholder="e.g. BAUST">
-                            </div>
-                        </div>
+                        <a href="{% url 'sms_dashboard' %}" class="btn btn-sm btn-primary font-weight-bold ml-3 text-nowrap">
+                            <i class="fas fa-external-link-alt mr-1"></i> Open SMS Hub
+                        </a>
                     </div>
-
-                    <div class="alert alert-light border small mt-2">
-                        <i class="fas fa-info-circle mr-2 text-info"></i> Compatible with standard HTTP GET gateways. Use parameters: <code>api_key</code>, <code>senderid</code>, <code>number</code>, and <code>message</code>.
-                    </div>
-
-                    <div class="mt-4">
-                        <button type="submit" name="action_sms" value="1" class="btn btn-success btn-block shadow-sm font-weight-bold">
-                            <i class="fas fa-check-circle mr-2"></i> Update SMS Configuration
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
 

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -262,11 +263,15 @@
 
   <div class="register-container">
     <div class="header">
-      <div class="ict-logo-icon">
-        <i class="fas fa-network-wired"></i>
+      <div class="mb-3">
+        {% if sys_settings and sys_settings.logo_url %}
+          <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo" style="height: 64px; width: 64px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 3px; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);">
+        {% else %}
+          <img src="/media/branding/logo.png" onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}';" alt="BAUST Logo" style="height: 64px; width: 64px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 3px; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);">
+        {% endif %}
       </div>
       <h1 class="title">Device Registration</h1>
-      <p class="subtitle">Register your device's physical (MAC) address with the ICT Wing</p>
+      <p class="subtitle">Register your device's physical (MAC) address &bull; BAUST ICT Wing</p>
     </div>
 
     <form method="POST">
@@ -308,8 +313,19 @@
     </form>
   </div>
 
-  <div class="footer">
-    Developed with &hearts; by ICT Wing & Archive.
+  <div class="footer" style="text-align: center; margin-top: 24px;">
+    <div style="margin-bottom: 8px;">
+      <a href="{% url 'login' %}" style="color: #a5b4fc; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: color 0.2s;">
+        <i class="fas fa-arrow-left mr-1"></i> Back to Campus Connect / Login
+      </a>
+      <span style="color: rgba(255,255,255,0.2); margin: 0 8px;">&bull;</span>
+      <a href="{% url 'check_device_status' %}" style="color: #9ca3af; text-decoration: none; font-size: 0.85rem;">
+        <i class="fas fa-search mr-1"></i> Check Status
+      </a>
+    </div>
+    <div style="color: #6b7280; font-size: 0.78rem;">
+      Developed with &hearts; by ICT Wing & Archive &bull; BAUST
+    </div>
   </div>
 
   <script>

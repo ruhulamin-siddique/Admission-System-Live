@@ -1,314 +1,703 @@
 {% extends 'base.html' %}
 {% load core_tags %}
 
-{% block title %}Cancellation Hub | Bangladesh Army University of Science and Technology{% endblock %}
+{% block title %}Admission Cancellation & Status Hub | BAUST{% endblock %}
 {% block page_title %}Admission Cancellation & Status Hub{% endblock %}
 
 {% block extra_css %}
 <style>
-    .stat-card { border: none; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    .search-box-pill { border-radius: 50px; border: 2px solid #dee2e6; padding: 1.25rem 2rem; transition: all 0.3s; }
-    .search-box-pill:focus { border-color: #dc3545; box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.1); }
-    
-    .filter-card { border-radius: 12px; border: 1px solid var(--border-color); background: #f8fafc; }
-    .dark-mode .filter-card { background: #1e293b; border-color: #334155; }
-    
-    .nav-tabs-premium { border-bottom: 2px solid #e2e8f0; }
-    .nav-tabs-premium .nav-link { font-weight: 700; color: #64748b; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; padding: 12px 20px; transition: all 0.2s; }
-    .nav-tabs-premium .nav-link:hover { color: #dc3545; }
-    .nav-tabs-premium .nav-link.active { color: #dc3545; border-bottom-color: #dc3545; background: transparent; }
-    
-    .dark-mode .nav-tabs-premium { border-bottom-color: #334155; }
-    .dark-mode .nav-tabs-premium .nav-link.active { color: #f43f5e; border-bottom-color: #f43f5e; }
+    /* Modern Dashboard Styling */
+    .kpi-card {
+        border: none;
+        border-radius: 16px;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        overflow: hidden;
+        position: relative;
+    }
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    .kpi-card .kpi-icon-bg {
+        position: absolute;
+        right: -10px;
+        bottom: -15px;
+        font-size: 5rem;
+        opacity: 0.12;
+        pointer-events: none;
+    }
+    .kpi-card.kpi-red {
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        color: #fff;
+    }
+    .kpi-card.kpi-amber {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: #fff;
+    }
+    .kpi-card.kpi-indigo {
+        background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+        color: #fff;
+    }
+    .kpi-card.kpi-emerald {
+        background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+        color: #fff;
+    }
+
+    /* Filter Ribbon */
+    .filter-ribbon {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px 20px;
+    }
+    .chip-btn {
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .chip-btn:hover, .chip-btn.active {
+        background: #0f172a;
+        color: #fff;
+        border-color: #0f172a;
+    }
+
+    /* Action buttons toolbar */
+    .action-toolbar-btn {
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 9px 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all 0.2s;
+    }
+
+    /* Search Input */
+    .search-input-sleek {
+        border-radius: 10px;
+        border: 1.5px solid #cbd5e1;
+        padding: 8px 14px;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+    }
+    .search-input-sleek:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+    }
+
+    /* Radio Nature Selection Cards */
+    .cancel-type-label {
+        display: block;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .cancel-type-radio:checked + .cancel-type-label.permanent-card {
+        border-color: #ef4444;
+        background: rgba(239, 68, 68, 0.05);
+    }
+    .cancel-type-radio:checked + .cancel-type-label.temporary-card {
+        border-color: #f59e0b;
+        background: rgba(245, 158, 11, 0.05);
+    }
+    .cancel-type-radio {
+        display: none;
+    }
+
+    /* Search Result Items */
+    .student-search-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #fff;
+    }
+    .student-search-item:hover {
+        border-color: #ef4444;
+        background: #fef2f2;
+        transform: translateX(3px);
+    }
 
     /* Dark Mode Overrides */
+    body.dark-mode .filter-ribbon { background: #1e293b; border-color: #334155; }
     body.dark-mode .card { background: #1e293b; border-color: #334155; color: #f8fafc; }
-    body.dark-mode .search-box-pill { background: #0f172a; border-color: #334155; color: #f8fafc; }
-    body.dark-mode .modal-content { background: #1e293b; color: #f8fafc; }
-    body.dark-mode .modal-footer, 
-    body.dark-mode .bg-light { background: #0f172a !important; color: #cbd5e1 !important; }
-    body.dark-mode .form-control { background: #0f172a; border-color: #334155; color: #f8fafc; }
-    body.dark-mode .text-dark { color: #f8fafc !important; }
-    body.dark-mode .text-muted { color: #94a3b8 !important; }
+    body.dark-mode .form-control, body.dark-mode .search-input-sleek { background: #0f172a; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .student-search-item { background: #0f172a; border-color: #334155; color: #f8fafc; }
+    body.dark-mode .cancel-type-label { border-color: #334155; }
+    body.dark-mode .chip-btn { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+    body.dark-mode .chip-btn:hover, body.dark-mode .chip-btn.active { background: #ef4444; color: #fff; border-color: #ef4444; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    
-    <!-- Top Stat Dashboard Row -->
+<div class="container-fluid py-2">
+
+    <!-- Top Executive Header & Quick Actions -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4" style="gap: 12px;">
+        <div>
+            <h3 class="font-weight-black text-dark mb-1">
+                <i class="fas fa-user-slash text-danger mr-2"></i> Admission Cancellation & Status Hub
+            </h3>
+            <p class="text-muted mb-0 small">
+                Manage student admission retractions, temporary suspensions, and generate official BAUST administrative notices & rosters.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+            {% has_access 'students' 'export_cancellations' as can_export %}
+            {% if can_export %}
+            <a href="{% url 'cancellation_document_list' %}{% if document_querystring %}?{{ document_querystring }}{% endif %}" 
+               target="_blank" class="btn btn-outline-dark action-toolbar-btn shadow-xs bg-white">
+                <i class="fas fa-print text-primary"></i> Print Cancelled List
+            </a>
+            <a href="{% url 'cancellation_document_notice' %}{% if document_querystring %}?{{ document_querystring }}{% endif %}" 
+               target="_blank" class="btn btn-outline-dark action-toolbar-btn shadow-xs bg-white">
+                <i class="fas fa-file-alt text-danger"></i> Generate Official Notice
+            </a>
+            <a href="{% url 'export_cancellations_dynamic' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" 
+               class="btn btn-outline-success action-toolbar-btn shadow-xs bg-white">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+            {% endif %}
+
+            {% has_access 'students' 'cancel_admission' as can_cancel %}
+            {% if can_cancel %}
+            <button type="button" class="btn btn-danger action-toolbar-btn shadow-sm" onclick="openCancelModal()">
+                <i class="fas fa-plus-circle"></i> Cancel Student Admission
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards Grid -->
     <div class="row mb-4">
-        <div class="col-md-3 col-sm-6">
-            <div class="card stat-card shadow-sm bg-danger text-white">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="mb-0 font-weight-black">{{ cancelled_count }}</h2>
-                            <p class="mb-0 opacity-75 font-weight-bold">Cancelled Admissions</p>
-                        </div>
-                        <div class="opacity-50">
-                            <i class="fas fa-user-slash fa-3x"></i>
-                        </div>
+        <!-- KPI 1: Total Cancelled -->
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="card kpi-card kpi-red shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-uppercase opacity-75 letter-spacing-1 mb-1">Total Cancelled</div>
+                        <h2 class="font-weight-black mb-0" id="kpi-total-display">{{ kpi_total_cancelled }}</h2>
+                        <small class="opacity-75">All records in university archive</small>
                     </div>
+                    <i class="fas fa-user-slash kpi-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 2: Temporary Cancellations -->
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="card kpi-card kpi-amber shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-uppercase opacity-75 letter-spacing-1 mb-1">Temporary Cancel</div>
+                        <h2 class="font-weight-black mb-0" id="kpi-temp-display">{{ kpi_temp_cancelled }}</h2>
+                        <small class="opacity-75">Suspended / temporary hold</small>
+                    </div>
+                    <i class="fas fa-clock kpi-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 3: Permanent Cancellations -->
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="card kpi-card kpi-indigo shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-uppercase opacity-75 letter-spacing-1 mb-1">Permanent Cancel</div>
+                        <h2 class="font-weight-black mb-0" id="kpi-perm-display">{{ kpi_perm_cancelled }}</h2>
+                        <small class="opacity-75">Fully retracted admissions</small>
+                    </div>
+                    <i class="fas fa-ban kpi-icon-bg"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 4: Period / Filtered Records -->
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="card kpi-card kpi-emerald shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-xs font-weight-bold text-uppercase opacity-75 letter-spacing-1 mb-1">Matching Records</div>
+                        <h2 class="font-weight-black mb-0" id="kpi-period-display">{{ kpi_period_cancelled }}</h2>
+                        <small class="opacity-75">Selected range / active filters</small>
+                    </div>
+                    <i class="fas fa-filter kpi-icon-bg"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Dynamic Hub Panel -->
-    <div class="card card-outline card-danger shadow-sm border-0" style="border-radius: 16px; overflow: hidden;">
-        <div class="card-header bg-white p-0 border-bottom-0">
-            <ul class="nav nav-tabs nav-tabs-premium px-4 pt-3" id="cancellationHubTabs" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" id="directory-tab" data-toggle="tab" href="#directory" role="tab" aria-controls="directory" aria-selected="true">
-                        <i class="fas fa-database mr-2"></i> Cancellations Directory
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="action-tab" data-toggle="tab" href="#action" role="tab" aria-controls="action" aria-selected="false">
-                        <i class="fas fa-user-times mr-2"></i> Initiate Cancellation
-                    </a>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="card-body p-4">
-            <div class="tab-content" id="cancellationHubTabContent">
-                
-                <!-- TAB 1: CANCELLATIONS DIRECTORY -->
-                <div class="tab-pane fade show active" id="directory" role="tabpanel" aria-labelledby="directory-tab">
-                    
-                    <!-- Filters Grid -->
-                    <form id="cancelled-filter-form" class="p-3 mb-4 filter-card shadow-sm"
-                          hx-get="{% url 'cancellation_hub' %}"
-                          hx-target="#cancelled-list-container"
-                          hx-trigger="change from:select, keyup changed delay:300ms from:input[name='search_cancelled']"
-                          hx-indicator="#table-loader">
-                        <input type="hidden" name="target" value="cancelled">
-                        
-                        <div class="row align-items-center">
-                            <div class="col-md-3 mb-2 mb-md-0">
-                                <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Search Directory</label>
-                                <input type="text" name="search_cancelled" class="form-control form-control-sm" placeholder="Search by ID or Name..." value="{{ search_cancelled }}">
-                            </div>
-                            <div class="col-md-3 mb-2 mb-md-0">
-                                <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Program</label>
-                                <select name="program" class="form-control form-control-sm">
-                                    <option value="">All Programs</option>
-                                    {% for prog in programs %}
-                                    <option value="{{ prog }}" {% if prog == selected_program %}selected{% endif %}>{{ prog }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-2 mb-2 mb-md-0">
-                                <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Batch</label>
-                                <select name="batch" class="form-control form-control-sm">
-                                    <option value="">All Batches</option>
-                                    {% for b in batches %}
-                                    <option value="{{ b }}" {% if b == selected_batch %}selected{% endif %}>{{ b }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-2 mb-2 mb-md-0">
-                                <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Reason</label>
-                                <select name="reason" class="form-control form-control-sm">
-                                    <option value="">All Reasons</option>
-                                    {% for key, val in reasons %}
-                                    <option value="{{ key }}" {% if key == selected_reason %}selected{% endif %}>{{ val }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-2 text-md-right mt-3 mt-md-0">
-                                <div id="cancellation-export-container">
-                                    {% has_access 'students' 'export_cancellations' as can_export %}
-                                    {% if can_export %}
-                                    <a href="{% url 'export_cancellations_dynamic' %}{% if export_querystring %}?{{ export_querystring }}{% endif %}" class="btn btn-outline-success btn-sm font-weight-bold shadow-sm px-3 rounded-pill btn-block">
-                                        <i class="fas fa-file-excel mr-1"></i> Export to Excel
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                    
-                    <!-- Table Loader Dynamic Indicator -->
-                    <div id="table-loader" class="htmx-indicator mb-2" style="height: 3px; background: var(--accent-yellow); overflow: hidden;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" style="width: 100%; height: 100%;"></div>
-                    </div>
+    <!-- Dynamic Filter Ribbon & Date Range Picker -->
+    <div class="filter-ribbon shadow-sm mb-4">
+        <form id="cancelled-filter-form"
+              hx-get="{% url 'cancellation_hub' %}"
+              hx-target="#cancelled-list-container"
+              hx-trigger="change from:#cancelled-filter-form select, change from:#cancelled-filter-form input[type='date'], keyup changed delay:300ms from:#cancelled-filter-form input[name='search_cancelled']"
+              hx-indicator="#table-loader">
 
-                    <!-- Cancelled Records Grid -->
-                    <div id="cancelled-list-container" class="border rounded shadow-sm bg-white overflow-hidden">
-                        {% include 'students/partials/cancellation_list.html' %}
-                    </div>
+            <!-- Top quick date chips row -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center pb-3 mb-3 border-bottom" style="gap: 10px;">
+                <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                    <span class="text-xs font-weight-bold text-uppercase text-muted mr-1">Date Range Presets:</span>
+                    <button type="button" class="chip-btn" onclick="setDatePreset('all')">All Time</button>
+                    <button type="button" class="chip-btn" onclick="setDatePreset('today')">Today</button>
+                    <button type="button" class="chip-btn" onclick="setDatePreset('7days')">Last 7 Days</button>
+                    <button type="button" class="chip-btn" onclick="setDatePreset('month')">This Month</button>
+                    <button type="button" class="chip-btn" onclick="setDatePreset('year')">Year 2026</button>
                 </div>
-
-                <!-- TAB 2: INITIATE CANCELLATION -->
-                <div class="tab-pane fade" id="action" role="tabpanel" aria-labelledby="action-tab">
-                    {% has_access 'students' 'cancel_admission' as can_cancel %}
-                    {% if can_cancel %}
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="p-4 bg-light rounded shadow-sm border">
-                                <h5 class="font-weight-bold mb-3"><i class="fas fa-search text-danger mr-2"></i> Find Active Admission Records</h5>
-                                <input type="text" name="search_active" class="form-control form-control-lg search-box-pill shadow-sm" 
-                                       placeholder="Enter Student ID or Name to fetch record..."
-                                       hx-get="{% url 'cancellation_hub' %}"
-                                       hx-trigger="keyup changed delay:300ms, clearSearchResults from:body"
-                                       hx-target="#search-results"
-                                       hx-indicator="#table-loader">
-                                <input type="hidden" name="target" value="active" form="active-search-hidden-form">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Search Results Grid Area -->
-                    <div id="search-results" class="border rounded bg-white shadow-sm overflow-hidden">
-                        {% if search_active %}
-                            {% include 'students/partials/cancellation_results.html' %}
-                        {% else %}
-                            <div class="text-center py-5 text-muted">
-                                <i class="fas fa-search fa-4x mb-3 opacity-25"></i>
-                                <p class="lead mb-0">Search for active or inactive students above to manage statuses.</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5 text-muted">
-                        <i class="fas fa-lock fa-4x mb-3 opacity-25"></i>
-                        <h4 class="font-weight-bold">Access Denied</h4>
-                        <p class="mb-0">You do not have the **Cancel/Modify Admission** task authority required to cancel students.</p>
-                    </div>
-                    {% endif %}
+                <div class="text-muted small">
+                    <i class="fas fa-info-circle mr-1 text-primary"></i> Documents and exports dynamically update with these filters.
                 </div>
-
             </div>
+
+            <!-- Detailed filter inputs -->
+            <div class="row align-items-end">
+                <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                    <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Search Student</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white border-right-0" style="border-radius: 10px 0 0 10px;"><i class="fas fa-search text-muted"></i></span>
+                        </div>
+                        <input type="text" name="search_cancelled" class="form-control form-control-sm border-left-0" 
+                               placeholder="Search ID, Name..." value="{{ search_cancelled }}" style="border-radius: 0 10px 10px 0;">
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                    <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Date Range</label>
+                    <div class="d-flex align-items-center" style="gap: 6px;">
+                        <input type="date" name="start_date" id="filter_start_date" class="form-control form-control-sm rounded" value="{{ start_date }}" title="Start Date">
+                        <span class="text-muted small font-weight-bold">to</span>
+                        <input type="date" name="end_date" id="filter_end_date" class="form-control form-control-sm rounded" value="{{ end_date }}" title="End Date">
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 mb-3 mb-lg-0">
+                    <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Cancellation Type</label>
+                    <select name="cancel_type" class="form-control form-control-sm rounded">
+                        <option value="">All Types</option>
+                        <option value="permanent" {% if cancel_type == 'permanent' %}selected{% endif %}>Admission Cancel (Permanent)</option>
+                        <option value="temporary" {% if cancel_type == 'temporary' %}selected{% endif %}>Temporary Admission Cancel</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-4 mb-3 mb-lg-0">
+                    <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Department / Program</label>
+                    <select name="program" class="form-control form-control-sm rounded">
+                        <option value="">All Departments</option>
+                        {% for prog in programs %}
+                        <option value="{{ prog }}" {% if prog == selected_program %}selected{% endif %}>{{ prog }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-4 mb-3 mb-lg-0">
+                    <div class="d-flex align-items-center" style="gap: 8px;">
+                        <div class="flex-grow-1">
+                            <label class="text-xs font-weight-bold text-uppercase text-muted mb-1">Batch</label>
+                            <select name="batch" class="form-control form-control-sm rounded">
+                                <option value="">All Batches</option>
+                                {% for b in batches %}
+                                <option value="{{ b }}" {% if b == selected_batch %}selected{% endif %}>{{ b }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded mt-4" onclick="clearAllFilters()" title="Reset Filters">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Loader Indicator -->
+    <div id="table-loader" class="htmx-indicator mb-2" style="height: 3px; background: #e2e8f0; overflow: hidden; border-radius: 2px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" style="width: 100%; height: 100%;"></div>
+    </div>
+
+    <!-- Main Cancelled Students Table Container -->
+    <div class="card shadow-sm border-0" style="border-radius: 16px; overflow: hidden;">
+        <div id="cancelled-list-container">
+            {% include 'students/partials/cancellation_list.html' %}
         </div>
     </div>
+
 </div>
 
-<!-- Bulk Cancellation Modal -->
-<div class="modal fade" id="bulkCancelModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+<!-- Interactive On-Page Cancellation Modal -->
+<div class="modal fade" id="cancelStudentModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden;">
-            <div class="modal-header bg-dark text-white border-0 py-4">
-                <h5 class="modal-title font-weight-black"><i class="fas fa-ban mr-2"></i> Bulk Admission Cancellation</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            
+            <!-- Modal Header -->
+            <div class="modal-header bg-dark text-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center" style="gap: 10px;">
+                    <div class="p-2 bg-danger rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="fas fa-user-slash"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-weight-black mb-0">Cancel Student Admission</h5>
+                        <small class="text-white-50">Execute permanent cancellation or temporary suspension</small>
+                    </div>
+                </div>
+                <button type="button" class="close text-white opacity-75" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form hx-post="{% url 'api_bulk_cancel_admission' %}" 
-                  hx-target="#bulk-cancellation-feedback"
-                  hx-on::after-request="if(event.detail.successful) { setTimeout(() => { $('#bulkCancelModal').modal('hide'); location.reload(); }, 1500); }">
-                {% csrf_token %}
-                <div class="modal-body p-4">
-                    <div id="bulk-cancellation-feedback"></div>
+
+            <div class="modal-body p-4">
+                <!-- STEP 1: Search Active Student -->
+                <div id="cancel-step-search">
+                    <label class="font-weight-bold text-dark mb-2">
+                        <i class="fas fa-search text-danger mr-1"></i> Step 1: Find Active Student Record
+                    </label>
+                    <div class="input-group mb-3">
+                        <input type="text" id="modal-student-search-input" class="form-control form-control-lg search-input-sleek" 
+                               placeholder="Type Student ID (e.g. 080252...) or Name..." oninput="debounceStudentSearch(this.value)">
+                    </div>
+
+                    <!-- Live search spinner -->
+                    <div id="modal-search-spinner" class="text-center py-2 text-muted" style="display: none;">
+                        <i class="fas fa-spinner fa-spin mr-1 text-danger"></i> Searching active university database...
+                    </div>
+
+                    <!-- Search results list -->
+                    <div id="modal-search-results" style="max-height: 260px; overflow-y: auto;">
+                        <div class="text-center py-4 text-muted border rounded bg-light">
+                            <i class="fas fa-id-card fa-2x mb-2 opacity-50"></i>
+                            <p class="small mb-0">Start typing an ID or Name to locate the student profile.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Cancellation Details Form (Revealed upon selecting a student) -->
+                <div id="cancel-step-details" style="display: none;">
                     
-                    <div class="alert alert-soft-danger border-0 mb-4">
-                        <i class="fas fa-exclamation-triangle mr-2"></i> You are about to cancel admission for <strong><span id="bulk-count-display">0</span> students</strong>.
+                    <!-- Selected Student Banner -->
+                    <div class="p-3 mb-4 rounded border bg-light d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center" style="gap: 12px;">
+                            <div class="bg-white border rounded-circle font-weight-black text-danger d-flex align-items-center justify-content-center" style="width: 46px; height: 46px; font-size: 1.1rem;">
+                                <span id="sel-avatar-initials">BA</span>
+                            </div>
+                            <div>
+                                <h6 class="font-weight-bold text-dark mb-0 text-uppercase" id="sel-student-name">--</h6>
+                                <div class="small text-muted">
+                                    ID: <code class="font-weight-bold" id="sel-student-id">--</code> | 
+                                    Dept: <span class="font-weight-bold" id="sel-student-dept">--</span> | 
+                                    Batch: <span id="sel-student-batch">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetStudentSelection()">
+                            <i class="fas fa-exchange-alt mr-1"></i> Change
+                        </button>
                     </div>
 
-                    <div class="selected-names-list mb-4 p-3 bg-light rounded small" style="max-height: 150px; overflow-y: auto;" id="selected-names-preview">
-                        <!-- Names will be injected here -->
-                    </div>
+                    <!-- Form submission -->
+                    <form id="cancel-admission-modal-form" onsubmit="submitCancellationModal(event)">
+                        {% csrf_token %}
+                        <input type="hidden" name="student_id" id="form-student-id">
 
-                    <!-- Hidden inputs for selected IDs -->
-                    <div id="selected-ids-container"></div>
+                        <!-- Nature Selection Cards -->
+                        <label class="font-weight-bold text-dark mb-2">
+                            <i class="fas fa-tag text-danger mr-1"></i> Step 2: Select Cancellation Nature
+                        </label>
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <input type="radio" name="cancel_type" id="type-permanent" value="Permanent" class="cancel-type-radio" checked>
+                                <label for="type-permanent" class="cancel-type-label permanent-card">
+                                    <div class="d-flex align-items-center mb-1" style="gap: 8px;">
+                                        <i class="fas fa-ban text-danger"></i>
+                                        <strong class="text-danger">Permanent Cancellation</strong>
+                                    </div>
+                                    <div class="small text-muted">Retracts admission permanently and archives student profile.</div>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="radio" name="cancel_type" id="type-temporary" value="Temporary" class="cancel-type-radio">
+                                <label for="type-temporary" class="cancel-type-label temporary-card">
+                                    <div class="d-flex align-items-center mb-1" style="gap: 8px;">
+                                        <i class="fas fa-clock text-warning"></i>
+                                        <strong class="text-warning">Temporary Cancellation</strong>
+                                    </div>
+                                    <div class="small text-muted">Temporary hold or withdrawal with option to restore later.</div>
+                                </label>
+                            </div>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="small font-weight-bold text-uppercase text-muted">Reason Category</label>
-                        <select name="reason_category" class="form-control" required>
-                            <option value="Temporary">Temporary Cancellation</option>
-                            <option value="Migration">Program Migration</option>
-                            <option value="Discipline">Disciplinary Action</option>
-                            <option value="Financial">Financial Issues</option>
-                            <option value="Other" selected>Other / Administrative</option>
-                        </select>
-                    </div>
+                        <!-- Date & Reason Row -->
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <label class="small font-weight-bold text-uppercase text-muted mb-1">Cancellation Date</label>
+                                <input type="date" name="cancel_date" id="modal-cancel-date" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small font-weight-bold text-uppercase text-muted mb-1">Reason Category</label>
+                                <select name="reason_category" class="form-control" required>
+                                    <option value="Migration">Migration to other University</option>
+                                    <option value="Financial">Financial/Non-Payment</option>
+                                    <option value="Personal">Personal Reasons</option>
+                                    <option value="Academic">Academic Non-Performance</option>
+                                    <option value="Disciplinary">Disciplinary Action</option>
+                                    <option value="Other">Other (See Notes)</option>
+                                </select>
+                            </div>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="small font-weight-bold text-uppercase text-muted">Administrative Notes</label>
-                        <textarea name="notes" class="form-control" rows="3" placeholder="Explain the reason for this bulk action..." required></textarea>
-                    </div>
+                        <!-- Notes Area -->
+                        <div class="form-group mb-4">
+                            <label class="small font-weight-bold text-uppercase text-muted mb-1">Administrative Notes & Remarks</label>
+                            <textarea name="notes" class="form-control" rows="3" placeholder="Enter remarks (e.g. Student submitted withdrawal application on 18/08/2026)..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end" style="gap: 10px;">
+                            <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                            <button type="submit" id="btn-submit-cancel" class="btn btn-danger px-4 font-weight-bold">
+                                <i class="fas fa-check-circle mr-1"></i> Confirm Admission Cancellation
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div class="modal-footer bg-light border-0 py-3">
-                    <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Keep Active</button>
-                    <button type="submit" class="btn btn-danger px-4 rounded-pill font-weight-bold shadow-sm">
-                        <i class="fas fa-check-circle mr-1"></i> Confirm Bulk Cancellation
-                    </button>
-                </div>
-            </form>
+
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Floating Action Bar for Bulk Update (Tab 2) -->
-<div id="bulk-action-bar" class="position-fixed shadow-lg d-none animate__animated animate__slideInUp" style="bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1050; background: linear-gradient(135deg, #1f2937, #111827); padding: 10px 18px; border-radius: 50px; display: flex; align-items: center; gap: 8px;">
-    <div class="text-white d-flex align-items-center">
-        <span id="selected-count" class="badge badge-danger mr-2" style="font-size: 1rem; padding: 5px 10px; border-radius: 20px;">0</span>
-        <span class="text-xs font-weight-bold">Selected for Cancellation</span>
-    </div>
-    <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15); margin: 0 5px;"></div>
-    <button type="button" class="btn btn-danger btn-sm font-weight-bold rounded-pill px-3 shadow-sm" onclick="prepareBulkCancel()">
-        <i class="fas fa-ban mr-1"></i> Cancel Selected
-    </button>
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function toggleAll(source) {
-        const checkboxes = document.querySelectorAll('.student-checkbox');
-        checkboxes.forEach(cb => cb.checked = source.checked);
-        updateSelection();
-    }
-
-    function updateSelection() {
-        const selected = document.querySelectorAll('.student-checkbox:checked');
-        const count = selected.length;
-        const bar = document.getElementById('bulk-action-bar');
-        const countDisplay = document.getElementById('selected-count');
-        
-        if (count > 0) {
-            bar.classList.remove('d-none');
-            countDisplay.innerText = count;
-        } else {
-            bar.classList.add('d-none');
-        }
-    }
-
-    function prepareBulkCancel() {
-        const selected = document.querySelectorAll('.student-checkbox:checked');
-        const countDisplay = document.getElementById('bulk-count-display');
-        const idsContainer = document.getElementById('selected-ids-container');
-        const namesPreview = document.getElementById('selected-names-preview');
-        
-        countDisplay.innerText = selected.length;
-        idsContainer.innerHTML = '';
-        namesPreview.innerHTML = '';
-        
-        selected.forEach(cb => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'student_ids';
-            input.value = cb.value;
-            idsContainer.appendChild(input);
-            
-            const nameSpan = document.createElement('div');
-            nameSpan.className = 'mb-1';
-            nameSpan.innerHTML = `<i class="fas fa-user-minus mr-2 text-danger"></i>${cb.getAttribute('data-name')} (${cb.value})`;
-            namesPreview.appendChild(nameSpan);
-        });
-        
-        $('#bulkCancelModal').modal('show');
-    }
-
-    // HTMX Listener for results refresh
-    document.body.addEventListener('clearSearchResults', function(evt) {
-        const searchInput = document.querySelector('input[name="search_active"]');
-        if (searchInput && searchInput.value) {
-            htmx.trigger(searchInput, 'keyup');
-        }
+    // Initialize default cancel date to today
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        const cancelDateInput = document.getElementById('modal-cancel-date');
+        if (cancelDateInput) cancelDateInput.value = today;
     });
+
+    // Date Preset Chips
+    function setDatePreset(type) {
+        const today = new Date();
+        const startInput = document.getElementById('filter_start_date');
+        const endInput = document.getElementById('filter_end_date');
+        
+        // Remove active class from other chips
+        document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
+        if (event && event.target) event.target.classList.add('active');
+
+        if (type === 'all') {
+            startInput.value = '';
+            endInput.value = '';
+        } else if (type === 'today') {
+            const d = today.toISOString().split('T')[0];
+            startInput.value = d;
+            endInput.value = d;
+        } else if (type === '7days') {
+            const past = new Date(today);
+            past.setDate(past.getDate() - 7);
+            startInput.value = past.toISOString().split('T')[0];
+            endInput.value = today.toISOString().split('T')[0];
+        } else if (type === 'month') {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            startInput.value = firstDay.toISOString().split('T')[0];
+            endInput.value = today.toISOString().split('T')[0];
+        } else if (type === 'year') {
+            startInput.value = '2026-01-01';
+            endInput.value = '2026-12-31';
+        }
+
+        // Trigger filter form change
+        htmx.trigger('#cancelled-filter-form', 'change');
+        updateExportLinks();
+    }
+
+    function clearAllFilters() {
+        const form = document.getElementById('cancelled-filter-form');
+        form.reset();
+        document.getElementById('filter_start_date').value = '';
+        document.getElementById('filter_end_date').value = '';
+        document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
+        htmx.trigger('#cancelled-filter-form', 'change');
+        updateExportLinks();
+    }
+
+    // Modal Search and Selection
+    let searchDebounceTimer = null;
+    function debounceStudentSearch(val) {
+        clearTimeout(searchDebounceTimer);
+        const query = val.trim();
+        const spinner = document.getElementById('modal-search-spinner');
+        const resultsBox = document.getElementById('modal-search-results');
+
+        if (query.length < 2) {
+            resultsBox.innerHTML = `
+                <div class="text-center py-4 text-muted border rounded bg-light">
+                    <i class="fas fa-id-card fa-2x mb-2 opacity-50"></i>
+                    <p class="small mb-0">Start typing an ID or Name to locate the student profile.</p>
+                </div>
+            `;
+            spinner.style.display = 'none';
+            return;
+        }
+
+        spinner.style.display = 'block';
+        searchDebounceTimer = setTimeout(() => {
+            fetch(`{% url 'api_search_active_students' %}?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    spinner.style.display = 'none';
+                    if (!data.students || data.students.length === 0) {
+                        resultsBox.innerHTML = `
+                            <div class="text-center py-4 text-muted border rounded bg-light">
+                                <i class="fas fa-exclamation-circle fa-2x mb-2 text-warning"></i>
+                                <p class="small mb-0">No active student record found matching "${query}".</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    data.students.forEach(st => {
+                        html += `
+                            <div class="student-search-item shadow-xs" onclick='selectStudentForCancel(${JSON.stringify(st)})'>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="font-weight-bold text-dark text-uppercase">${st.student_name}</div>
+                                        <div class="small text-muted">ID: <code>${st.student_id}</code> | Dept: <strong>${st.dept}</strong> | Batch: ${st.batch}</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold rounded-pill px-3">
+                                        Select <i class="fas fa-arrow-right ml-1"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    resultsBox.innerHTML = html;
+                })
+                .catch(err => {
+                    spinner.style.display = 'none';
+                    resultsBox.innerHTML = '<div class="text-danger small text-center py-2">Error searching students.</div>';
+                });
+        }, 300);
+    }
+
+    function selectStudentForCancel(st) {
+        document.getElementById('cancel-step-search').style.display = 'none';
+        document.getElementById('cancel-step-details').style.display = 'block';
+
+        document.getElementById('form-student-id').value = st.student_id;
+        document.getElementById('sel-student-id').textContent = st.student_id;
+        document.getElementById('sel-student-name').textContent = st.student_name;
+        document.getElementById('sel-student-dept').textContent = st.dept;
+        document.getElementById('sel-student-batch').textContent = st.batch;
+        
+        const initials = st.student_name ? st.student_name.split(' ').map(n => n[0]).slice(0, 2).join('') : 'ST';
+        document.getElementById('sel-avatar-initials').textContent = initials;
+    }
+
+    function resetStudentSelection() {
+        document.getElementById('cancel-step-details').style.display = 'none';
+        document.getElementById('cancel-step-search').style.display = 'block';
+        document.getElementById('form-student-id').value = '';
+    }
+
+    function openCancelModal() {
+        resetStudentSelection();
+        document.getElementById('modal-student-search-input').value = '';
+        document.getElementById('modal-search-results').innerHTML = `
+            <div class="text-center py-4 text-muted border rounded bg-light">
+                <i class="fas fa-id-card fa-2x mb-2 opacity-50"></i>
+                <p class="small mb-0">Start typing an ID or Name to locate the student profile.</p>
+            </div>
+        `;
+        $('#cancelStudentModal').modal('show');
+    }
+
+    // Submit Cancellation via AJAX
+    function submitCancellationModal(e) {
+        e.preventDefault();
+        const form = document.getElementById('cancel-admission-modal-form');
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('btn-submit-cancel');
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Processing...';
+
+        fetch("{% url 'api_cancel_admission_modal' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Confirm Admission Cancellation';
+
+            if (data.success) {
+                $('#cancelStudentModal').modal('hide');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Admission Cancelled',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                // Reload the table and refresh page KPIs
+                htmx.trigger('#cancelled-filter-form', 'change');
+                // Dynamically increment counters
+                const totalElem = document.getElementById('kpi-total-display');
+                if (totalElem) totalElem.textContent = parseInt(totalElem.textContent || 0) + 1;
+                
+                if (data.cancel_type === 'Temporary') {
+                    const tempElem = document.getElementById('kpi-temp-display');
+                    if (tempElem) tempElem.textContent = parseInt(tempElem.textContent || 0) + 1;
+                } else {
+                    const permElem = document.getElementById('kpi-perm-display');
+                    if (permElem) permElem.textContent = parseInt(permElem.textContent || 0) + 1;
+                }
+            } else {
+                Swal.fire('Error', data.error || 'Failed to cancel admission.', 'error');
+            }
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Confirm Admission Cancellation';
+            Swal.fire('Error', 'Network or server error processing request.', 'error');
+        });
+    }
+
+    // Keep print and notice URLs synchronized with active filters
+    function updateExportLinks() {
+        const form = document.getElementById('cancelled-filter-form');
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+        const qs = params.toString();
+
+        const printLink = document.querySelector('a[href*="cancellation_document_list"]');
+        if (printLink) {
+            printLink.href = "{% url 'cancellation_document_list' %}" + (qs ? '?' + qs : '');
+        }
+        const noticeLink = document.querySelector('a[href*="cancellation_document_notice"]');
+        if (noticeLink) {
+            noticeLink.href = "{% url 'cancellation_document_notice' %}" + (qs ? '?' + qs : '');
+        }
+    }
+
+    document.getElementById('cancelled-filter-form').addEventListener('change', updateExportLinks);
 </script>
 {% endblock %}

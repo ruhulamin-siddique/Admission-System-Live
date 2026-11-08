@@ -1,0 +1,222 @@
+{% load i18n coe_tags %}
+
+<!-- Quick Details Modal for App -->
+<div class="modal fade" id="appDetailModal{{ app.pk }}" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{ app.pk }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header bg-dark text-white py-3 px-4">
+        <h5 class="modal-title font-weight-bold mb-0" id="modalLabel{{ app.pk }}">
+          <i class="fas fa-file-alt text-indigo mr-2"></i>
+          {% trans "Application Details" %} — <code>{{ app.application_number }}</code>
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-4 text-left">
+        
+        <!-- SLA & Turnaround Analytics Row -->
+        <div class="row mb-4">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="p-3 rounded-lg border bg-light h-100">
+              <span class="text-xs font-weight-bold text-uppercase text-muted d-block mb-1">
+                <i class="fas fa-hourglass-half text-primary mr-1"></i>{% trans "Current Stage SLA Duration" %}
+              </span>
+              {% if app.sla_level == 'danger' %}
+                <span class="badge badge-danger px-3 py-1.5 rounded-pill" style="font-size: 0.95rem; font-weight:700;"><i class="fas fa-fire mr-1"></i>🔥 {{ app.current_stage_duration }}</span>
+              {% elif app.sla_level == 'warning' %}
+                <span class="badge badge-warning text-dark px-3 py-1.5 rounded-pill" style="font-size: 0.95rem; font-weight:700;"><i class="fas fa-exclamation-circle mr-1"></i>⚠️ {{ app.current_stage_duration }}</span>
+              {% else %}
+                <span class="badge badge-success px-3 py-1.5 rounded-pill" style="font-size: 0.95rem; font-weight:700;"><i class="fas fa-stopwatch mr-1"></i>⏱️ {{ app.current_stage_duration }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="p-3 rounded-lg border bg-light h-100">
+              <span class="text-xs font-weight-bold text-uppercase text-muted d-block mb-1">
+                <i class="fas fa-clock text-indigo mr-1"></i>{% trans "Total Turnaround Time (TAT)" %}
+              </span>
+              <span class="h5 font-weight-bold text-dark mb-0 d-block">{{ app.total_turnaround_time }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="row">
+          <div class="col-md-6 border-right">
+            <h6 class="font-weight-bold text-uppercase text-indigo mb-3" style="font-size: 0.82rem; letter-spacing: 0.05em;">
+              <i class="fas fa-user-graduate mr-1.5"></i>{% trans "Student Details" %}
+            </h6>
+            <table class="table table-sm table-borderless mb-0">
+              <tr><th class="text-muted" width="120">{% trans "Name" %}:</th><td class="font-weight-bold text-dark">{{ app.student_name }}</td></tr>
+              <tr><th class="text-muted">{% trans "Student ID" %}:</th><td><code>{{ app.student_id }}</code></td></tr>
+              <tr><th class="text-muted">{% trans "Department" %}:</th><td>{{ app.department.name|default:app.department }}</td></tr>
+              <tr><th class="text-muted">{% trans "Mobile" %}:</th>
+                <td>
+                  {{ app.mobile_number|default:"—" }}
+                  {% if app.mobile_number %}
+                    {% whatsapp_btn app.mobile_number label="WhatsApp" css_class="btn btn-xs text-white font-weight-bold ml-1.5" %}
+                  {% endif %}
+                </td>
+              </tr>
+              <tr><th class="text-muted">{% trans "Email" %}:</th><td>{{ app.email|default:"—" }}</td></tr>
+            </table>
+          </div>
+
+          <div class="col-md-6">
+            <h6 class="font-weight-bold text-uppercase text-indigo mb-3" style="font-size: 0.82rem; letter-spacing: 0.05em;">
+              <i class="fas fa-tasks mr-1.5"></i>{% trans "Workflow Details" %}
+            </h6>
+            <table class="table table-sm table-borderless mb-0">
+              <tr><th class="text-muted" width="130">{% trans "Document Type" %}:</th><td class="font-weight-semibold">{{ app.get_application_type_display }}</td></tr>
+              <tr><th class="text-muted">{% trans "Current Status" %}:</th>
+                <td>
+                  <span class="badge {{ app.get_status_badge_class }} px-2.5 py-1">
+                    <i class="{{ app.get_status_icon }} mr-1"></i>{{ app.get_status_display }}
+                  </span>
+                </td>
+              </tr>
+              <tr><th class="text-muted">{% trans "Assigned Officer" %}:</th>
+                <td>
+                  {% if app.assigned_to %}
+                    <strong>{{ app.assigned_to.get_full_name|default:app.assigned_to.username }}</strong>
+                    {% if app.assigned_to.profile.phone_number %}
+                      {% whatsapp_btn app.assigned_to.profile.phone_number css_class="btn btn-xs text-white font-weight-bold ml-1.5" %}
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted">{% trans "Unassigned" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr><th class="text-muted">{% trans "Submitted Date" %}:</th><td>{{ app.submitted_at|date:"d F Y, h:i A" }}</td></tr>
+              <tr><th class="text-muted">{% trans "Last Updated" %}:</th><td>{{ app.updated_at|date:"d F Y, h:i A" }}</td></tr>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light py-2 px-4">
+        <button type="button" class="btn btn-secondary btn-sm rounded-lg px-3" data-dismiss="modal">{% trans "Close" %}</button>
+        <a href="{% url 'coe_application_detail' app.pk %}" class="btn btn-primary btn-sm rounded-lg font-weight-bold px-3">
+          <i class="fas fa-external-link-alt mr-1.5"></i>{% trans "Open Workstation Page" %}
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Stage Tracking Modal for App -->
+<div class="modal fade" id="trackModal{{ app.pk }}" tabindex="-1" role="dialog" aria-labelledby="trackLabel{{ app.pk }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header bg-dark text-white py-3 px-4">
+        <h5 class="modal-title font-weight-bold mb-0" id="trackLabel{{ app.pk }}">
+          <i class="fas fa-route text-info mr-2"></i>
+          {% trans "Stage Tracking Timeline" %} — <code>{{ app.application_number }}</code>
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-4 text-left">
+        
+        <!-- App Summary Row -->
+        <div class="p-3 rounded-lg border bg-light mb-4 d-flex flex-wrap align-items-center justify-content-between" style="gap: 0.75rem;">
+          <div>
+            <h6 class="font-weight-bold text-dark mb-1">{{ app.student_name }} <small class="text-muted">({{ app.student_id }})</small></h6>
+            <small class="text-muted font-weight-semibold">{{ app.get_application_type_display }} &bull; {{ app.department.name|default:app.department }}</small>
+          </div>
+          <span class="badge {{ app.get_status_badge_class }} px-3 py-1.5" style="border-radius: 8px; font-size: 0.88rem;">
+            <i class="{{ app.get_status_icon }} mr-1"></i>
+            {{ app.get_status_display }}
+          </span>
+        </div>
+
+        <!-- SLA & Turnaround Metrics Cards -->
+        <div class="row mb-4">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="p-3 rounded-lg border bg-white h-100">
+              <span class="text-xs font-weight-bold text-uppercase text-muted d-block mb-1">
+                <i class="fas fa-stopwatch text-primary mr-1"></i>{% trans "Current Stage Duration" %}
+              </span>
+              <span class="h5 font-weight-bold text-dark mb-0 d-block">{{ app.current_stage_duration }}</span>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="p-3 rounded-lg border bg-white h-100">
+              <span class="text-xs font-weight-bold text-uppercase text-muted d-block mb-1">
+                <i class="fas fa-clock text-indigo mr-1"></i>{% trans "Total Turnaround Time (TAT)" %}
+              </span>
+              <span class="h5 font-weight-bold text-dark mb-0 d-block">{{ app.total_turnaround_time }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline Section -->
+        <h6 class="font-weight-bold text-uppercase text-indigo mb-3" style="font-size: 0.82rem; letter-spacing: 0.05em;">
+          <i class="fas fa-list-ol mr-1.5"></i>{% trans "Stage History & Time Taken per Stage" %}
+        </h6>
+
+        <ul class="timeline-track-list">
+          <!-- Step 1: Initial Submission -->
+          <li class="timeline-track-item">
+            <div class="timeline-icon-dot" style="background:#10b981;"><i class="fas fa-check"></i></div>
+            <div class="timeline-content-card">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong class="text-dark" style="font-size: 0.95rem;">{% trans "Application Submitted" %}</strong>
+                <span class="badge badge-light border text-muted px-2 py-0.5" style="font-size: 0.78rem;">{% trans "Initial Step" %}</span>
+              </div>
+              <small class="text-muted d-block"><i class="fas fa-user mr-1 text-xs"></i>{{ app.student_name }} (Student)</small>
+              <small class="text-muted"><i class="far fa-clock mr-1 text-xs"></i>{{ app.submitted_at|date:"d F Y, h:i A" }}</small>
+            </div>
+          </li>
+
+          <!-- Logged Stage Transitions -->
+          {% for log in app.stage_history_breakdown %}
+          <li class="timeline-track-item">
+            <div class="timeline-icon-dot"><i class="fas fa-angle-double-right"></i></div>
+            <div class="timeline-content-card">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong class="text-indigo" style="font-size: 0.95rem;">{{ log.status_display }}</strong>
+                <span class="badge badge-info px-2.5 py-1" style="font-size: 0.82rem; font-weight:700;">
+                  <i class="fas fa-stopwatch mr-1"></i>{% trans "Time in Stage:" %} {{ log.duration }}
+                </span>
+              </div>
+              <small class="text-muted d-block"><i class="fas fa-user-edit mr-1 text-xs"></i>{% trans "Changed By:" %} <strong>{{ log.changed_by }}</strong></small>
+              <small class="text-muted d-block"><i class="far fa-clock mr-1 text-xs"></i>{{ log.changed_at|date:"d F Y, h:i A" }}</small>
+              {% if log.note %}
+              <div class="mt-1.5 p-2 rounded border-left" style="background:#f1f5f9; border-left: 3px solid #4f46e5; font-size:0.85rem;">
+                <i class="fas fa-comment-alt mr-1 text-muted"></i>{{ log.note }}
+              </div>
+              {% endif %}
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light py-2 px-4">
+        <button type="button" class="btn btn-secondary btn-sm rounded-lg px-3" data-dismiss="modal">{% trans "Close" %}</button>
+        <a href="{% url 'coe_track' %}?tracking_number={{ app.application_number }}" target="_blank" class="btn btn-info btn-sm rounded-lg font-weight-bold px-3">
+          <i class="fas fa-external-link-alt mr-1.5"></i>{% trans "Public Track Page" %}
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>

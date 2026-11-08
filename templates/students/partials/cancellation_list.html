@@ -1,52 +1,91 @@
 {% load core_tags %}
 <div class="table-responsive">
-    <table class="table table-hover m-0">
-        <thead>
+    <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+        <thead class="bg-light text-muted small text-uppercase font-weight-bold">
             <tr>
-                <th style="width: 50px;" class="text-center">SL</th>
-                <th style="width: 140px;">Student ID</th>
-                <th style="width: 200px;">Student Name</th>
-                <th>Program & Batch</th>
-                <th style="width: 180px;">Reason Category</th>
-                <th>Notes</th>
-                <th style="width: 150px;" class="text-center">Cancel Date</th>
-                <th style="width: 120px;" class="text-center">Performed By</th>
+                <th style="width: 55px;" class="text-center">SL</th>
+                <th style="width: 150px;">Student ID</th>
+                <th>Student Name</th>
+                <th>Dept & Batch</th>
+                <th class="text-center" style="width: 160px;">Cancellation Type</th>
+                <th>Reason Category</th>
+                <th style="width: 110px;" class="text-center">Cancel Date</th>
+                <th style="width: 110px;" class="text-center">Officer</th>
+                <th style="width: 80px;" class="text-right pr-3">Action</th>
             </tr>
         </thead>
         <tbody>
             {% for student in cancelled_page_obj %}
             {% with history=student.status_history.first %}
-            <tr>
-                <td class="text-center align-middle">{{ cancelled_page_obj.start_index|add:forloop.counter0 }}</td>
-                <td class="align-middle font-weight-bold text-monospace">{{ student.student_id }}</td>
-                <td class="align-middle text-uppercase font-weight-bold">
-                    <a href="{% url 'student_profile' student.student_id %}" class="text-dark">{{ student.student_name }}</a>
+            <tr class="transition-hover">
+                <td class="text-center align-middle font-weight-bold text-muted">
+                    {{ cancelled_page_obj.start_index|add:forloop.counter0 }}.
                 </td>
                 <td class="align-middle">
-                    <div class="font-weight-bold">{{ student.program }}</div>
-                    <small class="text-muted">Batch: {{ student.batch|default:"-" }}</small>
+                    <code class="font-weight-bold text-dark px-2 py-1 bg-light rounded border" style="font-size: 0.85rem;">{{ student.student_id }}</code>
                 </td>
                 <td class="align-middle">
-                    <span class="badge badge-danger px-2 py-1" style="border-radius: 4px;">
+                    <div class="font-weight-bold text-dark text-uppercase">
+                        <a href="{% url 'student_profile' student.student_id %}" class="text-dark text-decoration-none hover-danger">
+                            {{ student.student_name }}
+                        </a>
+                    </div>
+                    <small class="text-muted"><i class="fas fa-venus-mars mr-1"></i>{{ student.gender|default:"--" }}</small>
+                </td>
+                <td class="align-middle">
+                    <div class="d-flex align-items-center" style="gap: 6px;">
+                        <span class="badge badge-secondary font-weight-bold px-2 py-1" style="font-size: 0.75rem;">
+                            {{ student.program|truncatechars:18 }}
+                        </span>
+                        <span class="badge badge-light border text-muted px-2 py-1" style="font-size: 0.75rem;">
+                            {{ student.batch|default:"--" }}
+                        </span>
+                    </div>
+                </td>
+                <td class="text-center align-middle">
+                    {% if student.is_temp_admission_cancel %}
+                    <span class="badge badge-warning text-dark font-weight-bold px-3 py-1 rounded-pill shadow-xs" style="font-size: 0.75rem;">
+                        <i class="fas fa-clock mr-1"></i> Temporary Cancel
+                    </span>
+                    {% else %}
+                    <span class="badge badge-danger font-weight-bold px-3 py-1 rounded-pill shadow-xs" style="font-size: 0.75rem;">
+                        <i class="fas fa-ban mr-1"></i> Admission Cancel
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="align-middle">
+                    <div class="font-weight-bold small text-dark">
                         {{ reasons_map|get_item:history.reason_category|default:history.reason_category|default:"Other" }}
+                    </div>
+                    {% if history.custom_notes %}
+                    <div class="small text-muted text-truncate" style="max-width: 180px;" title="{{ history.custom_notes }}">
+                        {{ history.custom_notes }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="text-center align-middle text-nowrap">
+                    <span class="small font-weight-bold text-secondary">
+                        {{ history.change_date|date:"d/m/Y"|default:student.last_updated|date:"d/m/Y" }}
                     </span>
                 </td>
-                <td class="align-middle small text-muted" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ history.custom_notes|default:'' }}">
-                    {{ history.custom_notes|default:"-" }}
-                </td>
                 <td class="text-center align-middle small text-muted">
-                    {{ history.change_date|date:"Y-m-d H:i"|default:"-" }}
-                </td>
-                <td class="text-center align-middle font-weight-bold small text-secondary">
                     {{ history.performed_by.username|default:"System" }}
+                </td>
+                <td class="text-right align-middle pr-3">
+                    <a href="{% url 'student_profile' student.student_id %}" class="btn btn-sm btn-outline-secondary rounded-circle" title="View Profile" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-external-link-alt" style="font-size: 0.75rem;"></i>
+                    </a>
                 </td>
             </tr>
             {% endwith %}
             {% empty %}
             <tr>
-                <td colspan="8" class="text-center py-5 text-muted bg-light">
-                    <i class="fas fa-user-slash fa-2x mb-2 opacity-50"></i>
-                    <p class="mb-0">No cancelled students found matching the filters.</p>
+                <td colspan="9" class="text-center py-5 text-muted bg-white">
+                    <div class="py-4">
+                        <i class="fas fa-user-slash fa-3x mb-3 text-danger opacity-25"></i>
+                        <h6 class="font-weight-bold text-secondary mb-1">No Cancelled Records Found</h6>
+                        <p class="text-muted small mb-0">Try clearing or broadening your search and date range filters.</p>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -56,7 +95,7 @@
 
 <!-- Pagination Panel -->
 {% if cancelled_page_obj.has_other_pages %}
-<div class="card-footer clearfix bg-white border-top-0 py-3">
+<div class="card-footer clearfix bg-white border-top py-3">
     <div class="row align-items-center">
         <div class="col-sm-6 text-muted small">
             Showing {{ cancelled_page_obj.start_index }} to {{ cancelled_page_obj.end_index }} of {{ cancelled_page_obj.paginator.count }} records.
@@ -66,7 +105,7 @@
                 {% if cancelled_page_obj.has_previous %}
                 <li class="page-item">
                     <button class="page-link"
-                            hx-get="{% url 'cancellation_hub' %}?page=1&search_cancelled={{ search_cancelled|urlencode }}&program={{ selected_program|urlencode }}&batch={{ selected_batch|urlencode }}&reason={{ selected_reason|urlencode }}&target=cancelled"
+                            hx-get="{% url 'cancellation_hub' %}?page=1&search_cancelled={{ search_cancelled|urlencode }}&program={{ selected_program|urlencode }}&batch={{ selected_batch|urlencode }}&reason={{ selected_reason|urlencode }}&cancel_type={{ cancel_type|urlencode }}&start_date={{ start_date|urlencode }}&end_date={{ end_date|urlencode }}"
                             hx-target="#cancelled-list-container"
                             hx-indicator="#table-loader">
                         <i class="fas fa-angle-double-left"></i>
@@ -74,7 +113,7 @@
                 </li>
                 <li class="page-item">
                     <button class="page-link"
-                            hx-get="{% url 'cancellation_hub' %}?page={{ cancelled_page_obj.previous_page_number }}&search_cancelled={{ search_cancelled|urlencode }}&program={{ selected_program|urlencode }}&batch={{ selected_batch|urlencode }}&reason={{ selected_reason|urlencode }}&target=cancelled"
+                            hx-get="{% url 'cancellation_hub' %}?page={{ cancelled_page_obj.previous_page_number }}&search_cancelled={{ search_cancelled|urlencode }}&program={{ selected_program|urlencode }}&batch={{ selected_batch|urlencode }}&reason={{ selected_reason|urlencode }}&cancel_type={{ cancel_type|urlencode }}&start_date={{ start_date|urlencode }}&end_date={{ end_date|urlencode }}"
                             hx-target="#cancelled-list-container"
                             hx-indicator="#table-loader">
                         <i class="fas fa-angle-left"></i>
@@ -91,7 +130,7 @@
                 {% if cancelled_page_obj.has_next %}
                 <li class="page-item">
                     <button class="page-link"
-                            hx-get="{% url 'cancellation_hub' %}?page={{ cancelled_page_obj.next_page_number }}&search_cancelled={{ search_cancelled|urlencode }}&program={{ selected_program|urlencode }}&batch={{ selected_batch|urlencode }}&reason={{ selected_reason|urlencode }}&target=cancelled"
+                            hx-get="{% url 'cancellation_hub' %}?page={{ cancelled_page_obj.next_page_number }}&search_cancelled={{ search_cancelled|urlencode }}&program={{ selected_program|urlencode }}&batch={{ selected_batch|urlencode }}&reason={{ selected_reason|urlencode }}&cancel_type={{ cancel_type|urlencode }}&start_date={{ start_date|urlencode }}&end_date={{ end_date|urlencode }}"
                             hx-target="#cancelled-list-container"
                             hx-indicator="#table-loader">
                         <i class="fas fa-angle-right"></i>
@@ -99,7 +138,7 @@
                 </li>
                 <li class="page-item">
                     <button class="page-link"
-                            hx-get="{% url 'cancellation_hub' %}?page={{ cancelled_page_obj.paginator.num_pages }}&search_cancelled={{ search_cancelled|urlencode }}&program={{ selected_program|urlencode }}&batch={{ selected_batch|urlencode }}&reason={{ selected_reason|urlencode }}&target=cancelled"
+                            hx-get="{% url 'cancellation_hub' %}?page={{ cancelled_page_obj.paginator.num_pages }}&search_cancelled={{ search_cancelled|urlencode }}&program={{ selected_program|urlencode }}&batch={{ selected_batch|urlencode }}&reason={{ selected_reason|urlencode }}&cancel_type={{ cancel_type|urlencode }}&start_date={{ start_date|urlencode }}&end_date={{ end_date|urlencode }}"
                             hx-target="#cancelled-list-container"
                             hx-indicator="#table-loader">
                         <i class="fas fa-angle-double-right"></i>

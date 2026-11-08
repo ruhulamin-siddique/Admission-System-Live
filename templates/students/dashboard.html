@@ -132,73 +132,60 @@
 {% endblock %}
 
 {% block content %}
-<!-- Alerts & Notifications -->
-{% if stats.pending_registrations > 0 %}
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-warning alert-dismissible fade show shadow-sm border-0 mb-4" role="alert" style="border-radius: 12px;">
-            <div class="d-flex align-items-center">
-                <div class="mr-3 bg-warning p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                    <i class="fas fa-user-clock text-white"></i>
-                </div>
-                <div>
-                    <h6 class="font-weight-bold mb-1">Pending Registrations Detected</h6>
-                    <p class="mb-0 small">There are <strong>{{ stats.pending_registrations }}</strong> new staff accounts awaiting your approval. 
-                        <a href="{% url 'user_management' %}?status=pending" class="font-weight-bold text-dark text-decoration-underline ml-1">Review Requests &rarr;</a>
-                    </p>
-                </div>
-            </div>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    </div>
-</div>
-{% endif %}
 
-
-<!-- Top Stats Row -->
-<div class="row">
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box mb-3 clickable-card" data-toggle="modal" data-target="#studentsMatrixModal">
+<!-- Top Stats Row (5 cards with dynamic batch coverage subtitles & equal height) -->
+<div class="row align-items-stretch mb-3">
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-2 mb-lg-0" style="min-width: 0;">
+        <div class="info-box clickable-card h-100 mb-0 shadow-sm" data-toggle="modal" data-target="#studentsMatrixModal" style="cursor: pointer;">
             <span class="info-box-icon bg-info elevation-1"><i class="fas fa-users"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Total Students</span>
-                <span class="info-box-number text-lg">{{ stats.total_students }}</span>
+            <div class="info-box-content py-2">
+                <span class="info-box-text font-weight-bold text-dark mb-0" style="line-height: 1.1;">Total Students</span>
+                <small class="d-block text-secondary font-weight-bold" style="font-size: 0.7rem; line-height: 1.2;">{{ stats.batch_range_text }}</small>
+                <span class="info-box-number text-lg mt-1" style="line-height: 1.1;">{{ stats.total_students }}</span>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box mb-3">
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-2 mb-lg-0" style="min-width: 0;">
+        <div class="info-box clickable-card h-100 mb-0 shadow-sm" data-toggle="modal" data-target="#cancelledMatrixModal" style="cursor: pointer;" title="Click to view Cancelled Admissions Matrix">
             <span class="info-box-icon bg-purple elevation-1"><i class="fas fa-user-slash"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Cancelled Admissions</span>
-                <span class="info-box-number text-lg">{{ stats.cancelled_admissions }}</span>
+            <div class="info-box-content py-2">
+                <span class="info-box-text font-weight-bold text-dark mb-0" style="line-height: 1.1;">Cancelled</span>
+                <small class="d-block text-secondary font-weight-bold" style="font-size: 0.7rem; line-height: 1.2;">{{ stats.batch_range_text }}</small>
+                <span class="info-box-number text-lg mt-1" style="line-height: 1.1;">{{ stats.cancelled_admissions }}</span>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box mb-3">
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-2 mb-lg-0" style="min-width: 0;">
+        <div class="info-box h-100 mb-0 shadow-sm">
             <span class="info-box-icon bg-teal elevation-1"><i class="fas fa-home"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Non-Residential</span>
-                <span class="info-box-number text-lg">{{ stats.non_residential_count }}</span>
+            <div class="info-box-content py-2">
+                <span class="info-box-text font-weight-bold text-dark mb-0" style="line-height: 1.1;">Non-Residential</span>
+                <small class="d-block text-secondary font-weight-bold" style="font-size: 0.7rem; line-height: 1.2;">{{ stats.batch_range_text }}</small>
+                <span class="info-box-number text-lg mt-1" style="line-height: 1.1;">{{ stats.non_residential_count }}</span>
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box mb-3">
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-2 mb-lg-0" style="min-width: 0;">
+        <div class="info-box h-100 mb-0 shadow-sm">
             <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-user-check"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Active Admissions</span>
-                <span class="info-box-number text-lg">{{ stats.active_students }}</span>
+            <div class="info-box-content py-2">
+                <span class="info-box-text font-weight-bold text-dark mb-0" style="line-height: 1.1;">Active Admissions</span>
+                <small class="d-block text-secondary font-weight-bold" style="font-size: 0.7rem; line-height: 1.2;">{{ stats.batch_range_text }}</small>
+                <span class="info-box-number text-lg mt-1" style="line-height: 1.1;">{{ stats.active_students }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-2 mb-lg-0" style="min-width: 0;">
+        <div class="info-box clickable-card h-100 mb-0 shadow-sm" data-toggle="modal" data-target="#photoCoverageModal" style="cursor: pointer;" title="Latest Batch ({% if stats.latest_batch_name %}{{ stats.latest_batch_name }}{% else %}Latest{% endif %}): {{ stats.latest_batch_photo_count }} of {{ stats.latest_batch_total_active }} active students have photos. Click to view all batches &amp; depts.">
+            <span class="info-box-icon elevation-1" style="background: linear-gradient(135deg, #f093fb, #f5576c) !important; color: white;"><i class="fas fa-camera"></i></span>
+            <div class="info-box-content py-2">
+                <span class="info-box-text font-weight-bold text-dark mb-0" style="line-height: 1.1;">Photo Coverage</span>
+                <small class="d-block text-secondary font-weight-bold" style="font-size: 0.7rem; line-height: 1.2;">Intake: {% if stats.latest_batch_name %}{{ stats.latest_batch_name }}{% else %}Latest{% endif %}</small>
+                <span class="info-box-number text-lg mt-1" style="line-height: 1.1;">{{ stats.latest_batch_photo_coverage }}%</span>
             </div>
         </div>
     </div>
 </div>
-
-
-
 
 <!-- Main Charts Row -->
 <div class="row">
@@ -307,7 +294,17 @@
                             {% for student in stats.recent_students %}
                             <tr>
                                 <td class="pl-3 py-1 font-weight-bold"><a href="{% url 'student_profile' student.student_id %}">{{ student.student_id }}</a></td>
-                                <td class="py-1">{{ student.student_name }}</td>
+                                <td class="py-1">
+                                    <a href="{% url 'student_profile' student.student_id %}" class="text-dark font-weight-bold">{{ student.student_name }}</a>
+                                    {% if student.ssc_verified and student.hsc_verified %}
+                                        <span class="text-success ml-1 font-weight-black" style="color: #10b981;" title="Both SSC &amp; HSC Board Verified"><i class="fas fa-check-double" style="font-size: 12px;"></i></span>
+                                    {% elif student.ssc_verified or student.hsc_verified %}
+                                        <span class="text-info ml-1 font-weight-black" style="color: #0284c7;" title="{% if student.ssc_verified %}SSC{% else %}HSC{% endif %} Board Verified"><i class="fas fa-check" style="font-size: 12px;"></i></span>
+                                    {% endif %}
+                                    {% if student.bteb_verified %}
+                                        <span class="text-warning ml-1" title="BTEB Technical Board Verified"><i class="fas fa-industry" style="font-size: 11px;"></i></span>
+                                    {% endif %}
+                                </td>
                                 <td class="py-1"><span class="badge badge-info" title="{{ student.program }}" style="cursor: help;">{{ student.short_name }}</span></td>
                                 <td class="text-muted small d-none d-md-table-cell py-1">{{ student.batch }}</td>
                                 <td class="small font-weight-bold d-none d-md-table-cell py-1">{{ student.created_at|date:"d F Y, h:i A" }}</td>
@@ -501,28 +498,207 @@
             </div>
         </div>
 
-        <!-- Program Distribution Donut Chart -->
-        <div class="card card-info shadow-sm mt-3" style="border-radius: 12px;">
-            <div class="card-header border-0 bg-transparent pt-3 pb-0 d-flex align-items-center justify-content-between flex-wrap">
-                <h3 class="card-title font-weight-bold mb-2 mb-sm-0 text-dark">
-                    <i class="fas fa-chart-pie mr-2 text-info"></i> Program Distribution
-                </h3>
-                <div style="min-width: 160px; max-width: 220px;" class="mb-2 mb-sm-0">
-                    <select id="unifiedBatchFilter" class="form-control form-control-sm font-weight-bold" style="border-radius: 8px; height: auto; padding: 4px 8px;">
-                        {% if stats.latest_batch_name %}
-                        <option value="{{ stats.latest_batch_name }}" selected>{{ stats.latest_batch_name }} (Latest)</option>
-                        {% endif %}
-                        <option value="all">Overall System</option>
-                        {% for batch in stats.all_batches %}
-                            {% if batch != stats.latest_batch_name %}
-                            <option value="{{ batch }}">{{ batch }}</option>
+        <!-- Multi-Tab Program & Additional Fees Distribution Card -->
+        <div class="card card-primary card-outline card-outline-tabs shadow-sm mt-3" style="border-radius: 12px; border-top: 3px solid #0284c7;">
+            <div class="card-header p-0 border-bottom-0">
+                <div class="d-flex align-items-center justify-content-between flex-wrap px-3 pt-2">
+                    <ul class="nav nav-tabs border-bottom-0" id="programFeeTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active font-weight-bold" id="tab-program-dist" data-toggle="tab" href="#pane-program-dist" role="tab" aria-controls="pane-program-dist" aria-selected="true" style="border-top-left-radius: 10px; font-size: 0.83rem;">
+                                <i class="fas fa-chart-pie mr-1 text-info"></i> Programs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link font-weight-bold" id="tab-medical-fee" data-toggle="tab" href="#pane-medical-fee" role="tab" aria-controls="pane-medical-fee" aria-selected="false" style="font-size: 0.83rem;">
+                                <i class="fas fa-notes-medical mr-1 text-teal"></i> Med/Scout
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link font-weight-bold" id="tab-uniform-fee" data-toggle="tab" href="#pane-uniform-fee" role="tab" aria-controls="pane-uniform-fee" aria-selected="false" style="font-size: 0.83rem;">
+                                <i class="fas fa-vest mr-1 text-primary"></i> Uniform
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link font-weight-bold" id="tab-combined-fee" data-toggle="tab" href="#pane-combined-fee" role="tab" aria-controls="pane-combined-fee" aria-selected="false" style="font-size: 0.83rem;">
+                                <i class="fas fa-wallet mr-1 text-success"></i> Summary
+                            </a>
+                        </li>
+                    </ul>
+                    <div style="min-width: 140px; max-width: 180px;" class="my-1">
+                        <select id="unifiedBatchFilter" class="form-control form-control-sm font-weight-bold" style="border-radius: 8px; height: auto; padding: 3px 8px; font-size: 0.8rem;">
+                            {% if stats.latest_batch_name %}
+                            <option value="{{ stats.latest_batch_name }}" selected>{{ stats.latest_batch_name }} (Latest)</option>
                             {% endif %}
-                        {% endfor %}
-                    </select>
+                            <option value="all">Overall System</option>
+                            {% for batch in stats.all_batches %}
+                                {% if batch != stats.latest_batch_name %}
+                                <option value="{{ batch }}">{{ batch }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="card-body">
-                <canvas id="programDistributionChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                <div class="tab-content" id="programFeeTabsContent">
+                    <!-- Tab 1: Program Distribution Donut Chart -->
+                    <div class="tab-pane fade show active" id="pane-program-dist" role="tabpanel" aria-labelledby="tab-program-dist">
+                        <canvas id="programDistributionChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    </div>
+
+                    <!-- Tab 2: Medical, BNCC & Rover Scout Fee -->
+                    <div class="tab-pane fade" id="pane-medical-fee" role="tabpanel" aria-labelledby="tab-medical-fee">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small font-weight-bold text-muted text-uppercase">Fee Rate: ৳1,540 / student</span>
+                            <span class="badge badge-teal text-white font-weight-bold" id="dash_med_pct_badge">0% Paid</span>
+                        </div>
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <div class="p-2 rounded bg-light border">
+                                    <small class="text-muted d-block font-weight-bold">Total Paid</small>
+                                    <span class="font-weight-black text-success" id="dash_med_total_paid" style="font-size: 1.25rem;">0</span>
+                                    <small class="d-block text-muted" id="dash_med_total_collected">৳0</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-2 rounded bg-light border">
+                                    <small class="text-muted d-block font-weight-bold">Total Unpaid</small>
+                                    <span class="font-weight-black text-danger" id="dash_med_total_unpaid" style="font-size: 1.25rem;">0</span>
+                                    <small class="d-block text-muted" id="dash_med_total_due">৳0</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Male vs Female Breakdown Table -->
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-2 text-center" style="font-size: 0.8rem;">
+                                <thead class="bg-light text-muted">
+                                    <tr>
+                                        <th class="text-left">Gender</th>
+                                        <th>Paid</th>
+                                        <th>Unpaid</th>
+                                        <th>Collections</th>
+                                        <th>Due</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-left font-weight-bold text-primary"><i class="fas fa-mars mr-1"></i> Male</td>
+                                        <td class="font-weight-bold text-success" id="dash_med_male_paid">0</td>
+                                        <td class="font-weight-bold text-danger" id="dash_med_male_unpaid">0</td>
+                                        <td class="text-dark font-weight-bold" id="dash_med_male_col">৳0</td>
+                                        <td class="text-danger" id="dash_med_male_due">৳0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-left font-weight-bold text-pink" style="color: #e83e8c;"><i class="fas fa-venus mr-1"></i> Female</td>
+                                        <td class="font-weight-bold text-success" id="dash_med_female_paid">0</td>
+                                        <td class="font-weight-bold text-danger" id="dash_med_female_unpaid">0</td>
+                                        <td class="text-dark font-weight-bold" id="dash_med_female_col">৳0</td>
+                                        <td class="text-danger" id="dash_med_female_due">৳0</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="bg-light font-weight-bold">
+                                    <tr>
+                                        <td class="text-left">Total</td>
+                                        <td id="dash_med_foot_paid">0</td>
+                                        <td id="dash_med_foot_unpaid">0</td>
+                                        <td id="dash_med_foot_col" class="text-success">৳0</td>
+                                        <td id="dash_med_foot_due" class="text-danger">৳0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Uniform Service -->
+                    <div class="tab-pane fade" id="pane-uniform-fee" role="tabpanel" aria-labelledby="tab-uniform-fee">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small font-weight-bold text-muted text-uppercase">Male ৳4,400 | Female ৳5,400</span>
+                            <span class="badge badge-primary font-weight-bold" id="dash_uni_pct_badge">0% Paid</span>
+                        </div>
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <div class="p-1 rounded bg-light border">
+                                    <small class="text-muted d-block font-weight-bold" style="font-size: 0.7rem;">Opted In</small>
+                                    <span class="font-weight-bold text-primary" id="dash_uni_opted_in">0</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-1 rounded bg-light border">
+                                    <small class="text-muted d-block font-weight-bold" style="font-size: 0.7rem;">Paid</small>
+                                    <span class="font-weight-bold text-success" id="dash_uni_total_paid">0</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-1 rounded bg-light border">
+                                    <small class="text-muted d-block font-weight-bold" style="font-size: 0.7rem;">Opted Out</small>
+                                    <span class="font-weight-bold text-secondary" id="dash_uni_total_out">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Male vs Female Package Table -->
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-2 text-center" style="font-size: 0.8rem;">
+                                <thead class="bg-light text-muted">
+                                    <tr>
+                                        <th class="text-left">Package</th>
+                                        <th>In</th>
+                                        <th>Paid</th>
+                                        <th>Due</th>
+                                        <th>Collected</th>
+                                        <th>Out</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-left font-weight-bold text-primary">Male (4.4k)</td>
+                                        <td id="dash_uni_male_in">0</td>
+                                        <td class="text-success font-weight-bold" id="dash_uni_male_paid">0</td>
+                                        <td class="text-danger" id="dash_uni_male_due">0</td>
+                                        <td class="font-weight-bold" id="dash_uni_male_col">৳0</td>
+                                        <td class="text-muted" id="dash_uni_male_out">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-left font-weight-bold text-pink" style="color: #e83e8c;">Female (5.4k)</td>
+                                        <td id="dash_uni_female_in">0</td>
+                                        <td class="text-success font-weight-bold" id="dash_uni_female_paid">0</td>
+                                        <td class="text-danger" id="dash_uni_female_due">0</td>
+                                        <td class="font-weight-bold" id="dash_uni_female_col">৳0</td>
+                                        <td class="text-muted" id="dash_uni_female_out">0</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="bg-light font-weight-bold">
+                                    <tr>
+                                        <td class="text-left">Total</td>
+                                        <td id="dash_uni_foot_in">0</td>
+                                        <td id="dash_uni_foot_paid" class="text-success">0</td>
+                                        <td id="dash_uni_foot_due" class="text-danger">0</td>
+                                        <td id="dash_uni_foot_col" class="text-primary">৳0</td>
+                                        <td id="dash_uni_foot_out" class="text-muted">0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab 4: Grand Summary -->
+                    <div class="tab-pane fade" id="pane-combined-fee" role="tabpanel" aria-labelledby="tab-combined-fee">
+                        <div class="p-3 rounded mb-3 text-center" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #bbf7d0;">
+                            <small class="text-success font-weight-bold text-uppercase d-block mb-1">Total Additional Institutional Collections</small>
+                            <h3 class="font-weight-black text-success mb-0" id="dash_grand_collected">৳0</h3>
+                        </div>
+                        <div class="p-3 rounded text-center mb-3" style="background: linear-gradient(135deg, #fff1f2, #ffe4e6); border: 1px solid #fecdd3;">
+                            <small class="text-danger font-weight-bold text-uppercase d-block mb-1">Total Outstanding Additional Dues</small>
+                            <h4 class="font-weight-black text-danger mb-0" id="dash_grand_due">৳0</h4>
+                        </div>
+                        <div class="text-center">
+                            <a href="{% url 'additional_fees_report' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-weight-bold">
+                                <i class="fas fa-file-invoice mr-1"></i> Open Intelligence Report Hub &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -929,6 +1105,230 @@
                             <span class="sr-only">Loading...</span>
                         </div>
                         <p class="text-muted mt-2">Fetching student records...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancelled Admissions Batch-Department Matrix Modal -->
+<div class="modal fade" id="cancelledMatrixModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px; background: linear-gradient(135deg, #6f42c1, #5a32a3) !important;">
+                <h5 class="modal-title font-weight-bold" id="cancelledMatrixModalTitle">
+                    <i class="fas fa-user-slash mr-2"></i> Cancelled Admissions Matrix (Batchwise &amp; Deptwise)
+                </h5>
+                <div class="d-flex align-items-center">
+                    <button type="button" id="btn-copy-cancelled-matrix" class="btn btn-sm btn-outline-light mr-2 rounded-pill px-2.5 py-1" style="font-size: 0.8rem; border-color: rgba(255,255,255,0.4);" title="Copy Cancelled Matrix Data">
+                        <i class="fas fa-copy mr-1"></i> Copy Data
+                    </button>
+                    <a href="{% url 'cancellation_hub' %}" class="btn btn-sm btn-light text-purple mr-2 font-weight-bold rounded-pill px-3 py-1" style="font-size: 0.8rem; color: #6f42c1 !important;">
+                        <i class="fas fa-external-link-alt mr-1"></i> Cancellation Hub
+                    </a>
+                    <button type="button" class="close text-white ml-2" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body p-4">
+                <div id="cancelled-matrix-table-view">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover mb-0 text-center align-middle" style="font-size: 0.85rem;" id="cancelledMatrixTable">
+                            <thead class="bg-light text-muted small text-uppercase font-weight-bold">
+                                <tr>
+                                    <th class="text-left p-2" style="min-width: 100px;">Batch</th>
+                                    {% for col in cancelled_matrix_cols %}
+                                        <th class="p-2">{{ col }}</th>
+                                    {% endfor %}
+                                    <th class="bg-light font-weight-bold text-dark p-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in cancelled_matrix_rows %}
+                                    <tr>
+                                        <td class="text-left font-weight-bold text-dark p-2">
+                                            <span class="badge px-2 py-0.5" style="font-size: 0.75rem; background: #6f42c1; color: white;">{{ row.batch_name }}</span>
+                                        </td>
+                                        {% for count in row.prog_counts %}
+                                            <td class="p-1 align-middle">
+                                                {% if count > 0 %}
+                                                    <a href="{% url 'cancellation_hub' %}?batch={{ row.batch_name|urlencode }}&target=cancelled" class="font-weight-bold" style="text-decoration: none; font-size: 0.85rem; display: inline-block; min-width: 32px; color: #6f42c1 !important;" data-toggle="tooltip" title="Click to view in Cancellation Hub">
+                                                        {{ count }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted small">-</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        <td class="font-weight-bold bg-light p-1 align-middle">
+                                            <a href="{% url 'cancellation_hub' %}?batch={{ row.batch_name|urlencode }}&target=cancelled" class="text-dark font-weight-bold" style="text-decoration: none; font-size: 0.85rem; display: inline-block; min-width: 32px;" data-toggle="tooltip" title="Click to view all cancelled students in this batch">
+                                                {{ row.row_total }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="{{ cancelled_matrix_cols|length|add:2 }}" class="text-center py-5 text-muted">
+                                            No cancelled admission records found in the system.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if cancelled_matrix_rows %}
+                                <tfoot class="bg-light font-weight-bold">
+                                    <tr>
+                                        <td class="text-left p-2">Total</td>
+                                        {% for col_total in cancelled_column_totals %}
+                                            <td class="p-1 align-middle font-weight-bold" style="color: #6f42c1 !important;">
+                                                {% if col_total > 0 %}
+                                                    <a href="{% url 'cancellation_hub' %}?target=cancelled" class="font-weight-bold" style="text-decoration: none; font-size: 0.85rem; display: inline-block; min-width: 32px; color: #6f42c1 !important;" data-toggle="tooltip" title="Click to view all cancelled students in this program">
+                                                        {{ col_total }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted small">0</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        <td class="font-weight-bold p-1 align-middle" style="color: #6f42c1 !important;">
+                                            <a href="{% url 'cancellation_hub' %}?target=cancelled" class="font-weight-bold" style="text-decoration: none; font-size: 0.85rem; display: inline-block; min-width: 32px; color: #6f42c1 !important;" data-toggle="tooltip" title="Click to view all cancelled students">
+                                                {{ cancelled_grand_total }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Photo Coverage Batch-Department Matrix Modal -->
+<div class="modal fade" id="photoCoverageModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="modal-header text-white border-0" style="border-top-left-radius: 15px; border-top-right-radius: 15px; background: linear-gradient(135deg, #f093fb, #f5576c) !important;">
+                <h5 class="modal-title font-weight-bold" id="photoCoverageModalTitle">
+                    <i class="fas fa-camera mr-2"></i> Active Student Photo Coverage Matrix (Batchwise &amp; Deptwise)
+                </h5>
+                <div class="d-flex align-items-center">
+                    <button type="button" id="btn-copy-photo-matrix" class="btn btn-sm btn-outline-light mr-2 rounded-pill px-2.5 py-1" style="font-size: 0.8rem; border-color: rgba(255,255,255,0.4);" title="Copy Photo Coverage Matrix">
+                        <i class="fas fa-copy mr-1"></i> Copy Data
+                    </button>
+                    <a href="{% url 'export_center' %}" class="btn btn-sm btn-light text-danger font-weight-bold rounded-pill px-3 py-1 mr-2" style="font-size: 0.8rem;">
+                        <i class="fas fa-download mr-1"></i> Export Photos
+                    </a>
+                    <button type="button" class="close text-white ml-2" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div class="small text-muted font-weight-bold">
+                        <i class="fas fa-info-circle mr-1 text-danger"></i> Active Students Photo Status Matrix
+                    </div>
+                    <div class="btn-group btn-group-toggle shadow-sm" data-toggle="buttons" style="border-radius: 20px; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px;">
+                        <label class="btn btn-xs font-weight-bold rounded-pill active text-white" id="lblPhotoViewCount" style="background: #f5576c; transition: all 0.2s; border: none;">
+                            <input type="radio" name="photoViewToggle" id="photoViewCount" checked> <i class="fas fa-calculator mr-1"></i> Data Count (x/y)
+                        </label>
+                        <label class="btn btn-xs font-weight-bold rounded-pill text-secondary" id="lblPhotoViewPct" style="background: transparent; transition: all 0.2s; border: none;">
+                            <input type="radio" name="photoViewToggle" id="photoViewPct"> <i class="fas fa-percent mr-1"></i> Percentage (%)
+                        </label>
+                    </div>
+                </div>
+
+                <div id="photo-matrix-table-view">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover mb-0 text-center align-middle" style="font-size: 0.85rem;" id="photoMatrixTable">
+                            <thead class="bg-light text-muted small text-uppercase font-weight-bold">
+                                <tr>
+                                    <th class="text-left p-2" style="min-width: 100px;">Batch</th>
+                                    {% for col in photo_matrix_cols %}
+                                        <th class="p-2">{{ col }}</th>
+                                    {% endfor %}
+                                    <th class="bg-light font-weight-bold text-dark p-2">Total Coverage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in photo_matrix_rows %}
+                                    <tr>
+                                        <td class="text-left font-weight-bold text-dark p-2">
+                                            <span class="badge px-2 py-1" style="font-size: 0.75rem; background: linear-gradient(135deg, #f093fb, #f5576c); color: white;">{{ row.batch_name }}</span>
+                                        </td>
+                                        {% for cell in row.prog_cells %}
+                                            <td class="p-1 align-middle">
+                                                {% if cell.total > 0 %}
+                                                    <a href="{% url 'student_list' %}?batch={{ row.batch_name|urlencode }}" style="text-decoration: none; display: inline-block;" data-toggle="tooltip" title="{{ cell.photo }} of {{ cell.total }} active students have photos ({{ cell.pct }}%)">
+                                                        <span class="photo-view-mode count-mode badge px-2 py-1 font-weight-bold"
+                                                              style="{% if cell.pct == 100 %}background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;{% elif cell.pct >= 75 %}background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;{% elif cell.pct >= 50 %}background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a;{% else %}background-color: #ffe4e6; color: #9f1239; border: 1px solid #fecdd3;{% endif %} font-size: 0.78rem;">
+                                                            {{ cell.photo }}/{{ cell.total }}
+                                                        </span>
+                                                        <span class="photo-view-mode pct-mode badge px-2 py-1 font-weight-bold"
+                                                              style="{% if cell.pct == 100 %}background-color: #10b981; color: white;{% elif cell.pct >= 75 %}background-color: #0284c7; color: white;{% elif cell.pct >= 50 %}background-color: #d97706; color: white;{% else %}background-color: #e11d48; color: white;{% endif %} font-size: 0.78rem; display: none;">
+                                                            {{ cell.pct }}%
+                                                        </span>
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted small">-</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        <td class="font-weight-bold bg-light p-1 align-middle">
+                                            <a href="{% url 'student_list' %}?batch={{ row.batch_name|urlencode }}" style="text-decoration: none; display: inline-block;" data-toggle="tooltip" title="{{ row.row_photo }} of {{ row.row_total }} students in this batch have photos ({{ row.row_pct }}%)">
+                                                <span class="photo-view-mode count-mode badge badge-light border text-dark px-2 py-1" style="font-size: 0.78rem;">
+                                                    {{ row.row_photo }}/{{ row.row_total }}
+                                                </span>
+                                                <span class="photo-view-mode pct-mode badge badge-dark px-2 py-1" style="font-size: 0.78rem; display: none;">
+                                                    {{ row.row_pct }}%
+                                                </span>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="{{ photo_matrix_cols|length|add:2 }}" class="text-center py-5 text-muted">
+                                            No active student records found in the system.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if photo_matrix_rows %}
+                                <tfoot class="bg-light font-weight-bold">
+                                    <tr>
+                                        <td class="text-left p-2">Total</td>
+                                        {% for col in photo_column_totals %}
+                                            <td class="p-1 align-middle font-weight-bold">
+                                                {% if col.total > 0 %}
+                                                    <span class="photo-view-mode count-mode badge px-2 py-1 font-weight-bold"
+                                                          style="{% if col.pct == 100 %}background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;{% elif col.pct >= 75 %}background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;{% elif col.pct >= 50 %}background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a;{% else %}background-color: #ffe4e6; color: #9f1239; border: 1px solid #fecdd3;{% endif %} font-size: 0.78rem;">
+                                                        {{ col.photo }}/{{ col.total }}
+                                                    </span>
+                                                    <span class="photo-view-mode pct-mode badge px-2 py-1 font-weight-bold"
+                                                          style="{% if col.pct == 100 %}background-color: #10b981; color: white;{% elif col.pct >= 75 %}background-color: #0284c7; color: white;{% elif col.pct >= 50 %}background-color: #d97706; color: white;{% else %}background-color: #e11d48; color: white;{% endif %} font-size: 0.78rem; display: none;">
+                                                        {{ col.pct }}%
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted small">-</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        <td class="font-weight-bold p-1 align-middle">
+                                            <span class="photo-view-mode count-mode badge badge-dark px-2.5 py-1" style="font-size: 0.8rem;">
+                                                {{ total_active_with_photo }}/{{ total_active_all }}
+                                            </span>
+                                            <span class="photo-view-mode pct-mode badge px-2.5 py-1 text-white font-weight-bold" style="font-size: 0.8rem; background: linear-gradient(135deg, #f093fb, #f5576c); display: none;">
+                                                {{ photo_grand_pct }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            {% endif %}
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1381,6 +1781,59 @@
                 initReligionChart(res.distribution);
                 $('#religionDistributionChart').closest('.card').css('opacity', '1');
             });
+
+            // 7. Additional Institutional Fees (Medical/BNCC/Scout & Uniform)
+            $.get("{% url 'api_additional_fees_stats' %}", { batch: batch }, function(res) {
+                // Medical & Rover Scout Tab
+                $('#dash_med_pct_badge').text(`${res.medical.collection_pct}% Paid`);
+                $('#dash_med_total_paid').text(res.medical.total_paid);
+                $('#dash_med_total_collected').text(`৳${res.medical.total_collected.toLocaleString()}`);
+                $('#dash_med_total_unpaid').text(res.medical.total_unpaid);
+                $('#dash_med_total_due').text(`৳${res.medical.total_due.toLocaleString()}`);
+
+                $('#dash_med_male_paid').text(res.medical.male_paid);
+                $('#dash_med_male_unpaid').text(res.medical.male_unpaid);
+                $('#dash_med_male_col').text(`৳${res.medical.male_collected.toLocaleString()}`);
+                $('#dash_med_male_due').text(`৳${res.medical.male_due.toLocaleString()}`);
+
+                $('#dash_med_female_paid').text(res.medical.female_paid);
+                $('#dash_med_female_unpaid').text(res.medical.female_unpaid);
+                $('#dash_med_female_col').text(`৳${res.medical.female_collected.toLocaleString()}`);
+                $('#dash_med_female_due').text(`৳${res.medical.female_due.toLocaleString()}`);
+
+                $('#dash_med_foot_paid').text(res.medical.total_paid);
+                $('#dash_med_foot_unpaid').text(res.medical.total_unpaid);
+                $('#dash_med_foot_col').text(`৳${res.medical.total_collected.toLocaleString()}`);
+                $('#dash_med_foot_due').text(`৳${res.medical.total_due.toLocaleString()}`);
+
+                // Uniform Service Tab
+                $('#dash_uni_pct_badge').text(`${res.uniform.collection_pct}% Paid`);
+                $('#dash_uni_opted_in').text(res.uniform.total_opted_in);
+                $('#dash_uni_total_paid').text(res.uniform.total_paid);
+                $('#dash_uni_total_out').text(res.uniform.total_out);
+
+                $('#dash_uni_male_in').text(res.uniform.male_opted_in);
+                $('#dash_uni_male_paid').text(res.uniform.male_paid);
+                $('#dash_uni_male_due').text(res.uniform.male_due);
+                $('#dash_uni_male_col').text(`৳${res.uniform.male_collected.toLocaleString()}`);
+                $('#dash_uni_male_out').text(res.uniform.male_out);
+
+                $('#dash_uni_female_in').text(res.uniform.female_opted_in);
+                $('#dash_uni_female_paid').text(res.uniform.female_paid);
+                $('#dash_uni_female_due').text(res.uniform.female_due);
+                $('#dash_uni_female_col').text(`৳${res.uniform.female_collected.toLocaleString()}`);
+                $('#dash_uni_female_out').text(res.uniform.female_out);
+
+                $('#dash_uni_foot_in').text(res.uniform.total_opted_in);
+                $('#dash_uni_foot_paid').text(res.uniform.total_paid);
+                $('#dash_uni_foot_due').text(res.uniform.total_due);
+                $('#dash_uni_foot_col').text(`৳${res.uniform.total_collected.toLocaleString()}`);
+                $('#dash_uni_foot_out').text(res.uniform.total_out);
+
+                // Combined Summary Tab
+                $('#dash_grand_collected').text(`৳${res.combined.grand_collected.toLocaleString()}`);
+                $('#dash_grand_due').text(`৳${res.combined.grand_due.toLocaleString()}`);
+            });
         });
 
         // Initialize active batch labels & trigger batch filter loading
@@ -1613,63 +2066,19 @@
         const btn = $(this);
         const icon = btn.find('i')[0];
         
-        let text = "STUDENT DISTRIBUTION MATRIX REPORT\n";
-        text += "==================================\n\n";
+        let $table = $('#matrix-table-view table');
+        let text = '';
         
-        // Retrieve columns/headers
-        const headers = [];
-        $('#studentsMatrixModal thead th').each(function() {
-            headers.push($(this).text().trim());
-        });
-        
-        // Retrieve rows
-        const rows = [];
-        $('#studentsMatrixModal tbody tr').each(function() {
-            const rowCells = [];
-            $(this).find('td').each(function() {
-                rowCells.push($(this).text().trim());
+        $table.find('tr').each(function() {
+            let rowData = [];
+            $(this).find('th, td').each(function() {
+                let cellText = $(this).text().trim().replace(/\s+/g, ' ');
+                rowData.push(cellText);
             });
-            if (rowCells.length > 0) {
-                rows.push(rowCells);
+            if (rowData.length > 0) {
+                text += rowData.join('\t') + '\n';
             }
         });
-        
-        // Retrieve totals (footer)
-        const footerCells = [];
-        $('#studentsMatrixModal tfoot td').each(function() {
-            footerCells.push($(this).text().trim());
-        });
-        
-        text += "Summary by Batch and Program:\n";
-        text += "-----------------------------\n";
-        
-        rows.forEach(row => {
-            const batchName = row[0];
-            const rowTotal = row[row.length - 1];
-            
-            // Collect all program counts for this batch in comma-separated list
-            const batchCounts = [];
-            for (let i = 1; i < row.length - 1; i++) {
-                const progName = headers[i];
-                const count = (row[i] === '-' || !row[i]) ? '0' : row[i];
-                batchCounts.push(`${progName}: ${count}`);
-            }
-            
-            text += `• Batch: ${batchName} (Total: ${rowTotal}) -> ${batchCounts.join(', ')}\n`;
-        });
-        text += "\n";
-        
-        if (footerCells.length > 0) {
-            text += "Overall Totals:\n";
-            text += "---------------\n";
-            for (let i = 1; i < footerCells.length - 1; i++) {
-                const progName = headers[i];
-                const count = footerCells[i];
-                text += `• ${progName}: ${count} students\n`;
-            }
-            const grandTotal = footerCells[footerCells.length - 1];
-            text += `• Grand Total: ${grandTotal} students\n`;
-        }
         
         function showSuccess() {
             if (icon) {
@@ -1705,6 +2114,101 @@
         navigator.clipboard.writeText(text)
             .then(showSuccess)
             .catch(copyFallback);
+    });
+
+    // Copy Cancelled Matrix data clipboard handler
+    $('#btn-copy-cancelled-matrix').on('click', function() {
+        let $table = $('#cancelledMatrixTable');
+        let copyText = '';
+        
+        $table.find('tr').each(function() {
+            let rowData = [];
+            $(this).find('th, td').each(function() {
+                let text = $(this).text().trim().replace(/\s+/g, ' ');
+                rowData.push(text);
+            });
+            if (rowData.length > 0) {
+                copyText += rowData.join('\t') + '\n';
+            }
+        });
+
+        if (!navigator.clipboard) {
+            const textArea = document.createElement('textarea');
+            textArea.value = copyText;
+            textArea.style.position = 'fixed';
+            textArea.style.top = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                toastr.success('Cancelled matrix data copied to clipboard!');
+            } catch (err) {
+                toastr.error('Failed to copy cancelled matrix data.');
+            }
+            document.body.removeChild(textArea);
+            return;
+        }
+
+        navigator.clipboard.writeText(copyText).then(function() {
+            toastr.success('Cancelled matrix data copied to clipboard!');
+        }).catch(function() {
+            toastr.error('Failed to copy cancelled matrix data.');
+        });
+    });
+
+    // Copy Photo Coverage Matrix clipboard handler
+    $('#btn-copy-photo-matrix').on('click', function() {
+        let $table = $('#photoMatrixTable');
+        let copyText = '';
+        
+        $table.find('tr').each(function() {
+            let rowData = [];
+            $(this).find('th, td').each(function() {
+                let text = $(this).text().trim().replace(/\s+/g, ' ');
+                rowData.push(text);
+            });
+            if (rowData.length > 0) {
+                copyText += rowData.join('\t') + '\n';
+            }
+        });
+
+        if (!navigator.clipboard) {
+            const textArea = document.createElement('textarea');
+            textArea.value = copyText;
+            textArea.style.position = 'fixed';
+            textArea.style.top = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                toastr.success('Photo coverage matrix copied to clipboard!');
+            } catch (err) {
+                toastr.error('Failed to copy photo matrix data.');
+            }
+            document.body.removeChild(textArea);
+            return;
+        }
+
+        navigator.clipboard.writeText(copyText).then(function() {
+            toastr.success('Photo coverage matrix copied to clipboard!');
+        }).catch(function() {
+            toastr.error('Failed to copy photo matrix data.');
+        });
+    });
+
+    // Toggle View Mode Handler for Photo Coverage Matrix (Count vs Percentage)
+    $(document).on('change', 'input[name="photoViewToggle"]', function() {
+        if ($('#photoViewPct').is(':checked')) {
+            $('.photo-view-mode.count-mode').hide();
+            $('.photo-view-mode.pct-mode').css('display', 'inline-block');
+            $('#lblPhotoViewCount').css({'background': 'transparent', 'color': '#64748b'}).removeClass('active text-white').addClass('text-secondary');
+            $('#lblPhotoViewPct').css({'background': '#f5576c', 'color': '#ffffff'}).addClass('active text-white').removeClass('text-secondary');
+        } else {
+            $('.photo-view-mode.pct-mode').hide();
+            $('.photo-view-mode.count-mode').css('display', 'inline-block');
+            $('#lblPhotoViewPct').css({'background': 'transparent', 'color': '#64748b'}).removeClass('active text-white').addClass('text-secondary');
+            $('#lblPhotoViewCount').css({'background': '#f5576c', 'color': '#ffffff'}).addClass('active text-white').removeClass('text-secondary');
+        }
     });
 </script>
 {% endblock %}

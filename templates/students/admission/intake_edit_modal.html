@@ -1,0 +1,82 @@
+{% load static %}
+<div class="modal fade" id="editIntakeModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning py-2 text-dark">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-edit mr-1"></i> Edit Admission Intake: {{ intake.intake_name }}
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form method="POST" action="{% url 'admin_intake_edit' intake.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Intake Name:</label>
+                            <input type="text" class="form-control" name="intake_name" value="{{ intake.intake_name }}" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Academic Year:</label>
+                            <select class="custom-select" name="academic_year">
+                                <option value="">-- Select Year --</option>
+                                {% for y in academic_years %}
+                                <option value="{{ y.id }}" {% if intake.academic_year_id == y.id %}selected{% endif %}>{{ y.year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Application Deadline:</label>
+                            <input type="datetime-local" class="form-control" name="application_deadline" 
+                                value="{{ intake.application_deadline|date:'Y-m-d\TH:i' }}">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Admission Exam Date & Time:</label>
+                            <input type="datetime-local" class="form-control" name="exam_date" 
+                                value="{{ intake.exam_date|date:'Y-m-d\TH:i' }}">
+                        </div>
+                        <div class="col-md-12 form-group">
+                            <label class="small font-weight-bold">Exam Venue:</label>
+                            <input type="text" class="form-control" name="exam_venue" value="{{ intake.exam_venue }}">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">Form Fee (BDT):</label>
+                            <input type="number" step="0.01" class="form-control" name="form_fee_bdt" value="{{ intake.form_fee_bdt }}" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">bKash Charge (BDT):</label>
+                            <input type="number" step="0.01" class="form-control" name="bkash_charge_bdt" value="{{ intake.bkash_charge_bdt }}" required>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label class="small font-weight-bold">bKash Number:</label>
+                            <input type="text" class="form-control" name="bkash_number" value="{{ intake.bkash_number }}" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label class="small font-weight-bold">Exam Roll Prefix:</label>
+                            <input type="text" class="form-control" name="exam_roll_prefix" value="{{ intake.exam_roll_prefix }}">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <div class="custom-control custom-checkbox mt-4 pt-2">
+                                <input type="checkbox" class="custom-control-input" id="edit_is_open" name="is_open_for_application" value="1" 
+                                    {% if intake.is_open_for_application %}checked{% endif %}>
+                                <label class="custom-control-label font-weight-bold text-success" for="edit_is_open">
+                                    Open for Online Applications
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-12 form-group mb-0">
+                            <label class="small font-weight-bold">Public Notice HTML (optional):</label>
+                            <textarea class="form-control" name="notice_html" rows="2">{{ intake.notice_html|default:'' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark">
+                        <i class="fas fa-save mr-1"></i> Update Intake
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

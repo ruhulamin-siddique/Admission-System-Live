@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -182,9 +183,15 @@
 
 <div class="auth-container">
     <div class="auth-logo">
-        <i class="fas fa-search-location"></i>
+        <div class="mb-3">
+            {% if sys_settings and sys_settings.logo_url %}
+                <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo" style="height: 68px; width: 68px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 4px; border: 2px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);">
+            {% else %}
+                <img src="/media/branding/logo.png" onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}';" alt="BAUST Logo" style="height: 68px; width: 68px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 4px; border: 2px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);">
+            {% endif %}
+        </div>
         <h2>TRACK STATUS</h2>
-        <span class="institution-name">Application Insight Portal</span>
+        <span class="institution-name">Application Insight Portal &bull; BAUST</span>
     </div>
 
     <div class="auth-card">

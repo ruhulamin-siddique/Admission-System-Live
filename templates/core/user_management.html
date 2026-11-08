@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block title %}User Management | Bangladesh Army University of Science and Technology{% endblock %}
 {% block page_title %}Staff & User Security{% endblock %}
@@ -110,6 +111,38 @@
     body.dark-mode .popover.staff-access-popover .text-dark {
         color: #f8fafc !important;
     }
+
+    /* Sticky table header */
+    .security-table-card .table-responsive {
+        max-height: calc(100vh - 260px);
+        min-height: 420px;
+        overflow-y: auto;
+        position: relative;
+    }
+    .security-table-card thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background-color: #f8fafc !important;
+        box-shadow: inset 0 -1px 0 #e2e8f0, 0 2px 6px rgba(0,0,0,0.06) !important;
+    }
+    body.dark-mode .security-table-card thead th {
+        background-color: #1e293b !important;
+        box-shadow: inset 0 -1px 0 #334155, 0 2px 6px rgba(0,0,0,0.2) !important;
+    }
+
+    /* HTMX Loading Indicator */
+    .directory-loading-spinner {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: #3b82f6;
+        font-weight: 600;
+    }
+    .directory-loading-spinner.htmx-request {
+        display: inline-flex;
+    }
 </style>
 {% endblock %}
 
@@ -142,9 +175,45 @@
     </div>
 </div>
 
+{% if pending_count > 0 %}
+<div class="alert alert-warning alert-dismissible fade show shadow-sm border-0 mb-3" role="alert" style="border-radius: 12px; background: linear-gradient(135deg, #fffbeb, #fef3c7); border-left: 4px solid #f59e0b !important;">
+    <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 12px;">
+        <div class="d-flex align-items-center">
+            <div class="mr-3 bg-warning text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                <i class="fas fa-user-clock" style="font-size: 1.1rem;"></i>
+            </div>
+            <div>
+                <h6 class="font-weight-bold text-dark mb-1 d-flex align-items-center" style="gap: 8px;">
+                    <span>{% translate "Pending Staff Approvals" %}</span>
+                    <span class="badge badge-danger badge-pill px-2" style="font-size: 0.75rem;">{{ pending_count }} {% translate "Action Required" %}</span>
+                </h6>
+                <p class="mb-0 small text-secondary">
+                    {% blocktranslate count counter=pending_count %}There is <strong>1</strong> new staff account registration waiting for approval.{% plural %}There are <strong>{{ counter }}</strong> new staff account registrations waiting for approval.{% endblocktranslate %}
+                </p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center ml-auto mt-2 mt-sm-0" style="gap: 8px;">
+            <a href="?status=pending" class="btn btn-sm btn-warning font-weight-bold shadow-xs px-3" style="border-radius: 8px; color: #78350f;">
+                <i class="fas fa-filter mr-1"></i> {% translate "Filter Pending Requests" %} ({{ pending_count }})
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="card directory-toolbar mb-3 border-0 shadow-sm" style="border-radius: 12px; background: #ffffff;">
     <div class="card-body p-2">
-        <form method="get" class="m-0">
+        <form id="user-filter-form"
+              method="get"
+              action="{% url 'user_management' %}"
+              class="m-0"
+              hx-get="{% url 'user_management' %}"
+              hx-target="#user-directory-container"
+              hx-select="#user-directory-container"
+              hx-swap="outerHTML transition:true"
+              hx-trigger="submit, change from:#user-filter-form select, input delay:300ms from:#user-filter-form input[name='q']"
+              hx-indicator="#directory-loading"
+              hx-push-url="true">
             <div class="form-row align-items-center mx-n1">
                 <div class="col-lg-3 col-md-4 col-sm-6 px-1 mb-1 mb-md-0">
                     <div class="input-group input-group-sm">
@@ -180,21 +249,33 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-lg-3 col-md-3 col-sm-12 px-1 d-flex" style="gap: 4px;">
+                <div class="col-lg-3 col-md-3 col-sm-12 px-1 d-flex align-items-center" style="gap: 4px;">
                     <button type="submit" class="btn btn-sm btn-primary flex-fill font-weight-bold">
                         <i class="fas fa-filter mr-1"></i> Filter
                     </button>
                     {% if query or selected_role or selected_status or selected_scope %}
-                    <a href="{% url 'user_management' %}" class="btn btn-sm btn-light border flex-fill text-muted" title="Clear Filters">
+                    <a href="{% url 'user_management' %}"
+                       class="btn btn-sm btn-light border flex-fill text-muted"
+                       title="Clear Filters"
+                       hx-get="{% url 'user_management' %}"
+                       hx-target="#user-directory-container"
+                       hx-select="#user-directory-container"
+                       hx-swap="outerHTML transition:true"
+                       hx-indicator="#directory-loading"
+                       hx-push-url="true">
                         <i class="fas fa-times mr-1"></i> Clear
                     </a>
                     {% endif %}
+                    <span id="directory-loading" class="directory-loading-spinner ml-1">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </span>
                 </div>
             </div>
         </form>
     </div>
 </div>
 
+<div id="user-directory-container">
 <div class="card security-table-card">
     <div class="card-header border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center">
         <div>
@@ -593,12 +674,12 @@
         </div>
     </div>
 </div>
-</div>
+</div></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-$(document).ready(function() {
+function initStaffPopovers() {
     $('.staff-hover-cell').each(function() {
         const targetSelector = $(this).data('popover-target');
         const contentHtml = $(targetSelector).html();
@@ -614,6 +695,16 @@ $(document).ready(function() {
             }
         });
     });
+}
+
+$(document).ready(function() {
+    initStaffPopovers();
+});
+
+document.addEventListener('htmx:afterSwap', function(e) {
+    if (e.detail.target && (e.detail.target.id === 'user-directory-container' || e.detail.target.closest('#user-directory-container'))) {
+        initStaffPopovers();
+    }
 });
 </script>
 {% endblock %}

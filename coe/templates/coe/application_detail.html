@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n coe_tags %}
 
 {% block title %}{{ app.application_number }} | CoE{% endblock %}
 {% block page_title %}
@@ -51,7 +51,14 @@
           <tr><th width="200">{% trans "Application Type" %}</th><td><strong>{{ app.get_application_type_display }}</strong></td></tr>
           <tr><th>{% trans "Student Name" %}</th><td>{{ app.student_name }}</td></tr>
           <tr><th>{% trans "Student ID" %}</th><td><code>{{ app.student_id }}</code></td></tr>
-          <tr><th>{% trans "Mobile" %}</th><td>{{ app.mobile_number }}</td></tr>
+          <tr><th>{% trans "Mobile" %}</th>
+            <td>
+              {{ app.mobile_number }}
+              {% if app.mobile_number %}
+                {% whatsapp_btn app.mobile_number label="WhatsApp" css_class="btn btn-xs text-white font-weight-bold ml-2" %}
+              {% endif %}
+            </td>
+          </tr>
           {% if app.email %}<tr><th>{% trans "Email" %}</th><td>{{ app.email }}</td></tr>{% endif %}
           <tr><th>{% trans "Department" %}</th><td>{{ app.department }}</td></tr>
           <tr><th>{% trans "Session" %}</th><td>{{ app.session }}</td></tr>
@@ -67,7 +74,14 @@
           {% if app.purpose_destination %}<tr><th>{% trans "Purpose/Destination" %}</th><td>{{ app.purpose_destination }}</td></tr>{% endif %}
           {% if app.level_term %}<tr><th>{% trans "Level/Term" %}</th><td>{{ app.level_term }}</td></tr>{% endif %}
           {% if app.missing_doc_type %}<tr><th>{% trans "Missing Doc Type" %}</th><td>{{ app.missing_doc_type }}</td></tr>{% endif %}
-          <tr><th>{% trans "Assigned To" %}</th><td>{{ app.assigned_to.get_full_name|default:"—" }}</td></tr>
+          <tr><th>{% trans "Assigned To" %}</th>
+            <td>
+              {{ app.assigned_to.get_full_name|default:app.assigned_to.username|default:"—" }}
+              {% if app.assigned_to.profile.phone_number %}
+                {% whatsapp_btn app.assigned_to.profile.phone_number css_class="btn btn-xs text-white font-weight-bold ml-2" %}
+              {% endif %}
+            </td>
+          </tr>
           {% if app.dept_head_note %}<tr><th>{% trans "HoD Note" %}</th><td class="text-info">{{ app.dept_head_note }}</td></tr>{% endif %}
           {% if app.processing_note %}<tr><th>{% trans "Processing Note" %}</th><td>{{ app.processing_note }}</td></tr>{% endif %}
           {% if app.rejection_reason %}<tr><th>{% trans "Rejection Reason" %}</th><td class="text-danger">{{ app.rejection_reason }}</td></tr>{% endif %}
@@ -104,6 +118,114 @@
 
   <!-- RIGHT: Audit Timeline -->
   <div class="col-md-5">
+    <!-- Stage Duration SLA Matrix -->
+    <div class="card mb-3 border-0 shadow-sm" style="border-radius:12px;">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold mb-0" style="font-size:0.95rem;">
+          <i class="fas fa-stopwatch text-primary mr-2"></i>{% trans "Stage Duration & SLA Metrics" %}
+        </h3>
+        <span class="badge border bg-white" style="border-radius:12px; font-size:0.78rem;">
+          Total TAT: <strong>{{ app.total_turnaround_time }}</strong>
+        </span>
+      </div>
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center justify-content-between mb-3 p-2 bg-light rounded" style="border-left: 4px solid #3b82f6;">
+          <div>
+            <div class="text-muted small font-weight-bold">{% trans "Current Stage Duration" %}</div>
+            <div class="h5 font-weight-bold mb-0 text-primary">{{ app.current_stage_duration }}</div>
+          </div>
+          <div>
+            {% if app.sla_level == 'danger' %}
+            <span class="badge badge-danger px-3 py-1.5" style="border-radius:20px; font-size:0.82rem;"><i class="fas fa-fire mr-1"></i>🔥 Stalled (>48h)</span>
+            {% elif app.sla_level == 'warning' %}
+            <span class="badge badge-warning text-dark px-3 py-1.5" style="border-radius:20px; font-size:0.82rem;"><i class="fas fa-exclamation-circle mr-1"></i>⚠️ Warning (>24h)</span>
+            {% else %}
+            <span class="badge badge-success px-3 py-1.5" style="border-radius:20px; font-size:0.82rem;"><i class="fas fa-check-circle mr-1"></i>⏱️ Normal SLA</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="small font-weight-bold text-muted mb-2">{% trans "Role Time Accountability Breakdown:" %}</div>
+        
+        <div class="progress mb-3" style="height: 10px; border-radius: 8px; overflow: hidden;">
+          {% if app.role_time_analytics.hod.percent > 0 %}
+          <div class="progress-bar bg-info" role="progressbar" style="width: {{ app.role_time_analytics.hod.percent }}%" title="HoD: {{ app.role_time_analytics.hod.duration }} ({{ app.role_time_analytics.hod.percent }}%)"></div>
+          {% endif %}
+          {% if app.role_time_analytics.controller.percent > 0 %}
+          <div class="progress-bar bg-warning" role="progressbar" style="width: {{ app.role_time_analytics.controller.percent }}%" title="Controller: {{ app.role_time_analytics.controller.duration }} ({{ app.role_time_analytics.controller.percent }}%)"></div>
+          {% endif %}
+          {% if app.role_time_analytics.officer.percent > 0 %}
+          <div class="progress-bar bg-primary" role="progressbar" style="width: {{ app.role_time_analytics.officer.percent }}%" title="Officer: {{ app.role_time_analytics.officer.duration }} ({{ app.role_time_analytics.officer.percent }}%)"></div>
+          {% endif %}
+          {% if app.role_time_analytics.student_action.percent > 0 %}
+          <div class="progress-bar bg-danger" role="progressbar" style="width: {{ app.role_time_analytics.student_action.percent }}%" title="Student: {{ app.role_time_analytics.student_action.duration }} ({{ app.role_time_analytics.student_action.percent }}%)"></div>
+          {% endif %}
+          {% if app.role_time_analytics.delivery.percent > 0 %}
+          <div class="progress-bar bg-success" role="progressbar" style="width: {{ app.role_time_analytics.delivery.percent }}%" title="Delivery: {{ app.role_time_analytics.delivery.duration }} ({{ app.role_time_analytics.delivery.percent }}%)"></div>
+          {% endif %}
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-xs table-bordered mb-3 text-center" style="font-size:0.78rem;">
+            <thead class="bg-light">
+              <tr>
+                <th>{% trans "Role" %}</th>
+                <th>{% trans "Time Spent" %}</th>
+                <th>{% trans "% Lifetime" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left"><span class="badge badge-info mr-1">HoD</span> {% trans "Dept. Head" %}</td>
+                <td><strong>{{ app.role_time_analytics.hod.duration }}</strong></td>
+                <td>{{ app.role_time_analytics.hod.percent }}%</td>
+              </tr>
+              <tr>
+                <td class="text-left"><span class="badge badge-warning text-dark mr-1">CoE</span> {% trans "Controller / DCoE" %}</td>
+                <td><strong>{{ app.role_time_analytics.controller.duration }}</strong></td>
+                <td>{{ app.role_time_analytics.controller.percent }}%</td>
+              </tr>
+              <tr>
+                <td class="text-left"><span class="badge badge-primary mr-1">Officer</span> {% trans "Processing Officer" %}</td>
+                <td><strong>{{ app.role_time_analytics.officer.duration }}</strong></td>
+                <td>{{ app.role_time_analytics.officer.percent }}%</td>
+              </tr>
+              {% if app.role_time_analytics.student_action.seconds > 0 %}
+              <tr>
+                <td class="text-left"><span class="badge badge-danger mr-1">Student</span> {% trans "Student Action" %}</td>
+                <td><strong>{{ app.role_time_analytics.student_action.duration }}</strong></td>
+                <td>{{ app.role_time_analytics.student_action.percent }}%</td>
+              </tr>
+              {% endif %}
+              <tr>
+                <td class="text-left"><span class="badge badge-success mr-1">Delivery</span> {% trans "Delivery Counter" %}</td>
+                <td><strong>{{ app.role_time_analytics.delivery.duration }}</strong></td>
+                <td>{{ app.role_time_analytics.delivery.percent }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="small font-weight-bold text-muted mb-2">{% trans "Stage-by-Stage Step Logs:" %}</div>
+        <ul class="list-group list-group-flush small">
+          {% for step in app.stage_history_breakdown %}
+          <li class="list-group-item d-flex justify-content-between align-items-center px-2 py-1.5 border-0 bg-transparent">
+            <div>
+              <i class="fas fa-angle-right text-primary mr-1"></i>
+              <strong>{{ step.status_display }}</strong>
+              <div class="text-muted" style="font-size:0.7rem;">by {{ step.changed_by }}</div>
+            </div>
+            <span class="badge badge-light border px-2 py-1 font-weight-bold" style="border-radius:8px;">
+              {{ step.duration }}
+            </span>
+          </li>
+          {% empty %}
+          <li class="list-group-item px-2 py-1 text-muted">{% trans "Initial Stage" %}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header"><h3 class="card-title"><i class="fas fa-history mr-2"></i>{% trans "Status Timeline" %}</h3></div>
       <div class="card-body p-0">

@@ -37,17 +37,21 @@ urlpatterns = [
     path('process/<int:pk>/fetch-admission/', views.fetch_admission_api, name='coe_fetch_admission'),
     path('process/<int:pk>/fetch-board/', views.fetch_board_api, name='coe_fetch_board'),
     path('process/<int:pk>/request-reupload/', views.request_reupload, name='coe_request_reupload'),
-    path('process/<int:pk>/ready/', views.mark_ready, name='coe_mark_ready'),
+    path('process/<int:pk>/dispatch/', views.dispatch_to_delivery, name='coe_dispatch_to_delivery'),
 
     # ── Delivery Desk ────────────────────────────────────────────────────────
     path('delivery/', views.delivery_dashboard, name='coe_delivery_dashboard'),
+    path('delivery/<int:pk>/receive/', views.clerk_receive, name='coe_clerk_receive'),
+    path('delivery/<int:pk>/mark-ready/', views.clerk_mark_ready, name='coe_clerk_mark_ready'),
     path('delivery/<int:pk>/verify-otp/', views.verify_otp, name='coe_verify_otp'),
     path('delivery/<int:pk>/deliver/', views.mark_delivered, name='coe_mark_delivered'),
     path('delivery/handover-register/', views.delivery_handover_register, name='coe_handover_register'),
 
     # ── Export, PDF & Settings ───────────────────────────────────────────────
+    path('reports/', views.reports_dashboard, name='coe_reports_dashboard'),
     path('export/', views.export_excel, name='coe_export'),
     path('settings/', views.coe_settings_view, name='coe_settings'),
+    path('settings/test-email/', views.test_coe_email, name='coe_test_email'),
     path('applications/<int:pk>/receipt-pdf/', views.download_receipt_pdf, name='coe_receipt_pdf'),
     path('applications/<int:pk>/routing-slip/', views.download_routing_slip_pdf, name='coe_routing_slip_pdf'),
 

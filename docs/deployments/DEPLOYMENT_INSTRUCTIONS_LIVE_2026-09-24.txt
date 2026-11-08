@@ -1,0 +1,94 @@
+================================================================================
+DEPLOYMENT INSTRUCTIONS FOR LIVE SERVER UPDATE
+Date: 2026-09-24 (Updated with Logo & Navbar Performance Hotfix)
+Package: admission_live_update_2026_09_24.zip
+================================================================================
+
+SUMMARY OF UPDATES INCLUDED
+---------------------------
+1. Hotfix: Logo Loading & Continuous Page Load / Navbar Submenu Expansion:
+   - Root Causes Fixed:
+     * In production (DEBUG=False), Django does not serve /media/ unless explicitly
+       routed or handled by Nginx. Missing media files cause 404s/timeouts and missing logo.
+     * /media/ and static logo files were missing on the live server.
+     * External head script (htmx) was blocking HTML parsing until CDN responded.
+     * AdminLTE Treeview submenu expansion depended on external CDN jQuery finishing
+       load; any CDN delay caused sidebar menus to be unresponsive.
+   - Fixes Applied:
+     * Added production media serving fallback in `admission_system/urls.py` so
+       `/media/` files always serve with 0 delay even if Nginx isn't configured for it.
+     * Model `logo_url` and `favicon_url` now verify disk existence and fall back
+       to static assets automatically.
+     * Login page logo now uses high-performance WhiteNoise static asset with cascading
+       local fallbacks (loads in 5ms, 0 timeouts).
+     * `templates/base.html` head scripts now use `defer` to prevent parser blocking.
+     * Added instant vanilla JS Treeview toggle fallback in `templates/base.html`
+       so submenus open IMMEDIATELY on click regardless of CDN latency.
+     * All branding images (`media/branding/` and `static/branding/`, `static/img/`)
+       are bundled directly in this zip package.
+
+2. University Uniform Service — Partial Payment Feature:
+   - Added 'PARTIAL' status for uniform fee tracking (choices: OPTED_IN, PARTIAL, NOT_TAKEN, PENDING).
+   - Radio button + numeric amount entry in Add, Edit, and Profile modals.
+   - Dynamic real-time calculation: Package amount, paid amount, due balance with badges.
+   - Money Receipt PDF and Additional Fees Report KPI statistics updated.
+   - Migration: `students/migrations/0033_alter_student_uniform_status.py`.
+
+3. Pre-GPA Division System Support (Online Admission & Student System):
+   - Support for legacy Division System (1st Division, 2nd Division, 3rd Division).
+   - Dynamic selectors and validation for SSC and HSC.
+   - Migrations: `students/migrations/0031_onlineapplicant_hsc_division_and_more.py` &
+     `students/migrations/0032_alter_onlineapplicant_hsc_system_and_more.py`.
+
+4. Login Page Online Admission Application Row Visibility Toggle:
+   - Added `show_online_admission_on_login` BooleanField in `SystemSettings`.
+   - Migration: `core/migrations/0019_systemsettings_show_online_admission_on_login.py`.
+   - Backend API `/api/toggle-login-admission/` with CSRF & ActivityLog audit trail.
+   - Exempted in `core/middleware.py` so 401/403 JSON returns cleanly.
+   - Pill toggle switch in Online Applicant Hub header beside "Manage Intakes".
+   - Login page dynamically shows/hides the featured admission card based on toggle.
+
+5. Database Migrations Included:
+   - `core/migrations/0019_systemsettings_show_online_admission_on_login.py`
+   - `students/migrations/0031_onlineapplicant_hsc_division_and_more.py`
+   - `students/migrations/0032_alter_onlineapplicant_hsc_system_and_more.py`
+   - `students/migrations/0033_alter_student_uniform_status.py`
+
+
+DEPLOYMENT STEPS ON LIVE SERVER
+--------------------------------
+
+Step 1: Backup Database & Codebase (Recommended)
+------------------------------------------------
+python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.Permission --indent 4 > pre_update_backup_2026_09_24.json
+
+Step 2: Upload and Extract Zip Package
+--------------------------------------
+# Upload admission_live_update_2026_09_24.zip to your project root on live server, then:
+unzip -o admission_live_update_2026_09_24.zip -d /path/to/project/root/
+
+Step 3: Run Database Migrations
+--------------------------------
+python manage.py migrate core
+python manage.py migrate students
+
+(Expected applied migrations:
+  - core.0019_systemsettings_show_online_admission_on_login
+  - students.0031_onlineapplicant_hsc_division_and_more
+  - students.0032_alter_onlineapplicant_hsc_system_and_more
+  - students.0033_alter_student_uniform_status
+)
+
+Step 4: Collect Static Files
+----------------------------
+python manage.py collectstatic --noinput
+
+Step 5: Verify Django System Check
+-----------------------------------
+python manage.py check
+
+Step 6: Restart Application Server / Daemon
+-------------------------------------------
+sudo systemctl restart gunicorn
+# or sudo systemctl restart uwsgi / supervisor restart / cPanel Python App restart
+================================================================================

@@ -1,0 +1,1067 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>শিক্ষার্থী মানসিক স্বাস্থ্য ও কাউন্সেলিং পোর্টাল | বাউস্ট (BAUST)</title>
+  
+  <!-- Google Fonts: Hind Siliguri (Bangla) & Outfit (Modern English) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  
+  <!-- HTMX for Real-Time Validation & Async Status Check -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  
+  <style>
+    :root {
+      --primary-color: #1e40af;
+      --primary-light: #eff6ff;
+      --accent-color: #0284c7;
+      --border-color: #e2e8f0;
+
+      /* Empathetic Urgency Palette */
+      --routine-color: #059669;
+      --routine-bg: #ecfdf5;
+      --routine-border: #6ee7b7;
+
+      --priority-color: #d97706;
+      --priority-bg: #fffbeb;
+      --priority-border: #fcd34d;
+
+      --crisis-color: #e11d48;
+      --crisis-bg: #fff1f2;
+      --crisis-border: #fda4af;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+      font-family: 'Hind Siliguri', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 15px;
+      line-height: 1.55;
+    }
+
+    .booking-card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      max-width: 880px;
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .booking-header {
+      background: linear-gradient(135deg, #1e40af 0%, #0284c7 100%);
+      color: #ffffff;
+      padding: 32px 30px 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .booking-header::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #10b981, #06b6d4, #6366f1);
+    }
+
+    .lang-switcher-box {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 30px;
+      padding: 3px;
+      z-index: 10;
+    }
+    .portal-back-btn {
+      position: absolute;
+      top: 18px;
+      left: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 30px;
+      padding: 5px 14px;
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+    .portal-back-btn:hover {
+      background: #ffffff;
+      color: #1e40af;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .lang-btn {
+      border: none;
+      background: transparent;
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .lang-btn.active {
+      background: #ffffff;
+      color: #1e40af;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (max-width: 640px) {
+      .booking-header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 12px;
+      }
+      .portal-back-btn, .lang-switcher-box {
+        position: static !important;
+      }
+    }
+
+    /* Top Nav Tab Switcher */
+    .portal-nav-tabs {
+      display: flex;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: 16px;
+      gap: 6px;
+      margin-bottom: 25px;
+      border: 1px solid #e2e8f0;
+    }
+    .portal-tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .portal-tab-btn:hover {
+      color: #1e40af;
+      background: rgba(255, 255, 255, 0.6);
+    }
+    .portal-tab-btn.active {
+      background: #ffffff;
+      color: #1e40af;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .booking-body {
+      padding: 32px 40px 40px;
+    }
+
+    .privacy-badge {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1.5px solid #a7f3d0;
+      border-radius: 16px;
+      padding: 16px 20px;
+      font-size: 0.93rem;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+    }
+
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 8px;
+    }
+
+    /* Urgency Cards */
+    .radio-cards-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .radio-card-wrapper {
+      position: relative;
+    }
+    .radio-card-wrapper input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .urgency-card-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 2px solid var(--border-color);
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 0;
+    }
+    .radio-card-wrapper input[type="radio"]:checked + .urgency-card-label {
+      border-color: var(--primary-color);
+      background: #f8fafc;
+      box-shadow: 0 4px 14px rgba(30, 64, 175, 0.12);
+    }
+    .urgency-icon-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+    .icon-routine { background: #ecfdf5; color: #059669; }
+    .icon-priority { background: #fffbeb; color: #d97706; }
+    .icon-crisis { background: #fff1f2; color: #e11d48; }
+    .urgency-title { font-weight: 700; font-size: 0.95rem; line-height: 1.2; }
+    .urgency-subtitle { font-size: 0.82rem; color: #64748b; margin-top: 2px; }
+
+    /* Time Slot Pills */
+    .slot-pills-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .slot-pill {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      color: #334155;
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .slot-pill:hover {
+      border-color: #3b82f6;
+      color: #1d4ed8;
+      background: #eff6ff;
+    }
+    .slot-pill.active {
+      background: #1e40af;
+      color: #ffffff;
+      border-color: #1e40af;
+      box-shadow: 0 4px 10px rgba(30, 64, 175, 0.25);
+    }
+
+    /* Mode Selection Tiles */
+    .mode-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .mode-card-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 2px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      margin-bottom: 0;
+    }
+    .mode-card-wrapper input[type="radio"]:checked + .mode-card-label {
+      border-color: var(--primary-color);
+      background: #eff6ff;
+      color: var(--primary-color);
+    }
+
+    .custom-checkbox-card {
+      display: flex !important;
+      align-items: flex-start !important;
+      gap: 14px !important;
+      padding: 16px 18px !important;
+      border-radius: 14px !important;
+      background: #f8fafc !important;
+      border: 1.5px solid var(--border-color) !important;
+      cursor: pointer !important;
+      margin-bottom: 24px !important;
+      position: relative !important;
+      transition: all 0.2s ease !important;
+      user-select: none !important;
+    }
+    .custom-checkbox-card:hover {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+    }
+    .custom-checkbox-card input[type="checkbox"],
+    .consent-checkbox-input {
+      position: relative !important;
+      top: 3px !important;
+      left: 0 !important;
+      margin: 0 !important;
+      width: 22px !important;
+      height: 22px !important;
+      min-width: 22px !important;
+      min-height: 22px !important;
+      max-width: 22px !important;
+      max-height: 22px !important;
+      cursor: pointer !important;
+      accent-color: var(--primary-color) !important;
+      flex-shrink: 0 !important;
+      display: inline-block !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      z-index: 2 !important;
+    }
+    .consent-text-wrap {
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+    }
+
+    /* PHQ-4 Screener Card */
+    .phq4-question-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .phq4-options-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .phq4-opt-label {
+      display: block;
+      text-align: center;
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-bottom: 0;
+    }
+    .phq4-opt-input {
+      display: none;
+    }
+    .phq4-opt-input:checked + .phq4-opt-label {
+      background: #1e40af;
+      color: #ffffff;
+      border-color: #1e40af;
+      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.25);
+    }
+
+    .score-meter-card {
+      border-radius: 16px;
+      padding: 20px;
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 767.98px) {
+      .booking-body { padding: 22px 18px; }
+      .booking-header { padding: 25px 18px 20px; }
+      .mode-cards-grid { grid-template-columns: 1fr; }
+      .phq4-options-grid { grid-template-columns: repeat(2, 1fr); }
+      .portal-nav-tabs { flex-direction: column; }
+      .lang-switcher-box { position: static; margin-bottom: 12px; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="booking-card">
+  <!-- Header -->
+  <div class="booking-header">
+    <div class="booking-header-actions">
+      <!-- Back to Campus Connect / Login -->
+      <a href="{% url 'login' %}" class="portal-back-btn" title="Back to Campus Connect Portal">
+        <i class="fas fa-arrow-left"></i> <span data-t="back_to_portal">Campus Connect</span>
+      </a>
+
+      <!-- Language Toggle Switcher -->
+      <div class="lang-switcher-box">
+        <button type="button" class="lang-btn active" id="btnLangBn" onclick="switchLanguage('bn')">
+          🇧🇩 বাংলা
+        </button>
+        <button type="button" class="lang-btn" id="btnLangEn" onclick="switchLanguage('en')">
+          🇬🇧 English
+        </button>
+      </div>
+    </div>
+
+    <!-- Official University Branding Logo -->
+    <div class="counseling-logo-box mb-2">
+      {% if sys_settings and sys_settings.logo_url %}
+        <img src="{{ sys_settings.logo_url }}" alt="BAUST Logo" style="height: 62px; width: 62px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 3px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);">
+      {% else %}
+        <img src="/media/branding/logo.png" onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}';" alt="BAUST Logo" style="height: 62px; width: 62px; object-fit: contain; background: #ffffff; border-radius: 50%; padding: 3px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);">
+      {% endif %}
+    </div>
+
+    <h2 class="font-weight-bold mb-1" data-t="header_title">শিক্ষার্থী মানসিক স্বাস্থ্য ও কাউন্সেলিং কেন্দ্র</h2>
+    <p class="mb-0 text-white-50" data-t="header_sub">বাংলাদেশ আর্মি ইউনিভার্সিটি অব সাইন্স অ্যান্ড টেকনোলজি (বাউস্ট)</p>
+  </div>
+
+  <!-- Body Container -->
+  <div class="booking-body">
+    <!-- Top Nav Tabs Switcher (Feature 4, 5, 6) -->
+    <div class="portal-nav-tabs">
+      <button type="button" class="portal-tab-btn active" id="tabBtnBooking" onclick="switchPortalTab('booking')">
+        <i class="fas fa-calendar-plus text-primary"></i> <span data-t="tab_booking">বুকিং ফরম (Booking)</span>
+      </button>
+      <button type="button" class="portal-tab-btn" id="tabBtnSelfCheck" onclick="switchPortalTab('selfcheck')">
+        <i class="fas fa-brain text-teal"></i> <span data-t="tab_selfcheck">২-মিনিট সেলফ-চেক (Check)</span>
+      </button>
+      <button type="button" class="portal-tab-btn" id="tabBtnStatus" onclick="switchPortalTab('status')">
+        <i class="fas fa-search text-info"></i> <span data-t="tab_status">স্ট্যাটাস ট্র্যাকার (Tracker)</span>
+      </button>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 1: MAIN BOOKING FORM (Feature 4: Real-time ID & BD Mobile)   -->
+    <!-- ================================================================= -->
+    <div id="tabContentBooking" class="portal-tab-pane">
+      <!-- Privacy Shield Note -->
+      <div class="privacy-badge d-flex align-items-center">
+        <i class="fas fa-user-shield fa-2x mr-3 text-success"></i>
+        <div>
+          <strong class="d-block mb-1 font-weight-bold" style="font-size: 1.05rem;" data-t="privacy_title">১০০% গোপনীয় ও নিরাপদ সেবার নিশ্চয়তা</strong>
+          <div data-t="privacy_desc">আপনার কাউন্সেলিং অ্যাপয়েন্টমেন্ট ও ব্যক্তিগত তথ্যাদি সম্পূর্ণ গোপন থাকবে। শিক্ষক, বিভাগীয় প্রধান কিংবা সহপাঠী — কারও কাছেই এই তথ্য প্রকাশ করা হবে না। এটি একান্তই আপনার এবং বিশ্ববিদ্যালয়ের সাইকোলজিস্টের মধ্যকার বিষয়।</div>
+        </div>
+      </div>
+
+      <!-- Booking Form -->
+      <form method="post" id="studentBookingForm">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="alert alert-danger rounded-lg mb-4">
+          <strong class="d-block mb-1"><i class="fas fa-exclamation-circle mr-1"></i> <span data-t="error_notice">অনুগ্রহ করে নিচের ত্রুটিগুলো সংশোধন করুন:</span></strong>
+          <ul class="mb-0 pl-3">
+            {% for field in form %}
+              {% for error in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- Section 1: Student Verification (Real-time HTMX) -->
+        <div class="section-title">
+          <i class="fas fa-id-card"></i> <span data-t="sec1_title">১. শিক্ষার্থীর পরিচয় ও মোবাইল নম্বর</span>
+        </div>
+        <div class="row mb-4">
+          <div class="col-md-6 form-group mb-3">
+            <label class="font-weight-bold text-dark"><span data-t="lbl_student_id">শিক্ষার্থী আইডি (Student ID)</span> <span class="text-danger">*</span></label>
+            <input type="text" 
+                   name="student_id" 
+                   value="{{ form.student_id.value|default:'' }}" 
+                   id="public_student_id" 
+                   class="form-control form-control-lg" 
+                   placeholder="e.g. 0802120204081137 or 202401040012" 
+                   required
+                   autocomplete="off"
+                   hx-get="{% url 'counseling_api_verify_student' %}" 
+                   hx-trigger="keyup changed delay:400ms" 
+                   hx-target="#student_verify_target">
+            <small class="form-text text-muted" data-t="help_student_id">আপনার ১৬ ডিজিট বা ৯ ডিজিটের শিক্ষার্থী আইডি লিখুন</small>
+            <!-- Real-time Verification Target Badge -->
+            <div id="student_verify_target"></div>
+          </div>
+          <div class="col-md-6 form-group mb-3">
+            <label class="font-weight-bold text-dark"><span data-t="lbl_mobile">সক্রিয় মোবাইল নম্বর</span> <span class="text-danger">*</span></label>
+            <input type="text" 
+                   name="student_mobile" 
+                   value="{{ form.student_mobile.value|default:'' }}" 
+                   id="public_mobile" 
+                   class="form-control form-control-lg" 
+                   placeholder="e.g. 017XXXXXXXX or 018XXXXXXXX" 
+                   required>
+            <small class="form-text text-muted" data-t="help_mobile">আপনার যে কোনো সচল বাংলাদেশি মোবাইল নম্বর (গোপন টোকেন ও এসএমএস এর জন্য)</small>
+          </div>
+        </div>
+
+        <!-- Section 2: Topic & Urgency -->
+        <div class="section-title">
+          <i class="fas fa-clipboard-list"></i> <span data-t="sec2_title">২. আপনি কী ধরনের পরামর্শ বা সহায়তা চান?</span>
+        </div>
+        <div class="form-group mb-4">
+          <label class="font-weight-bold text-dark"><span data-t="lbl_category">পরামর্শের মূল বিষয় / উদ্বেগের কারণ</span> <span class="text-danger">*</span></label>
+          {{ form.category }}
+        </div>
+
+        <!-- Empathetic Urgency Level Tiles -->
+        <div class="form-group mb-4">
+          <label class="font-weight-bold text-dark d-block mb-2"><span data-t="lbl_urgency">সহায়তার প্রয়োজনীয়তার মাত্রা</span> <span class="text-danger">*</span></label>
+          <div class="radio-cards-group">
+            <!-- 1. Routine -->
+            <div class="radio-card-wrapper card-routine">
+              <input type="radio" name="urgency" value="routine" id="urgency_routine" {% if form.urgency.value == 'routine' or not form.urgency.value %}checked{% endif %}>
+              <label for="urgency_routine" class="urgency-card-label">
+                <div class="urgency-icon-circle icon-routine">
+                  <i class="fas fa-seedling"></i>
+                </div>
+                <div>
+                  <div class="urgency-title text-success" data-t="urg_routine_title">🟢 রুটিন কাউন্সেলিং (Routine Check-in)</div>
+                  <div class="urgency-subtitle" data-t="urg_routine_sub">৫–৭ দিনের মধ্যে (পড়াশোনার চাপ, ক্যারিয়ার দ্বিধা ও দৈনন্দিন অভ্যাস উন্নয়ন)</div>
+                </div>
+              </label>
+            </div>
+
+            <!-- 2. Priority -->
+            <div class="radio-card-wrapper card-priority">
+              <input type="radio" name="urgency" value="priority" id="urgency_priority" {% if form.urgency.value == 'priority' %}checked{% endif %}>
+              <label for="urgency_priority" class="urgency-card-label">
+                <div class="urgency-icon-circle icon-priority">
+                  <i class="fas fa-cloud-sun"></i>
+                </div>
+                <div>
+                  <div class="urgency-title" style="color: #d97706;" data-t="urg_priority_title">🟡 অগ্রাধিকার সহায়তা (Priority Support)</div>
+                  <div class="urgency-subtitle" data-t="urg_priority_sub">২৪–৪৮ ঘণ্টার মধ্যে (অতিরিক্ত মানসিক চাপ, অনিদ্রা ও পারিবারিক দুশ্চিন্তা)</div>
+                </div>
+              </label>
+            </div>
+
+            <!-- 3. Urgent Crisis -->
+            <div class="radio-card-wrapper card-crisis">
+              <input type="radio" name="urgency" value="crisis" id="urgency_crisis" {% if form.urgency.value == 'crisis' %}checked{% endif %}>
+              <label for="urgency_crisis" class="urgency-card-label">
+                <div class="urgency-icon-circle icon-crisis">
+                  <i class="fas fa-hand-holding-heart"></i>
+                </div>
+                <div>
+                  <div class="urgency-title text-danger" data-t="urg_crisis_title">🔴 জরুরি সংকটকালীন সহায়তা (Urgent Crisis Care)</div>
+                  <div class="urgency-subtitle" data-t="urg_crisis_sub">আজই / তাৎক্ষণিক সহায়তা (তীব্র আতঙ্ক, প্যানিক অ্যাটাক ও মানসিক বিপর্যস্ততা)</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Mode & Time -->
+        <div class="section-title">
+          <i class="fas fa-calendar-alt"></i> <span data-t="sec3_title">৩. কাউন্সেলিং সেশনের মাধ্যম ও সময় নির্বাচন</span>
+        </div>
+
+        <div class="form-group mb-4">
+          <label class="font-weight-bold text-dark d-block mb-2"><span data-t="lbl_mode">পরামর্শ গ্রহণের মাধ্যম</span> <span class="text-danger">*</span></label>
+          <div class="mode-cards-grid">
+            <div class="mode-card-wrapper">
+              <input type="radio" name="session_mode" value="in_person" id="mode_in_person" class="d-none" {% if form.session_mode.value == 'in_person' or not form.session_mode.value %}checked{% endif %}>
+              <label for="mode_in_person" class="mode-card-label">
+                <i class="fas fa-user-md fa-lg text-primary"></i>
+                <div>
+                  <strong class="d-block" data-t="mode_in_person">সরাসরি চেম্বারে (রুম ২০৪)</strong>
+                  <small class="text-muted">In-Person Consultation</small>
+                </div>
+              </label>
+            </div>
+
+            <div class="mode-card-wrapper">
+              <input type="radio" name="session_mode" value="tele_counseling" id="mode_tele_counseling" class="d-none" {% if form.session_mode.value == 'tele_counseling' %}checked{% endif %}>
+              <label for="mode_tele_counseling" class="mode-card-label">
+                <i class="fas fa-headset fa-lg text-info"></i>
+                <div>
+                  <strong class="d-block" data-t="mode_tele_conf">অনলাইন / টেলি-পরামর্শ</strong>
+                  <small class="text-muted">Google Meet / Phone</small>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-6 form-group mb-3">
+            <label class="font-weight-bold text-dark"><span data-t="lbl_date">পছন্দের তারিখ</span> <span class="text-danger">*</span></label>
+            {{ form.appointment_date }}
+          </div>
+          <div class="col-md-6 form-group mb-3">
+            <label class="font-weight-bold text-dark"><span data-t="lbl_time">পছন্দের সময়সূচি</span> <span class="text-danger">*</span></label>
+            {{ form.time_slot }}
+            <small class="form-text text-muted" data-t="help_slots">ক্লিক করে সময় নির্বাচন করুন (Time Schedule):</small>
+            
+            <div class="slot-pills-container">
+              <span class="slot-pill" data-slot="09:00 AM - 09:50 AM">09:00 AM</span>
+              <span class="slot-pill" data-slot="10:00 AM - 10:50 AM">10:00 AM</span>
+              <span class="slot-pill" data-slot="11:00 AM - 11:50 AM">11:00 AM</span>
+              <span class="slot-pill" data-slot="02:00 PM - 02:50 PM">02:00 PM</span>
+              <span class="slot-pill" data-slot="03:00 PM - 03:50 PM">03:00 PM</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group mb-4">
+          <label class="font-weight-bold text-dark"><span data-t="lbl_notes">সংক্ষিপ্ত বিবরণ / আপনার মনের কথা (ঐচ্ছিক ও সম্পূর্ণ গোপনীয়)</span></label>
+          {{ form.brief_notes }}
+        </div>
+
+        <!-- Confidential Consent Checkbox Card -->
+        <label class="custom-checkbox-card" for="public_consent">
+          {{ form.consent_agreed }}
+          <div class="consent-text-wrap">
+            <strong class="text-dark d-block font-weight-bold mb-1" style="font-size: 0.98rem;" data-t="consent_title">গোপনীয়তা ও নীতিগত সম্মতি</strong>
+            <span class="small text-muted d-block" style="line-height: 1.5;" data-t="consent_desc">
+              আমি মানসিক স্বাস্থ্য কাউন্সেলিং সহায়তার জন্য সম্মত এবং অবগত আছি যে আমার সেশন ও সকল আলোচনা পেশাদার নৈতিক মানদণ্ডে সম্পূর্ণ গোপনীয় থাকবে।
+            </span>
+          </div>
+        </label>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary btn-lg btn-block font-weight-bold py-3 shadow-lg" style="border-radius: 14px; font-size: 1.15rem;">
+          <i class="fas fa-paper-plane mr-2"></i> <span data-t="btn_submit">গোপনীয় কাউন্সেলিং অ্যাপয়েন্টমেন্ট নিশ্চিত করুন</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 2: ANONYMOUS 2-MIN WELLBEING SELF-CHECK (Feature 6: PHQ-4)    -->
+    <!-- ================================================================= -->
+    <div id="tabContentSelfCheck" class="portal-tab-pane d-none">
+      <div class="alert alert-info rounded-lg p-3 mb-4 d-flex align-items-center">
+        <i class="fas fa-brain fa-2x mr-3 text-info"></i>
+        <div>
+          <strong class="d-block font-weight-bold" data-t="sc_intro_title">সম্পূর্ণ গোপনীয় ২-মিনিটের মানসিক স্বাস্থ্য সেলফ-চেক (PHQ-4)</strong>
+          <span class="small" data-t="sc_intro_desc">গত ২ সপ্তাহে আপনি নিচের সমস্যাগুলো কত ঘন ঘন অনুভব করেছেন? কোনো উত্তর সঠিক বা ভুল নয়। এটি আপনার মানসিক অবস্থার প্রাথমিক চিত্র দেবে।</span>
+        </div>
+      </div>
+
+      <div id="phq4FormContainer">
+        <!-- Q1 -->
+        <div class="phq4-question-card">
+          <strong class="text-dark d-block mb-1">1. <span data-t="q1_text">অস্থির, নার্ভাস বা অতিরিক্ত উদ্বিগ্ন বোধ করা (Feeling nervous, anxious or on edge)</span></strong>
+          <div class="phq4-options-grid">
+            <label><input type="radio" name="phq_q1" value="0" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_0">মোটেও না (0)</span></label>
+            <label><input type="radio" name="phq_q1" value="1" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_1">কয়েক দিন (1)</span></label>
+            <label><input type="radio" name="phq_q1" value="2" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_2">অর্ধেকের বেশি (2)</span></label>
+            <label><input type="radio" name="phq_q1" value="3" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_3">প্রায় প্রতিদিন (3)</span></label>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="phq4-question-card">
+          <strong class="text-dark d-block mb-1">2. <span data-t="q2_text">দুশ্চিন্তা নিয়ন্ত্রণ বা থামিয়ে রাখতে না পারা (Not being able to stop or control worrying)</span></strong>
+          <div class="phq4-options-grid">
+            <label><input type="radio" name="phq_q2" value="0" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_0">মোটেও না (0)</span></label>
+            <label><input type="radio" name="phq_q2" value="1" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_1">কয়েক দিন (1)</span></label>
+            <label><input type="radio" name="phq_q2" value="2" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_2">অর্ধেকের বেশি (2)</span></label>
+            <label><input type="radio" name="phq_q2" value="3" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_3">প্রায় প্রতিদিন (3)</span></label>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="phq4-question-card">
+          <strong class="text-dark d-block mb-1">3. <span data-t="q3_text">কোনো কাজে আনন্দ বা আগ্রহ না পাওয়া (Little interest or pleasure in doing things)</span></strong>
+          <div class="phq4-options-grid">
+            <label><input type="radio" name="phq_q3" value="0" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_0">মোটেও না (0)</span></label>
+            <label><input type="radio" name="phq_q3" value="1" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_1">কয়েক দিন (1)</span></label>
+            <label><input type="radio" name="phq_q3" value="2" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_2">অর্ধেকের বেশি (2)</span></label>
+            <label><input type="radio" name="phq_q3" value="3" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_3">প্রায় প্রতিদিন (3)</span></label>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="phq4-question-card">
+          <strong class="text-dark d-block mb-1">4. <span data-t="q4_text">মন খারাপ, বিষণ্ণ বা নিরাশ বোধ করা (Feeling down, depressed, or hopeless)</span></strong>
+          <div class="phq4-options-grid">
+            <label><input type="radio" name="phq_q4" value="0" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_0">মোটেও না (0)</span></label>
+            <label><input type="radio" name="phq_q4" value="1" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_1">কয়েক দিন (1)</span></label>
+            <label><input type="radio" name="phq_q4" value="2" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_2">অর্ধেকের বেশি (2)</span></label>
+            <label><input type="radio" name="phq_q4" value="3" class="phq4-opt-input" onchange="calculatePHQ4()"><span class="phq4-opt-label" data-t="opt_3">প্রায় প্রতিদিন (3)</span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Score Meter Card -->
+      <div class="score-meter-card" id="phq4ResultCard" style="display: none;">
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+          <span class="small text-muted font-weight-bold" data-t="score_lbl">আপনার মানসিক সুস্থতা স্কোর:</span>
+          <span class="badge badge-pill badge-primary px-3 py-1 font-weight-bold" style="font-size: 1.1rem;" id="phq4ScoreBadge">0 / 12</span>
+        </div>
+        <h5 class="font-weight-bold mb-1" id="phq4ResultTitle">স্বাভাবিক (Normal Wellbeing)</h5>
+        <p class="small text-muted mb-3" id="phq4ResultDesc">আপনার মানসিক অবস্থা স্বাভাবিক রয়েছে। নিজেকে সময় দিন এবং রুটিন বজায় রাখুন।</p>
+        
+        <button type="button" class="btn btn-success btn-lg px-4 font-weight-bold" id="btnBookFromScore" onclick="transferScoreToBooking()" style="border-radius: 12px;">
+          <i class="fas fa-calendar-check mr-2"></i> <span data-t="btn_book_with_result">এই ফলাফলের ভিত্তিতে কাউন্সেলিং বুক করুন</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 3: SECRET TRACKING STATUS CHECKER (Feature 5)                 -->
+    <!-- ================================================================= -->
+    <div id="tabContentStatus" class="portal-tab-pane d-none">
+      <div class="privacy-badge d-flex align-items-center mb-4">
+        <i class="fas fa-search-location fa-2x mr-3 text-primary"></i>
+        <div>
+          <strong class="d-block mb-1 font-weight-bold" data-t="track_intro_title">অ্যাপয়েন্টমেন্টের বর্তমান অবস্থা ট্র্যাকিং</strong>
+          <span data-t="track_intro_desc">অ্যাপয়েন্টমেন্ট বুকিংয়ের পর পাওয়া গোপন ট্র্যাকিং কোড (যেমন: <code>CARE-2026-XXXX</code>) অথবা আপনার শিক্ষার্থী আইডি লিখুন।</span>
+        </div>
+      </div>
+
+      <form hx-post="{% url 'counseling_api_check_status' %}" hx-target="#statusLookupResult" class="mb-4">
+        {% csrf_token %}
+        <div class="input-group input-group-lg">
+          <input type="text" 
+                 name="lookup_query" 
+                 id="lookupQueryInput" 
+                 class="form-control" 
+                 placeholder="e.g. CARE-2026-XXXX or 0802120204081137" 
+                 required 
+                 autocomplete="off">
+          <div class="input-group-append">
+            <button type="submit" class="btn btn-primary font-weight-bold px-4">
+              <i class="fas fa-search mr-1"></i> <span data-t="btn_search_status">খুঁজুন</span>
+            </button>
+          </div>
+        </div>
+        <small class="form-text text-muted mt-1" data-t="help_track_input">আপনার গোপন কোড বা শিক্ষার্থী আইডি লিখে সার্চ বাটনে চাপ দিন।</small>
+      </form>
+
+      <!-- Status Lookup Async Result Container -->
+      <div id="statusLookupResult">
+        <div class="p-4 text-center text-muted border rounded-lg bg-light">
+          <i class="fas fa-ticket-alt fa-2x mb-2 text-secondary"></i>
+          <p class="small mb-0" data-t="track_placeholder">আপনার গোপন ট্র্যাকিং টোকেন বা শিক্ষার্থী আইডি দিয়ে সার্চ করুন।</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Bilingual Dictionary (Default: Bangla)
+  const translations = {
+    bn: {
+      back_to_portal: "ক্যাম্পাস কানেক্ট (লগইন)",
+      header_title: "শিক্ষার্থী মানসিক স্বাস্থ্য ও কাউন্সেলিং কেন্দ্র",
+      header_sub: "বাংলাদেশ আর্মি ইউনিভার্সিটি অব সাইন্স অ্যান্ড টেকনোলজি (বাউস্ট)",
+      tab_booking: "বুকিং ফরম (Booking)",
+      tab_selfcheck: "২-মিনিট সেলফ-চেক (Check)",
+      tab_status: "স্ট্যাটাস ট্র্যাকার (Tracker)",
+      privacy_title: "১০০% গোপনীয় ও নিরাপদ সেবার নিশ্চয়তা",
+      privacy_desc: "আপনার কাউন্সেলিং অ্যাপয়েন্টমেন্ট ও ব্যক্তিগত তথ্যাদি সম্পূর্ণ গোপন থাকবে। শিক্ষক, বিভাগীয় প্রধান কিংবা সহপাঠী — কারও কাছেই এই তথ্য প্রকাশ করা হবে না। এটি একান্তই আপনার এবং বিশ্ববিদ্যালয়ের সাইকোলজিস্টের মধ্যকার বিষয়।",
+      sec1_title: "১. শিক্ষার্থীর পরিচয় ও মোবাইল নম্বর",
+      lbl_student_id: "শিক্ষার্থী আইডি (Student ID)",
+      help_student_id: "আপনার ১৬ ডিজিট বা ৯ ডিজিটের শিক্ষার্থী আইডি লিখুন",
+      lbl_mobile: "সক্রিয় মোবাইল নম্বর",
+      help_mobile: "আপনার যে কোনো সচল বাংলাদেশি মোবাইল নম্বর (গোপন টোকেন ও এসএমএস এর জন্য)",
+      sec2_title: "২. আপনি কী ধরনের পরামর্শ বা সহায়তা চান?",
+      lbl_category: "পরামর্শের মূল বিষয় / উদ্বেগের কারণ",
+      lbl_urgency: "সহায়তার প্রয়োজনীয়তার মাত্রা",
+      urg_routine_title: "🟢 রুটিন কাউন্সেলিং (Routine Check-in)",
+      urg_routine_sub: "৫–৭ দিনের মধ্যে (পড়াশোনার চাপ, ক্যারিয়ার দ্বিধা ও দৈনন্দিন অভ্যাস উন্নয়ন)",
+      urg_priority_title: "🟡 অগ্রাধিকার সহায়তা (Priority Support)",
+      urg_priority_sub: "২৪–৪৮ ঘণ্টার মধ্যে (অতিরিক্ত মানসিক চাপ, অনিদ্রা ও পারিবারিক দুশ্চিন্তা)",
+      urg_crisis_title: "🔴 জরুরি সংকটকালীন সহায়তা (Urgent Crisis Care)",
+      urg_crisis_sub: "আজই / তাৎক্ষণিক সহায়তা (তীব্র আতঙ্ক, প্যানিক অ্যাটাক ও মানসিক বিপর্যস্ততা)",
+      sec3_title: "৩. কাউন্সেলিং সেশনের মাধ্যম ও সময় নির্বাচন",
+      lbl_mode: "পরামর্শ গ্রহণের মাধ্যম",
+      mode_in_person: "সরাসরি চেম্বারে (রুম ২০৪)",
+      mode_tele_conf: "অনলাইন / টেলি-পরামর্শ",
+      lbl_date: "পছন্দের তারিখ",
+      lbl_time: "পছন্দের সময়সূচি",
+      help_slots: "ক্লিক করে সময় নির্বাচন করুন (Time Schedule):",
+      lbl_notes: "সংক্ষিপ্ত বিবরণ / আপনার মনের কথা (ঐচ্ছিক ও সম্পূর্ণ গোপনীয়)",
+      notes_placeholder: "কাউন্সেলরকে আপনার সমস্যাটি সহজে বুঝতে সাহায্য করতে সংক্ষেপে কিছু লিখতে পারেন...",
+      consent_title: "গোপনীয়তা ও নীতিগত সম্মতি",
+      consent_desc: "আমি মানসিক স্বাস্থ্য কাউন্সেলিং সহায়তার জন্য সম্মত এবং অবগত আছি যে আমার সেশন ও সকল আলোচনা পেশাদার নৈতিক মানদণ্ডে সম্পূর্ণ গোপনীয় থাকবে।",
+      btn_submit: "গোপনীয় কাউন্সেলিং অ্যাপয়েন্টমেন্ট নিশ্চিত করুন",
+      error_notice: "অনুগ্রহ করে নিচের ত্রুটিগুলো সংশোধন করুন:",
+      sc_intro_title: "সম্পূর্ণ গোপনীয় ২-মিনিটের মানসিক স্বাস্থ্য সেলফ-চেক (PHQ-4)",
+      sc_intro_desc: "গত ২ সপ্তাহে আপনি নিচের সমস্যাগুলো কত ঘন ঘন অনুভব করেছেন? কোনো উত্তর সঠিক বা ভুল নয়। এটি আপনার মানসিক অবস্থার প্রাথমিক চিত্র দেবে।",
+      q1_text: "অস্থির, নার্ভাস বা অতিরিক্ত উদ্বিগ্ন বোধ করা (Feeling nervous, anxious or on edge)",
+      q2_text: "দুশ্চিন্তা নিয়ন্ত্রণ বা থামিয়ে রাখতে না পারা (Not being able to stop or control worrying)",
+      q3_text: "কোনো কাজে আনন্দ বা আগ্রহ না পাওয়া (Little interest or pleasure in doing things)",
+      q4_text: "মন খারাপ, বিষণ্ণ বা নিরাশ বোধ করা (Feeling down, depressed, or hopeless)",
+      opt_0: "মোটেও না (0)",
+      opt_1: "কয়েক দিন (1)",
+      opt_2: "অর্ধেকের বেশি (2)",
+      opt_3: "প্রায় প্রতিদিন (3)",
+      score_lbl: "আপনার মানসিক সুস্থতা স্কোর:",
+      btn_book_with_result: "এই ফলাফলের ভিত্তিতে কাউন্সেলিং বুক করুন",
+      track_intro_title: "অ্যাপয়েন্টমেন্টের বর্তমান অবস্থা ট্র্যাকিং",
+      track_intro_desc: "অ্যাপয়েন্টমেন্ট বুকিংয়ের পর পাওয়া গোপন ট্র্যাকিং কোড (যেমন: CARE-2026-XXXX) অথবা আপনার শিক্ষার্থী আইডি লিখুন।",
+      btn_search_status: "খুঁজুন",
+      help_track_input: "আপনার গোপন কোড বা শিক্ষার্থী আইডি লিখে সার্চ বাটনে চাপ দিন।",
+      track_placeholder: "আপনার গোপন ট্র্যাকিং টোকেন বা শিক্ষার্থী আইডি দিয়ে সার্চ করুন।",
+      categories: {
+        academic_stress: "একাডেমিক চাপ ও পড়াশোনায় মনোযোগ (Academic Stress)",
+        exam_anxiety: "পরীক্ষার ভয় ও অতিরিক্ত দুশ্চিন্তা (Exam & Test Anxiety)",
+        hall_homesick: "হল জীবন ও বাড়ির জন্য মন খারাপ (Hall Life & Homesickness)",
+        family_relations: "পারিবারিক ও ব্যক্তিগত সম্পর্ক (Family & Relationships)",
+        grief_trauma: "মানসিক ট্রমা, হতাশা ও শোক (Grief, Loss & Trauma)",
+        substance: "অভ্যাস ও আসক্তি নিয়ন্ত্রণ (Habit & Substance Support)",
+        career_esteem: "ভবিষ্যৎ ক্যারিয়ার ও আত্মবিশ্বাস (Career & Self-Esteem)",
+        other: "অন্যান্য ব্যক্তিগত সমস্যা (Other Concerns)"
+      }
+    },
+    en: {
+      back_to_portal: "Campus Connect",
+      header_title: "Student Wellbeing & Counseling Center",
+      header_sub: "Bangladesh Army University of Science and Technology (BAUST)",
+      tab_booking: "Book Appointment",
+      tab_selfcheck: "2-Min Wellbeing Check",
+      tab_status: "Appointment Tracker",
+      privacy_title: "100% Confidential & Stigma-Free Guarantee",
+      privacy_desc: "Your counseling appointment is strictly private between you and the University Psychologist. Your teachers, HOD, and friends will never have access to this record.",
+      sec1_title: "1. Student ID & Contact Mobile",
+      lbl_student_id: "Student ID (UGC Compliant)",
+      help_student_id: "Enter your 16-digit or 9-digit Student ID",
+      lbl_mobile: "Active Mobile Number",
+      help_mobile: "Any active Bangladeshi mobile number for secret token & SMS updates",
+      sec2_title: "2. How Can We Support You?",
+      lbl_category: "Primary Topic / Concern",
+      lbl_urgency: "Urgency Level",
+      urg_routine_title: "🟢 Routine Check-in",
+      urg_routine_sub: "Within 5–7 days (General advice, habit formation, career & study stress)",
+      urg_priority_title: "🟡 Priority Support",
+      urg_priority_sub: "Within 24–48 hours (Persistent anxiety, insomnia, relationship distress)",
+      urg_crisis_title: "🔴 Urgent Crisis Care",
+      urg_crisis_sub: "Immediate / Today (Acute distress, severe panic, urgent safety support)",
+      sec3_title: "3. Select Session Mode & Preferred Time",
+      lbl_mode: "Preferred Consultation Mode",
+      mode_in_person: "In-Person (Room 204)",
+      mode_tele_conf: "Confidential Tele-Counseling",
+      lbl_date: "Preferred Date",
+      lbl_time: "Preferred Time Slot",
+      help_slots: "Click to select standard available slot:",
+      lbl_notes: "Brief Note / What is on your mind? (Optional & Confidential)",
+      notes_placeholder: "Describe briefly so the counselor can understand your situation and prepare...",
+      consent_title: "Confidentiality & Ethical Consent",
+      consent_desc: "I consent to psychological counseling support. I understand my counseling sessions and discussions are strictly private and protected under professional ethical standards.",
+      btn_submit: "Submit Confidential Appointment Request",
+      error_notice: "Please resolve the following errors:",
+      sc_intro_title: "100% Confidential 2-Minute Mental Health Check (PHQ-4)",
+      sc_intro_desc: "Over the last 2 weeks, how often have you been bothered by the following problems? There are no right or wrong answers.",
+      q1_text: "Feeling nervous, anxious or on edge",
+      q2_text: "Not being able to stop or control worrying",
+      q3_text: "Little interest or pleasure in doing things",
+      q4_text: "Feeling down, depressed, or hopeless",
+      opt_0: "Not at all (0)",
+      opt_1: "Several days (1)",
+      opt_2: "More than half (2)",
+      opt_3: "Nearly everyday (3)",
+      score_lbl: "Your Wellbeing Score:",
+      btn_book_with_result: "Book Counseling with this Assessment",
+      track_intro_title: "Live Appointment Status Tracker",
+      track_intro_desc: "Enter your Secret Tracking Token (e.g. CARE-2026-XXXX) or Student ID to view your live appointment status.",
+      btn_search_status: "Search",
+      help_track_input: "Type your secret token or Student ID and click search.",
+      track_placeholder: "Search with your Secret Tracking Token or Student ID above.",
+      categories: {
+        academic_stress: "Academic Stress & Performance",
+        exam_anxiety: "Exam & Test Anxiety",
+        hall_homesick: "Hall Life & Homesickness",
+        family_relations: "Family & Relationships",
+        grief_trauma: "Grief, Loss & Trauma",
+        substance: "Habit & Substance Support",
+        career_esteem: "Career Uncertainty & Self-Esteem",
+        other: "Other Concerns"
+      }
+    }
+  };
+
+  function switchLanguage(lang) {
+    localStorage.setItem('counseling_portal_lang', lang);
+    const dict = translations[lang] || translations.bn;
+
+    // Update all text nodes
+    document.querySelectorAll('[data-t]').forEach(el => {
+      const key = el.getAttribute('data-t');
+      if (dict[key]) {
+        el.textContent = dict[key];
+      }
+    });
+
+    // Update Category Select Dropdown options
+    const categorySelect = document.getElementById('public_category_select');
+    if (categorySelect && dict.categories) {
+      Array.from(categorySelect.options).forEach(opt => {
+        if (dict.categories[opt.value]) {
+          opt.textContent = dict.categories[opt.value];
+        }
+      });
+    }
+
+    // Update Brief Notes Placeholder
+    const notesInput = document.getElementById('public_brief_notes');
+    if (notesInput && dict.notes_placeholder) {
+      notesInput.placeholder = dict.notes_placeholder;
+    }
+
+    // Toggle inline language helpers
+    document.querySelectorAll('.lang-bn-inline').forEach(el => el.classList.toggle('d-none', lang !== 'bn'));
+    document.querySelectorAll('.lang-en-inline').forEach(el => el.classList.toggle('d-none', lang !== 'en'));
+
+    document.getElementById('btnLangBn').classList.toggle('active', lang === 'bn');
+    document.getElementById('btnLangEn').classList.toggle('active', lang === 'en');
+  }
+
+  function switchPortalTab(tabName) {
+    document.getElementById('tabBtnBooking').classList.toggle('active', tabName === 'booking');
+    document.getElementById('tabBtnSelfCheck').classList.toggle('active', tabName === 'selfcheck');
+    document.getElementById('tabBtnStatus').classList.toggle('active', tabName === 'status');
+
+    document.getElementById('tabContentBooking').classList.toggle('d-none', tabName !== 'booking');
+    document.getElementById('tabContentSelfCheck').classList.toggle('d-none', tabName !== 'selfcheck');
+    document.getElementById('tabContentStatus').classList.toggle('d-none', tabName !== 'status');
+  }
+
+  let recommendedCategory = 'academic_stress';
+  let recommendedUrgency = 'routine';
+
+  function calculatePHQ4() {
+    const q1 = document.querySelector('input[name="phq_q1"]:checked');
+    const q2 = document.querySelector('input[name="phq_q2"]:checked');
+    const q3 = document.querySelector('input[name="phq_q3"]:checked');
+    const q4 = document.querySelector('input[name="phq_q4"]:checked');
+
+    if (!q1 || !q2 || !q3 || !q4) return;
+
+    const val1 = parseInt(q1.value);
+    const val2 = parseInt(q2.value);
+    const val3 = parseInt(q3.value);
+    const val4 = parseInt(q4.value);
+    const total = val1 + val2 + val3 + val4;
+    const anxietyScore = val1 + val2;
+    const depressionScore = val3 + val4;
+
+    const resultCard = document.getElementById('phq4ResultCard');
+    const badge = document.getElementById('phq4ScoreBadge');
+    const title = document.getElementById('phq4ResultTitle');
+    const desc = document.getElementById('phq4ResultDesc');
+
+    resultCard.style.display = 'block';
+    badge.textContent = `${total} / 12`;
+
+    const lang = localStorage.getItem('counseling_portal_lang') || 'bn';
+
+    if (total <= 2) {
+      badge.className = 'badge badge-pill badge-success px-3 py-1 font-weight-bold';
+      title.textContent = lang === 'bn' ? 'স্বাভাবিক মানসিক সুস্থতা (Normal / Balanced)' : 'Normal Emotional Wellbeing';
+      desc.textContent = lang === 'bn' 
+        ? 'আপনার মানসিক অবস্থা বেশ স্বাভাবিক ও ভারসাম্যপূর্ণ রয়েছে। নিয়মিত ঘুম ও স্বাস্থ্যকর অভ্যাস বজায় রাখুন।'
+        : 'Your emotional health appears balanced. Maintain healthy habits, sleep routines, and self-care.';
+      recommendedCategory = 'career_esteem';
+      recommendedUrgency = 'routine';
+    } else if (total <= 5) {
+      badge.className = 'badge badge-pill badge-warning px-3 py-1 text-dark font-weight-bold';
+      title.textContent = lang === 'bn' ? 'মৃদু মানসিক চাপ ও ক্লান্তি (Mild Distress)' : 'Mild Psychological Distress';
+      desc.textContent = lang === 'bn'
+        ? 'আপনার মধ্যে মৃদু মানসিক চাপ বা উদ্বেগের লক্ষণ দেখা যাচ্ছে। সাইকোলজিস্টের সাথে একটি বন্ধুত্বপূর্ণ আলোচনা আপনাকে দ্রুত স্বাভাবিক ছন্দে ফেরাতে সাহায্য করবে।'
+        : 'You are experiencing mild stress or worry. A confidential chat with our counselor can help you regain clarity and focus.';
+      recommendedCategory = anxietyScore >= depressionScore ? 'exam_anxiety' : 'academic_stress';
+      recommendedUrgency = 'routine';
+    } else if (total <= 8) {
+      badge.className = 'badge badge-pill badge-warning px-3 py-1 font-weight-bold';
+      badge.style.background = '#d97706';
+      badge.style.color = '#fff';
+      title.textContent = lang === 'bn' ? 'মধ্যম মাত্রার উদ্বেগ বা বিষণ্ণতা (Moderate Distress)' : 'Moderate Distress Symptoms';
+      desc.textContent = lang === 'bn'
+        ? 'আপনার মানসিক চাপ বা উদ্বেগের মাত্রা স্বাভাবিকের চেয়ে কিছুটা বেশি। আমরা আপনাকে দ্রুত একটি ব্যক্তিগত কাউন্সেলিং সেশন নেওয়ার জোরালো পরামর্শ দিচ্ছি।'
+        : 'Your distress levels are elevated. We strongly recommend scheduling a confidential consultation with the counselor.';
+      recommendedCategory = anxietyScore >= depressionScore ? 'exam_anxiety' : 'grief_trauma';
+      recommendedUrgency = 'priority';
+    } else {
+      badge.className = 'badge badge-pill badge-danger px-3 py-1 font-weight-bold';
+      title.textContent = lang === 'bn' ? 'তীব্র মানসিক চাপ ও সংকট (Severe Distress)' : 'High Distress / Immediate Support Needed';
+      desc.textContent = lang === 'bn'
+        ? 'আপনি তীব্র মানসিক চাপ বা আতঙ্কের মধ্য দিয়ে যাচ্ছেন। অনুগ্রহ করে একা থাকবেন না এবং আজই জরুরি অগ্রাধিকার ভিত্তিতে সহায়তা নিন।'
+        : 'You are experiencing high levels of emotional strain. Please do not carry this alone—request priority counseling today.';
+      recommendedCategory = 'grief_trauma';
+      recommendedUrgency = 'crisis';
+    }
+  }
+
+  function transferScoreToBooking() {
+    switchPortalTab('booking');
+    const catSelect = document.getElementById('public_category_select');
+    if (catSelect) {
+      catSelect.value = recommendedCategory;
+    }
+    const urgRadio = document.getElementById(`urgency_${recommendedUrgency}`);
+    if (urgRadio) {
+      urgRadio.checked = true;
+    }
+    const notes = document.getElementById('public_brief_notes');
+    if (notes && !notes.value) {
+      const q1 = document.querySelector('input[name="phq_q1"]:checked')?.value || 0;
+      const q2 = document.querySelector('input[name="phq_q2"]:checked')?.value || 0;
+      const q3 = document.querySelector('input[name="phq_q3"]:checked')?.value || 0;
+      const q4 = document.querySelector('input[name="phq_q4"]:checked')?.value || 0;
+      const score = parseInt(q1) + parseInt(q2) + parseInt(q3) + parseInt(q4);
+      notes.value = `[Self-Check Screener Completed: PHQ-4 Score = ${score}/12]`;
+    }
+    document.getElementById('public_student_id').focus();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const savedLang = localStorage.getItem('counseling_portal_lang') || 'bn';
+    switchLanguage(savedLang);
+
+    // Time slot quick selection pills
+    const slotInput = document.getElementById('public_time_slot');
+    const pills = document.querySelectorAll('.slot-pill');
+
+    pills.forEach(pill => {
+      pill.addEventListener('click', function () {
+        pills.forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        if (slotInput) {
+          slotInput.value = this.dataset.slot;
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

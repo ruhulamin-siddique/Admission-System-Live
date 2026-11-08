@@ -1,0 +1,267 @@
+{% load static %}
+<div class="modal fade" id="applicantDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-navy text-white py-2">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-user-graduate mr-2"></i> Applicant Profile: {{ applicant.name }} ({{ applicant.application_no }})
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-4">
+                
+                <!-- Top Summary Row -->
+                <div class="row align-items-center mb-4 border-bottom pb-3">
+                    <div class="col-md-2 col-12 text-center mb-3 mb-md-0">
+                        {% if applicant.photo %}
+                        <img src="{{ applicant.photo.url }}" alt="{{ applicant.name }}" class="img-thumbnail shadow-sm" style="width: 120px; height: 130px; object-fit: cover;">
+                        {% else %}
+                        <img src="{% static 'img/default_avatar.jpg' %}" alt="No Photo" class="img-thumbnail shadow-sm" style="width: 120px; height: 130px; object-fit: cover;">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 col-12">
+                        <h4 class="font-weight-bold text-primary mb-1">{{ applicant.name }}</h4>
+                        <div class="text-muted small mb-2">
+                            <strong>Exam Roll:</strong> <code class="text-dark font-weight-bold" style="font-size: 1rem;">{{ applicant.exam_roll|default:"N/A" }}</code> &bull;
+                            <strong>Semester:</strong> {{ applicant.intake_name }} &bull;
+                            <strong>Applied:</strong> {{ applicant.applied_at|date:"d M Y, h:i A" }}
+                        </div>
+                        <span class="badge badge-info px-2 py-1 font-weight-bold">{{ applicant.desired_program }} ({{ applicant.program_category }})</span>
+                        <span class="badge badge-secondary px-2 py-1 ml-1">{{ applicant.student_type }}</span>
+                    </div>
+                    <div class="col-md-4 col-12 text-md-right">
+                        <div class="mb-2">
+                            <span class="small font-weight-bold text-muted d-block">Application Status:</span>
+                            {% if applicant.status == 'APPROVED' %}
+                                <span class="badge badge-success px-3 py-2 font-weight-bold" style="font-size: 0.95rem;">APPROVED</span>
+                            {% elif applicant.status == 'ADMITTED' %}
+                                <span class="badge badge-primary px-3 py-2 font-weight-bold" style="font-size: 0.95rem;">ADMITTED</span>
+                            {% elif applicant.status == 'VERIFIED' %}
+                                <span class="badge badge-info px-3 py-2 font-weight-bold" style="font-size: 0.95rem;">VERIFIED</span>
+                            {% elif applicant.status == 'REJECTED' %}
+                                <span class="badge badge-danger px-3 py-2 font-weight-bold" style="font-size: 0.95rem;">REJECTED</span>
+                            {% else %}
+                                <span class="badge badge-warning text-dark px-3 py-2 font-weight-bold" style="font-size: 0.95rem;">PENDING</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="small font-weight-bold text-muted d-block">Payment Status:</span>
+                            {% if applicant.payment_status == 'VERIFIED' %}
+                                <span class="badge badge-success px-2 py-1"><i class="fas fa-check mr-1"></i> bKash Verified</span>
+                            {% elif applicant.payment_status == 'INVALID' %}
+                                <span class="badge badge-danger px-2 py-1"><i class="fas fa-times mr-1"></i> Invalid TrxID</span>
+                            {% else %}
+                                <span class="badge badge-warning text-dark px-2 py-1"><i class="fas fa-clock mr-1"></i> Verification Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs for Profile Sections -->
+                <ul class="nav nav-tabs mb-3" id="applicantTab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold" id="personal-tab" data-toggle="tab" href="#personal" role="tab">
+                            <i class="fas fa-user mr-1"></i> Personal & Family
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="academic-tab" data-toggle="tab" href="#academic" role="tab">
+                            <i class="fas fa-graduation-cap mr-1"></i> Academic Records
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="address-tab" data-toggle="tab" href="#address" role="tab">
+                            <i class="fas fa-map-marker-alt mr-1"></i> Addresses
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="payment-tab" data-toggle="tab" href="#payment" role="tab">
+                            <i class="fas fa-money-bill-wave mr-1"></i> Payment & Audit
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="applicantTabContent">
+                    
+                    <!-- Tab 1: Personal & Family -->
+                    <div class="tab-pane fade show active" id="personal" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6 border-right">
+                                <h6 class="font-weight-bold text-primary mb-2">Personal Information</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr><th style="width: 40%;">Full Name:</th><td>{{ applicant.name }}</td></tr>
+                                    <tr><th>Gender:</th><td>{{ applicant.gender }}</td></tr>
+                                    <tr><th>Date of Birth:</th><td>{{ applicant.dob|date:"d F Y"|default:"N/A" }}</td></tr>
+                                    <tr><th>Blood Group:</th><td>{{ applicant.blood_group|default:"N/A" }}</td></tr>
+                                    <tr><th>Mobile No:</th><td><strong>{{ applicant.mobile }}</strong></td></tr>
+                                    <tr><th>Email:</th><td>{{ applicant.email|default:"N/A" }}</td></tr>
+                                    <tr><th>National ID / Birth Reg:</th><td>{{ applicant.national_id|default:"N/A" }}</td></tr>
+                                    <tr><th>Place of Birth:</th><td>{{ applicant.place_of_birth|default:"N/A" }}</td></tr>
+                                    <tr><th>Marital Status:</th><td>{{ applicant.marital_status }}</td></tr>
+                                    <tr><th>Nationality:</th><td>{{ applicant.nationality }}</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6 pl-md-4">
+                                <h6 class="font-weight-bold text-primary mb-2">Family & Guardian</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr><th style="width: 40%;">Father's Name:</th><td><strong>{{ applicant.father_name }}</strong></td></tr>
+                                    <tr><th>Father's Occupation:</th><td>{{ applicant.father_occupation|default:"N/A" }}</td></tr>
+                                    <tr><th>Father's Mobile:</th><td>{{ applicant.father_mobile|default:"N/A" }}</td></tr>
+                                    <tr><th>Mother's Name:</th><td><strong>{{ applicant.mother_name }}</strong></td></tr>
+                                    <tr><th>Mother's Occupation:</th><td>{{ applicant.mother_occupation|default:"N/A" }}</td></tr>
+                                    <tr><th>Mother's Mobile:</th><td>{{ applicant.mother_mobile|default:"N/A" }}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Academic Records -->
+                    <div class="tab-pane fade" id="academic" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6 border-right">
+                                <h6 class="font-weight-bold text-info mb-2">SSC / Equivalent Details</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr><th style="width: 40%;">School:</th><td>{{ applicant.ssc_school|default:"N/A" }}</td></tr>
+                                    <tr><th>Board:</th><td>{{ applicant.ssc_board|default:"N/A" }}</td></tr>
+                                    <tr><th>Roll No:</th><td>{{ applicant.ssc_roll|default:"N/A" }}</td></tr>
+                                    <tr><th>Reg No:</th><td>{{ applicant.ssc_reg|default:"N/A" }}</td></tr>
+                                    <tr><th>Passing Year:</th><td>{{ applicant.ssc_year|default:"N/A" }}</td></tr>
+                                    <tr><th>Achieved GPA:</th><td><strong class="text-success" style="font-size: 1.1rem;">{{ applicant.ssc_gpa }}</strong></td></tr>
+                                    <tr><th>Board Verified:</th><td>
+                                        {% if applicant.ssc_verified %}
+                                        <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Yes</span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">No</span>
+                                        {% endif %}
+                                    </td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6 pl-md-4">
+                                <h6 class="font-weight-bold text-info mb-2">HSC / Equivalent Details</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr><th style="width: 40%;">College:</th><td>{{ applicant.hsc_college|default:"N/A" }}</td></tr>
+                                    <tr><th>Board:</th><td>{{ applicant.hsc_board|default:"N/A" }}</td></tr>
+                                    <tr><th>Roll No:</th><td>{{ applicant.hsc_roll|default:"N/A" }}</td></tr>
+                                    <tr><th>Reg No:</th><td>{{ applicant.hsc_reg|default:"N/A" }}</td></tr>
+                                    <tr><th>Passing Year:</th><td>{{ applicant.hsc_year|default:"N/A" }}</td></tr>
+                                    <tr><th>Achieved GPA:</th><td><strong class="text-success" style="font-size: 1.1rem;">{{ applicant.hsc_gpa }}</strong></td></tr>
+                                    <tr><th>Board Verified:</th><td>
+                                        {% if applicant.hsc_verified %}
+                                        <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Yes</span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">No</span>
+                                        {% endif %}
+                                    </td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="alert alert-light border mt-3 text-right">
+                            <span class="font-weight-bold mr-2">Combined Total GPA:</span>
+                            <span class="badge badge-primary px-3 py-2" style="font-size: 1.1rem;">{{ applicant.total_gpa }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Address -->
+                    <div class="tab-pane fade" id="address" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6 border-right">
+                                <h6 class="font-weight-bold text-primary mb-2">Present Address</h6>
+                                <p class="mb-1"><strong>House/Street:</strong> {{ applicant.present_house|default:"N/A" }}</p>
+                                <p class="mb-1"><strong>Police Station:</strong> {{ applicant.present_police_station|default:"N/A" }}</p>
+                                <p class="mb-1"><strong>District:</strong> {{ applicant.present_district|default:"N/A" }}</p>
+                                <p class="mb-1"><strong>Post Code:</strong> {{ applicant.present_post_code|default:"N/A" }}</p>
+                                <p class="mb-1"><strong>Country:</strong> {{ applicant.present_country }}</p>
+                            </div>
+                            <div class="col-md-6 pl-md-4">
+                                <h6 class="font-weight-bold text-primary mb-2">Permanent Address</h6>
+                                <p class="mb-1"><strong>House/Street:</strong> {{ applicant.permanent_house|default:"N/A" }}</p>
+                                <p class="mb-1"><strong>Police Station:</strong> {{ applicant.permanent_police_station|default:"N/A" }}</p>
+                                <p class="mb-1"><strong>District:</strong> {{ applicant.permanent_district|default:"N/A" }}</p>
+                                <p class="mb-1"><strong>Post Code:</strong> {{ applicant.permanent_post_code|default:"N/A" }}</p>
+                                <p class="mb-1"><strong>Country:</strong> {{ applicant.permanent_country }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 4: Payment & Status Update -->
+                    <div class="tab-pane fade" id="payment" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6 border-right">
+                                <h6 class="font-weight-bold text-success mb-2">bKash Transaction Details</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr><th>Payment Method:</th><td>{{ applicant.payment_method }}</td></tr>
+                                    <tr><th>bKash TrxID:</th><td><code class="font-weight-bold" style="font-size: 1.1rem;">{{ applicant.payment_trx_id }}</code></td></tr>
+                                    <tr><th>Form Fee:</th><td>BDT {{ applicant.intake.form_fee_bdt }}</td></tr>
+                                    <tr><th>Verified By:</th><td>{{ applicant.payment_verified_by.username|default:"Not verified yet" }}</td></tr>
+                                    <tr><th>Verified At:</th><td>{{ applicant.payment_verified_at|date:"Y-m-d H:i"|default:"-" }}</td></tr>
+                                    <tr><th>Payment Notes:</th><td>{{ applicant.payment_notes|default:"None" }}</td></tr>
+                                </table>
+                            </div>
+
+                            <!-- Live Status Update Form -->
+                            <div class="col-md-6 pl-md-4">
+                                <h6 class="font-weight-bold text-primary mb-2">Update Application Review Decision</h6>
+                                <form id="modalStatusUpdateForm">
+                                    {% csrf_token %}
+                                    <div class="form-group mb-2">
+                                        <label class="small font-weight-bold">Decision Status:</label>
+                                        <select class="custom-select" name="status" id="detail_status_select">
+                                            {% for s_val, s_label in applicant.STATUS_CHOICES %}
+                                            <option value="{{ s_val }}" {% if applicant.status == s_val %}selected{% endif %}>{{ s_label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-2">
+                                        <label class="small font-weight-bold">Office Remarks:</label>
+                                        <textarea class="form-control" name="remarks" rows="2" placeholder="Add notes on admission decision...">{{ applicant.office_remarks }}</textarea>
+                                    </div>
+                                    <div class="custom-control custom-checkbox mb-3">
+                                        <input type="checkbox" class="custom-control-input" id="notify_student_check" name="notify_student" value="1" checked>
+                                        <label class="custom-control-label small font-weight-bold" for="notify_student_check">
+                                            Send SMS update to student mobile ({{ applicant.mobile }})
+                                        </label>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm btn-block font-weight-bold" id="btnSaveStatus">
+                                        <i class="fas fa-save mr-1"></i> Save Status Decision
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="modal-footer py-2 d-flex justify-content-between">
+                <div>
+                    <a href="{% url 'admin_print_application' applicant.id %}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-print mr-1"></i> Print Summary
+                    </a>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#modalStatusUpdateForm').on('submit', function(e) {
+        e.preventDefault();
+        $('#btnSaveStatus').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Saving...');
+        $.post(`/students/online-applicants/{{ applicant.id }}/update-status/`, $(this).serialize(), function(res) {
+            if (res.status === 'success') {
+                alert(res.message);
+                $('#applicantDetailModal').modal('hide');
+                location.reload();
+            } else {
+                alert(res.message || 'Error updating status.');
+                $('#btnSaveStatus').prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Save Status Decision');
+            }
+        }).fail(function(xhr) {
+            alert(xhr.responseJSON?.message || 'Server error.');
+            $('#btnSaveStatus').prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Save Status Decision');
+        });
+    });
+</script>

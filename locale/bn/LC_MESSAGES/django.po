@@ -716,3 +716,204 @@ msgstr "সবকিছু ঠিক আছে! বিদ্যমান সক�
 
 msgid "CONTROLLER OF EXAMINATIONS"
 msgstr "পরীক্ষা নিয়ন্ত্রক"
+
+msgid "Controller of Examinations (CoE)"
+msgstr "পরীক্ষা নিয়ন্ত্রক দপ্তর (CoE)"
+
+msgid "CoE Office"
+msgstr "পরীক্ষা নিয়ন্ত্রক দপ্তর"
+
+msgid "CoE Desk — Assignment & Kanban"
+msgstr "CoE ডেস্ক — অ্যাসাইনমেন্ট ও কানবান"
+
+msgid "Dept. Head Review & Approval"
+msgstr "বিভাগীয় প্রধানের পর্যালোচনা ও অনুমোদন"
+
+msgid "Processing Officer Workstation"
+msgstr "প্রসেসিং অফিসার ওয়ার্কস্টেশন"
+
+msgid "Delivery Desk — OTP Handover"
+msgstr "ডেলিভারি ডেস্ক — ওটিপি হ্যান্ডওভার"
+
+msgid "View All Applications"
+msgstr "সকল আবেদন প্রদর্শন"
+
+msgid "Export & Print"
+msgstr "এক্সপোর্ট ও প্রিন্ট"
+
+msgid "Manage CoE Settings"
+msgstr "CoE সেটআপ ও সেটিংস"
+
+msgid "Submit Application"
+msgstr "আবেদন জমা দিন"
+
+msgid "Track Application"
+msgstr "আবেদন ট্র্যাক করুন"
+
+msgid "Workspaces"
+msgstr "ওয়ার্কস্পেসসমূহ"
+
+msgid "Module Workspaces"
+msgstr "মডিউল ওয়ার্কস্পেসসমূহ"
+
+msgid "Switch Active Workspace"
+msgstr "সক্রিয় ওয়ার্কস্পেস পরিবর্তন করুন"
+
+msgid "Switch Module Workspace"
+msgstr "মডিউল ওয়ার্কস্পেস নির্বাচন করুন"
+
+msgid "Role Matrix"
+msgstr "রোল ম্যাট্রিক্স"
+
+msgid "Staff Access Directory"
+msgstr "স্টাফ এক্সেস ডিরেক্টরি"
+
+msgid "Staff & Security"
+msgstr "স্টাফ ও সিকিউরিটি"
+
+msgid "Exam Billing"
+msgstr "পরীক্ষার বিলিং"
+
+msgid "Student Intelligence"
+msgstr "শিক্ষার্থী ইন্টেলিজেন্স"
+
+msgid "PR Office"
+msgstr "জনসংযোগ দপ্তর (PR)"
+
+msgid "ICT Wing"
+msgstr "আইসিটি উইং"
+
+msgid "Pending Registrations"
+msgstr "অপেক্ষমাণ নতুন রেজিস্ট্রেশন"
+
+msgid "Pending Registration Requests"
+msgstr "অপেক্ষমাণ ব্যবহারকারী রেজিস্ট্রেশন"
+
+msgid "Review Pending Approvals"
+msgstr "অপেক্ষমাণ আবেদনসমূহ পর্যালোচনা করুন"
+
+msgid "Filter Pending Requests"
+msgstr "অপেক্ষমাণ আবেদনসমূহ ফিল্টার করুন"
+
+msgid "Pending User Accounts Needing Approval"
+msgstr "অনুমোদনের অপেক্ষায় থাকা ব্যবহারকারী অ্যাকাউন্টসমূহ"
+
+msgid "Only superusers can manage system roles."
+msgstr "কেবলমাত্র সুপারইউজাররাই রোল ও সিকিউরিটি পরিচালনা করতে পারবেন।"
+
+msgid "Deputy Controller of Examinations (DCoE)"
+msgstr "উপ-পরীক্ষা নিয়ন্ত্রক (DCoE)"
+
+msgid "Department Head (HoD)"
+msgstr "বিভাগীয় প্রধান (HoD)"
+
+msgid "Processing Officer"
+msgstr "প্রসেসিং অফিসার"
+
+msgid "Delivery Desk Clerk"
+msgstr "ডেলিভারি ডেস্ক ক্লার্ক"
+
+msgid "All"
+msgstr "সকল"
+
+msgid "Cannot delete: users are assigned to this role."
+msgstr "মুছে ফেলা সম্ভব নয়: ব্যবহারকারীগণ এই রোলে নিযুক্ত আছেন।"
+
+msgid "Delete"
+msgstr "মুছে ফেলুন"
+
+msgid "CoE — Documents"
+msgstr "CoE — ডকুমেন্ট প্রসেসিং"
+
+msgid "CoE Dashboard"
+msgstr "CoE ড্যাশবোর্ড"
+
+msgid "All Applications"
+msgstr "সকল আবেদনসমূহ"
+
+msgid "HoD Review"
+msgstr "বিভাগীয় প্রধানের পর্যালোচনা"
+
+msgid "Officer Assignment"
+msgstr "অফিসার অ্যাসাইনমেন্ট"
+
+msgid "Delivery Desk"
+msgstr "ডেলিভারি ডেস্ক"
+
+msgid "CoE Settings"
+msgstr "CoE সেটিংস"
+
+msgid "Campus Connect: System Architecture & Workspaces"
+msgstr "ক্যাম্পাস কানেক্ট: সিস্টেম আর্কিটেকচার ও ওয়ার্কস্পেসসমূহ"
+
+msgid "Institutional Ecosystem — Dynamic Multi-Module Access Matrix"
+msgstr "প্রতিষ্ঠানিক ইকোসিস্টেম — ডায়নামিক বহু-মডিউল এক্সেস ম্যাট্রিক্স"
+
+msgid "Your Authorized Workspaces"
+msgstr "আপনার অনুমোদিত ওয়ার্কস্পেসসমূহ"
+
+msgid "Permissions evaluated in real-time"
+msgstr "রিয়েল-টাইমে পারমিশন মূল্যায়নকৃত"
+
+msgid "Accessible"
+msgstr "অনুমোদিত"
+
+msgid "Restricted"
+msgstr "সীমিত"
+
+msgid "Enter CoE Workspace"
+msgstr "CoE ওয়ার্কস্পেসে প্রবেশ করুন"
+
+msgid "Enter Billing Workspace"
+msgstr "বিলিং ওয়ার্কস্পেসে প্রবেশ করুন"
+
+msgid "Enter Student Workspace"
+msgstr "শিক্ষার্থী ওয়ার্কস্পেসে প্রবেশ করুন"
+
+msgid "Enter PR Workspace"
+msgstr "PR ওয়ার্কস্পেসে প্রবেশ করুন"
+
+msgid "Enter ICT Workspace"
+msgstr "আইসিটি ওয়ার্কস্পেসে প্রবেশ করুন"
+
+msgid "Manage Role Matrix"
+msgstr "রোল ম্যাট্রিক্স পরিচালনা করুন"
+
+msgid "No Access Permission"
+msgstr "এক্সেস পারমিশন নেই"
+
+msgid "Superuser Only"
+msgstr "কেবলমাত্র সুপারইউজার"
+
+msgid "System Integration Health"
+msgstr "সিস্টেম ইন্টিগ্রেশন হেলথ"
+
+msgid "All Systems Operational"
+msgstr "সকল সিস্টেম সচল"
+
+msgid "SMS Gateway"
+msgstr "এসএমএস গেটওয়ে"
+
+msgid "Teletalk / BTCL Active"
+msgstr "টেলিটক / বিটিসিএল সক্রিয়"
+
+msgid "Board API"
+msgstr "শিক্ষা বোর্ড এপিআই"
+
+msgid "SSC/HSC Online"
+msgstr "এসএসসি/এইচএসসি অনলাইন"
+
+msgid "Healthy (Encrypted)"
+msgstr "সুরক্ষিত ও সক্রিয় (এনক্রিপ্টেড)"
+
+msgid "Audit Log"
+msgstr "অডিট লগ"
+
+msgid "Active Monitoring"
+msgstr "সক্রিয় মনিটরিং"
+
+msgid "Close Overview"
+msgstr "সামারি বন্ধ করুন"
+
+
+

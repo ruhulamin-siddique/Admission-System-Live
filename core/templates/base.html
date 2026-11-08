@@ -45,7 +45,7 @@
       <li class="nav-item d-none d-sm-inline-block">
         <a href="{% url 'dashboard' %}" class="nav-link font-weight-bold text-primary">
             {% if sys_settings.logo_url %}
-            <img src="{{ sys_settings.logo_url }}" alt="Logo" style="height: 24px;" class="mr-1 mb-1">
+            <img src="{{ sys_settings.logo_url }}" alt="Logo" style="height: 24px;" class="mr-1 mb-1" onerror="this.style.display='none';">
             {% endif %}
             {{ sys_settings.institution_name|default:"Bangladesh Army University of Science and Technology" }}
         </a>
@@ -206,15 +206,6 @@
             <a href="{% url 'system_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'system_settings' %}active{% endif %}">
               <i class="nav-icon fas fa-sliders-h"></i>
               <p>Global Settings</p>
-            </a>
-          </li>
-          {% endif %}
-
-          {% if user.is_staff %}
-          <li class="nav-item">
-            <a href="{% url 'admin:index' %}" class="nav-link">
-              <i class="nav-icon fas fa-cogs"></i>
-              <p>Admin Panel</p>
             </a>
           </li>
           {% endif %}

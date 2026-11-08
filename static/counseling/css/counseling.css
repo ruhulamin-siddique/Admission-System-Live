@@ -1,0 +1,1210 @@
+/* ==========================================================================
+   Counseling & Student Wellbeing Module — Design System (counseling.css)
+   Features: Glassmorphism, Semantic Risk Palette, Dark Mode, Privacy Desk Shield,
+   Card-Tile Assessment Steppers, 4-Quadrant SOAP Layout, and Fluid Mobile Grid.
+   ========================================================================== */
+
+:root {
+  --counseling-primary: #1e40af;
+  --counseling-primary-hover: #1d4ed8;
+  --counseling-primary-light: #eff6ff;
+  --counseling-teal: #0d9488;
+  --counseling-accent: #0284c7;
+
+  /* Risk Stratification */
+  --risk-low: #10b981;
+  --risk-low-bg: #ecfdf5;
+  --risk-moderate: #f59e0b;
+  --risk-moderate-bg: #fffbeb;
+  --risk-high: #f97316;
+  --risk-high-bg: #fff7ed;
+  --risk-critical: #ef4444;
+  --risk-critical-bg: #fef2f2;
+
+  /* Surfaces & Borders */
+  --counseling-card-bg: #ffffff;
+  --counseling-card-border: #e2e8f0;
+  --counseling-text-main: #1e293b;
+  --counseling-text-muted: #64748b;
+  --counseling-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --counseling-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.07);
+  --counseling-shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.1);
+  --counseling-radius: 16px;
+}
+
+/* Dark Mode Overrides (Inherits from AdminLTE body.dark-mode / .dark-mode) */
+.dark-mode, body.dark-mode {
+  --counseling-primary: #3b82f6;
+  --counseling-primary-hover: #60a5fa;
+  --counseling-primary-light: rgba(59, 130, 246, 0.2);
+  --counseling-teal: #14b8a6;
+  --counseling-accent: #38bdf8;
+
+  --counseling-card-bg: #1e293b;
+  --counseling-card-border: #334155;
+  --counseling-text-main: #f8fafc;
+  --counseling-text-muted: #94a3b8;
+  --counseling-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --counseling-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
+
+  --risk-low-bg: rgba(16, 185, 129, 0.18);
+  --risk-moderate-bg: rgba(245, 158, 11, 0.18);
+  --risk-high-bg: rgba(249, 115, 22, 0.18);
+  --risk-critical-bg: rgba(239, 68, 68, 0.22);
+}
+
+/* Dark Mode - Pill Buttons */
+body.dark-mode .btn-pill-privacy {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+body.dark-mode .btn-pill-privacy:hover {
+  background: #475569 !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-pill-chamber {
+  background: rgba(79, 70, 229, 0.2) !important;
+  color: #a5b4fc !important;
+  border-color: #6366f1 !important;
+}
+body.dark-mode .btn-pill-chamber:hover {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-pill-public {
+  background: rgba(13, 148, 136, 0.2) !important;
+  color: #5eead4 !important;
+  border-color: #0d9488 !important;
+}
+body.dark-mode .btn-pill-public:hover {
+  background: #0d9488 !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-pill-schedule {
+  background: rgba(2, 132, 199, 0.2) !important;
+  color: #7dd3fc !important;
+  border-color: #0284c7 !important;
+}
+body.dark-mode .btn-pill-schedule:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+/* Dark Mode - Minimal KPI Card Footer */
+body.dark-mode .minimal-kpi-footer {
+  background: #0f172a !important;
+  border-top-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .minimal-kpi-card:hover .minimal-kpi-footer {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #38bdf8 !important;
+}
+
+/* Dark Mode - Tables & Lists */
+body.dark-mode .table {
+  color: #f8fafc !important;
+}
+body.dark-mode .table thead th,
+body.dark-mode .table thead.thead-light th {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+  border-color: #334155 !important;
+}
+body.dark-mode .table td {
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+body.dark-mode .table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.035) !important;
+}
+body.dark-mode .list-group-item {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .counseling-header-calm {
+  background: #1e293b !important;
+  border-bottom: 1px solid #334155 !important;
+}
+
+/* Dark Mode - Assessment & SOAP */
+body.dark-mode .scale-option-label {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .scale-option-label:hover {
+  border-color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.15) !important;
+}
+body.dark-mode .scale-option-input:checked + .scale-option-label {
+  background: #2563eb !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+body.dark-mode .snippet-chip {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .snippet-chip:hover {
+  background: rgba(59, 130, 246, 0.25) !important;
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+}
+body.dark-mode .form-control,
+body.dark-mode select.form-control,
+body.dark-mode textarea.form-control {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .form-control:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* --------------------------------------------------------------------------
+   1. Animated Action Pill Buttons & Discretion Shield
+   -------------------------------------------------------------------------- */
+body.privacy-mode-active .confidential-pii {
+  filter: blur(7px) !important;
+  user-select: none !important;
+  transition: filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+body.privacy-mode-active .confidential-pii:hover {
+  filter: blur(0px) !important;
+}
+
+/* --------------------------------------------------------------------------
+   1.5. Executive Action Buttons & Top Command Bar (.btn-action-pill)
+   -------------------------------------------------------------------------- */
+.btn-action-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  border-radius: 10px !important;
+  padding: 8px 16px !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.01em !important;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  border: 1.5px solid transparent !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.btn-action-pill i {
+  font-size: 0.92rem !important;
+  transition: transform 0.22s ease !important;
+}
+
+.btn-action-pill:hover {
+  transform: translateY(-2px) !important;
+  text-decoration: none !important;
+}
+
+.btn-action-pill:hover i {
+  transform: scale(1.15) !important;
+}
+
+.btn-action-pill:active {
+  transform: translateY(1px) scale(0.98) !important;
+}
+
+/* Variant: New Clinical Intake (Primary Vibrant Emerald) */
+.btn-pill-intake {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+.btn-pill-intake:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5) !important;
+}
+
+/* Variant: Schedule (Vibrant Cobalt Blue) */
+.btn-pill-schedule {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border-color: #1e40af !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+}
+.btn-pill-schedule:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
+}
+
+/* Variant: Chamber / Profile (Clean Indigo Outline) */
+.btn-pill-chamber {
+  background: #ffffff !important;
+  color: #4338ca !important;
+  border-color: #c7d2fe !important;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08) !important;
+}
+.btn-pill-chamber:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+  color: #ffffff !important;
+  border-color: #4338ca !important;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35) !important;
+}
+
+/* Variant: Public Booking Portal (Teal Focus) */
+.btn-pill-public {
+  background: #ffffff !important;
+  color: #0f766e !important;
+  border-color: #99f6e4 !important;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.08) !important;
+}
+.btn-pill-public:hover {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
+  color: #ffffff !important;
+  border-color: #0f766e !important;
+  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.35) !important;
+}
+
+/* Variant: Privacy Shield (Desk Anonymizer Toggle) */
+.btn-pill-privacy {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+.btn-pill-privacy:hover {
+  background: #f8fafc !important;
+  color: #1e293b !important;
+  border-color: #94a3b8 !important;
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.15) !important;
+}
+body.privacy-mode-active .btn-pill-privacy {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  border-color: #b91c1c !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Variant: Emergency Crisis Walk-in */
+.btn-pill-emergency {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  border-color: #b91c1c !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4) !important;
+  animation: pulse-danger 2s infinite !important;
+}
+.btn-pill-emergency:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 22px rgba(239, 68, 68, 0.6) !important;
+}
+
+/* Dark Mode Overrides for Action Buttons */
+body.dark-mode .btn-pill-chamber {
+  background: #1e293b !important;
+  color: #a5b4fc !important;
+  border-color: #4338ca !important;
+}
+body.dark-mode .btn-pill-chamber:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-pill-public {
+  background: #1e293b !important;
+  color: #5eead4 !important;
+  border-color: #0d9488 !important;
+}
+body.dark-mode .btn-pill-public:hover {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-pill-privacy {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+body.dark-mode .btn-pill-privacy:hover {
+  background: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* --------------------------------------------------------------------------
+   1.6. In-Page & Table Action Buttons (.btn-counseling-*)
+   -------------------------------------------------------------------------- */
+.btn-counseling-soap {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 5px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #047857 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+.btn-counseling-soap:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+  text-decoration: none !important;
+}
+
+.btn-counseling-dossier {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 5px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1.5px solid #bfdbfe !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+.btn-counseling-dossier:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+  text-decoration: none !important;
+}
+
+.btn-counseling-crisis {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 5px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+.btn-counseling-crisis:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5) !important;
+  text-decoration: none !important;
+}
+
+.btn-counseling-complete {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1.5px solid #a7f3d0 !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+.btn-counseling-complete:hover {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
+  text-decoration: none !important;
+}
+
+.btn-counseling-noshow {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1.5px solid #fde68a !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+.btn-counseling-noshow:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #ffffff !important;
+  border-color: #d97706 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3) !important;
+  text-decoration: none !important;
+}
+
+.btn-counseling-cancel {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  background: #fff1f2 !important;
+  color: #e11d48 !important;
+  border: 1.5px solid #fecdd3 !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+.btn-counseling-cancel:hover {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+  color: #ffffff !important;
+  border-color: #be123c !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 10px rgba(225, 29, 72, 0.3) !important;
+  text-decoration: none !important;
+}
+
+/* Psychometric Scale Launcher Card Button */
+.btn-counseling-scale {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  background: var(--counseling-card-bg) !important;
+  border: 1.5px solid var(--counseling-card-border) !important;
+  color: var(--counseling-text-main) !important;
+  text-decoration: none !important;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-bottom: 8px !important;
+  cursor: pointer !important;
+}
+.btn-counseling-scale:hover {
+  border-color: var(--counseling-primary) !important;
+  background: var(--counseling-primary-light) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: var(--counseling-shadow-sm) !important;
+  text-decoration: none !important;
+  color: var(--counseling-primary) !important;
+}
+.btn-counseling-scale .scale-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+.btn-counseling-scale .scale-desc {
+  font-size: 0.8rem;
+  color: var(--counseling-text-muted);
+}
+.btn-counseling-scale .scale-badge {
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 4px 9px;
+  border-radius: 20px;
+}
+
+/* Dark Mode - In-Page Buttons */
+body.dark-mode .btn-counseling-dossier {
+  background: #1e293b !important;
+  color: #93c5fd !important;
+  border-color: #3b82f6 !important;
+}
+body.dark-mode .btn-counseling-dossier:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-counseling-complete {
+  background: #0f172a !important;
+  color: #6ee7b7 !important;
+  border-color: #059669 !important;
+}
+body.dark-mode .btn-counseling-complete:hover {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-counseling-noshow {
+  background: #0f172a !important;
+  color: #fcd34d !important;
+  border-color: #d97706 !important;
+}
+body.dark-mode .btn-counseling-noshow:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-counseling-cancel {
+  background: #0f172a !important;
+  color: #fda4af !important;
+  border-color: #e11d48 !important;
+}
+body.dark-mode .btn-counseling-cancel:hover {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+  color: #ffffff !important;
+}
+body.dark-mode .btn-counseling-scale {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+body.dark-mode .btn-counseling-scale:hover {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: #60a5fa !important;
+  color: #93c5fd !important;
+}
+
+/* 3-Dot Table Action Dropdown Button */
+.dropdown-toggle-no-caret::after {
+  display: none !important;
+}
+.dropdown-action-btn {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #475569 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  padding: 0 !important;
+}
+.dropdown-action-btn:hover, .dropdown-action-btn:focus, .dropdown-action-btn[aria-expanded="true"] {
+  background: #ffffff !important;
+  border-color: #3b82f6 !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+.dropdown-menu-actions {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  padding: 6px !important;
+  min-width: 190px !important;
+  z-index: 1050 !important;
+}
+.dropdown-menu-actions .dropdown-item {
+  border-radius: 7px !important;
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  padding: 7px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.15s ease !important;
+}
+.dropdown-menu-actions .dropdown-item:hover {
+  background: #f1f5f9 !important;
+  transform: translateX(2px) !important;
+}
+
+body.dark-mode .dropdown-action-btn {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+body.dark-mode .dropdown-action-btn:hover, 
+body.dark-mode .dropdown-action-btn:focus,
+body.dark-mode .dropdown-action-btn[aria-expanded="true"] {
+  background: #334155 !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+body.dark-mode .dropdown-menu-actions {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+body.dark-mode .dropdown-menu-actions .dropdown-item {
+  color: #f1f5f9 !important;
+}
+body.dark-mode .dropdown-menu-actions .dropdown-item:hover {
+  background: #334155 !important;
+}
+body.dark-mode .dropdown-menu-actions .dropdown-divider {
+  border-top-color: #334155 !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Minimalistic Metric Cards (.minimal-kpi-card) & Elevation
+   -------------------------------------------------------------------------- */
+.minimal-kpi-card {
+  background: var(--counseling-card-bg);
+  border: 1px solid var(--counseling-card-border);
+  border-radius: 18px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.minimal-kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #94a3b8;
+  transition: height 0.25s ease;
+}
+.minimal-kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+.minimal-kpi-card:hover::before {
+  height: 5px;
+}
+
+/* Category Accent Themes */
+.minimal-kpi-card.kpi-cyan::before { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+.minimal-kpi-card.kpi-indigo::before { background: linear-gradient(90deg, #4f46e5, #818cf8); }
+.minimal-kpi-card.kpi-amber::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.minimal-kpi-card.kpi-crimson::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+.minimal-kpi-body {
+  padding: 20px 22px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.minimal-kpi-info {
+  display: flex;
+  flex-direction: column;
+}
+.minimal-kpi-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--counseling-text-muted);
+  margin-bottom: 6px;
+}
+.minimal-kpi-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--counseling-text-main);
+  letter-spacing: -0.5px;
+}
+
+.minimal-kpi-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.minimal-kpi-card:hover .minimal-kpi-icon {
+  transform: scale(1.12) rotate(4deg);
+}
+
+.kpi-cyan .minimal-kpi-icon { background: rgba(2, 132, 199, 0.12); color: #0284c7; }
+.kpi-indigo .minimal-kpi-icon { background: rgba(79, 70, 229, 0.12); color: #4f46e5; }
+.kpi-amber .minimal-kpi-icon { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+.kpi-crimson .minimal-kpi-icon { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+
+.minimal-kpi-footer {
+  padding: 10px 22px;
+  border-top: 1px solid var(--counseling-card-border);
+  background: rgba(248, 250, 252, 0.6);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--counseling-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none !important;
+  transition: all 0.2s ease;
+}
+.minimal-kpi-footer i {
+  transition: transform 0.25s ease;
+  font-size: 0.8rem;
+}
+.minimal-kpi-card:hover .minimal-kpi-footer {
+  color: var(--counseling-primary);
+  background: var(--counseling-primary-light);
+}
+.minimal-kpi-card:hover .minimal-kpi-footer i {
+  transform: translateX(4px);
+}
+
+/* Global Hover Lift for Cards & Panels */
+.anim-hover-lift {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.anim-hover-lift:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Modern Cards & Glassmorphism Surfaces
+   -------------------------------------------------------------------------- */
+.counseling-card {
+  background: var(--counseling-card-bg);
+  border: 1px solid var(--counseling-card-border);
+  border-radius: var(--counseling-radius) !important;
+  box-shadow: var(--counseling-shadow-sm);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.counseling-card:hover {
+  box-shadow: var(--counseling-shadow-md);
+}
+
+.counseling-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--counseling-card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+}
+.counseling-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--counseling-text-main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   3. Risk Badges & Animated Urgency Palettes (Option 1: Empathetic Clinical)
+   -------------------------------------------------------------------------- */
+.badge-orange {
+  background-color: #f97316 !important;
+  color: #ffffff !important;
+}
+
+.badge-teal {
+  background-color: var(--counseling-teal) !important;
+  color: #ffffff !important;
+}
+
+.text-orange {
+  color: #f97316 !important;
+}
+
+.text-teal {
+  color: var(--counseling-teal) !important;
+}
+
+/* Routine Animation (Gentle Leaf Float) */
+@keyframes floatSway {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.anim-routine-icon {
+  animation: floatSway 3s ease-in-out infinite;
+}
+
+/* Priority Animation (Amber Breathing Glow) */
+@keyframes amberGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 14px 2px rgba(245, 158, 11, 0.25); }
+}
+.anim-priority-card {
+  animation: amberGlow 2.5s ease-in-out infinite;
+}
+
+/* Acute Crisis Animation (Heartbeat Pulse) */
+@keyframes heartbeatPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.6); }
+  14% { transform: scale(1.04); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.04); }
+  70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(225, 29, 72, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+}
+.pulse-danger, .anim-crisis-card {
+  animation: heartbeatPulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Urgency Icon Badges */
+.urgency-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-right: 14px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+.icon-routine {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1.5px solid #a7f3d0;
+}
+.icon-priority {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1.5px solid #fde68a;
+}
+.icon-crisis {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1.5px solid #fecdd3;
+}
+
+
+/* --------------------------------------------------------------------------
+   4. Assessment Scale Interactive Card-Tiles
+   -------------------------------------------------------------------------- */
+.scale-question-card {
+  background: var(--counseling-card-bg);
+  border: 1px solid var(--counseling-card-border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+.scale-question-card:hover {
+  border-color: var(--counseling-accent);
+}
+
+.scale-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.scale-option-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 10px;
+  border-radius: 10px;
+  border: 2px solid var(--counseling-card-border);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0;
+  min-height: 54px;
+}
+.scale-option-label:hover {
+  border-color: var(--counseling-primary);
+  background: var(--counseling-primary-light);
+}
+
+.scale-option-input {
+  display: none;
+}
+.scale-option-input:checked + .scale-option-label {
+  border-color: var(--counseling-primary);
+  background: var(--counseling-primary);
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.3);
+  transform: translateY(-2px);
+}
+.scale-option-input:checked + .scale-option-label .option-hint {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.option-score {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+.option-hint {
+  font-size: 0.76rem;
+  color: var(--counseling-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   5. Live Circular SVG Gauge
+   -------------------------------------------------------------------------- */
+.score-gauge-box {
+  background: var(--counseling-card-bg);
+  border: 1px solid var(--counseling-card-border);
+  border-radius: 18px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--counseling-shadow-md);
+  position: sticky;
+  top: 80px;
+}
+
+.score-display-number {
+  font-size: 2.8rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--counseling-primary);
+  transition: color 0.3s ease;
+}
+
+/* --------------------------------------------------------------------------
+   6. 4-Quadrant SOAP Layou/* --------------------------------------------------------------------------
+   6. 4-Quadrant SOAP Layout & Responsive Workspace
+   -------------------------------------------------------------------------- */
+.soap-workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.soap-box {
+  background: var(--counseling-card-bg);
+  border: 1px solid var(--counseling-card-border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.soap-box-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+.soap-box-header .soap-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--counseling-primary);
+  color: #ffffff;
+  font-size: 0.88rem;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.soap-box textarea,
+.soap-box .soap-field,
+.soap-field {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  word-break: break-word;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.snippet-carousel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+  margin-top: 8px;
+}
+.snippet-chip {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--counseling-card-border);
+  background: var(--counseling-card-bg);
+  color: var(--counseling-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+}
+.snippet-chip:hover {
+  background: var(--counseling-primary-light);
+  color: var(--counseling-primary);
+  border-color: var(--counseling-primary);
+}
+
+/* 4-Quadrant SOAP Display in Case Dossier */
+.soap-quadrant-card {
+  background: var(--counseling-card-bg);
+  border: 1px solid var(--counseling-card-border);
+  border-radius: 12px;
+  padding: 14px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: 100%;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+.soap-card-s { border-left: 4px solid var(--counseling-primary) !important; }
+.soap-card-o { border-left: 4px solid #0284c7 !important; }
+.soap-card-a { border-left: 4px solid #f59e0b !important; }
+.soap-card-p { border-left: 4px solid #10b981 !important; }
+
+.soap-text-content {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--counseling-text-main);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+body.dark-mode .soap-quadrant-card {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+}
+body.dark-mode .soap-card-s { border-left-color: #3b82f6 !important; }
+body.dark-mode .soap-card-o { border-left-color: #38bdf8 !important; }
+body.dark-mode .soap-card-a { border-left-color: #fbbf24 !important; }
+body.dark-mode .soap-card-p { border-left-color: #34d399 !important; }
+body.dark-mode .soap-text-content {
+  color: #e2e8f0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. Mobile & Tablet Responsiveness (@media) - Universal Screen Fit
+   -------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+  .soap-workspace-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .score-gauge-box {
+    position: static !important;
+    margin-bottom: 20px !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .scale-options-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .page-actions .btn,
+  .page-actions .btn-action-pill {
+    width: 100% !important;
+    margin-bottom: 6px !important;
+  }
+  .counseling-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+/* Universal text & container wrapping prevention */
+.counseling-card,
+.card-body,
+.soap-box,
+.soap-quadrant-card {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Touch targets */
+.btn, .scale-option-label, .nav-link {
+  min-height: 40px;
+}
+
+/* --------------------------------------------------------------------------
+   8. Confidentiality & Ethical Consent Checkbox Card (Universal Alignment)
+   -------------------------------------------------------------------------- */
+.custom-checkbox-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  padding: 16px 18px !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+  border: 1.5px solid #e2e8f0 !important;
+  cursor: pointer !important;
+  margin-bottom: 24px !important;
+  position: relative !important;
+  transition: all 0.2s ease !important;
+  user-select: none !important;
+}
+.custom-checkbox-card:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+.custom-checkbox-card input[type="checkbox"],
+.consent-checkbox-input {
+  position: relative !important;
+  top: 3px !important;
+  left: 0 !important;
+  margin: 0 !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  max-width: 22px !important;
+  max-height: 22px !important;
+  cursor: pointer !important;
+  accent-color: #1e40af !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 2 !important;
+}
+.consent-text-wrap {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+body.dark-mode .custom-checkbox-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+body.dark-mode .custom-checkbox-card:hover {
+  background: #273548 !important;
+  border-color: #475569 !important;
+}
+body.dark-mode .custom-checkbox-card strong {
+  color: #f8fafc !important;
+}
+body.dark-mode .custom-checkbox-card .text-muted {
+  color: #94a3b8 !important;
+}
+

@@ -3,8 +3,16 @@
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+db.sqlite3-wal
+db.sqlite3-shm
 media/
 staticfiles/
+
+# Database Backups & Large Dumps
+backups/
+archive/
+*.sql
+*.json
 
 # Python
 __pycache__/
@@ -14,6 +22,12 @@ venv/
 .env
 .venv/
 env/
+
+# Archives & Scratch
+*.zip
+*.tar.gz
+scratch/
+brain/
 
 # IDEs
 .vscode/

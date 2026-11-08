@@ -1,11 +1,23 @@
 <div class="quick-info-card">
     <div class="quick-info-header">
         <div class="d-flex align-items-center">
-            <div class="quick-info-avatar mr-3">
+            <div class="quick-info-avatar mr-3" style="border-radius: 12px; overflow: hidden; width: 44px; height: 52px;">
                 {% if student.photo_url %}
-                <img src="{{ student.photo_url }}" alt="{{ student.student_name }}">
+                <img src="{{ student.photo_url }}" alt="{{ student.student_name }}" style="width: 100%; height: 100%; object-fit: cover;">
                 {% else %}
-                <span>{{ student.student_name|slice:":1"|upper }}</span>
+                    {% if student.gender and student.gender|lower == 'female' or student.gender|lower == 'f' %}
+                    <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #fbcfe8, #be185d); color: #ffffff;" title="Female Student">
+                        <i class="fas fa-user-graduate" style="font-size: 20px;"></i>
+                    </div>
+                    {% elif student.gender and student.gender|lower == 'male' or student.gender|lower == 'm' %}
+                    <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #0284c7, #1e3a8a); color: #ffffff;" title="Male Student">
+                        <i class="fas fa-user-tie" style="font-size: 20px;"></i>
+                    </div>
+                    {% else %}
+                    <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #64748b, #1e293b); color: #ffffff;">
+                        <i class="fas fa-user-graduate" style="font-size: 20px;"></i>
+                    </div>
+                    {% endif %}
                 {% endif %}
             </div>
             <div class="flex-grow-1">

@@ -1,0 +1,546 @@
+{% extends 'base.html' %}
+{% load i18n core_tags %}
+
+{% block title %}Student Applications Hub | BAUST Admission{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 14px 2px 14px;
+        margin-bottom: 16px;
+    }
+    .filter-group { 
+        position: relative; 
+        border: 1px solid #ced4da; 
+        border-radius: 6px; 
+        padding: 0 10px; 
+        margin-bottom: 8px; 
+        background: #fff;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .filter-group label { 
+        position: absolute; 
+        top: -8px; 
+        left: 8px; 
+        background: #fff; 
+        padding: 0 5px; 
+        font-size: 11px; 
+        font-weight: 600; 
+        color: #4b5563; 
+        margin-bottom: 0;
+        z-index: 2;
+        line-height: 1;
+    }
+
+    .filter-group select, .filter-group input { 
+        border: none !important; 
+        width: 100%; 
+        font-size: 13px; 
+        background: transparent !important; 
+        outline: none !important;
+        height: 100%;
+        color: #1f2937;
+        box-shadow: none !important;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .filter-group input {
+        cursor: text;
+    }
+
+    /* Active filter highlight matching student directory */
+    .filter-group.active {
+        border-color: #3b82f6 !important;
+        background-color: #eff6ff !important;
+    }
+    .filter-group.active label {
+        color: #1d4ed8 !important;
+        background: #eff6ff !important;
+        border-radius: 2px;
+    }
+
+    body.dark-mode .filter-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    body.dark-mode .filter-group {
+        border-color: #475569;
+        background: #1e293b;
+    }
+    body.dark-mode .filter-group label {
+        background: #1e293b;
+        color: #94a3b8;
+    }
+    body.dark-mode .filter-group select, body.dark-mode .filter-group input {
+        color: #f8fafc;
+    }
+    body.dark-mode .filter-group select option {
+        background: #1e293b;
+        color: #f8fafc;
+    }
+    body.dark-mode .filter-group.active {
+        border-color: #38bdf8 !important;
+        background-color: #0c1e35 !important;
+    }
+    body.dark-mode .filter-group.active label {
+        color: #38bdf8 !important;
+        background: #0c1e35 !important;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-file-signature text-primary mr-2"></i> Student Admission Applications
+{% endblock %}
+
+{% block page_actions %}
+    <!-- Public Portal Shortcut & Copy Link -->
+    <div class="btn-group shadow-sm">
+        <a href="{% url 'public_apply' %}" target="_blank" class="btn btn-sm btn-primary font-weight-bold">
+            <i class="fas fa-external-link-alt mr-1"></i> Student Portal
+        </a>
+        <button type="button" class="btn btn-sm btn-primary border-left font-weight-bold" onclick="copyPublicPortalUrl()" title="Copy Public Student Application URL to Clipboard">
+            <i class="fas fa-copy mr-1"></i> Copy Link
+        </button>
+    </div>
+
+    <a href="{% url 'public_track_application' %}" target="_blank" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm">
+        <i class="fas fa-search-location mr-1"></i> Track Portal
+    </a>
+
+    {% has_access 'students' 'manage_application_templates' as can_manage_templates %}
+    {% if can_manage_templates %}
+    <!-- Validation Policy Switcher -->
+    <div class="btn-group shadow-sm">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold" disabled>
+            ID Policy:
+            <span id="currentPolicyBadge" class="badge {% if config.id_validation_policy == 'FLEXIBLE' %}badge-success{% else %}badge-danger{% endif %} ml-1">
+                {{ config.id_validation_policy }}
+            </span>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold" onclick="toggleValidationPolicy()" title="Toggle between Flexible and Strict student ID validation">
+            <i class="fas fa-sync-alt mr-1"></i> Switch Policy
+        </button>
+    </div>
+
+    <!-- Template Manager Modal Launcher -->
+    <button type="button" class="btn btn-sm btn-secondary font-weight-bold rounded-pill shadow-sm" onclick="openTemplateManagerModal()">
+        <i class="fas fa-folder-open mr-1"></i> Manage Templates
+    </button>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- KPI Metric Summary Cards -->
+    <div class="row">
+        <div class="col-lg-2 col-6">
+            <div class="small-box bg-info shadow-sm">
+                <div class="inner">
+                    <h3>{{ total_count }}</h3>
+                    <p>Total Applications</p>
+                </div>
+                <div class="icon"><i class="fas fa-folder"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-6">
+            <div class="small-box bg-secondary shadow-sm">
+                <div class="inner">
+                    <h3>{{ submitted_count }}</h3>
+                    <p>Online Submitted</p>
+                </div>
+                <div class="icon"><i class="fas fa-paper-plane"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-6">
+            <div class="small-box bg-primary shadow-sm">
+                <div class="inner">
+                    <h3>{{ received_count }}</h3>
+                    <p>Physical Received</p>
+                </div>
+                <div class="icon"><i class="fas fa-inbox"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-6">
+            <div class="small-box bg-warning shadow-sm">
+                <div class="inner">
+                    <h3>{{ verified_count }}</h3>
+                    <p>Under Review</p>
+                </div>
+                <div class="icon"><i class="fas fa-user-check"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-6">
+            <div class="small-box bg-success shadow-sm">
+                <div class="inner">
+                    <h3>{{ approved_count }}</h3>
+                    <p>Approved</p>
+                </div>
+                <div class="icon"><i class="fas fa-check-double"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-6">
+            <div class="small-box bg-danger shadow-sm">
+                <div class="inner">
+                    <h3>{{ mismatch_count }}</h3>
+                    <p>Profile Mismatches</p>
+                </div>
+                <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Filter Bar with Floating Notch Outlines -->
+    <div class="filter-card shadow-sm">
+        <form method="GET" action="{% url 'admission_applications_admin' %}" id="filterForm">
+            <div class="row align-items-center">
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="filter-group {% if search_q %}active{% endif %}">
+                        <label>Search</label>
+                        <input type="text" name="q" placeholder="Tracking ID, Name, Roll, Mobile" value="{{ search_q }}">
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-12">
+                    <div class="filter-group {% if selected_type %}active{% endif %}">
+                        <label>Application Format</label>
+                        <select name="type" onchange="this.form.submit()">
+                            <option value="">All Formats (15)</option>
+                            {% for t in app_types %}
+                            <option value="{{ t.code }}" {% if selected_type == t.code %}selected{% endif %}>
+                                {{ t.order|stringformat:"02d" }}. {{ t.title_en }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-6">
+                    <div class="filter-group {% if selected_status %}active{% endif %}">
+                        <label>Status</label>
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="">All Statuses</option>
+                            <option value="SUBMITTED" {% if selected_status == 'SUBMITTED' %}selected{% endif %}>Submitted</option>
+                            <option value="RECEIVED" {% if selected_status == 'RECEIVED' %}selected{% endif %}>Received</option>
+                            <option value="VERIFIED" {% if selected_status == 'VERIFIED' %}selected{% endif %}>Verified</option>
+                            <option value="APPROVED" {% if selected_status == 'APPROVED' %}selected{% endif %}>Approved</option>
+                            <option value="REJECTED" {% if selected_status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-6">
+                    <div class="filter-group {% if selected_mismatch %}active{% endif %}">
+                        <label>Profile Mismatch</label>
+                        <select name="mismatch" onchange="this.form.submit()">
+                            <option value="">All</option>
+                            <option value="yes" {% if selected_mismatch == 'yes' %}selected{% endif %}>⚠️ Mismatch</option>
+                            <option value="no" {% if selected_mismatch == 'no' %}selected{% endif %}>✅ Matching</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-12 d-flex align-items-center mb-2" style="gap: 6px;">
+                    <button type="submit" class="btn btn-sm btn-primary flex-fill font-weight-bold" style="height: 36px; border-radius: 6px;">
+                        <i class="fas fa-filter mr-1"></i> Filter
+                    </button>
+                    <a href="{% url 'admission_applications_admin' %}" class="btn btn-sm btn-outline-secondary" style="height: 36px; width: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;" title="Reset Filters">
+                        <i class="fas fa-redo"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Application Submissions Master Table -->
+    <div class="card card-outline card-dark shadow-sm">
+        <div class="card-header border-0 d-flex justify-content-between align-items-center">
+            <h3 class="card-title font-weight-bold">
+                <i class="fas fa-list mr-1"></i> Application Submissions
+            </h3>
+            <span class="badge badge-light border">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+        </div>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-hover table-striped mb-0 text-nowrap">
+                <thead class="bg-light">
+                    <tr>
+                        <th style="width: 140px;">Tracking ID</th>
+                        <th>Student Name</th>
+                        <th>Student ID</th>
+                        <th>Department</th>
+                        <th>Application Type</th>
+                        <th>Submitted At</th>
+                        <th>Mismatch</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in page_obj %}
+                    <tr>
+                        <td>
+                            <a href="javascript:void(0)" onclick="openDetailModal('{{ item.tracking_number }}')" class="font-weight-bold text-primary font-monospace">
+                                {{ item.tracking_number }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="font-weight-bold">{{ item.student_name }}</span>
+                            <div class="small text-muted">{{ item.phone_no }}</div>
+                        </td>
+                        <td>
+                            {% if item.display_student_id %}
+                                <span class="badge badge-light border font-weight-bold">{{ item.display_student_id }}</span>
+                                {% if item.is_id_verified %}
+                                    <i class="fas fa-check-circle text-success ml-1" title="Verified in Database"></i>
+                                {% else %}
+                                    <span class="badge badge-warning ml-1" title="Unrecorded Student ID">Unrecorded</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted font-italic small">N/A (New Applicant)</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.department }}</td>
+                        <td>
+                            <span class="badge badge-light border text-wrap" style="max-width: 200px;">
+                                {{ item.application_type.title_en }}
+                            </span>
+                        </td>
+                        <td>
+                            <div>{{ item.submitted_at|date:"d M, Y" }}</div>
+                            <small class="text-muted">{{ item.submitted_at|date:"h:i A" }}</small>
+                        </td>
+                        <td>
+                            {% if item.has_profile_mismatch %}
+                                <span class="badge badge-danger" title="Differences detected between application form and database">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i> Mismatch
+                                </span>
+                            {% else %}
+                                <span class="badge badge-success">OK</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.status == 'SUBMITTED' %}
+                                <span class="badge badge-secondary px-2 py-1">Submitted</span>
+                            {% elif item.status == 'RECEIVED' %}
+                                <span class="badge badge-primary px-2 py-1">Received</span>
+                            {% elif item.status == 'VERIFIED' %}
+                                <span class="badge badge-warning px-2 py-1">Verified</span>
+                            {% elif item.status == 'APPROVED' %}
+                                <span class="badge badge-success px-2 py-1">Approved</span>
+                            {% elif item.status == 'REJECTED' %}
+                                <span class="badge badge-danger px-2 py-1">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <button type="button" class="btn btn-xs btn-outline-primary mr-1" onclick="openDetailModal('{{ item.tracking_number }}')" title="View Details & Action">
+                                <i class="fas fa-folder-open mr-1"></i> Review
+                            </button>
+                            <a href="{% url 'download_filled_pdf' tracking_number=item.tracking_number %}" target="_blank" class="btn btn-xs btn-outline-danger mr-1" title="Download Official PDF Letterhead">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                            {% has_access 'students' 'delete_application' as can_delete_app %}
+                            {% if can_delete_app %}
+                            <button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteApplication('{{ item.tracking_number }}')" title="Permanently Delete Application">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3 text-muted"></i>
+                            <p class="font-weight-bold mb-0">No application submissions found matching criteria.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer clearfix bg-white border-top">
+            <ul class="pagination pagination-sm m-0 float-right">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1&q={{ search_q }}&type={{ selected_type }}&status={{ selected_status }}">&laquo; First</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_q }}&type={{ selected_type }}&status={{ selected_status }}">Previous</a></li>
+                {% endif %}
+                
+                <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_q }}&type={{ selected_type }}&status={{ selected_status }}">Next</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ search_q }}&type={{ selected_type }}&status={{ selected_status }}">Last &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Application Detail Modal Container -->
+<div class="modal fade" id="appDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content" id="appDetailModalContent" style="border-radius: 14px;">
+            <!-- Loaded dynamically via AJAX -->
+        </div>
+    </div>
+</div>
+
+<!-- Template Manager Modal Container -->
+<div class="modal fade" id="templateManagerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content" id="templateManagerModalContent" style="border-radius: 14px;">
+            <!-- Loaded dynamically via AJAX -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Safe notification helper using SweetAlert2 Toast from base.html
+    function showAppToast(icon, message) {
+        if (typeof Toast !== 'undefined') {
+            Toast.fire({
+                icon: icon,
+                title: message
+            });
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: icon,
+                title: message,
+                timer: 3000,
+                showConfirmButton: false
+            });
+        } else {
+            alert(message);
+        }
+    }
+
+    // Open Detail Modal
+    function openDetailModal(trackingNumber) {
+        $('#appDetailModalContent').html('<div class="p-5 text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Loading application details...</p></div>');
+        $('#appDetailModal').modal('show');
+
+        $.get('/students/applications/' + trackingNumber + '/detail-modal/', function(html) {
+            $('#appDetailModalContent').html(html);
+        }).fail(function() {
+            $('#appDetailModalContent').html('<div class="p-4 text-center text-danger">Failed to load application details.</div>');
+        });
+    }
+
+    // Open Template Manager Modal
+    function openTemplateManagerModal() {
+        $('#templateManagerModalContent').html('<div class="p-5 text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Loading templates configuration...</p></div>');
+        $('#templateManagerModal').modal('show');
+
+        $.get('/students/applications/templates/manager-modal/', function(html) {
+            $('#templateManagerModalContent').html(html);
+        }).fail(function() {
+            $('#templateManagerModalContent').html('<div class="p-4 text-center text-danger">Failed to load template manager.</div>');
+        });
+    }
+
+    // Toggle Validation Policy
+    function toggleValidationPolicy() {
+        if (!confirm('Are you sure you want to switch the student ID validation policy between Flexible and Strict?')) return;
+
+        $.ajax({
+            url: '{% url "admin_toggle_validation_policy" %}',
+            type: 'POST',
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(res) {
+                if (res.status === 'success') {
+                    $('#currentPolicyBadge').text(res.new_policy);
+                    if (res.new_policy === 'FLEXIBLE') {
+                        $('#currentPolicyBadge').removeClass('badge-danger').addClass('badge-success');
+                    } else {
+                        $('#currentPolicyBadge').removeClass('badge-success').addClass('badge-danger');
+                    }
+                    showAppToast('success', res.message);
+                }
+            },
+            error: function() {
+                showAppToast('error', 'Failed to change validation policy.');
+            }
+        });
+    }
+
+    // Copy Public Portal URL to Clipboard
+    function copyPublicPortalUrl() {
+        const publicUrl = window.location.origin + '{% url "public_apply" %}';
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(publicUrl).then(() => {
+                showAppToast('success', 'Public Student Portal link copied to clipboard!');
+            }).catch(() => {
+                fallbackCopyUrl(publicUrl);
+            });
+        } else {
+            fallbackCopyUrl(publicUrl);
+        }
+    }
+
+    function fallbackCopyUrl(text) {
+        let textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showAppToast('success', 'Public Student Portal link copied to clipboard!');
+        } catch (err) {
+            prompt('Copy student portal link:', text);
+        }
+        textArea.remove();
+    }
+
+    // Permanently Delete Application (Super Admin / Permitted Role)
+    function deleteApplication(trackingNumber) {
+        Swal.fire({
+            title: 'Delete Application?',
+            html: `Are you sure you want to permanently delete application <strong>${trackingNumber}</strong>?<br><span class="text-danger small">This action cannot be undone and will be permanently recorded in the system audit log.</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-trash mr-1"></i> Yes, Delete Application',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/students/applications/' + trackingNumber + '/delete/',
+                    type: 'POST',
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(res) {
+                        if (res.status === 'success') {
+                            showAppToast('success', res.message);
+                            setTimeout(() => location.reload(), 700);
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = 'Failed to delete application.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                        showAppToast('error', msg);
+                    }
+                });
+            }
+        });
+    }
+</script>
+{% endblock %}

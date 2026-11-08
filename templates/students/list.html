@@ -908,7 +908,7 @@
         <form id="directory-filter-form" class="collapse d-md-block"
               hx-get="{% url 'student_list' %}" 
               hx-target="#directory-results" 
-              hx-trigger="submit, change from:select"
+              hx-trigger="submit, change from:#directory-filter-form select"
               hx-include="[name='search']"
               hx-indicator="#table-loader"
               hx-push-url="true">
@@ -1078,41 +1078,86 @@
         </form>
     </div>
 
+    <!-- ─── Active Filter Chips Bar ─── -->
+    {% if selected_year or selected_dept or selected_program or selected_batch or selected_gender or selected_status %}
+    <div id="active-filter-chips-bar" class="px-3 py-2 bg-light border-bottom d-flex align-items-center flex-wrap" style="gap: 8px; font-size: 0.8rem;">
+        <span class="font-weight-bold text-muted mr-1"><i class="fas fa-filter text-primary mr-1"></i>Active:</span>
+        {% if selected_year %}
+        <span class="badge badge-primary px-2.5 py-1.5 rounded-pill font-weight-bold">
+            Year: {{ selected_year }} <a href="javascript:void(0)" onclick="removeDirectoryFilter('year')" class="text-white ml-1 font-weight-bold">✕</a>
+        </span>
+        {% endif %}
+        {% if selected_dept %}
+        <span class="badge badge-info px-2.5 py-1.5 rounded-pill font-weight-bold">
+            Cluster: {{ selected_dept }} <a href="javascript:void(0)" onclick="removeDirectoryFilter('dept')" class="text-white ml-1 font-weight-bold">✕</a>
+        </span>
+        {% endif %}
+        {% if selected_program %}
+        <span class="badge badge-success px-2.5 py-1.5 rounded-pill font-weight-bold">
+            Program: {{ selected_program }} <a href="javascript:void(0)" onclick="removeDirectoryFilter('program')" class="text-white ml-1 font-weight-bold">✕</a>
+        </span>
+        {% endif %}
+        {% if selected_batch %}
+        <span class="badge badge-warning text-dark px-2.5 py-1.5 rounded-pill font-weight-bold">
+            Batch: {{ selected_batch }} <a href="javascript:void(0)" onclick="removeDirectoryFilter('batch')" class="text-dark ml-1 font-weight-bold">✕</a>
+        </span>
+        {% endif %}
+        {% if selected_gender %}
+        <span class="badge badge-secondary px-2.5 py-1.5 rounded-pill font-weight-bold">
+            Gender: {{ selected_gender }} <a href="javascript:void(0)" onclick="removeDirectoryFilter('gender')" class="text-white ml-1 font-weight-bold">✕</a>
+        </span>
+        {% endif %}
+        {% if selected_status %}
+        <span class="badge badge-dark px-2.5 py-1.5 rounded-pill font-weight-bold">
+            Status: {{ selected_status }} <a href="javascript:void(0)" onclick="removeDirectoryFilter('status')" class="text-white ml-1 font-weight-bold">✕</a>
+        </span>
+        {% endif %}
+        <a href="javascript:void(0)" onclick="clearDirectoryFilters()" class="text-danger font-weight-bold ml-auto small">Clear All <i class="fas fa-undo ml-1"></i></a>
+    </div>
+    {% endif %}
+
     <div id="directory-results">
         {% include 'students/partials/directory_results.html' %}
     </div>
 </div>
 
-<!-- Floating Action Bar for Bulk Update -->
-{% has_access 'students' 'bulk_update' as can_bulk_update %}
-{% if can_bulk_update %}
-<div id="bulk-action-bar" class="position-fixed shadow-lg" style="bottom: -100px; left: 50%; transform: translateX(-50%); z-index: 1050; transition: bottom 0.3s ease-in-out; background: linear-gradient(135deg, #1f2937, #111827); padding: 10px 18px; border-radius: 50px; display: flex; align-items: center; gap: 8px; max-width: 95vw; width: max-content;">
+<!-- Floating Action Bar for Bulk Selection -->
+<div id="bulk-action-bar" style="position: fixed; bottom: -120px; left: 50%; transform: translateX(-50%); z-index: 1025; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); background: linear-gradient(135deg, #0f172a, #1e293b); padding: 10px 22px; border-radius: 50px; display: flex; align-items: center; gap: 10px; max-width: 95vw; width: max-content; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.45); visibility: hidden; opacity: 0;">
     <div class="text-white d-flex align-items-center">
-        <span id="selected-count" class="badge badge-primary" style="font-size: 1rem; padding: 5px 10px; border-radius: 20px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);">0</span>
+        <span id="selected-count" class="badge badge-primary" style="font-size: 1.1rem; padding: 6px 14px; border-radius: 20px; background: #0284c7; box-shadow: 0 0 15px rgba(2, 132, 199, 0.6); font-weight: 800;">0</span>
     </div>
     
-    <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.15); margin: 0 5px;"></div>
+    <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.2); margin: 0 4px;"></div>
 
-    <button class="btn btn-warning font-weight-bold rounded-pill px-3 px-md-4 shadow-sm" onclick="openBulkUpdateModal()" title="Mass Update">
-        <i class="fas fa-magic"></i> <span class="ml-1 d-none d-md-inline">Mass Update</span>
+    {% has_access 'students' 'bulk_update' as can_bulk_update %}
+    {% if can_bulk_update %}
+    <button class="btn btn-warning font-weight-black rounded-pill px-3 px-md-4 shadow-sm" onclick="openBulkUpdateModal()" title="Mass Update">
+        <i class="fas fa-magic mr-1"></i> <span class="d-none d-md-inline">Mass Update</span>
     </button>
+    {% endif %}
     
-    <button class="btn btn-info font-weight-bold rounded-pill px-3 px-md-4 shadow-sm" onclick="initiateBulkAudit()" title="Board Audit">
-        <i class="fas fa-shield-halved"></i> <span class="ml-1 d-none d-md-inline">Board Audit</span>
+    <button class="btn btn-info font-weight-black rounded-pill px-3 px-md-4 shadow-sm" onclick="initiateBulkAudit()" title="Board Audit">
+        <i class="fas fa-shield-halved mr-1"></i> <span class="d-none d-md-inline">Board Audit</span>
     </button>
     
     {% has_access 'students' 'export_excel' as can_export_photos %}
     {% if can_export_photos %}
-    <button class="btn btn-success font-weight-bold rounded-pill px-3 px-md-4 shadow-sm" onclick="downloadSelectedPhotos()" title="Download Photos">
-        <i class="fas fa-images"></i> <span class="ml-1 d-none d-md-inline">Download Photos</span>
+    <button class="btn btn-success font-weight-black rounded-pill px-3 px-md-4 shadow-sm" onclick="downloadSelectedPhotos()" title="Download Photos">
+        <i class="fas fa-images mr-1"></i> <span class="d-none d-md-inline">Download Photos</span>
     </button>
     {% endif %}
     
-    <button class="btn btn-outline-danger border-0 rounded-circle ml-1" style="width: 32px; height: 32px; padding: 0; line-height: 32px;" onclick="clearSelection()" title="Clear Selection">
+    {% has_access 'students' 'export_excel' as can_export_sel %}
+    {% if can_export_sel %}
+    <button class="btn btn-primary font-weight-black rounded-pill px-3 px-md-4 shadow-sm" onclick="exportSelectedExcel()" title="Export Selected to Excel">
+        <i class="fas fa-file-excel mr-1"></i> <span class="d-none d-md-inline">Export Excel</span>
+    </button>
+    {% endif %}
+
+    <button class="btn btn-outline-light border-0 rounded-circle ml-1" style="width: 32px; height: 32px; padding: 0; line-height: 32px; background: rgba(255,255,255,0.1);" onclick="clearSelection()" title="Clear Selection">
         <i class="fas fa-times"></i>
     </button>
 </div>
-{% endif %}
 
 <!-- Bulk Update Modal Container -->
 <div class="modal fade" id="bulkUpdateModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -1514,28 +1559,47 @@ document.body.addEventListener('htmx:beforeSwap', () => {
 
 // Bulk Selection Logic
 function toggleAllStudents(source) {
+    const isChecked = source ? source.checked : false;
     const checkboxes = document.querySelectorAll('.student-checkbox');
-    checkboxes.forEach(cb => cb.checked = source.checked);
+    checkboxes.forEach(cb => { cb.checked = isChecked; });
     updateFloatingBar();
 }
 
 function updateFloatingBar() {
     const checked = document.querySelectorAll('.student-checkbox:checked');
+    const total = document.querySelectorAll('.student-checkbox');
     const bar = document.getElementById('bulk-action-bar');
     const countDisplay = document.getElementById('selected-count');
+    const selectAll = document.getElementById('selectAllStudents');
     
-    if(countDisplay) countDisplay.textContent = checked.length;
+    if (countDisplay) countDisplay.textContent = checked.length;
+    
+    if (selectAll && total.length > 0) {
+        selectAll.checked = (checked.length === total.length && checked.length > 0);
+    }
     
     if (bar) {
         if (checked.length > 0) {
-            bar.style.bottom = '30px';
+            bar.setAttribute('style', 'position: fixed !important; bottom: 35px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important; background: linear-gradient(135deg, #0f172a, #1e293b) !important; padding: 12px 24px !important; border-radius: 50px !important; display: flex !important; align-items: center !important; gap: 12px !important; max-width: 95vw !important; width: max-content !important; border: 1px solid rgba(56, 189, 248, 0.4) !important; box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important; visibility: visible !important; opacity: 1 !important;');
         } else {
-            bar.style.bottom = '-100px';
-            const selectAll = document.getElementById('selectAllStudents');
-            if(selectAll) selectAll.checked = false;
+            bar.setAttribute('style', 'position: fixed !important; bottom: -140px !important; left: 50% !important; transform: translateX(-50%) !important; z-index: 9999999 !important; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important; background: linear-gradient(135deg, #0f172a, #1e293b) !important; padding: 12px 24px !important; border-radius: 50px !important; display: flex !important; align-items: center !important; gap: 12px !important; max-width: 95vw !important; width: max-content !important; border: 1px solid rgba(56, 189, 248, 0.4) !important; box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important; visibility: hidden !important; opacity: 0 !important;');
         }
     }
 }
+
+document.addEventListener('change', function(e) {
+    if (e.target) {
+        if (e.target.id === 'selectAllStudents') {
+            toggleAllStudents(e.target);
+        } else if (e.target.classList.contains('student-checkbox')) {
+            updateFloatingBar();
+        }
+    }
+});
+
+document.body.addEventListener('htmx:afterSettle', function() {
+    updateFloatingBar();
+});
 
 function clearSelection() {
     document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
@@ -1549,48 +1613,73 @@ function getSelectedIds() {
     return Array.from(checked).map(cb => cb.value).join(',');
 }
 
-function downloadSelectedPhotos() {
-    const checked = document.querySelectorAll('.student-checkbox:checked');
-    if (checked.length === 0) {
-        toastr.warning("Please select at least one student.");
-        return;
-    }
-    
-    // Create a dynamic form to submit via POST to export_photos_zip
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '{% url "export_photos_zip" %}';
-    
-    // Add CSRF token
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = 'csrfmiddlewaretoken';
-    csrfInput.value = '{{ csrf_token }}';
-    form.appendChild(csrfInput);
-    
-    // Add student_ids[]
-    checked.forEach(cb => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'student_ids[]';
-        input.value = cb.value;
-        form.appendChild(input);
-    });
-    
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-}
-
 function handlePhotoZipDownload(elem) {
+    const container = document.getElementById('photoExportHiddenContainer');
+    const scopeText = document.getElementById('photoExportScopeText');
+    if (container) container.innerHTML = '';
+
     const checked = document.querySelectorAll('.student-checkbox:checked');
     if (checked.length > 0) {
-        // If there are checked checkboxes, download only those selected
-        downloadSelectedPhotos();
+        if (scopeText) scopeText.textContent = `Exporting ${checked.length} selected student photo(s)...`;
+        checked.forEach(cb => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'student_ids[]';
+            input.value = cb.value;
+            container.appendChild(input);
+        });
     } else {
-        // Otherwise, navigate to the default URL which downloads with filters
-        window.location.href = elem.getAttribute('data-default-url');
+        if (scopeText) scopeText.textContent = `Exporting student photos matching active directory filters...`;
+
+        // 1. Collect inputs from directory filter form
+        const filterForm = document.getElementById('directory-filter-form');
+        if (filterForm) {
+            const formData = new FormData(filterForm);
+            for (let [key, val] of formData.entries()) {
+                if (val && val !== 'All') {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = val;
+                    container.appendChild(input);
+                }
+            }
+        }
+
+        // 2. Collect search input
+        const searchInput = document.querySelector('[name="search"]');
+        if (searchInput && searchInput.value && !container.querySelector('[name="search"]')) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'search';
+            input.value = searchInput.value;
+            container.appendChild(input);
+        }
+
+        // 3. Fallback: Parse URL parameters
+        const urlStr = elem ? elem.getAttribute('data-default-url') : window.location.search;
+        if (urlStr && urlStr.includes('?')) {
+            const searchParams = new URLSearchParams(urlStr.split('?')[1]);
+            searchParams.forEach((val, key) => {
+                if (val && !container.querySelector(`[name="${key}"]`)) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = val;
+                    container.appendChild(input);
+                }
+            });
+        }
     }
+
+    if (typeof updatePhotoExportPreview === 'function') {
+        updatePhotoExportPreview();
+    }
+    $('#photoExportModal').modal('show');
+}
+
+function downloadSelectedPhotos() {
+    handlePhotoZipDownload(null);
 }
 
 function openBulkUpdateModal() {
@@ -1676,6 +1765,27 @@ const BoardAuditManager = {
         $('#bulkAuditLoopModal').modal('show');
     },
 
+    startBatchQueue() {
+        if (!this.queue || this.queue.length === 0) return;
+        sessionStorage.setItem("batch_queue", JSON.stringify(this.queue));
+        sessionStorage.setItem("batch_index", "0");
+        window.open('https://eboardresults.com/v2/home', '_blank');
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Batch Queue Initialized!',
+                html: `Loaded <b>${this.queue.length} students</b> into Batch Queue.<br><br>1. Switch to the <code>eboardresults.com</code> tab.<br>2. Click <b>Bookmarklet 1 (Auto-Fill)</b> or <b>Extension Auto-Fill</b> to fill Student #1.<br>3. Solve Captcha &amp; Click Submit.<br>4. Click <b>Bookmarklet 2 (Sync Result)</b> to save &amp; advance to Student #2!`,
+                confirmButtonText: 'Open eBoard Portal'
+            });
+        } else {
+            alert(`Batch Queue Initialized with ${this.queue.length} students!\n1. Click Bookmarklet 1 (Auto-Fill) on eBoardResults to fill Student #1.\n2. Click Bookmarklet 2 (Sync Result) to save and advance to Student #2!`);
+        }
+    },
+
+    closeModal() {
+        $('#bulkAuditLoopModal').modal('hide');
+    },
+
     renderTask() {
         if (this.currentIndex >= this.queue.length) {
             this.showSummary();
@@ -1684,161 +1794,95 @@ const BoardAuditManager = {
 
         const task = this.queue[this.currentIndex];
         const progress = ((this.currentIndex) / this.queue.length) * 100;
-        document.getElementById('audit-progress').style.width = progress + '%';
+        const progressEl = document.getElementById('audit-progress');
+        if (progressEl) progressEl.style.width = progress + '%';
 
         const container = document.getElementById('audit-task-container');
+        if (!container) return;
+
+        const totalRecords = this.queue.length;
+        const currentRecordNum = this.currentIndex + 1;
+        const uniqueStudentIds = [...new Set(this.queue.map(item => item.student_id))];
+        const totalStudentsCount = uniqueStudentIds.length;
+        const currentStudentIndex = Math.max(1, uniqueStudentIds.indexOf(task.student_id) + 1);
+
         container.innerHTML = `
-            <div class="p-4 bg-light border-bottom d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="badge badge-info px-2 py-1 mb-1">${task.exam} AUDIT</span>
-                    <h5 class="font-weight-black mb-0">${task.name}</h5>
-                    <p class="text-muted small mb-0">${task.student_id} | ${task.board} ${task.year}</p>
+            <div class="p-4 bg-light border-bottom d-flex justify-content-between align-items-start" style="gap: 16px;">
+                <div style="flex: 1; min-width: 0;">
+                    <span class="badge badge-info px-2 py-1 mb-1 font-weight-bold" style="background:#0284c7; font-size:10px;">${task.exam || 'SSC'} AUDIT</span>
+                    <h5 class="font-weight-black text-dark mb-1 text-truncate" style="font-size: 1.15rem; letter-spacing: -0.2px;">${(task.name || 'Student Record').toUpperCase()}</h5>
+                    <p class="text-muted small mb-0" style="font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ID: <strong class="text-dark">${task.student_id}</strong> | Roll: <strong>${task.roll || '-'}</strong> | Reg: <strong>${task.reg || '-'}</strong> | <strong>${(task.board || '').toUpperCase()} ${task.year || ''}</strong>
+                    </p>
                 </div>
-                <div class="text-right">
-                    <div class="text-xs font-weight-bold text-uppercase text-muted">Progress</div>
-                    <div class="font-weight-black text-info" style="font-size: 1.2rem;">${this.currentIndex + 1} <span class="text-muted" style="font-weight: 400; font-size: 0.9rem;">/ ${this.queue.length}</span></div>
-                </div>
-            </div>
-            <div class="p-4">
-                <div id="audit-captcha-section">
-                    <div class="text-center mb-4">
-                        <div id="audit-loader" class="py-3">
-                            <div class="spinner-border text-info" role="status"></div>
-                            <p class="mt-2 text-muted small">Connecting to Board Portal...</p>
+                <div class="d-flex align-items-center" style="white-space: nowrap; flex-shrink: 0;">
+                    <div class="text-right mr-3">
+                        <div class="font-weight-black text-info" style="font-size: 1.1rem; line-height: 1.2;">
+                            Student ${currentStudentIndex} <span class="text-muted" style="font-weight: 600; font-size: 0.85rem;">/ ${totalStudentsCount}</span>
                         </div>
-                        <div id="audit-captcha-wrapper" style="display:none;">
-                            <p class="small font-weight-bold text-muted mb-2 text-uppercase" style="letter-spacing:1px;">Enter Security Captcha</p>
-                            <img id="audit-captcha-img" src="" class="img-fluid border rounded shadow-sm mb-2" style="max-height: 80px;">
-                            <input type="text" id="audit-captcha-input" class="form-control form-control-lg text-center font-weight-black mx-auto" 
-                                   placeholder="????" style="width: 140px; border: 2px solid #0dcaf0; letter-spacing: 4px;" maxlength="6" autocomplete="off">
-                            
-                            <!-- Geoblock Warning & Fallback Manual Links -->
-                            <div class="alert alert-warning small mt-3 text-left" style="border-radius: 12px; border-left: 4px solid #ffc107; background-color: #fffbeb; color: #856404; line-height: 1.4;">
-                                <div class="font-weight-bold mb-1"><i class="fas fa-network-wired mr-1"></i> Server Geoblock Notice</div>
-                                <span class="text-muted d-block mb-2" style="font-size:0.75rem;">Your server is hosted internationally, and direct automated verification is geoblocked by the firewall.</span>
-                                <div class="border-top pt-2">
-                                    <span class="d-block font-weight-bold small mb-1" style="color: #664d03;">Alternative: Open official links to verify</span>
-                                    <div class="d-flex gap-2">
-                                        <a href="https://eboardresults.com" target="_blank" class="btn btn-xs btn-info font-weight-bold px-2 py-1 text-white mr-1"><i class="fas fa-external-link-alt"></i> eBoard</a>
-                                        <a href="http://www.educationboardresults.gov.bd" target="_blank" class="btn btn-xs btn-outline-secondary font-weight-bold px-2 py-1"><i class="fas fa-external-link-alt"></i> Official</a>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="text-muted small font-weight-bold mt-1" style="font-size: 0.72rem; opacity: 0.8;">
+                            Record ${currentRecordNum} of ${totalRecords} Total
                         </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-info btn-block btn-lg rounded-pill font-weight-black shadow-sm py-3" onclick="BoardAuditManager.submitTask()">
-                            VERIFY & CONTINUE <i class="fas fa-chevron-right ml-2"></i>
+                    <button type="button" class="close text-secondary p-1 border-0 bg-transparent" style="font-size: 1.5rem; line-height: 1; opacity: 0.6; cursor: pointer;" onclick="BoardAuditManager.closeModal()" title="Close Modal">&times;</button>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <div class="alert alert-info border-0 shadow-sm p-3 mb-4" style="border-radius:16px; background:linear-gradient(135deg,#e0f2fe,#bae6fd); color:#0369a1;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div>
+                            <strong style="font-size:14px;"><i class="fas fa-bolt mr-1"></i> Fast Automated Batch Queue (${totalStudentsCount} Students • ${totalRecords} Records)</strong>
+                            <p class="mb-0 small opacity-80">Process all selected students sequentially using Bookmarklets or Chrome Extension!</p>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary font-weight-black rounded-pill px-3 shadow-sm" onclick="BoardAuditManager.startBatchQueue()">
+                            🚀 Launch Batch Queue
                         </button>
                     </div>
-                    <div class="text-center mt-3">
-                        <button class="btn btn-link btn-sm text-muted" onclick="BoardAuditManager.skipTask()">Skip this record</button>
+                </div>
+
+                <div class="card border border-light shadow-sm p-3 mb-3" style="border-radius:16px; background:#fff;">
+                    <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-user-clock text-warning mr-1"></i> Current Student: ${(task.name || '').toUpperCase()}</h6>
+                    <div class="row text-center mb-1">
+                        <div class="col-3 border-right">
+                            <span class="text-muted small d-block">Exam</span>
+                            <strong class="text-info">${task.exam || 'SSC'}</strong>
+                        </div>
+                        <div class="col-3 border-right">
+                            <span class="text-muted small d-block">Roll Number</span>
+                            <strong>${task.roll || '-'}</strong>
+                        </div>
+                        <div class="col-3 border-right">
+                            <span class="text-muted small d-block">Registration</span>
+                            <strong>${task.reg || '-'}</strong>
+                        </div>
+                        <div class="col-3">
+                            <span class="text-muted small d-block">Board &amp; Year</span>
+                            <strong>${(task.board || '-').toUpperCase()} ${task.year || ''}</strong>
+                        </div>
                     </div>
                 </div>
-                <div id="audit-result-section" style="display:none;" class="text-center py-4">
-                    <!-- Feedback shown briefly between tasks -->
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <button class="btn btn-link btn-sm text-muted p-0 font-weight-bold" style="text-decoration:none;" onclick="BoardAuditManager.skipTask()">Skip Record <i class="fas fa-chevron-right ml-1"></i></button>
                 </div>
             </div>
         `;
-
-        this.loadCaptcha();
-        
-        // Auto-focus input after slight delay
-        setTimeout(() => {
-            const input = document.getElementById('audit-captcha-input');
-            if(input) {
-                input.focus();
-                input.addEventListener('keypress', (e) => {
-                    if(e.key === 'Enter') this.submitTask();
-                });
-            }
-        }, 500);
     },
 
-    loadCaptcha() {
-        const loader = document.getElementById('audit-loader');
-        const wrapper = document.getElementById('audit-captcha-wrapper');
-        
+    copyAndOpenPortal() {
         const task = this.queue[this.currentIndex];
-        const isBTEB = task && task.board && task.board.toLowerCase().includes('technical');
-        
-        if (isBTEB) {
-            if(loader) loader.style.display = 'none';
-            if(wrapper) wrapper.style.display = 'none';
-            document.getElementById('audit-captcha-input').value = 'BTEB';
-            return;
+        if (!task) return;
+        const text = `ServerURL: ${window.location.origin} | StudentID: ${task.student_id} | Exam: ${task.exam} | Roll: ${task.roll || ''} | Reg: ${task.reg || ''} | Board: ${task.board || ''} | Year: ${task.year || ''}`;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (typeof toastr !== 'undefined') toastr.success(`Copied details for ${task.name}! Opening board portal...`);
+                window.open('https://eboardresults.com/v2/home', '_blank');
+            });
+        } else {
+            alert(`Copied Details to Clipboard:\n${text}`);
+            window.open('https://eboardresults.com/v2/home', '_blank');
         }
-        
-        fetch('{% url "api_get_board_captcha" %}')
-            .then(r => r.json())
-            .then(data => {
-                if(data.success) {
-                    if(loader) loader.style.display = 'none';
-                    if(wrapper) wrapper.style.display = 'block';
-                    document.getElementById('audit-captcha-img').src = data.captcha_image;
-                    document.getElementById('audit-captcha-input').value = '';
-                } else {
-                    toastr.error("Board portal unreachable from server.");
-                    if(loader) loader.style.display = 'none';
-                    if(wrapper) wrapper.style.display = 'block'; // Show wrapper anyway so they can see manual links!
-                }
-            })
-            .catch(err => {
-                toastr.error("Connection failed.");
-                if(loader) loader.style.display = 'none';
-                if(wrapper) wrapper.style.display = 'block';
-            });
-    },
-
-    submitTask() {
-        const captcha = document.getElementById('audit-captcha-input').value;
-        if(!captcha) return;
-
-        const task = this.queue[this.currentIndex];
-        const btn = document.querySelector('#audit-task-container button.btn-info');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Verifying...';
-
-        const formData = new FormData();
-        formData.append('student_id', task.student_id);
-        formData.append('exam_type', task.exam);
-        formData.append('captcha', captcha);
-        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-        fetch('{% url "api_verify_board_result" %}', { method: 'POST', body: formData })
-            .then(r => r.json())
-            .then(data => {
-                if(data.success) {
-                    this.showFeedback(data.is_match);
-                } else {
-                    toastr.error(data.error || "Verification failed.");
-                    btn.disabled = false;
-                    btn.innerHTML = 'VERIFY & CONTINUE <i class="fas fa-chevron-right ml-2"></i>';
-                    this.loadCaptcha(); // Reload captcha on failure
-                }
-            });
-    },
-
-    showFeedback(isMatch) {
-        if(isMatch) this.results.matched++; else this.results.mismatch++;
-        
-        const container = document.getElementById('audit-captcha-section');
-        const feedback = document.getElementById('audit-result-section');
-        container.style.display = 'none';
-        feedback.style.display = 'block';
-        
-        feedback.innerHTML = `
-            <div class="animate__animated animate__zoomIn">
-                <i class="fas ${isMatch ? 'fa-check-circle text-success' : 'fa-exclamation-circle text-danger'} fa-5x mb-3"></i>
-                <h4 class="font-weight-black">${isMatch ? 'DATA MATCHED' : 'DISCREPANCY FOUND'}</h4>
-                <p class="text-muted">${isMatch ? 'Records updated successfully.' : 'Marked for manual review.'}</p>
-            </div>
-        `;
-
-        setTimeout(() => {
-            this.currentIndex++;
-            this.renderTask();
-        }, 800);
     },
 
     skipTask() {
@@ -1846,18 +1890,51 @@ const BoardAuditManager = {
         this.renderTask();
     },
 
+    markManualVerified() {
+        const task = this.queue[this.currentIndex];
+        if(!task) return;
+
+        const formData = new FormData();
+        formData.append('student_id', task.student_id);
+        formData.append('exam_type', task.exam || 'SSC');
+
+        fetch("/api/manual-verify-student/", {
+            method: 'POST',
+            headers: {'X-CSRFToken': this.getCsrfToken()},
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if(data.success) {
+                this.results.matched++;
+                this.currentIndex++;
+                this.renderTask();
+            } else {
+                alert(data.error || 'Failed to mark as verified');
+            }
+        });
+    },
+
+    getCsrfToken() {
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        return input ? input.value : '';
+    },
+
     showSummary() {
-        document.getElementById('audit-progress').style.width = '100%';
+        const progressEl = document.getElementById('audit-progress');
+        if (progressEl) progressEl.style.width = '100%';
         const container = document.getElementById('audit-task-container');
+        if (!container) return;
+
         container.innerHTML = `
             <div class="p-5 text-center">
                 <div class="mb-4">
                     <i class="fas fa-flag-checkered fa-4x text-info"></i>
                 </div>
                 <h3 class="font-weight-black mb-2">Audit Sequence Complete</h3>
-                <p class="text-muted mb-4">You have successfully processed all tasks in this batch.</p>
-                
-                <div class="row mb-5">
+                <p class="text-muted mb-4">You have processed all selected records in this batch.</p>
+
+                <div class="row mb-4">
                     <div class="col-4 border-right">
                         <div class="h3 font-weight-black text-success mb-0">${this.results.matched}</div>
                         <div class="small text-muted text-uppercase">Matched</div>
@@ -1872,9 +1949,7 @@ const BoardAuditManager = {
                     </div>
                 </div>
 
-                <button class="btn btn-primary btn-block btn-lg rounded-pill font-weight-black py-3" onclick="location.reload()">
-                    CLOSE & REFRESH DIRECTORY
-                </button>
+                <button class="btn btn-secondary font-weight-bold rounded-pill px-4" data-dismiss="modal">Close</button>
             </div>
         `;
     }
@@ -1882,8 +1957,25 @@ const BoardAuditManager = {
 
 function initiateBulkAudit() {
     const checked = document.querySelectorAll('.student-checkbox:checked');
-    document.getElementById('audit-count-label').textContent = checked.length;
-    $('#bulkAuditInitModal').modal('show');
+    if (checked.length > 0) {
+        const label = document.getElementById('audit-count-label');
+        if (label) label.textContent = checked.length;
+        $('#bulkAuditInitModal').modal('show');
+    } else {
+        fetch('/api/batch-verify-queue/?limit=50')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.queue && data.queue.length > 0) {
+                    BoardAuditManager.init(data.queue);
+                } else {
+                    if (typeof toastr !== 'undefined') toastr.info("All student records in this batch are already verified!");
+                    else alert("All student records in this batch are already verified!");
+                }
+            })
+            .catch(err => {
+                if (typeof toastr !== 'undefined') toastr.error("Unable to load verification queue.");
+            });
+    }
 }
 
 function startBulkAudit() {
@@ -1915,5 +2007,70 @@ function startBulkAudit() {
             }
         });
 }
+
+    // ─── Phase 4: Directory Filter Chips & Bulk Action Enhancements ───
+    function removeDirectoryFilter(fieldName) {
+        const form = document.getElementById('directory-filter-form');
+        if (!form) return;
+        const field = form.querySelector('[name="' + fieldName + '"]');
+        if (field) {
+            field.value = '';
+            $(field).trigger('change');
+            if (typeof htmx !== 'undefined') {
+                htmx.trigger(form, 'submit');
+            } else {
+                form.submit();
+            }
+        }
+    }
+
+    function exportSelectedExcel() {
+        const selected = Array.from(selectedStudentIds);
+        if (selected.length === 0) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'info', title: 'No Students Selected', text: 'Please check at least one student in the table.' });
+            } else {
+                alert('Please select at least one student.');
+            }
+            return;
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{% url 'export_students' %}";
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
+        form.innerHTML = '<input type="hidden" name="csrfmiddlewaretoken" value="' + csrfToken + '">' +
+                         '<input type="hidden" name="selected_ids" value="' + selected.join(',') + '">';
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
+
+    // Modal safety: hide bulk bar when modal opens
+    $('.modal').on('show.bs.modal', function() {
+        $('#bulk-action-bar').css('visibility', 'hidden');
+    }).on('hidden.bs.modal', function() {
+        if (typeof updateBulkBarVisibility === 'function') {
+            updateBulkBarVisibility();
+        }
+    });
+
+    // Handle "Save & Add Next" redirect handoff
+    $(document).ready(function() {
+        if (sessionStorage.getItem('post_save_action') === 'add_next') {
+            sessionStorage.removeItem('post_save_action');
+            window.location.href = "{% url 'add_student' %}";
+        }
+    });
+
+    // Re-sync after HTMX swaps
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target && evt.detail.target.id === 'directory-results') {
+            if (typeof updateBulkBarVisibility === 'function') {
+                updateBulkBarVisibility();
+            }
+        }
+    });
 </script>
+
+{% include 'students/modals/photo_export_modal.html' %}
 {% endblock %}

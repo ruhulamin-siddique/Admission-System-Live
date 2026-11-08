@@ -70,5 +70,25 @@ Admission/
 3. **Deploy**: `git pull origin main` on the cPanel terminal.
 4. **Finalize**: Restart the Python App in the cPanel "Setup Python App" interface.
 
+## 🚀 Local & 24/7 Live Server Operations
+
+The system is configured to run on a local office PC with global high-availability access via **Cloudflare Zero Trust Tunnels**:
+
+### 🛠️ Quick Launchers
+* **Start Server (Interactive):** Double-click `run_server.bat` (Waitress multi-threaded WSGI on `0.0.0.0:8000`, 8 worker threads).
+* **Start Server (Silent 24/7 Background):** Double-click `run_server_background.vbs` (resides in `shell:startup` for auto-boot).
+* **Live Zero-Lock Backup:** Double-click `backup_database.bat` (snapshots `db.sqlite3` with 14-day rolling retention in `backups/daily/`).
+* **Cloudflare Tunnel:** Managed automatically via Windows Service `cloudflared`.
+
+### 🌐 Access URLs
+* **Worldwide Live Portal:** `https://portal.baust.edu.bd` (SSL secured by Cloudflare)
+* **Local LAN Access:** `http://192.168.30.157:8000`
+* **Local Host Access:** `http://localhost:8000`
+
+### ⚡ SQLite High-Concurrency WAL Architecture
+* **Mode:** Write-Ahead Logging (`PRAGMA journal_mode = WAL;`)
+* **Concurrency:** Simultaneous readers with non-blocking sequential writers.
+* **Resilience:** 20-second connection busy timeout (`PRAGMA busy_timeout = 20000;`) to eliminate file contention with Google Drive indexing.
+
 ---
 Developed with ❤️ by **Ruhulamin Siddique**.

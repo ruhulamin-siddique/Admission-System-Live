@@ -84,15 +84,9 @@
         <table class="table table-hover m-0">
             <thead>
                 <tr>
-                    {% has_access 'students' 'bulk_update' as can_bulk_update %}
-                    {% if can_bulk_update %}
                     <th style="width: 40px;" class="text-center align-middle" style="padding-left: 15px;">
-                        <div class="custom-control custom-checkbox mb-0 d-flex align-items-center justify-content-center" style="min-height: 1rem;">
-                            <input type="checkbox" class="custom-control-input" id="selectAllStudents" onclick="toggleAllStudents(this)">
-                            <label class="custom-control-label m-0" for="selectAllStudents" style="line-height: 1;"></label>
-                        </div>
+                        <input type="checkbox" id="selectAllStudents" onclick="toggleAllStudents(this)" style="width: 18px; height: 18px; cursor: pointer; accent-color: #0284c7; vertical-align: middle;">
                     </th>
-                    {% endif %}
                     <th style="width: 40px;" class="text-center">SL</th>
                     <th style="width: 60px;" class="text-center">Photo</th>
                     <th style="width: 280px;">ID & Name</th>

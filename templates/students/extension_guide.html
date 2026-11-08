@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome &amp; Edge Extension User Guide — Board Result Verifier</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --success: #16a34a;
+            --success-dark: #15803d;
+            --bg-slate: #f8fafc;
+            --card-bg: #ffffff;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-slate);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 36px 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .header-desc {
+            color: #94a3b8;
+            font-size: 15px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .step-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .step-badge {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            background: #e0f2fe;
+            color: var(--primary);
+            font-weight: 800;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .step-content {
+            font-size: 14px;
+            color: #334155;
+        }
+
+        .step-content strong {
+            color: var(--text-dark);
+        }
+
+        .shortcut-badge {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #0f172a;
+            font-weight: bold;
+        }
+
+        .widget-demo {
+            background: #0f172a;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 14px;
+            margin: 14px 0;
+            border: 1px solid #0284c7;
+            font-size: 13px;
+        }
+
+        .btn-demo {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            color: white;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .btn-demo-blue { background: linear-gradient(135deg, #0284c7, #0369a1); }
+        .btn-demo-green { background: linear-gradient(135deg, #16a34a, #15803d); }
+
+        .tip-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            color: #1e40af;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header-card">
+            <div class="header-badge">
+                <i class="fab fa-chrome"></i> Official Browser Extension Guide
+            </div>
+            <h1 class="header-title">Chrome &amp; Edge Extension User Guide</h1>
+            <p class="header-desc">
+                Complete instructions for installing and using the <strong>Admission Board Verifier Extension</strong> for 100% automated SSC/HSC verification.
+            </p>
+        </div>
+
+        <!-- Section 1: Installation -->
+            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fas fa-download text-primary"></i> 1. Download &amp; Install Extension (30 Seconds)</span>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <span class="badge" style="background:#10b981; color:#fff; font-size:12px; padding:4px 10px; border-radius:12px; font-weight:700;">v2.5.0 (Latest)</span>
+                    <span class="badge" style="background:#0284c7; color:#fff; font-size:11px; padding:4px 10px; border-radius:12px; font-weight:600;"><i class="fas fa-clock mr-1"></i>Last Updated: Aug 13, 2026</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <a href="{% url 'download_extension_zip' %}" style="display:inline-flex; align-items:center; gap:8px; background:var(--primary); color:white; padding:12px 24px; border-radius:12px; font-weight:700; text-decoration:none; box-shadow:0 4px 12px rgba(2,132,199,0.3);">
+                    <i class="fas fa-download"></i> Download Extension Package v2.5.0 (.ZIP)
+                </a>
+            </div>
+
+            <ul class="step-list">
+                <li class="step-item">
+                    <div class="step-badge">1</div>
+                    <div class="step-content">
+                        <strong>Open Extensions Page in Browser:</strong><br>
+                        In <strong>Chrome</strong>, type <span class="shortcut-badge">chrome://extensions</span> in address bar.<br>
+                        In <strong>Edge</strong>, type <span class="shortcut-badge">edge://extensions</span> in address bar.
+                    </div>
+                </li>
+                <li class="step-item">
+                    <div class="step-badge">2</div>
+                    <div class="step-content">
+                        <strong>Enable Developer Mode:</strong><br>
+                        Turn ON the <strong>"Developer mode"</strong> toggle switch in the top right corner.
+                    </div>
+                </li>
+                <li class="step-item">
+                    <div class="step-badge">3</div>
+                    <div class="step-content">
+                        <strong>Load Unpacked Extension:</strong><br>
+                        Click <strong>"Load unpacked"</strong> in the top left &rarr; select the extracted extension folder: <code>scratch/board_verification_extension</code>.
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Section 2: Daily Workflow -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-play-circle text-success"></i> 2. How to Use Daily Workflow
+            </div>
+
+            <ul class="step-list">
+                <li class="step-item">
+                    <div class="step-badge">1</div>
+                    <div class="step-content">
+                        <strong>Copy Details in Admission System:</strong><br>
+                        On any student profile or directory queue, click <span class="shortcut-badge"><i class="fas fa-copy text-warning"></i> Copy Details</span>.
+                    </div>
+                </li>
+                <li class="step-item">
+                    <div class="step-badge">2</div>
+                    <div class="step-content">
+                        <strong>Open Board Website:</strong><br>
+                        Open <code>eboardresults.com</code>. The extension floating widget automatically appears in the top right corner!
+                        <div class="widget-demo">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <strong><i class="fas fa-bolt text-info"></i> Admission Verifier</strong>
+                                <span style="background:#0284c7; padding:2px 6px; border-radius:6px; font-size:10px;">READY</span>
+                            </div>
+                            <div class="btn-demo btn-demo-blue">⚡ Auto-Fill Form from Clipboard</div>
+                        </div>
+                    </div>
+                </li>
+                <li class="step-item">
+                    <div class="step-badge">3</div>
+                    <div class="step-content">
+                        <strong>Click Auto-Fill &amp; Solve Captcha:</strong><br>
+                        Click <strong>⚡ Auto-Fill Form</strong>. All fields (Exam, Board, Year, Roll, Reg) populate instantly and focus cursor on Captcha. Type captcha &amp; submit!
+                    </div>
+                </li>
+                <li class="step-item">
+                    <div class="step-badge">4</div>
+                    <div class="step-content">
+                        <strong>1-Click Result Sync:</strong><br>
+                        On the result page, click <strong>🚀 Sync Result to Admission System</strong>. It auto-detects Student ID, extracts GPA, Name, Parents' Names, DOB, Gender, &amp; Subject Grades (Physics, Chemistry, Math), and updates your server!
+                        <div class="widget-demo">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <strong><i class="fas fa-check-circle text-success"></i> Admission Verifier</strong>
+                                <span style="background:#16a34a; padding:2px 6px; border-radius:6px; font-size:10px;">RESULT FOUND</span>
+                            </div>
+                            <div class="btn-demo btn-demo-green">🚀 Sync Result to Admission System</div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Section 3: Server Settings -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-cog text-primary"></i> 3. Server Configuration (Localhost vs Live Server)
+            </div>
+
+            <p style="font-size:14px; color:var(--text-muted);">
+                By default, the extension connects to <code>http://localhost:8000</code>. If deploying to a live domain (e.g. <code>https://portal.baust.edu.bd</code>):
+            </p>
+
+            <ol style="margin-left: 20px; margin-top: 10px; font-size: 14px; color: #334155;">
+                <li>Click the <strong>Extension puzzle icon</strong> in Chrome/Edge toolbar.</li>
+                <li>Click <strong>Admission Board Result Auto-Sync</strong>.</li>
+                <li>Enter your server URL (e.g. <code>https://portal.baust.edu.bd</code>) and click <strong>Save Settings</strong>.</li>
+            </ol>
+
+            <div class="tip-box">
+                <i class="fas fa-lightbulb mr-1"></i> <strong>Key Benefit:</strong> Extension runs completely in the background without needing browser bookmark clicks or popup prompts!
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

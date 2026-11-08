@@ -73,13 +73,17 @@
                                                 <label class="small font-weight-bold text-muted">Filter by Program</label>
                                                 <select name="program" class="form-control rounded-pill border-2">
                                                     <option value="All">All Programs</option>
-                                                    <option value="CSE">CSE</option>
-                                                    <option value="EEE">EEE</option>
-                                                    <option value="CE">CE</option>
-                                                    <option value="ME">ME</option>
-                                                    <option value="IPE">IPE</option>
-                                                    <option value="BBA">BBA</option>
-                                                    <option value="ENG">English</option>
+                                                    {% for p in programs %}
+                                                        <option value="{{ p.short_name|default:p.name }}">{{ p.short_name|default:p.name }} - {{ p.name }}</option>
+                                                    {% empty %}
+                                                        <option value="CSE">CSE</option>
+                                                        <option value="EEE">EEE</option>
+                                                        <option value="CE">CE</option>
+                                                        <option value="ME">ME</option>
+                                                        <option value="IPE">IPE</option>
+                                                        <option value="BBA">BBA</option>
+                                                        <option value="ENG">English</option>
+                                                    {% endfor %}
                                                 </select>
                                             </div>
                                         </div>
@@ -239,20 +243,29 @@
                                                 <label class="small font-weight-black text-uppercase text-muted mb-2">Academic Program</label>
                                                 <select name="program" class="form-control rounded-pill border-2 custom-select-pill">
                                                     <option value="All">All Departments</option>
-                                                    <option value="CSE">CSE</option>
-                                                    <option value="EEE">EEE</option>
-                                                    <option value="CE">CE</option>
-                                                    <option value="ME">ME</option>
-                                                    <option value="IPE">IPE</option>
-                                                    <option value="BBA">BBA</option>
-                                                    <option value="ENG">English</option>
+                                                    {% for p in programs %}
+                                                        <option value="{{ p.short_name|default:p.name }}">{{ p.short_name|default:p.name }} - {{ p.name }}</option>
+                                                    {% empty %}
+                                                        <option value="CSE">CSE</option>
+                                                        <option value="EEE">EEE</option>
+                                                        <option value="CE">CE</option>
+                                                        <option value="ME">ME</option>
+                                                        <option value="IPE">IPE</option>
+                                                        <option value="BBA">BBA</option>
+                                                        <option value="ENG">English</option>
+                                                    {% endfor %}
                                                 </select>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
                                                 <label class="small font-weight-black text-uppercase text-muted mb-2">Batch Number</label>
-                                                <input type="number" name="batch" class="form-control rounded-pill border-2" placeholder="e.g. 60">
+                                                <select name="batch" class="form-control rounded-pill border-2 custom-select-pill">
+                                                    <option value="">All Batches</option>
+                                                    {% for b in batches %}
+                                                        <option value="{{ b }}">Batch {{ b }}</option>
+                                                    {% endfor %}
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
@@ -260,21 +273,30 @@
                                                 <label class="small font-weight-black text-uppercase text-muted mb-2">Semester</label>
                                                 <select name="semester" class="form-control rounded-pill border-2 custom-select-pill">
                                                     <option value="All">All Semesters</option>
-                                                    <option value="1st">1st</option>
-                                                    <option value="2nd">2nd</option>
-                                                    <option value="3rd">3rd</option>
-                                                    <option value="4th">4th</option>
-                                                    <option value="5th">5th</option>
-                                                    <option value="6th">6th</option>
-                                                    <option value="7th">7th</option>
-                                                    <option value="8th">8th</option>
+                                                    {% for s in semesters %}
+                                                        <option value="{{ s.name }}">{{ s.name }}</option>
+                                                    {% empty %}
+                                                        <option value="1st">1st</option>
+                                                        <option value="2nd">2nd</option>
+                                                        <option value="3rd">3rd</option>
+                                                        <option value="4th">4th</option>
+                                                        <option value="5th">5th</option>
+                                                        <option value="6th">6th</option>
+                                                        <option value="7th">7th</option>
+                                                        <option value="8th">8th</option>
+                                                    {% endfor %}
                                                 </select>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
                                                 <label class="small font-weight-black text-uppercase text-muted mb-2">Residential Hall</label>
-                                                <input type="text" name="hall" class="form-control rounded-pill border-2" placeholder="Hall name...">
+                                                <select name="hall" class="form-control rounded-pill border-2 custom-select-pill">
+                                                    <option value="">All Halls</option>
+                                                    {% for h in halls %}
+                                                        <option value="{{ h.short_name }}">{{ h.full_name|default:h.short_name }}</option>
+                                                    {% endfor %}
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="col-md-3 mt-3">
@@ -302,14 +324,14 @@
                                 
                                 <div class="text-center mt-5">
                                     <div class="alert alert-success d-inline-flex align-items-center rounded-pill px-4 py-2 small mb-4" style="background: rgba(40, 167, 69, 0.05); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2);">
-                                        <i class="fas fa-sparkles mr-2"></i> Files will be renamed to <b>[STUDENT_ID]_[NAME].jpg</b> for easy archival.
+                                        <i class="fas fa-sparkles mr-2"></i> Custom Naming Rules & Folder Structure Supported
                                     </div>
                                     <br>
-                                    <button type="submit" class="btn btn-success btn-lg rounded-pill px-5 shadow-lg transform-hover font-weight-black">
-                                        <i class="fas fa-file-zipper mr-2"></i> Generate Smart Photo Archive
+                                    <button type="button" onclick="openPhotoExportCenterModal()" class="btn btn-success btn-lg rounded-pill px-5 shadow-lg transform-hover font-weight-black">
+                                        <i class="fas fa-file-zipper mr-2"></i> Configure & Download Photo Archive
                                     </button>
                                 </div>
-                            </form>
+                             </form>
                         </div>
                     </div>
                 </div>
@@ -318,6 +340,7 @@
     </div>
 </div>
 
+{% include 'students/modals/photo_export_modal.html' %}
 {% endblock %}
 
 {% block extra_js %}
@@ -327,13 +350,49 @@
         const deselectAllBtn = document.getElementById('deselectAllFields');
         const checkboxes = document.querySelectorAll('.field-checkbox');
 
-        selectAllBtn.addEventListener('click', () => {
-            checkboxes.forEach(cb => cb.checked = true);
-        });
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                checkboxes.forEach(cb => cb.checked = true);
+            });
+        }
 
-        deselectAllBtn.addEventListener('click', () => {
-            checkboxes.forEach(cb => cb.checked = false);
-        });
+        if (deselectAllBtn) {
+            deselectAllBtn.addEventListener('click', () => {
+                checkboxes.forEach(cb => cb.checked = false);
+            });
+        }
     });
+
+    function openPhotoExportCenterModal() {
+        const container = document.getElementById('photoExportHiddenContainer');
+        const scopeText = document.getElementById('photoExportScopeText');
+        if (container) container.innerHTML = '';
+
+        const photoForm = document.querySelector('#photos form');
+        if (photoForm) {
+            const formData = new FormData(photoForm);
+            for (let [key, val] of formData.entries()) {
+                if (key !== 'csrfmiddlewaretoken' && val) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = val;
+                    container.appendChild(input);
+                }
+            }
+
+            const batchVal = photoForm.querySelector('[name="batch"]')?.value;
+            const progVal = photoForm.querySelector('[name="program"]')?.value;
+            let summary = 'Exporting photo archive';
+            if (batchVal) summary += ` for Batch ${batchVal}`;
+            if (progVal && progVal !== 'All') summary += ` (${progVal})`;
+            if (scopeText) scopeText.textContent = summary + '...';
+        }
+
+        if (typeof updatePhotoExportPreview === 'function') {
+            updatePhotoExportPreview();
+        }
+        $('#photoExportModal').modal('show');
+    }
 </script>
 {% endblock %}

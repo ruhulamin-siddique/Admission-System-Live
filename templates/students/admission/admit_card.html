@@ -1,0 +1,349 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admit Card - {{ applicant.exam_roll }} | BAUST</title>
+
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #111827;
+            padding: 30px 0;
+        }
+
+        .admit-card-container {
+            background: #ffffff;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            box-sizing: border-box;
+            border: 2px solid #0b2545;
+        }
+
+        .watermark-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.04;
+            max-width: 450px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .admit-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header block */
+        .univ-header {
+            text-align: center;
+            border-bottom: 2px solid #0b2545;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .univ-header h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #0b2545;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .univ-header p {
+            font-size: 0.82rem;
+            color: #4b5563;
+            margin: 2px 0 0;
+        }
+
+        .admit-title-badge {
+            display: inline-block;
+            background: #0b2545;
+            color: #ffffff;
+            padding: 4px 18px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Table styling */
+        .info-table {
+            width: 100%;
+            margin-bottom: 16px;
+            border-collapse: collapse;
+        }
+
+        .info-table th {
+            width: 28%;
+            padding: 6px 10px;
+            font-size: 0.88rem;
+            color: #374151;
+            font-weight: 600;
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+        }
+
+        .info-table td {
+            padding: 6px 10px;
+            font-size: 0.92rem;
+            color: #111827;
+            border: 1px solid #d1d5db;
+        }
+
+        .roll-highlight {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #0b2545;
+            letter-spacing: 0.8px;
+        }
+
+        /* Photo & QR */
+        .candidate-photo-box {
+            width: 125px;
+            height: 135px;
+            border: 2px solid #0b2545;
+            object-fit: cover;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .qr-box {
+            width: 95px;
+            height: 95px;
+            display: block;
+        }
+
+        /* Instructions */
+        .instructions-box {
+            border: 1px solid #9ca3af;
+            border-radius: 4px;
+            padding: 10px 14px;
+            margin-top: 16px;
+            background-color: #fcfcfc;
+        }
+
+        .instructions-box h6 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #0b2545;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .instructions-box ol {
+            padding-left: 18px;
+            margin-bottom: 0;
+            font-size: 0.76rem;
+            color: #374151;
+            line-height: 1.45;
+        }
+
+        .instructions-box li {
+            margin-bottom: 3px;
+        }
+
+        /* Signature block */
+        .sig-block {
+            margin-top: 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 20px;
+        }
+
+        .sig-line {
+            border-top: 1px dashed #374151;
+            width: 180px;
+            text-align: center;
+            padding-top: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        /* Print Media */
+        @media print {
+            body {
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .admit-card-container {
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+                margin: 0 auto !important;
+                width: 100% !important;
+                height: 100% !important;
+                padding: 10mm 15mm !important;
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Controls (Screen Only) -->
+    <div class="container text-center mb-4 no-print">
+        <button onclick="window.print()" class="btn btn-primary btn-lg px-4 shadow font-weight-bold mr-2">
+            <i class="fas fa-print mr-1"></i> Print / Save as PDF
+        </button>
+        {% if is_admin_view %}
+        <a href="{% url 'admin_online_applicant_list' %}" class="btn btn-outline-secondary btn-lg">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Hub
+        </a>
+        {% else %}
+        <a href="{% url 'public_application_status' %}" class="btn btn-outline-secondary btn-lg">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Status
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Printable Admit Card (A4 format) -->
+    <div class="admit-card-container">
+        <!-- Watermark Background -->
+        <img src="{% static 'img/baust_logo.png' %}" alt="Watermark" class="watermark-bg" onerror="this.src='/static/img/logo.png'; this.onerror=null;">
+
+        <div class="admit-content">
+            <!-- Header -->
+            <div class="univ-header">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <img src="{{ sys_settings.logo_url|default:'/media/branding/logo.png' }}" 
+                         onerror="this.onerror=null; this.src='{% static 'branding/logo.png' %}'; if (!this.complete) { this.src='{% static 'img/baust_logo.png' %}'; }" 
+                         alt="BAUST Crest" style="height: 52px; margin-right: 14px;">
+                    <div>
+                        <h2>Bangladesh Army University of Science and Technology</h2>
+                        <p>Saidpur Cantonment, Saidpur, Nilphamari &bull; Website: www.baust.edu.bd</p>
+                    </div>
+                </div>
+                <div class="admit-title-badge">
+                    ADMIT CARD &mdash; {{ applicant.intake_name|upper }}
+                </div>
+            </div>
+
+            <!-- Candidate Details Table + Photo -->
+            <div class="row">
+                <div class="col-8">
+                    <table class="info-table">
+                        <tbody>
+                            <tr>
+                                <th>Exam Roll No:</th>
+                                <td><span class="roll-highlight">{{ applicant.exam_roll }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Application No:</th>
+                                <td class="font-weight-bold">{{ applicant.application_no }}</td>
+                            </tr>
+                            <tr>
+                                <th>Applicant's Name:</th>
+                                <td class="font-weight-bold text-uppercase">{{ applicant.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Father's Name:</th>
+                                <td>{{ applicant.father_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Mother's Name:</th>
+                                <td>{{ applicant.mother_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Program Category:</th>
+                                <td><strong>{{ applicant.program_category }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Applied Program:</th>
+                                <td><strong>{{ applicant.desired_program }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Contact Mobile:</th>
+                                <td>{{ applicant.mobile }}</td>
+                            </tr>
+                            <tr>
+                                <th>Exam Date & Time:</th>
+                                <td class="font-weight-bold text-danger">
+                                    {{ applicant.intake.exam_date|date:"l, d F Y - h:i A"|default:"Will be informed via SMS" }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Exam Venue:</th>
+                                <td class="font-weight-bold">{{ applicant.exam_venue }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="col-4 text-center d-flex flex-column align-items-center justify-content-start">
+                    <!-- Photo -->
+                    {% if applicant.photo %}
+                    <img src="{{ applicant.photo.url }}" alt="Candidate Photo" class="candidate-photo-box">
+                    {% else %}
+                    <img src="{% static 'img/default_avatar.jpg' %}" alt="Candidate Photo" class="candidate-photo-box">
+                    {% endif %}
+                    <small class="text-muted d-block font-weight-bold mb-2">Candidate Photo</small>
+
+                    <!-- QR Code -->
+                    {% if qr_code_b64 %}
+                    <div class="mt-2 text-center">
+                        <img src="{{ qr_code_b64 }}" alt="Security QR" class="qr-box mx-auto">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">Verification QR</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Exam Instructions -->
+            <div class="instructions-box">
+                <h6><i class="fas fa-exclamation-circle mr-1"></i> Instructions for Candidates:</h6>
+                <ol>
+                    <li>This Admit Card must be printed in color/clear black-and-white and presented at the examination hall along with the candidate's original Registration Card of HSC/equivalent examination.</li>
+                    <li>Candidates must report to the examination hall at least <strong>30 minutes</strong> before the scheduled commencement of the examination.</li>
+                    <li>No candidate will be allowed to enter the exam hall 15 minutes after the examination begins.</li>
+                    <li>Use of programmable calculators, mobile phones, smartwatches, digital wrist devices, or any electronic communication device inside the exam room is <strong>strictly prohibited</strong>.</li>
+                    <li>Candidates must bring black ballpoint pens, 2B pencils, and erasers for answering the test.</li>
+                    <li>Any form of unfair means, misconduct, or impersonation will lead to immediate cancellation of candidature and legal action.</li>
+                    <li>Preserve this admit card carefully until the completion of the admission process.</li>
+                </ol>
+            </div>
+
+            <!-- Signature Block -->
+            <div class="sig-block">
+                <div class="sig-line">
+                    Candidate's Signature<br>
+                    <small class="text-muted">(In presence of Invigilator)</small>
+                </div>
+                <div class="sig-line">
+                    Invigilator's Signature
+                </div>
+                <div class="sig-line">
+                    <strong>Member Secretary</strong><br>
+                    Admission Committee, BAUST
+                </div>
+            </div>
+
+            <!-- Verification Footer -->
+            <div class="text-center mt-3 pt-2 border-top" style="font-size: 0.7rem; color: #6b7280;">
+                Generated electronically on {{ applicant.applied_at|date:"d-M-Y" }} &bull; BAUST Online Admission Desk &bull; Tracking ID: {{ applicant.application_no }}
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,26 +1,32 @@
 {% load core_tags %}
 {% for student in page_obj %}
 <tr class="animated fadeIn">
-    {% has_access 'students' 'bulk_update' as can_bulk_update %}
-    {% if can_bulk_update %}
     <!-- 0. Checkbox -->
     <td class="td-checkbox text-center align-middle" style="padding-left: 15px;">
-        <div class="custom-control custom-checkbox mb-0 d-flex align-items-center justify-content-center" style="min-height: 1rem;">
-            <input type="checkbox" class="custom-control-input student-checkbox" id="chk_{{ student.student_id }}" value="{{ student.student_id }}" onchange="updateFloatingBar()">
-            <label class="custom-control-label m-0" for="chk_{{ student.student_id }}" style="line-height: 1;"></label>
-        </div>
+        <input type="checkbox" class="student-checkbox" id="chk_{{ student.student_id }}" value="{{ student.student_id }}" onchange="updateFloatingBar()" style="width: 18px; height: 18px; cursor: pointer; accent-color: #0284c7; vertical-align: middle;">
     </td>
-    {% endif %}
     <!-- 1. SL -->
     <td class="td-sl text-center">{{ page_obj.start_index|add:forloop.counter0 }}</td>
 
     <!-- 2. Photo -->
     <td class="td-photo text-center p-1">
-        <div class="bg-light border d-flex align-items-center justify-content-center mx-auto" style="width: 40px; height: 48px; border-radius: 4px; overflow: hidden;">
+        <div class="bg-light border d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 40px; height: 48px; border-radius: 8px; overflow: hidden;">
             {% if student.photo_url %}
             <img src="{{ student.photo_url }}" style="width: 100%; height: 100%; object-fit: cover;">
             {% else %}
-            <i class="fas fa-user text-muted opacity-50" style="font-size: 20px;"></i>
+                {% if student.gender and student.gender|lower == 'female' or student.gender|lower == 'f' %}
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #fbcfe8, #f472b6); color: #831843;" title="Female Student (No Photo)">
+                    <i class="fas fa-user-graduate" style="font-size: 18px;"></i>
+                </div>
+                {% elif student.gender and student.gender|lower == 'male' or student.gender|lower == 'm' %}
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #e0f2fe, #38bdf8); color: #0369a1;" title="Male Student (No Photo)">
+                    <i class="fas fa-user-tie" style="font-size: 18px;"></i>
+                </div>
+                {% else %}
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #f1f5f9, #cbd5e1); color: #475569;" title="Student (No Photo)">
+                    <i class="fas fa-user-graduate" style="font-size: 18px;"></i>
+                </div>
+                {% endif %}
             {% endif %}
         </div>
     </td>
@@ -48,19 +54,19 @@
                     <i class="fas fa-info-circle" style="font-size: 14px;"></i>
                 </button>
             </div>
-            <a href="{% url 'student_profile' student.student_id %}" class="font-weight-bold text-dark text-uppercase mt-1 student-name-link d-block" style="font-size: 13px; line-height: 1.2;">
-                {{ student.student_name }}
+            <div class="d-flex align-items-center mt-1" style="gap: 4px;">
+                <a href="{% url 'student_profile' student.student_id %}" class="font-weight-bold text-dark text-uppercase student-name-link" style="font-size: 13px; line-height: 1.2;">
+                    {{ student.student_name }}
+                </a>
                 {% if student.ssc_verified and student.hsc_verified %}
-                    <span class="text-success ml-1" title="SSC & HSC Board Verified" style="display: inline-flex; align-items: center;"><i class="fas fa-check-double" style="font-size: 11px;"></i></span>
+                    <span class="text-success ml-1 font-weight-black" style="color: #10b981;" title="Both SSC &amp; HSC Board Verified"><i class="fas fa-check-double" style="font-size: 13px;"></i></span>
                 {% elif student.ssc_verified or student.hsc_verified %}
-                    <span class="text-info ml-1" title="{% if student.ssc_verified %}SSC{% else %}HSC{% endif %} Board Verified" style="display: inline-flex; align-items: center;"><i class="fas fa-check" style="font-size: 11px;"></i></span>
+                    <span class="text-info ml-1 font-weight-black" style="color: #0284c7;" title="{% if student.ssc_verified %}SSC{% else %}HSC{% endif %} Board Verified"><i class="fas fa-check" style="font-size: 13px;"></i></span>
                 {% endif %}
                 {% if student.bteb_verified %}
-                    <span class="ml-1" title="BTEB Technical Board Verified" style="color:#17a2b8; display: inline-flex; align-items: center;">
-                        <i class="fas fa-check" style="font-size: 11px;"></i><i class="fas fa-industry" style="font-size: 9px; margin-left:1px;"></i>
-                    </span>
+                    <span class="text-warning ml-1" title="BTEB Technical Board Verified"><i class="fas fa-industry" style="font-size: 11px;"></i></span>
                 {% endif %}
-            </a>
+            </div>
         </div>
     </td>
 
@@ -176,8 +182,11 @@
                     <i class="fas fa-file-pdf text-danger mr-2" style="width: 20px; font-size: 14px;"></i> Master Sheet
                 </a>
                 <div class="dropdown-divider" style="margin: 4px 0;"></div>
+                <a class="dropdown-item py-2 d-flex align-items-center text-left text-success" href="{% url 'student_profile' student.student_id %}#academic-records" style="font-size: 13px; font-weight: 700;">
+                    <i class="fas fa-user-check text-success mr-2" style="width: 20px; font-size: 14px;"></i> Mark Verified Manually
+                </a>
                 <button type="button" class="dropdown-item py-2 d-flex align-items-center text-left border-0 bg-transparent" onclick="copyStudentData('{{ student.student_name|escapejs }}', '{{ student.student_id|escapejs }}', '{{ student.program|escapejs }}', '{{ student.batch|escapejs }}')" style="font-size: 13px; font-weight: 600; width: 100%;">
-                    <i class="fas fa-clone text-success mr-2" style="width: 20px; font-size: 14px;"></i> Copy Data
+                    <i class="fas fa-clone text-info mr-2" style="width: 20px; font-size: 14px;"></i> Copy Data
                 </button>
             </div>
         </div>

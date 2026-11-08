@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n coe_tags %}
 {% comment %}HTMX partial — Officer assignment modal body{% endcomment %}
 
 <form method="post" action="{% url 'coe_assign_officer' app.pk %}"
@@ -6,18 +6,47 @@
       hx-target="#assignModal .modal-body"
       hx-swap="innerHTML">
   {% csrf_token %}
-  <div class="mb-3">
-    <p class="text-muted mb-1">{% trans "Application" %}: <strong>{{ app.application_number }}</strong></p>
-    <p class="text-muted mb-1">{% trans "Student" %}: <strong>{{ app.student_name }}</strong></p>
+  <div class="mb-3 p-3 bg-light rounded border">
+    <p class="text-muted mb-1">{% trans "Application" %}: <strong><code>{{ app.application_number }}</code></strong></p>
+    <p class="text-muted mb-1">
+      {% trans "Student" %}: <strong>{{ app.student_name }}</strong> ({{ app.student_id }})
+      {% if app.mobile_number %}
+        {% whatsapp_btn app.mobile_number label="WhatsApp" css_class="btn btn-xs text-white font-weight-bold ml-1.5" %}
+      {% endif %}
+    </p>
     <p class="text-muted mb-1">{% trans "Type" %}: {{ app.get_application_type_display }}</p>
+    <div class="mt-2 pt-2 border-top d-flex flex-wrap" style="gap:6px;">
+      <span class="badge border bg-white text-dark" style="font-size:0.75rem; border-radius:10px;">
+        <i class="fas fa-hourglass-half text-warning mr-1"></i>Pending Assignment: <strong>{{ app.current_stage_duration }}</strong>
+      </span>
+      <span class="badge border bg-white text-info" style="font-size:0.75rem; border-radius:10px;">
+        <i class="fas fa-user-tie mr-1"></i>HoD Approval Time: <strong>{{ app.role_time_analytics.hod.duration }}</strong>
+      </span>
+    </div>
   </div>
+  {% if form.fields.officer.queryset.count == 0 %}
+  <div class="alert alert-warning border-warning font-weight-semibold p-3 mb-3" style="border-radius: 12px; background: #fffbeb; border-color: #fde68a !important;">
+    <div class="d-flex align-items-start">
+      <i class="fas fa-exclamation-triangle text-warning fa-2x mr-3 mt-1" style="color: #f59e0b !important;"></i>
+      <div>
+        <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem;">{% trans "No Processing Officers Designated" %}</h6>
+        <p class="small text-muted mb-2">{% trans "No processing officers have been designated in CoE Settings yet. Please designate active officers in settings before assigning applications." %}</p>
+        <a href="{% url 'coe_settings' %}#roles" class="btn btn-xs btn-indigo font-weight-bold shadow-sm px-3 py-1.5" style="border-radius: 20px; font-size: 0.8rem; background: #4f46e5; color: #fff;">
+          <i class="fas fa-sliders-h mr-1.5"></i>{% trans "Go to CoE Settings to Designate Officers →" %}
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
   <div class="form-group">
     <label class="font-weight-bold">{% trans "Select Processing Officer" %} <span class="text-danger">*</span></label>
     {{ form.officer }}
   </div>
+  {% endif %}
+
   <div class="d-flex justify-content-end" style="gap:8px;">
     <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Cancel" %}</button>
-    <button type="submit" class="btn btn-primary">
+    <button type="submit" class="btn btn-primary" {% if form.fields.officer.queryset.count == 0 %}disabled{% endif %}>
       <i class="fas fa-user-check mr-1"></i>{% trans "Assign & Forward" %}
     </button>
   </div>

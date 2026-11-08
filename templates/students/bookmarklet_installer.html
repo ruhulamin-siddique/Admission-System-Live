@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board Result Auto-Verification Bookmarklets Setup Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --success: #16a34a;
+            --success-dark: #15803d;
+            --bg-slate: #f8fafc;
+            --card-bg: #ffffff;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-slate);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 36px 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .header-title {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .header-desc {
+            color: #94a3b8;
+            font-size: 15px;
+            max-width: 750px;
+        }
+
+        .domain-config-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        .domain-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .domain-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-grow: 1;
+            max-width: 450px;
+        }
+
+        .domain-input-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            background: #f1f5f9;
+        }
+
+        .quick-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-bottom: 36px;
+        }
+
+        .step-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .step-num {
+            width: 36px;
+            height: 36px;
+            background: #e0f2fe;
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 16px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .step-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .step-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .bookmark-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 28px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 16px;
+        }
+
+        .section-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+
+        .icon-blue { background: linear-gradient(135deg, #0284c7, #0369a1); }
+        .icon-green { background: linear-gradient(135deg, #16a34a, #15803d); }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .section-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .drag-box {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.2s ease;
+        }
+
+        .drag-box:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
+        }
+
+        .btn-drag {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: white !important;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 14px 28px;
+            border-radius: 50px;
+            text-decoration: none !important;
+            box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3);
+            cursor: grab;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-blue { background: linear-gradient(135deg, #0284c7, #0369a1); }
+        .btn-green { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.3); }
+
+        .btn-drag:hover {
+            transform: translateY(-2px);
+        }
+
+        .drag-instruction {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 12px;
+            font-weight: 500;
+        }
+
+        .code-container {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .code-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        textarea.code-textarea {
+            width: 100%;
+            height: 110px;
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: none;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-copy {
+            position: absolute;
+            top: 36px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s ease;
+        }
+
+        .btn-copy:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .tip-banner {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 14px;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .tip-icon {
+            font-size: 24px;
+            color: #16a34a;
+        }
+
+        .tip-text {
+            font-size: 14px;
+            color: #166534;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- Main Header -->
+        <div class="header-card">
+            <div class="header-badge">
+                <i class="fas fa-bolt"></i> 1-Click Automation Setup
+            </div>
+            <h1 class="header-title">Education Board Result Auto-Verification</h1>
+            <p class="header-desc">
+                Setup guide for admission officers. Drag these two smart bookmarklets to your browser's Bookmarks Bar to verify SSC &amp; HSC board records in seconds with zero manual typing!
+            </p>
+        </div>
+
+        <!-- Target System Domain Bar -->
+        <div class="domain-config-card">
+            <div class="domain-label">
+                <i class="fas fa-globe text-primary"></i> Target Admission System URL:
+            </div>
+            <div class="domain-input-group">
+                <input type="text" id="target_domain_input" placeholder="http://localhost:8000" oninput="updateBookmarkletLinks()">
+            </div>
+        </div>
+
+        <!-- 3-Step Setup Instructions -->
+        <div class="quick-steps">
+            <div class="step-card">
+                <div class="step-num">1</div>
+                <div class="step-title">Show Bookmarks Bar</div>
+                <div class="step-desc">Press <strong>Ctrl + Shift + B</strong> (Windows) or <strong>Cmd + Shift + B</strong> (Mac) in Chrome/Edge to make your Bookmarks bar visible.</div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">2</div>
+                <div class="step-title">Drag Buttons Below</div>
+                <div class="step-desc">Click and drag the two colored buttons below directly onto your Bookmarks Bar.</div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">3</div>
+                <div class="step-title">Verify Hands-Free</div>
+                <div class="step-desc">Copy details from Admission System &rarr; click <strong>Auto-Fill</strong> &rarr; solve Captcha &rarr; click <strong>Sync Result</strong>!</div>
+            </div>
+        </div>
+
+        <!-- BOOKMARKLET 1 CARD -->
+        <div class="bookmark-section">
+            <div class="section-header">
+                <div class="section-icon icon-blue">
+                    <i class="fas fa-file-import"></i>
+                </div>
+                <div>
+                    <div class="section-title">1. Auto-Fill Board Form</div>
+                    <div class="section-subtitle">Use on <strong>eboardresults.com</strong> search form page</div>
+                </div>
+            </div>
+
+            <p style="font-size: 14px; color: var(--text-muted);">
+                When you click <em>"Copy Details"</em> in the Admission System, click this bookmark on the board website. It instantly populates Examination, Board, Year, Roll, Reg, and focuses the Captcha box!
+            </p>
+
+            <div class="drag-box">
+                <a class="btn-drag btn-blue" id="btn_bm1" href="#">
+                    <i class="fas fa-hand-pointer"></i> Drag to Bookmarks: 1. Auto-Fill Board Form
+                </a>
+                <div class="drag-instruction">&uarr; Click and drag this button up to your browser Bookmarks Bar</div>
+            </div>
+
+            <div class="code-container">
+                <span class="code-label">Raw Bookmarklet Code (For Manual Copy):</span>
+                <textarea class="code-textarea" id="bm1_code" readonly onclick="this.select()"></textarea>
+                <button class="btn-copy" onclick="copyCode('bm1_code', this)"><i class="fas fa-copy"></i> Copy Code</button>
+            </div>
+        </div>
+
+        <!-- BOOKMARKLET 2 CARD -->
+        <div class="bookmark-section">
+            <div class="section-header">
+                <div class="section-icon icon-green">
+                    <i class="fas fa-sync-alt"></i>
+                </div>
+                <div>
+                    <div class="section-title">2. Sync Result to Admission System</div>
+                    <div class="section-subtitle">Use on <strong>eboardresults.com</strong> result page (Zero-Prompt Auto-Detect!)</div>
+                </div>
+            </div>
+
+            <p style="font-size: 14px; color: var(--text-muted);">
+                Once the result page is visible on the board portal, click this bookmark. It automatically detects the Student ID, parses GPA, Student Name, Parents' Names, DOB, Gender, &amp; Subject Grades (Physics, Chemistry, Math), and updates your Admission System instantly!
+            </p>
+
+            <div class="drag-box">
+                <a class="btn-drag btn-green" id="btn_bm2" href="#">
+                    <i class="fas fa-hand-pointer"></i> Drag to Bookmarks: 2. Sync Result to Admission System
+                </a>
+                <div class="drag-instruction">&uarr; Click and drag this button up to your browser Bookmarks Bar</div>
+            </div>
+
+            <div class="code-container">
+                <span class="code-label">Raw Bookmarklet Code (For Manual Copy):</span>
+                <textarea class="code-textarea" id="bm2_code" readonly onclick="this.select()"></textarea>
+                <button class="btn-copy" onclick="copyCode('bm2_code', this)"><i class="fas fa-copy"></i> Copy Code</button>
+            </div>
+        </div>
+
+        <!-- Pro Tip Footer -->
+        <div class="tip-banner">
+            <div class="tip-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="tip-text">
+                <strong>Pro Tip:</strong> The installer automatically detected your current server address (<span id="detected_domain_text"></span>). Dragging the buttons directly installs bookmarklets pre-configured for your active server environment.
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        var currentOrigin = window.location.origin || 'http://localhost:8000';
+        if (currentOrigin === 'file://' || !currentOrigin.startsWith('http')) {
+            currentOrigin = 'http://localhost:8000';
+        }
+
+        document.getElementById('target_domain_input').value = currentOrigin;
+        document.getElementById('detected_domain_text').innerText = currentOrigin;
+
+        var BM1_JS = 'javascript:(function(){var clip=prompt("Paste student info copied from Admission System:");if(!clip)return;var sidM=clip.match(/StudentID:\\s*([A-Za-z0-9_]+)/i)||clip.match(/\\b(080\\d{13}|\\d{16})\\b/);if(sidM){sessionStorage.setItem("current_verify_sid",sidM[1]);}var examM=clip.match(/Exam:\\s*([A-Za-z0-9]+)/i);var rollM=clip.match(/Roll:\\s*(\\d+)/i);var regM=clip.match(/Reg:\\s*(\\d+)/i);var yearM=clip.match(/Year:\\s*(\\d+)/i);var boardM=clip.match(/Board:\\s*([A-Za-z\\s]+)/i);function triggerChange(el){if(!el)return;var ev=document.createEvent("HTMLEvents");ev.initEvent("change",true,false);el.dispatchEvent(ev);}var examSel=document.querySelector(\'select[name="exam"]\')||document.getElementById("exam");if(examSel&&examM){var exTarget=examM[1].toLowerCase();for(var i=0;i<examSel.options.length;i++){var optT=examSel.options[i].text.toLowerCase();var optV=examSel.options[i].value.toLowerCase();if(optV.includes(exTarget)||optT.includes(exTarget)){examSel.selectedIndex=i;triggerChange(examSel);break;}}}var yearSel=document.querySelector(\'select[name="year"]\')||document.getElementById("year");if(yearSel&&yearM){yearSel.value=yearM[1];triggerChange(yearSel);}var boardSel=document.querySelector(\'select[name="board"]\')||document.getElementById("board");if(boardSel&&boardM){var bTarget=boardM[1].trim().toLowerCase();for(var j=0;j<boardSel.options.length;j++){var bOptT=boardSel.options[j].text.toLowerCase();var bOptV=boardSel.options[j].value.toLowerCase();if(bOptV.includes(bTarget)||bOptT.includes(bTarget)){boardSel.selectedIndex=j;triggerChange(boardSel);break;}}}var resTypeSel=document.querySelector(\'select[name="result_type"]\')||document.querySelector(\'select[name="res_type"]\')||document.getElementById("result_type")||document.getElementById("res_type");if(resTypeSel){for(var k=0;k<resTypeSel.options.length;k++){if(resTypeSel.options[k].value=="1"||resTypeSel.options[k].text.toLowerCase().includes("individual")){resTypeSel.selectedIndex=k;triggerChange(resTypeSel);break;}}}setTimeout(function(){var rollInp=document.querySelector(\'input[name="roll"]\')||document.getElementById("roll");if(rollInp&&rollM){rollInp.value=rollM[1];triggerChange(rollInp);}var regInp=document.querySelector(\'input[name="reg"]\')||document.getElementById("reg");if(regInp&&regM){regInp.value=regM[1];triggerChange(regInp);}var capInp=document.querySelector(\'input[name="captcha"]\')||document.getElementById("captcha");if(capInp)capInp.focus();},250);})();';
+
+        function getBM2_JS(domain) {
+            var endpoint = domain.replace(/\/$/, '') + '/api/manual-verify-student/';
+            return 'javascript:(function(){function syncData(sid){if(!sid)return;sessionStorage.setItem("current_verify_sid",sid);var text=document.body.innerText;var headerText="";var headers=document.querySelectorAll("h1, h2, h3, h4, th, td, .panel-heading, .title, .header");for(var h=0;h<headers.length;h++){headerText+=" "+headers[h].innerText;}var BL=["BOARD OF","EDUCATION BOARD","TECHNICAL EDUCATION","INTERMEDIATE AND SECONDARY","EXAMINATION RESULT","RESULT PUBLICATION","GOVERNMENT OF","BANGLADESH","MINISTRY OF EDUCATION","WEB BASED RESULT"];function cleanN(s){if(!s)return"";var u=s.trim().toUpperCase();if(u.length<3)return"";for(var i=0;i<BL.length;i++){if(u.indexOf(BL[i])!==-1)return"";}return s.trim();}var exam="SSC";if(/HSC|Alim|Higher\\s*Secondary/i.test(headerText)){exam="HSC";}else if(/SSC|Dakhil|Secondary/i.test(headerText)){exam="SSC";}var gpa="";var name="";var father="";var mother="";var gender="";var dob="";var inst="";var physics="";var chemistry="";var math="";var rows=document.querySelectorAll("tr");for(var r=0;r<rows.length;r++){var cols=rows[r].querySelectorAll("td, th");if(cols.length>=2){var rowText=rows[r].innerText.trim().toLowerCase();var label=cols[0].innerText.trim().toLowerCase();var val=cols[1].innerText.trim();if(label.includes("student")||label.includes("name of examinee")||label==="name")name=name||cleanN(val);if(label.includes("father"))father=father||cleanN(val);if(label.includes("mother"))mother=mother||cleanN(val);if(label.includes("gender")||label.includes("sex"))gender=gender||val;if(label.includes("date of birth")||label.includes("dob"))dob=dob||val;if(label.includes("institute")||label.includes("school")||label.includes("college"))inst=inst||cleanN(val);if(label.includes("gpa")||label.includes("result")){var gMatch=val.match(/([0-5]\\.[0-9]{1,2})/);if(gMatch)gpa=gpa||gMatch[1];}var lastColText=cols[cols.length-1].innerText.trim();var gMatchSubj=lastColText.match(/(A\\+|A\\-|A|B|C|D|F|[0-5]\\.[0-9]{1,2})/i);if(!gMatchSubj&&cols.length>=3){var midColText=cols[cols.length-2].innerText.trim();gMatchSubj=midColText.match(/(A\\+|A\\-|A|B|C|D|F|[0-5]\\.[0-9]{1,2})/i);}var gradeVal=gMatchSubj?gMatchSubj[1].toUpperCase():lastColText;if(rowText.includes("physics"))physics=physics||gradeVal;if(rowText.includes("chemistry"))chemistry=chemistry||gradeVal;if(rowText.includes("math"))math=math||gradeVal;}}if(!name){var nM=text.match(/Name\\s*[:\\-\\s]+([^\\n\\r]+)/i);if(nM)name=cleanN(nM[1]);}if(!father){var fM=text.match(/Father[\'’]?s?\\s*Name\\s*[:\\-\\s]+([^\\n\\r]+)/i);if(fM)father=cleanN(fM[1]);}if(!mother){var mM=text.match(/Mother[\'’]?s?\\s*Name\\s*[:\\-\\s]+([^\\n\\r]+)/i);if(mM)mother=cleanN(mM[1]);}if(!gender){var gM=text.match(/Gender\\s*[:\\-\\s]+([A-Za-z]+)/i)||text.match(/Sex\\s*[:\\-\\s]+([A-Za-z]+)/i);if(gM)gender=gM[1].trim();}if(!dob){var dM=text.match(/Date\\s*of\\s*Birth\\s*[:\\-\\s]+([0-9\\-\\/\w]+)/i)||text.match(/DOB\\s*[:\\-\\s]+([0-9\\-\\/\w]+)/i);if(dM)dob=dM[1].trim();}if(!inst){var iM=text.match(/Institute\\s*[:\\-\\s]+([^\\n\\r]+)/i);if(iM)inst=cleanN(iM[1]);}if(!gpa){var gpaM=text.match(/GPA\\s*[:=\\s]+([0-5]\\.[0-9]{1,2})/i)||text.match(/Result\\s*[:\\-\\s]+PASSED?\\s*\\(?\\s*([0-5]\\.[0-9]{1,2})\\)?/i)||text.match(/PASSED[^\\d]*?([0-5]\\.[0-9]{1,2})/i)||text.match(/GPA[^\\d]*?([0-5]\\.[0-9]{2})/i)||text.match(/([0-5]\\.[0-9]{2})/i);if(gpaM)gpa=gpaM[1].trim();}var rollInp=document.querySelector(\'input[name="roll"], #roll\');var capInp=document.querySelector(\'input[name="captcha"], #captcha\');if((rollInp||capInp)&&!name&&!gpa&&!inst){alert("⚠️ Board result is not displayed on this page yet! Please enter roll & captcha, then click Get Result first.");return;}var confirmMsg="Confirm Board Sync for Student ID: "+sid+"?\\n\\n"+"Board Name: "+(name||"N/A (Keep DB Name)")+"\\nGPA: "+(gpa||"N/A (No GPA)")+"\\nInstitute: "+(inst||"N/A");if(!confirm(confirmMsg))return;var form=document.createElement("form");form.method="POST";form.action="' + endpoint + '";form.target="_blank";function addF(n,v){if(!v)return;var inp=document.createElement("input");inp.type="hidden";inp.name=n;inp.value=v;form.appendChild(inp);}addF("student_id",sid.trim());addF("exam_type",exam);addF("student_name",name);addF("father_name",father);addF("mother_name",mother);addF("gender",gender);addF("dob",dob);addF("gpa",gpa);addF("inst_name",inst);addF("physics",physics);addF("chemistry",chemistry);addF("math",math);addF("format","html");document.body.appendChild(form);form.submit();document.body.removeChild(form);}var savedSid=sessionStorage.getItem("current_verify_sid");if(savedSid){syncData(savedSid);}else if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(txt){var sidM=txt.match(/StudentID:\\s*([A-Za-z0-9_]+)/i)||txt.match(/\\b(080\\d{13}|\\d{16})\\b/);if(sidM){syncData(sidM[1]);}else{var p=prompt("Enter Student ID to sync:");if(p)syncData(p);}}).catch(function(){var p=prompt("Enter Student ID to sync:");if(p)syncData(p);});}else{var p=prompt("Enter Student ID to sync:");if(p)syncData(p);}})();';
+        }
+
+        function updateBookmarkletLinks() {
+            var domain = document.getElementById('target_domain_input').value.trim() || currentOrigin;
+            var bm2_js = getBM2_JS(domain);
+
+            document.getElementById('btn_bm1').href = BM1_JS;
+            document.getElementById('bm1_code').value = BM1_JS;
+
+            document.getElementById('btn_bm2').href = bm2_js;
+            document.getElementById('bm2_code').value = bm2_js;
+        }
+
+        function copyCode(id, btn) {
+            var textarea = document.getElementById(id);
+            textarea.select();
+            document.execCommand('copy');
+            var oldHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            btn.style.background = '#16a34a';
+            setTimeout(function() {
+                btn.innerHTML = oldHTML;
+                btn.style.background = '';
+            }, 2000);
+        }
+
+        updateBookmarkletLinks();
+    </script>
+</body>
+</html>

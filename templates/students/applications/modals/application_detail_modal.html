@@ -1,0 +1,283 @@
+{% load core_tags %}
+<div class="modal-header bg-light border-bottom">
+    <div>
+        <h5 class="modal-title font-weight-bold text-primary mb-1">
+            <i class="fas fa-file-alt mr-2"></i> {{ app.application_type.title_en }}
+        </h5>
+        <span class="badge badge-secondary font-monospace" style="font-size: 0.9rem;">
+            {{ app.tracking_number }}
+        </span>
+        <span class="text-muted small ml-2">Submitted on {{ app.submitted_at|date:"d M Y, h:i A" }}</span>
+    </div>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+<div class="modal-body p-4">
+    <div class="row">
+        <!-- Left: Application Details & Form Data -->
+        <div class="col-lg-7 border-right">
+            
+            <!-- Student Information Summary -->
+            <div class="card card-outline card-secondary shadow-none mb-3">
+                <div class="card-header py-2">
+                    <h6 class="card-title font-weight-bold mb-0">
+                        <i class="fas fa-user-graduate mr-1"></i> Applicant Profile
+                    </h6>
+                    {% if app.student %}
+                        <a href="{% url 'student_profile' student_id=app.student.student_id %}" target="_blank" class="badge badge-info float-right py-1 px-2">
+                            <i class="fas fa-external-link-alt mr-1"></i> View Full Profile
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-sm-6 mb-2">
+                            <small class="text-muted d-block">Student Name</small>
+                            <span class="font-weight-bold">{{ app.student_name }}</span>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <small class="text-muted d-block">Student ID / Roll</small>
+                            {% if app.display_student_id %}
+                                <span class="badge badge-light border font-weight-bold">{{ app.display_student_id }}</span>
+                                {% if app.is_id_verified %}
+                                    <span class="badge badge-success ml-1"><i class="fas fa-check"></i> Enrolled</span>
+                                {% else %}
+                                    <span class="badge badge-warning ml-1"><i class="fas fa-exclamation"></i> Unrecorded</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted font-italic">N/A (Direct/Transfer Applicant)</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <small class="text-muted d-block">Department</small>
+                            <span>{{ app.department }}</span>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <small class="text-muted d-block">Contact Phone</small>
+                            <span class="font-weight-bold">{{ app.phone_no }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Mismatch Box & 1-Click Sync (B6) -->
+            {% if app.has_profile_mismatch and mismatches %}
+            <div class="alert alert-warning border shadow-sm p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="text-danger">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Database Profile Mismatch Detected
+                    </strong>
+                    {% has_access 'students' 'edit_profile' as can_edit %}
+                    {% if can_edit %}
+                        <button type="button" class="btn btn-xs btn-danger font-weight-bold rounded-pill px-3" id="syncProfileBtn" onclick="syncStudentProfile('{{ app.tracking_number }}')">
+                            <i class="fas fa-sync-alt mr-1"></i> Sync to Official Student Profile
+                        </button>
+                    {% endif %}
+                </div>
+                <p class="small text-muted mb-2">
+                    The values submitted in this application differ from the current student profile in the database:
+                </p>
+                <div class="table-responsive bg-white rounded border">
+                    <table class="table table-sm table-bordered mb-0 small">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Field</th>
+                                <th>Database Value</th>
+                                <th class="text-danger">Submitted in Application</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, diff in mismatches.items %}
+                            <tr>
+                                <td class="font-weight-bold">{{ diff.field_label }}</td>
+                                <td>{{ diff.current|default:"(empty)" }}</td>
+                                <td class="font-weight-bold text-danger">{{ diff.submitted }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Dynamic Form Data Fields Table -->
+            <h6 class="font-weight-bold text-dark mb-2">
+                <i class="fas fa-list-ul mr-1 text-primary"></i> Application Form Fields
+            </h6>
+            <div class="table-responsive border rounded mb-3">
+                <table class="table table-sm table-striped mb-0">
+                    <tbody>
+                        {% for k, v in form_data.items %}
+                        <tr>
+                            <th style="width: 40%;" class="text-capitalize text-muted small">
+                                {{ k|cut:"_" }}
+                            </th>
+                            <td class="font-weight-bold small text-break">
+                                {{ v|default:"-" }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-muted font-italic text-center py-2">No additional dynamic fields submitted.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Integrated Links to Specialized Modules -->
+            {% if app.application_type.code == 'dept_change' %}
+                <div class="p-2 bg-light border rounded d-flex justify-content-between align-items-center">
+                    <span class="small font-weight-bold text-primary">Department Change Integration:</span>
+                    <a href="{% url 'migration_center' %}?search={{ app.display_student_id }}" target="_blank" class="btn btn-xs btn-outline-primary font-weight-bold">
+                        <i class="fas fa-exchange-alt mr-1"></i> Open in Migration Center
+                    </a>
+                </div>
+            {% elif app.application_type.code == 'admission_cancel' %}
+                <div class="p-2 bg-light border rounded d-flex justify-content-between align-items-center">
+                    <span class="small font-weight-bold text-danger">Admission Cancellation Integration:</span>
+                    <a href="{% url 'cancellation_hub' %}?search={{ app.display_student_id }}" target="_blank" class="btn btn-xs btn-outline-danger font-weight-bold">
+                        <i class="fas fa-user-times mr-1"></i> Open in Cancellation Hub
+                    </a>
+                </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Right: Status Update & Office Actions -->
+        <div class="col-lg-5 pl-lg-4 mt-3 mt-lg-0">
+            <h6 class="font-weight-bold text-dark mb-3">
+                <i class="fas fa-tasks mr-1 text-primary"></i> Office Processing & Actions
+            </h6>
+
+            <form id="statusUpdateForm" onsubmit="submitStatusUpdate(event, '{{ app.tracking_number }}')">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label class="small font-weight-bold text-muted">Current Application Status *</label>
+                    <select name="status" id="modalStatusSelect" class="custom-select font-weight-bold">
+                        <option value="SUBMITTED" {% if app.status == 'SUBMITTED' %}selected{% endif %}>1. Submitted (Online Only)</option>
+                        <option value="RECEIVED" {% if app.status == 'RECEIVED' %}selected{% endif %}>2. Physical Form Received</option>
+                        <option value="VERIFIED" {% if app.status == 'VERIFIED' %}selected{% endif %}>3. Verified / Under Review</option>
+                        <option value="APPROVED" {% if app.status == 'APPROVED' %}selected{% endif %}>4. Approved</option>
+                        <option value="REJECTED" {% if app.status == 'REJECTED' %}selected{% endif %}>5. Rejected</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="small font-weight-bold text-muted">Office Notes / Instructions</label>
+                    <textarea name="office_notes" rows="4" class="form-control small" placeholder="Enter remarks, verification logs, or reason for rejection...">{{ app.office_notes|default:"" }}</textarea>
+                </div>
+
+                {% if app.received_by %}
+                <div class="p-2 bg-light rounded border mb-3 small text-muted">
+                    <i class="fas fa-user-check text-success mr-1"></i> Received by: <strong>{{ app.received_by.username }}</strong> on {{ app.received_at|date:"d M Y, h:i A" }}
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary btn-block font-weight-bold py-2 mb-3">
+                    <i class="fas fa-save mr-1"></i> Save Status & Notes
+                </button>
+            </form>
+
+            <hr>
+
+            <!-- PDF Documents Access -->
+            <label class="small font-weight-bold text-muted">Document Actions</label>
+            <div class="d-flex flex-column gap-2">
+                <a href="{% url 'download_filled_pdf' tracking_number=app.tracking_number %}" target="_blank" class="btn btn-danger btn-block font-weight-bold rounded-pill py-2 mb-2">
+                    <i class="fas fa-file-pdf mr-1"></i> Download Generated PDF
+                </a>
+                <a href="{% url 'download_filled_pdf' tracking_number=app.tracking_number %}?view=print" target="_blank" class="btn btn-outline-secondary btn-block rounded-pill py-2">
+                    <i class="fas fa-print mr-1"></i> Print-Friendly Academic View
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal-footer bg-light border-top d-flex justify-content-between align-items-center">
+    <div>
+        {% has_access 'students' 'delete_application' as can_delete_app %}
+        {% if can_delete_app %}
+        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 font-weight-bold" onclick="deleteFromModal('{{ app.tracking_number }}')">
+            <i class="fas fa-trash mr-1"></i> Delete Application
+        </button>
+        {% endif %}
+    </div>
+    <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Close</button>
+</div>
+
+<script>
+    function deleteFromModal(trackingNumber) {
+        $('#appDetailModal').modal('hide');
+        setTimeout(() => {
+            if (typeof deleteApplication === 'function') {
+                deleteApplication(trackingNumber);
+            }
+        }, 400);
+    }
+    function showDetailToast(icon, message) {
+        if (typeof showAppToast === 'function') {
+            showAppToast(icon, message);
+        } else if (typeof Toast !== 'undefined') {
+            Toast.fire({ icon: icon, title: message });
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: icon, title: message, timer: 3000, showConfirmButton: false });
+        } else {
+            alert(message);
+        }
+    }
+
+    // Status update submission
+    function submitStatusUpdate(e, trackingNumber) {
+        e.preventDefault();
+        const formData = $('#statusUpdateForm').serialize();
+
+        $.ajax({
+            url: '/students/applications/' + trackingNumber + '/update-status/',
+            type: 'POST',
+            data: formData,
+            success: function(res) {
+                if (res.status === 'success') {
+                    showDetailToast('success', res.message);
+                    setTimeout(() => location.reload(), 800);
+                }
+            },
+            error: function(xhr) {
+                showDetailToast('error', 'Failed to update status.');
+            }
+        });
+    }
+
+    // 1-Click Profile Sync
+    function syncStudentProfile(trackingNumber) {
+        if (!confirm('Are you sure you want to overwrite the official Student Profile fields with the data submitted in this application? This action creates an audit log entry in StudentFieldHistory.')) return;
+
+        $('#syncProfileBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Syncing...');
+
+        $.ajax({
+            url: '/students/applications/' + trackingNumber + '/sync-profile/',
+            type: 'POST',
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(res) {
+                if (res.status === 'success') {
+                    showDetailToast('success', res.message);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showDetailToast('info', res.message);
+                    $('#syncProfileBtn').prop('disabled', false).text('Sync Profile');
+                }
+            },
+            error: function() {
+                showDetailToast('error', 'Failed to sync profile.');
+                $('#syncProfileBtn').prop('disabled', false).text('Sync Profile');
+            }
+        });
+    }
+</script>

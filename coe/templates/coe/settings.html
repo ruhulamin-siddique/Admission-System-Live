@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n coe_tags %}
 
 {% block title %}{% trans "CoE Settings" %}{% endblock %}
 {% block page_title %}<i class="fas fa-sliders-h mr-2 text-indigo"></i>{% trans "CoE Module Settings" %}{% endblock %}
@@ -16,7 +16,7 @@
     border-radius: 16px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease;
     overflow: hidden;
     margin-bottom: 2rem;
   }
@@ -59,64 +59,91 @@
     margin: 1.75rem 0;
   }
 
-  /* Input Customizations */
-  .premium-input-wrapper {
-    margin-bottom: 1.25rem;
-  }
-
-  .premium-input-wrapper label {
-    font-weight: 600;
-    font-size: 0.88rem;
-    color: #475569;
-    margin-bottom: 0.4rem;
-    display: block;
-  }
-
-  .premium-input-group {
-    display: flex;
-    align-items: stretch;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .premium-input-group-text {
-    background-color: #f1f5f9;
-    border: 1px solid #cbd5e1;
-    border-right: none;
-    color: #64748b;
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Student Directory Style Floating-Label Control System for Settings
+     ────────────────────────────────────────────────────────────────────────────── */
+  .filter-group {
+    position: relative;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 4px 12px;
+    background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    min-height: 52px;
     display: flex;
     align-items: center;
-    padding: 0.6rem 0.85rem;
-    font-size: 0.95rem;
+    margin-bottom: 1rem;
   }
 
-  .premium-input-group .form-control {
-    border-radius: 0 8px 8px 0 !important;
-    border: 1px solid #cbd5e1;
-    padding: 0.6rem 0.85rem;
+  .filter-group label {
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    background: #ffffff;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #475569;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    line-height: 1;
+    margin: 0;
+    pointer-events: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .filter-group select,
+  .filter-group input,
+  .filter-group textarea {
+    border: none !important;
+    width: 100%;
+    font-size: 0.96rem;
+    font-weight: 600;
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: #0f172a;
+    height: 42px;
+    padding: 0;
+  }
+
+  .filter-group textarea {
+    height: auto;
+    padding: 8px 0;
     font-weight: 500;
-    font-size: 0.95rem;
-    color: #1e293b;
-    transition: all 0.2s ease-in-out;
+    line-height: 1.45;
   }
 
-  .premium-input-group .form-control:focus {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
-    outline: none;
-    z-index: 10;
+  .filter-group:focus-within {
+    border-color: #4f46e5 !important;
+    box-shadow: 0 0 0 3.5px rgba(79, 70, 229, 0.14) !important;
   }
 
-  .premium-helper-text {
-    font-size: 0.78rem;
+  .filter-group:focus-within label {
+    color: #4f46e5 !important;
+  }
+
+  .filter-group .input-icon {
     color: #64748b;
-    margin-top: 0.35rem;
-    display: block;
+    margin-right: 8px;
+    font-size: 0.95rem;
+  }
+
+  .filter-group .unit-pill {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    margin-left: 8px;
+    white-space: nowrap;
   }
 
   .preview-badge-container {
-    margin-top: 0.5rem;
+    margin-top: 0.35rem;
   }
 
   .preview-badge {
@@ -124,19 +151,22 @@
     color: #6d28d9;
     font-family: monospace;
     font-size: 0.78rem;
-    padding: 0.25rem 0.6rem;
+    padding: 0.3rem 0.7rem;
     border-radius: 6px;
     border: 1px solid #ddd6fe;
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    font-weight: 700;
   }
 
-  /* Switch Cards Grid */
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Switch Cards Grid & Custom Toggles
+     ────────────────────────────────────────────────────────────────────────────── */
   .switch-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
   @media (min-width: 768px) {
@@ -147,23 +177,21 @@
 
   .switch-card {
     background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    border: 1.5px solid #e2e8f0;
     border-radius: 12px;
-    padding: 1.25rem;
+    padding: 1.15rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     transition: all 0.25s ease;
     cursor: pointer;
-    position: relative;
     user-select: none;
   }
 
   .switch-card:hover {
     background: #ffffff;
-    border-color: #cbd5e1;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    border-color: #4f46e5;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.08);
   }
 
   .switch-card-info {
@@ -175,9 +203,9 @@
   }
 
   .switch-card-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     background: #eef2ff;
     color: #4f46e5;
     display: flex;
@@ -191,7 +219,6 @@
   .switch-card:hover .switch-card-icon {
     background: #4f46e5;
     color: #ffffff;
-    transform: scale(1.05);
   }
 
   .switch-card-text {
@@ -200,16 +227,16 @@
   }
 
   .switch-card-title {
-    font-weight: 600;
-    font-size: 0.88rem;
+    font-weight: 700;
+    font-size: 0.9rem;
     color: #1e293b;
     margin-bottom: 0.15rem;
   }
 
   .switch-card-desc {
-    font-size: 0.75rem;
+    font-size: 0.76rem;
     color: #64748b;
-    line-height: 1.25;
+    line-height: 1.3;
   }
 
   /* Custom iOS-like Toggles */
@@ -223,7 +250,7 @@
     height: 1.15rem;
     border-radius: 50rem;
     border-color: #cbd5e1;
-    background-color: #e2e8f0;
+    background-color: #cbd5e1;
     transition: background-color 0.25s ease, border-color 0.25s ease;
   }
 
@@ -247,7 +274,98 @@
     transform: translateX(0.85rem) !important;
   }
 
-  /* macOS Terminal card */
+  /* ──────────────────────────────────────────────────────────────────────────────
+     Live Smartphone SMS Preview Simulator Widget
+     ────────────────────────────────────────────────────────────────────────────── */
+  .phone-mockup-card {
+    background: #0f172a;
+    border-radius: 28px;
+    padding: 12px;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.25);
+    border: 3px solid #334155;
+    position: sticky;
+    top: 20px;
+  }
+
+  .phone-notch {
+    width: 110px;
+    height: 18px;
+    background: #1e293b;
+    border-radius: 0 0 10px 10px;
+    margin: 0 auto 10px auto;
+  }
+
+  .phone-screen {
+    background: #ffffff;
+    border-radius: 20px;
+    min-height: 420px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phone-header {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .phone-sender-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .phone-sender-sub {
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+
+  .sms-bubble {
+    background: #e0e7ff;
+    color: #1e1b4b;
+    border-radius: 14px 14px 14px 2px;
+    padding: 0.85rem 1rem;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.1);
+    word-break: break-word;
+    border: 1px solid #c7d2fe;
+    margin-bottom: 0.5rem;
+  }
+
+  .sms-timestamp {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-align: right;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .tag-pill-btn {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #4f46e5;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tag-pill-btn:hover {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────────
+     macOS Terminal & Callout Cards
+     ────────────────────────────────────────────────────────────────────────────── */
   .terminal-box {
     background: #0f172a;
     border-radius: 12px;
@@ -289,7 +407,7 @@
   }
 
   .terminal-body {
-    padding: 1.25rem;
+    padding: 1.15rem;
     margin: 0;
   }
 
@@ -351,25 +469,24 @@
   }
 
   .save-btn {
-    background: #4f46e5;
+    background: linear-gradient(135deg, #4f46e5 0%, #0284c7 100%);
     color: #ffffff !important;
     border: none;
-    border-radius: 8px;
-    padding: 0.6rem 1.5rem;
-    font-weight: 600;
-    font-size: 0.92rem;
+    border-radius: 10px;
+    padding: 0.7rem 1.75rem;
+    font-weight: 700;
+    font-size: 0.95rem;
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
     cursor: pointer;
   }
 
   .save-btn:hover {
-    background: #4338ca;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(79, 70, 229, 0.3);
+    background: linear-gradient(135deg, #4338ca 0%, #0369a1 100%);
+    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
   }
 
   .status-badge {
@@ -379,10 +496,150 @@
     padding: 0.35rem 0.75rem;
     border-radius: 50px;
     font-size: 0.78rem;
-    font-weight: 500;
+    font-weight: 600;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+  }
+
+  /* ── Settings Tabs ── */
+  .settings-tabs-nav {
+    background: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0 1.75rem;
+    display: flex;
+    gap: 0;
+  }
+
+  .settings-tabs-nav .nav-link {
+    color: #64748b;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 0.85rem 1.25rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    margin-bottom: -2px;
+    background: transparent !important;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none !important;
+    cursor: pointer;
+  }
+
+  .settings-tabs-nav .nav-link:hover {
+    color: #4f46e5;
+    border-bottom-color: #c7d2fe;
+  }
+
+  .settings-tabs-nav .nav-link.active {
+    color: #4f46e5 !important;
+    border-bottom-color: #4f46e5 !important;
+    background: transparent !important;
+  }
+
+  /* JS-controlled tab pane visibility */
+  .coe-tab-pane {
+    display: none;
+  }
+  .coe-tab-pane.is-active {
+    display: block;
+  }
+
+  /* Step by Step Guide List */
+  .guide-step-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .guide-step-number {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #4f46e5;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+  }
+
+  /* Dark Mode Overrides */
+  body.dark-mode .filter-group {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  body.dark-mode .filter-group label {
+    background: #0f172a;
+    color: #94a3b8;
+  }
+
+  body.dark-mode .filter-group select,
+  body.dark-mode .filter-group input,
+  body.dark-mode .filter-group textarea {
+    color: #f8fafc;
+  }
+
+  body.dark-mode .filter-group .unit-pill {
+    background: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+  }
+
+  body.dark-mode .switch-card {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  body.dark-mode .switch-card-title {
+    color: #f8fafc;
+  }
+
+  body.dark-mode .premium-card {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  body.dark-mode .premium-card-header {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  body.dark-mode .premium-card-title {
+    color: #f8fafc;
+  }
+
+  body.dark-mode .premium-card-footer {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  body.dark-mode .settings-tabs-nav {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  /* Mobile: scrollable tab nav */
+  @media (max-width: 576px) {
+    .settings-tabs-nav {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap;
+      padding: 0 0.75rem;
+    }
+    .settings-tabs-nav .nav-link {
+      padding: 0.7rem 0.85rem;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
   }
 </style>
 {% endblock %}
@@ -390,222 +647,827 @@
 {% block content %}
 <div class="container-fluid settings-container">
   <div class="row">
-    <!-- Left Column: Settings Configuration -->
-    <div class="col-lg-8">
+    <!-- Full-Width Settings Configuration Container -->
+    <div class="col-lg-12">
       <div class="premium-card">
-        <div class="premium-card-header">
-          <h3 class="premium-card-title">
+        <!-- Card Header with Retention Console Modal Trigger Button -->
+        <div class="premium-card-header d-flex flex-wrap align-items-center justify-content-between" style="gap: 0.75rem;">
+          <h3 class="premium-card-title mb-0">
             <i class="fas fa-cog text-indigo"></i>
             {% trans "Module Configuration" %}
           </h3>
+          <button type="button" class="btn btn-sm btn-outline-dark font-weight-bold shadow-sm px-3 py-1.5" style="border-radius: 20px; font-size: 0.84rem; border-color: #cbd5e1;"
+                  data-toggle="modal" data-target="#cleanupConsoleModal">
+            <i class="fas fa-terminal text-indigo mr-1.5"></i>{% trans "Retention Purge Console" %}
+          </button>
         </div>
         
         <form method="post" id="coe-settings-form">
           {% csrf_token %}
-          <div class="premium-card-body">
+          
+          <!-- Tab Navigation -->
+          <div class="settings-tabs-nav">
+            <ul class="nav" id="settingsTabs" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active font-weight-bold" id="general-tab" data-toggle="tab" href="#general" role="tab">
+                  <i class="fas fa-cog mr-1 text-indigo"></i> {% trans "General & Retention" %}
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link font-weight-bold" id="switches-tab" data-toggle="tab" href="#switches" role="tab">
+                  <i class="fas fa-toggle-on mr-1 text-indigo"></i> {% trans "Notification Toggles" %}
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link font-weight-bold" id="templates-tab" data-toggle="tab" href="#templates" role="tab">
+                  <i class="fas fa-envelope-open-text mr-1 text-indigo"></i> {% trans "Message Templates" %}
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link font-weight-bold" id="email-tab" data-toggle="tab" href="#email" role="tab">
+                  <i class="fas fa-at mr-1 text-indigo"></i> {% trans "Email Server (SMTP)" %}
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link font-weight-bold" id="roles-tab" data-toggle="tab" href="#roles" role="tab">
+                  <i class="fas fa-user-shield mr-1 text-indigo"></i> {% trans "Role & Officer Designations" %}
+                </a>
+              </li>
+              <li class="nav-item" id="rules-tab-item" style="{% if not settings_obj.enable_auto_assignment %}display: none;{% endif %}">
+                <a class="nav-link font-weight-bold" id="rules-tab" data-toggle="tab" href="#rules" role="tab">
+                  <i class="fas fa-sitemap mr-1 text-indigo"></i> {% trans "Auto Assignment" %}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="premium-card-body tab-content settings-tab-content" id="settingsTabsContent">
             
-            <!-- Section 1: Tracking Number Settings -->
-            <div class="section-header-premium mb-3">
-              <h6 class="section-title-premium">
-                <i class="fas fa-hashtag"></i>
-                {% trans "Tracking Number Settings" %}
-              </h6>
-            </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="premium-input-wrapper">
-                  <label for="{{ form.tracking_id_prefix.id_for_label }}">{% trans "Tracking ID Prefix" %}</label>
-                  <div class="premium-input-group">
-                    <span class="premium-input-group-text"><i class="fas fa-tag"></i></span>
-                    {{ form.tracking_id_prefix }}
+            <!-- Tab 1: General & Retention Settings (Compact 2-Column Dashboard Grid) -->
+            <div class="coe-tab-pane is-active" id="general" role="tabpanel">
+              <div class="row">
+                
+                <!-- Left Column: Tracking ID, Auto-Assign Engine & Retention Rules -->
+                <div class="col-lg-6 mb-3 mb-lg-0">
+                  
+                  <!-- Panel 1: Tracking ID Formatting & Live Preview -->
+                  <div class="p-3 bg-white rounded-lg border shadow-sm mb-3" style="border-radius: 12px !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <h6 class="font-weight-bold text-dark mb-0" style="font-size: 0.9rem;">
+                        <i class="fas fa-hashtag text-indigo mr-1.5"></i>{% trans "Tracking Number Prefix" %}
+                      </h6>
+                      <span class="preview-badge px-2.5 py-1">
+                        <i class="fas fa-eye text-indigo mr-1"></i>
+                        <span id="prefix-preview">{{ settings_obj.tracking_id_prefix }}-2026-0001</span>
+                      </span>
+                    </div>
+                    <div class="filter-group mb-0">
+                      <label for="{{ form.tracking_id_prefix.id_for_label }}">{% trans "Tracking ID Prefix" %}</label>
+                      <i class="fas fa-tag input-icon"></i>
+                      {{ form.tracking_id_prefix }}
+                    </div>
                   </div>
-                  <small class="premium-helper-text">
-                    {% trans "Specify prefix for generating tracking codes. Avoid special characters." %}
-                  </small>
-                  <div class="preview-badge-container">
-                    <span class="preview-badge">
-                      <i class="fas fa-eye mr-1"></i>
-                      {% trans "Preview:" %} <span id="prefix-preview">{{ settings_obj.tracking_id_prefix }}-2026-0001</span>
-                    </span>
+
+                  <!-- Panel 2: Auto Assignment Switch -->
+                  <div class="switch-card mb-3" style="background: #fdf2f8; border-color: #fbcfe8; border-radius: 12px;" onclick="toggleSwitchCard(this, '{{ form.enable_auto_assignment.id_for_label }}', event)">
+                    <div class="switch-card-info">
+                      <div class="switch-card-icon" style="background: #fbcfe8; color: #db2777;">
+                        <i class="fas fa-robot"></i>
+                      </div>
+                      <div class="switch-card-text">
+                        <span class="switch-card-title" style="color: #9d174d;">{% trans "Automatic Officer Assignment Engine" %}</span>
+                        <span class="switch-card-desc" style="color: #be185d;">{% trans "Auto-route applications to officers based on document rules." %}</span>
+                      </div>
+                    </div>
+                    <div class="custom-control custom-switch">
+                      {{ form.enable_auto_assignment }}
+                      <label class="custom-control-label" for="{{ form.enable_auto_assignment.id_for_label }}"></label>
+                    </div>
+                  </div>
+
+                  <!-- Panel 3: File Limit & Purge Retention Rules -->
+                  <div class="p-3 bg-white rounded-lg border shadow-sm" style="border-radius: 12px !important;">
+                    <h6 class="font-weight-bold text-dark mb-2.5" style="font-size: 0.9rem;">
+                      <i class="fas fa-database text-indigo mr-1.5"></i>{% trans "File Upload Limits & Retention Purge" %}
+                    </h6>
+                    <div class="row">
+                      <div class="col-4">
+                        <div class="filter-group mb-0">
+                          <label for="{{ form.attachment_max_mb.id_for_label }}">{% trans "Max File" %}</label>
+                          <i class="fas fa-file-alt input-icon"></i>
+                          {{ form.attachment_max_mb }}
+                          <span class="unit-pill">MB</span>
+                        </div>
+                      </div>
+                      <div class="col-4">
+                        <div class="filter-group mb-0">
+                          <label for="{{ form.rejected_purge_days.id_for_label }}">{% trans "Rejected" %}</label>
+                          <i class="fas fa-trash-restore input-icon"></i>
+                          {{ form.rejected_purge_days }}
+                          <span class="unit-pill">{% trans "Days" %}</span>
+                        </div>
+                      </div>
+                      <div class="col-4">
+                        <div class="filter-group mb-0">
+                          <label for="{{ form.delivered_purge_days.id_for_label }}">{% trans "Delivered" %}</label>
+                          <i class="fas fa-archive input-icon"></i>
+                          {{ form.delivered_purge_days }}
+                          <span class="unit-pill">{% trans "Days" %}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Right Column: Visual SLA Threshold Matrix & Escalation Rules -->
+                <div class="col-lg-6">
+                  <div class="p-3 bg-white rounded-lg border shadow-sm h-100" style="border-radius: 12px !important; border-color: #cbd5e1 !important;">
+                    <h6 class="font-weight-bold text-dark mb-2.5" style="font-size: 0.9rem;">
+                      <i class="fas fa-stopwatch text-indigo mr-1.5"></i>{% trans "Visual SLA Matrix & Escalation Rules" %}
+                    </h6>
+                    
+                    <div class="row mb-3">
+                      <div class="col-6">
+                        <div class="form-group mb-0">
+                          <label class="form-label font-weight-bold text-dark small mb-1" for="{{ form.sla_warning_hours.id_for_label }}">
+                            <i class="fas fa-exclamation-circle text-warning mr-1"></i>{% trans "Warning (Hours)" %}
+                          </label>
+                          {{ form.sla_warning_hours }}
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="form-group mb-0">
+                          <label class="form-label font-weight-bold text-dark small mb-1" for="{{ form.sla_danger_hours.id_for_label }}">
+                            <i class="fas fa-fire text-danger mr-1"></i>{% trans "Danger (Hours)" %}
+                          </label>
+                          {{ form.sla_danger_hours }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span class="text-xs font-weight-bold text-uppercase text-muted d-block mb-1.5">{% trans "Live SLA Threshold Badges" %}</span>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between p-2 bg-light rounded border" style="gap: 6px;">
+                      <div class="text-center flex-fill p-1.5 bg-white rounded border">
+                        <span class="text-xs font-weight-semibold text-muted d-block">{% trans "Normal" %}</span>
+                        <span class="badge badge-success px-2 py-1 rounded-pill" style="font-size: 0.78rem; font-weight:700;">⏱️ &lt; {{ form.instance.sla_warning_hours|default:24 }}h</span>
+                      </div>
+                      <div class="text-center flex-fill p-1.5 bg-white rounded border">
+                        <span class="text-xs font-weight-semibold text-muted d-block">{% trans "Warning" %}</span>
+                        <span class="badge badge-warning text-dark px-2 py-1 rounded-pill" style="font-size: 0.78rem; font-weight:700;">⚠️ {{ form.instance.sla_warning_hours|default:24 }}-{{ form.instance.sla_danger_hours|default:48 }}h</span>
+                      </div>
+                      <div class="text-center flex-fill p-1.5 bg-white rounded border">
+                        <span class="text-xs font-weight-semibold text-muted d-block">{% trans "Escalated" %}</span>
+                        <span class="badge badge-danger px-2 py-1 rounded-pill" style="font-size: 0.78rem; font-weight:700;">🔥 &gt; {{ form.instance.sla_danger_hours|default:48 }}h</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
               </div>
             </div>
 
-            <div class="section-divider"></div>
+            <!-- Tab 2: Notification Switches -->
+            <div class="coe-tab-pane" id="switches" role="tabpanel">
+              
+              <!-- Master Notification Channel Control Cards -->
+              <div class="p-3 rounded-lg border bg-light mb-4" style="border-radius: 12px; border-color: #cbd5e1 !important;">
+                <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.9rem;">
+                  <i class="fas fa-sliders-h text-indigo mr-1.5"></i>{% trans "Master Notification Gateway Channels" %}
+                </h6>
+                <p class="text-muted small mb-3">
+                  {% trans "Turn OFF Master SMS Channel if you want to suppress SMS messages while allowing Email notifications to send automatically." %}
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-2 mb-md-0">
+                    <div class="switch-card" style="background: #ffffff;" onclick="toggleSwitchCard(this, '{{ form.enable_sms_notifications.id_for_label }}', event)">
+                      <div class="switch-card-info">
+                        <div class="switch-card-icon" style="background: #fff1f2; color: #e11d48;">
+                          <i class="fas fa-sms"></i>
+                        </div>
+                        <div class="switch-card-text">
+                          <span class="switch-card-title">{% trans "Master SMS Channel" %}</span>
+                          <span class="switch-card-desc">{% trans "Toggle SMS text message dispatch ON/OFF" %}</span>
+                        </div>
+                      </div>
+                      <div class="custom-control custom-switch">
+                        {{ form.enable_sms_notifications }}
+                        <label class="custom-control-label" for="{{ form.enable_sms_notifications.id_for_label }}"></label>
+                      </div>
+                    </div>
+                  </div>
 
-            <!-- Section 2: SMS Notification Settings -->
-            <div class="section-header-premium mb-3">
-              <h6 class="section-title-premium">
-                <i class="fas fa-bell"></i>
-                {% trans "SMS Notification Settings" %}
-              </h6>
-            </div>
-            
-            <div class="switch-grid">
-              <!-- Switch Card 1 -->
-              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_submit.id_for_label }}', event)">
-                <div class="switch-card-info">
-                  <div class="switch-card-icon">
-                    <i class="fas fa-paper-plane"></i>
+                  <div class="col-md-6">
+                    <div class="switch-card" style="background: #ffffff;" onclick="toggleSwitchCard(this, '{{ form.enable_email_notifications.id_for_label }}', event)">
+                      <div class="switch-card-info">
+                        <div class="switch-card-icon" style="background: #eff6ff; color: #2563eb;">
+                          <i class="fas fa-envelope-open-text"></i>
+                        </div>
+                        <div class="switch-card-text">
+                          <span class="switch-card-title">{% trans "Master Email Channel" %}</span>
+                          <span class="switch-card-desc">{% trans "Toggle HTML Email dispatch ON/OFF" %}</span>
+                        </div>
+                      </div>
+                      <div class="custom-control custom-switch">
+                        {{ form.enable_email_notifications }}
+                        <label class="custom-control-label" for="{{ form.enable_email_notifications.id_for_label }}"></label>
+                      </div>
+                    </div>
                   </div>
-                  <div class="switch-card-text">
-                    <span class="switch-card-title">{% trans "SMS on Submission" %}</span>
-                    <span class="switch-card-desc">{% trans "Send SMS confirmation to student upon application submit" %}</span>
-                  </div>
-                </div>
-                <div class="custom-control custom-switch">
-                  {{ form.sms_notify_submit }}
-                  <label class="custom-control-label" for="{{ form.sms_notify_submit.id_for_label }}"></label>
                 </div>
               </div>
 
-              <!-- Switch Card 2 -->
-              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_approved.id_for_label }}', event)">
-                <div class="switch-card-info">
-                  <div class="switch-card-icon">
-                    <i class="fas fa-user-check"></i>
-                  </div>
-                  <div class="switch-card-text">
-                    <span class="switch-card-title">{% trans "SMS on HoD Approval" %}</span>
-                    <span class="switch-card-desc">{% trans "Notify student when Department Head reviews application" %}</span>
-                  </div>
-                </div>
-                <div class="custom-control custom-switch">
-                  {{ form.sms_notify_approved }}
-                  <label class="custom-control-label" for="{{ form.sms_notify_approved.id_for_label }}"></label>
-                </div>
-              </div>
-
-              <!-- Switch Card 3 -->
-              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_ready.id_for_label }}', event)">
-                <div class="switch-card-info">
-                  <div class="switch-card-icon">
-                    <i class="fas fa-clipboard-check"></i>
-                  </div>
-                  <div class="switch-card-text">
-                    <span class="switch-card-title">{% trans "SMS When Ready" %}</span>
-                    <span class="switch-card-desc">{% trans "Send SMS alert when certificates are prepared for pickup" %}</span>
-                  </div>
-                </div>
-                <div class="custom-control custom-switch">
-                  {{ form.sms_notify_ready }}
-                  <label class="custom-control-label" for="{{ form.sms_notify_ready.id_for_label }}"></label>
-                </div>
-              </div>
-
-              <!-- Switch Card 4 -->
-              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_delivery_otp.id_for_label }}', event)">
-                <div class="switch-card-info">
-                  <div class="switch-card-icon">
-                    <i class="fas fa-key"></i>
-                  </div>
-                  <div class="switch-card-text">
-                    <span class="switch-card-title">{% trans "Verification OTP" %}</span>
-                    <span class="switch-card-desc">{% trans "Enforce one-time-password via SMS to finalize delivery" %}</span>
-                  </div>
-                </div>
-                <div class="custom-control custom-switch">
-                  {{ form.sms_delivery_otp }}
-                  <label class="custom-control-label" for="{{ form.sms_delivery_otp.id_for_label }}"></label>
-                </div>
-              </div>
-
-              <!-- Switch Card 5: Auto Assignment Toggle -->
-              <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.enable_auto_assignment.id_for_label }}', event)">
-                <div class="switch-card-info">
-                  <div class="switch-card-icon" style="background: #fdf2f8; color: #db2777;">
-                    <i class="fas fa-robot"></i>
-                  </div>
-                  <div class="switch-card-text">
-                    <span class="switch-card-title">{% trans "Auto-Assign Applications" %}</span>
-                    <span class="switch-card-desc">{% trans "Automatically assign approved applications based on type rules" %}</span>
-                  </div>
-                </div>
-                <div class="custom-control custom-switch">
-                  {{ form.enable_auto_assignment }}
-                  <label class="custom-control-label" for="{{ form.enable_auto_assignment.id_for_label }}"></label>
-                </div>
-              </div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <!-- Section 3: File & Retention Settings -->
-            <div class="section-header-premium mb-3">
-              <h6 class="section-title-premium">
-                <i class="fas fa-database"></i>
-                {% trans "File & Retention Settings" %}
-              </h6>
-            </div>
-            
-            <div class="row">
-              <div class="col-md-4">
-                <div class="premium-input-wrapper">
-                  <label for="{{ form.attachment_max_mb.id_for_label }}">{% trans "Max Attachment Size" %}</label>
-                  <div class="premium-input-group">
-                    <span class="premium-input-group-text"><i class="fas fa-file-alt"></i></span>
-                    {{ form.attachment_max_mb }}
-                    <span class="premium-input-group-text bg-white border-left-0 font-weight-bold" style="font-size: 0.8rem; border-color: #cbd5e1;">MB</span>
-                  </div>
-                  <small class="premium-helper-text">
-                    {% trans "Upper limit per uploaded file (1-20 MB)." %}
-                  </small>
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="premium-input-wrapper">
-                  <label for="{{ form.rejected_purge_days.id_for_label }}">{% trans "Rejected File Purge" %}</label>
-                  <div class="premium-input-group">
-                    <span class="premium-input-group-text"><i class="fas fa-trash-restore"></i></span>
-                    {{ form.rejected_purge_days }}
-                    <span class="premium-input-group-text bg-white border-left-0 font-weight-bold" style="font-size: 0.8rem; border-color: #cbd5e1;">{% trans "Days" %}</span>
-                  </div>
-                  <small class="premium-helper-text">
-                    {% trans "Purge rejected/cancelled files after N days." %}
-                  </small>
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="premium-input-wrapper">
-                  <label for="{{ form.delivered_purge_days.id_for_label }}">{% trans "Delivered File Purge" %}</label>
-                  <div class="premium-input-group">
-                    <span class="premium-input-group-text"><i class="fas fa-archive"></i></span>
-                    {{ form.delivered_purge_days }}
-                    <span class="premium-input-group-text bg-white border-left-0 font-weight-bold" style="font-size: 0.8rem; border-color: #cbd5e1;">{% trans "Days" %}</span>
-                  </div>
-                  <small class="premium-helper-text">
-                    {% trans "Purge files N days after delivery (keeps meta)." %}
-                  </small>
-                </div>
-              </div>
-            </div>
-
-            <div class="section-divider" id="auto-assign-rules-divider" style="{% if not settings_obj.enable_auto_assignment %}display: none;{% endif %}"></div>
-
-            <!-- Section 4: Auto-Assignment Mappings -->
-            <div id="auto-assign-rules-section" style="{% if not settings_obj.enable_auto_assignment %}display: none;{% endif %}">
               <div class="section-header-premium mb-3">
                 <h6 class="section-title-premium">
-                  <i class="fas fa-sitemap"></i>
-                  {% trans "Auto-Assignment Mappings" %}
+                  <i class="fas fa-bell text-indigo"></i>
+                  {% trans "Event Notification Automation Triggers" %}
+                </h6>
+              </div>
+              
+              <div class="switch-grid">
+                <!-- Switch Card 1 -->
+                <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_submit.id_for_label }}', event)">
+                  <div class="switch-card-info">
+                    <div class="switch-card-icon">
+                      <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div class="switch-card-text">
+                      <span class="switch-card-title">{% trans "SMS & Email on Submission" %}</span>
+                      <span class="switch-card-desc">{% trans "Send SMS & HTML Email confirmation to student upon application submit" %}</span>
+                    </div>
+                  </div>
+                  <div class="custom-control custom-switch">
+                    {{ form.sms_notify_submit }}
+                    <label class="custom-control-label" for="{{ form.sms_notify_submit.id_for_label }}"></label>
+                  </div>
+                </div>
+
+                <!-- Switch Card 2 -->
+                <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_approved.id_for_label }}', event)">
+                  <div class="switch-card-info">
+                    <div class="switch-card-icon">
+                      <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="switch-card-text">
+                      <span class="switch-card-title">{% trans "SMS & Email on HoD Approval" %}</span>
+                      <span class="switch-card-desc">{% trans "Notify student via SMS & Email when Department Head approves" %}</span>
+                    </div>
+                  </div>
+                  <div class="custom-control custom-switch">
+                    {{ form.sms_notify_approved }}
+                    <label class="custom-control-label" for="{{ form.sms_notify_approved.id_for_label }}"></label>
+                  </div>
+                </div>
+
+                <!-- Switch Card 3 -->
+                <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_ready.id_for_label }}', event)">
+                  <div class="switch-card-info">
+                    <div class="switch-card-icon">
+                      <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="switch-card-text">
+                      <span class="switch-card-title">{% trans "SMS & Email When Ready" %}</span>
+                      <span class="switch-card-desc">{% trans "Send SMS & Email alert when certificates are prepared for pickup" %}</span>
+                    </div>
+                  </div>
+                  <div class="custom-control custom-switch">
+                    {{ form.sms_notify_ready }}
+                    <label class="custom-control-label" for="{{ form.sms_notify_ready.id_for_label }}"></label>
+                  </div>
+                </div>
+
+                <!-- Switch Card 4 -->
+                <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_delivery_otp.id_for_label }}', event)">
+                  <div class="switch-card-info">
+                    <div class="switch-card-icon">
+                      <i class="fas fa-key"></i>
+                    </div>
+                    <div class="switch-card-text">
+                      <span class="switch-card-title">{% trans "Verification OTP (SMS & Email)" %}</span>
+                      <span class="switch-card-desc">{% trans "Enforce one-time-password via SMS & Email to finalize delivery" %}</span>
+                    </div>
+                  </div>
+                  <div class="custom-control custom-switch">
+                    {{ form.sms_delivery_otp }}
+                    <label class="custom-control-label" for="{{ form.sms_delivery_otp.id_for_label }}"></label>
+                  </div>
+                </div>
+
+                <!-- Switch Card 5 -->
+                <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_action_required.id_for_label }}', event)">
+                  <div class="switch-card-info">
+                    <div class="switch-card-icon" style="background: #fffbeb; color: #d97706;">
+                      <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="switch-card-text">
+                      <span class="switch-card-title">{% trans "SMS & Email on Action Required" %}</span>
+                      <span class="switch-card-desc">{% trans "Notify student via SMS & Email when document correction is requested" %}</span>
+                    </div>
+                  </div>
+                  <div class="custom-control custom-switch">
+                    {{ form.sms_notify_action_required }}
+                    <label class="custom-control-label" for="{{ form.sms_notify_action_required.id_for_label }}"></label>
+                  </div>
+                </div>
+
+                <!-- Switch Card 7 -->
+                <div class="switch-card" onclick="toggleSwitchCard(this, '{{ form.sms_notify_reupload_complete.id_for_label }}', event)">
+                  <div class="switch-card-info">
+                    <div class="switch-card-icon" style="background: #ecfdf5; color: #059669;">
+                      <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="switch-card-text">
+                      <span class="switch-card-title">{% trans "SMS & Email on Reupload Done" %}</span>
+                      <span class="switch-card-desc">{% trans "Confirm receipt via SMS & Email when student completes correction upload" %}</span>
+                    </div>
+                  </div>
+                  <div class="custom-control custom-switch">
+                    {{ form.sms_notify_reupload_complete }}
+                    <label class="custom-control-label" for="{{ form.sms_notify_reupload_complete.id_for_label }}"></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Test SMS Gateway Simulator Panel -->
+              <div class="section-divider"></div>
+              <div class="p-3 rounded-lg border bg-light" style="border-radius: 12px;">
+                <h6 class="font-weight-bold text-dark mb-2" style="font-size: 0.9rem;">
+                  <i class="fas fa-vial text-info mr-1.5"></i>{% trans "Test SMS Gateway Simulator" %}
+                </h6>
+                <div class="row align-items-center">
+                  <div class="col-md-7 mb-2 mb-md-0">
+                    <input type="text" id="testMobileInput" placeholder="+8801700000000" class="form-control form-control-sm font-weight-semibold" style="height: 40px; border-radius: 8px;">
+                  </div>
+                  <div class="col-md-5">
+                    <button type="button" class="btn btn-sm btn-info btn-block font-weight-bold" style="height: 40px; border-radius: 8px;" onclick="simulateTestSMS()">
+                      <i class="fas fa-paper-plane mr-1.5"></i>{% trans "Send Test SMS" %}
+                    </button>
+                  </div>
+                </div>
+                <div id="testSmsAlert" class="mt-2 text-xs font-weight-bold text-success" style="display: none;">
+                  <i class="fas fa-check-circle mr-1"></i>{% trans "Test SMS payload generated successfully and dispatched to gateway queue!" %}
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Tab 3: Custom SMS Templates & Live Smartphone Simulator -->
+            <div class="coe-tab-pane" id="templates" role="tabpanel">
+              <div class="section-header-premium mb-3">
+                <h6 class="section-title-premium">
+                  <i class="fas fa-envelope-open-text text-primary"></i>
+                  {% trans "Custom SMS Notification Templates & Live Mobile Preview" %}
+                </h6>
+              </div>
+              
+              <!-- Quick Merge Tag Insertion Toolbar -->
+              <div class="p-2.5 rounded-lg border bg-light mb-3 d-flex flex-wrap align-items-center" style="gap: 0.4rem; border-radius: 10px;">
+                <span class="text-xs font-weight-bold text-uppercase text-muted mr-1">{% trans "Insert Merge Tag:" %}</span>
+                <button type="button" class="tag-pill-btn" onclick="insertTag('{tracking_number}')">+ {tracking_number}</button>
+                <button type="button" class="tag-pill-btn" onclick="insertTag('{student_name}')">+ {student_name}</button>
+                <button type="button" class="tag-pill-btn" onclick="insertTag('{otp}')">+ {otp}</button>
+                <button type="button" class="tag-pill-btn" onclick="insertTag('{doc_type}')">+ {doc_type}</button>
+                <button type="button" class="tag-pill-btn" onclick="insertTag('{note}')">+ {note}</button>
+              </div>
+
+              <div class="row">
+                <!-- Form Inputs -->
+                <div class="col-md-7">
+                  
+                  <div class="filter-group" style="height: auto;">
+                    <label for="{{ form.sms_template_submit.id_for_label }}">{% trans "Submission Message" %}</label>
+                    {{ form.sms_template_submit }}
+                  </div>
+
+                  <div class="filter-group" style="height: auto;">
+                    <label for="{{ form.sms_template_hod_approved.id_for_label }}">{% trans "HoD Approval Message" %}</label>
+                    {{ form.sms_template_hod_approved }}
+                  </div>
+
+                  <div class="filter-group" style="height: auto;">
+                    <label for="{{ form.sms_template_action_required.id_for_label }}">{% trans "Action Required (Correction Request) Message" %}</label>
+                    {{ form.sms_template_action_required }}
+                  </div>
+
+                  <div class="filter-group" style="height: auto;">
+                    <label for="{{ form.sms_template_reupload_complete.id_for_label }}">{% trans "Re-upload Completed Message" %}</label>
+                    {{ form.sms_template_reupload_complete }}
+                  </div>
+
+                  <div class="filter-group" style="height: auto;">
+                    <label for="{{ form.sms_template_ready_for_delivery.id_for_label }}">{% trans "Ready for Delivery Message" %}</label>
+                    {{ form.sms_template_ready_for_delivery }}
+                  </div>
+
+                  <div class="filter-group" style="height: auto;">
+                    <label for="{{ form.sms_template_delivery_otp.id_for_label }}">{% trans "Verification OTP Message" %}</label>
+                    {{ form.sms_template_delivery_otp }}
+                  </div>
+
+                </div>
+
+                <!-- Right Column: Live Smartphone SMS Preview Mockup -->
+                <div class="col-md-5">
+                  <div class="phone-mockup-card">
+                    <div class="phone-notch"></div>
+                    <div class="phone-screen">
+                      <div class="phone-header">
+                        <h6 class="phone-sender-title"><i class="fas fa-university text-indigo mr-1"></i>CampusConnect SMS</h6>
+                        <span class="phone-sender-sub">Official Automated SMS Gateway</span>
+                      </div>
+                      
+                      <div class="sms-bubble">
+                        <span id="liveSmsPreview">Your application COED-2026-0001 has been submitted successfully. Track status at localhost:8000/coe/track/</span>
+                        <span class="sms-timestamp">Just now &bull; SMS</span>
+                      </div>
+
+                      <div class="mt-auto p-2 bg-light rounded text-center" style="font-size: 0.74rem; color: #64748b;">
+                        <i class="fas fa-magic text-indigo mr-1"></i>
+                        {% trans "Live preview updates dynamically as you type templates." %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 4: Email Server (SMTP) Credentials -->
+            <div class="coe-tab-pane" id="email" role="tabpanel">
+              
+              <!-- Section Header with Info Guide Trigger Button -->
+              <div class="d-flex flex-wrap align-items-center justify-content-between mb-3" style="gap: 0.5rem;">
+                <h6 class="section-title-premium mb-0">
+                  <i class="fas fa-server text-indigo"></i>
+                  {% trans "SMTP Email Server Credentials & Configuration" %}
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm px-3 py-1.5" style="border-radius: 20px; font-size: 0.84rem;"
+                        data-toggle="modal" data-target="#smtpGuideModal">
+                  <i class="fas fa-info-circle mr-1.5"></i>{% trans "How to Find SMTP Credentials Guide" %}
+                </button>
+              </div>
+              
+              <p class="text-muted small mb-3">
+                {% trans "Configure your institutional SMTP email gateway (e.g. Gmail, Outlook, or cPanel Mail) to dispatch automated HTML email notifications to students." %}
+              </p>
+
+              <div class="row">
+                <div class="col-md-8">
+                  <div class="filter-group">
+                    <label for="{{ form.email_host.id_for_label }}">{% trans "SMTP Host Server" %}</label>
+                    <i class="fas fa-network-wired input-icon"></i>
+                    {{ form.email_host }}
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="filter-group">
+                    <label for="{{ form.email_port.id_for_label }}">{% trans "SMTP Port" %}</label>
+                    <i class="fas fa-plug input-icon"></i>
+                    {{ form.email_port }}
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="filter-group">
+                    <label for="{{ form.email_host_user.id_for_label }}">{% trans "SMTP Username / Email" %}</label>
+                    <i class="fas fa-user input-icon"></i>
+                    {{ form.email_host_user }}
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="filter-group">
+                    <label for="{{ form.email_host_password.id_for_label }}">{% trans "SMTP Password / App Password" %}</label>
+                    <i class="fas fa-lock input-icon"></i>
+                    {{ form.email_host_password }}
+                  </div>
+                </div>
+
+                <div class="col-md-8">
+                  <div class="filter-group">
+                    <label for="{{ form.email_from_address.id_for_label }}">{% trans "Sender Display Email / Name" %}</label>
+                    <i class="fas fa-paper-plane input-icon"></i>
+                    {{ form.email_from_address }}
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="switch-card" style="height: 52px; border-radius: 10px; margin-bottom: 1rem;" onclick="toggleSwitchCard(this, '{{ form.email_use_tls.id_for_label }}', event)">
+                    <div class="switch-card-info">
+                      <div class="switch-card-text">
+                        <span class="switch-card-title">{% trans "Use TLS Security" %}</span>
+                      </div>
+                    </div>
+                    <div class="custom-control custom-switch">
+                      {{ form.email_use_tls }}
+                      <label class="custom-control-label" for="{{ form.email_use_tls.id_for_label }}"></label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Test Email Gateway Simulator Panel -->
+              <div class="section-divider"></div>
+              <div class="p-3 rounded-lg border bg-light" style="border-radius: 12px;">
+                <h6 class="font-weight-bold text-dark mb-2" style="font-size: 0.9rem;">
+                  <i class="fas fa-paper-plane text-indigo mr-1.5"></i>{% trans "Test Email Gateway Connection" %}
+                </h6>
+                <p class="text-muted small mb-2">
+                  {% trans "Send a real test HTML email to verify your SMTP host, port, username, and password credentials." %}
+                </p>
+                <div class="row align-items-center">
+                  <div class="col-md-7 mb-2 mb-md-0">
+                    <input type="email" id="testEmailInput" placeholder="recipient@example.com" class="form-control form-control-sm font-weight-semibold" style="height: 40px; border-radius: 8px;">
+                  </div>
+                  <div class="col-md-5">
+                    <button type="button" id="btnSendTestEmail" class="btn btn-sm btn-indigo btn-block font-weight-bold" style="height: 40px; border-radius: 8px;" onclick="simulateTestEmail()">
+                      <i class="fas fa-paper-plane mr-1.5"></i>{% trans "Send Test Email" %}
+                    </button>
+                  </div>
+                </div>
+                <div id="testEmailAlertSuccess" class="mt-2 text-xs font-weight-bold text-success" style="display: none;">
+                  <i class="fas fa-check-circle mr-1"></i><span id="testEmailSuccessMsg"></span>
+                </div>
+                <div id="testEmailAlertDanger" class="mt-2 text-xs font-weight-bold text-danger" style="display: none;">
+                  <i class="fas fa-exclamation-circle mr-1"></i><span id="testEmailDangerMsg"></span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Tab 5: Role & Officer Designations (Interactive Add-Button Chip UI) -->
+            <div class="coe-tab-pane" id="roles" role="tabpanel">
+              
+              <!-- 1. Department Heads (HoD) Matrix -->
+              <div class="section-header-premium mb-3">
+                <h6 class="section-title-premium">
+                  <i class="fas fa-university text-indigo"></i>
+                  {% trans "Department Heads (HoD) Designation per Academic Program" %}
                 </h6>
               </div>
               <p class="text-muted small mb-3">
-                {% trans "Configure default processing officers for each application type. If disabled or unmapped, applications require manual assignment." %}
+                {% trans "Designate department head user account(s) for each academic department. Designated HoDs receive direct SMS & Email notifications when student applications are submitted for review." %}
               </p>
               
               <div class="row">
-                {% for rule in app_type_rules %}
+                {% for dept in departments %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <div class="p-3 bg-white rounded-lg border shadow-sm h-100" style="border-radius: 12px !important; border-color: #cbd5e1 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <strong class="text-dark" style="font-size: 0.9rem;"><i class="fas fa-graduation-cap text-indigo mr-1.5"></i>{{ dept.name }} ({{ dept.short_name|default:dept.name }})</strong>
+                      <span class="badge badge-info px-2 py-1" style="font-size: 0.7rem;"><i class="fas fa-sms mr-1"></i>HoD SMS</span>
+                    </div>
+
+                    <!-- Assigned Officers Chip List -->
+                    <div class="assigned-officers-list d-flex flex-wrap mb-2 p-2 bg-light rounded" id="officer_chips_hod_{{ dept.id }}" style="min-height: 48px; border: 1px dashed #cbd5e1; gap: 4px; align-items: center;">
+                      {% for u in candidate_users %}
+                        {% if u.id in dept.assigned_hod_ids %}
+                        <span class="badge badge-primary px-2.5 py-1.5 d-inline-flex align-items-center font-weight-semibold officer-chip" data-user-id="{{ u.id }}" style="font-size: 0.82rem; border-radius: 20px; background: #4f46e5; color: #fff;">
+                          <i class="fas fa-user-check mr-1.5" style="font-size: 0.75rem;"></i>
+                          {{ u.get_full_name|default:u.username }}
+                          {% if u.profile.phone_number %}
+                            {% whatsapp_btn u.profile.phone_number css_class="btn btn-xs text-white p-0 ml-1.5" %}
+                          {% endif %}
+                          <button type="button" class="btn btn-link text-white p-0 ml-2" onclick="removeOfficerChip(this)" style="line-height: 1; text-decoration: none; font-size: 0.9rem;">&times;</button>
+                          <input type="hidden" name="role_hod_{{ dept.id }}" value="{{ u.id }}">
+                        </span>
+                        {% endif %}
+                      {% endfor %}
+                      <span class="text-muted small empty-officers-msg" style="{% if dept.assigned_hod_ids %}display:none;{% endif %}">
+                        <em>{% trans "No designated HoDs added." %}</em>
+                      </span>
+                    </div>
+
+                    <!-- Add Officer Picker -->
+                    <div class="input-group input-group-sm">
+                      <select class="form-control form-control-sm font-weight-semibold officer-picker-select" id="select_hod_{{ dept.id }}" style="border-radius: 8px 0 0 8px; height: 36px;">
+                        <option value="">-- {% trans "Select Officer with CoE Access" %} --</option>
+                        {% for u in candidate_users %}
+                        <option value="{{ u.id }}" data-full-name="{{ u.get_full_name|default:u.username }}">
+                          {{ u.get_full_name|default:u.username }} ({% if u.email %}{{ u.email }}{% else %}{{ u.username }}{% endif %})
+                        </option>
+                        {% endfor %}
+                      </select>
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-sm btn-indigo font-weight-bold px-3" onclick="addOfficerChip('select_hod_{{ dept.id }}', 'officer_chips_hod_{{ dept.id }}', 'role_hod_{{ dept.id }}')" style="border-radius: 0 8px 8px 0; height: 36px;">
+                          <i class="fas fa-plus mr-1"></i>{% trans "Add" %}
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+
+              <div class="section-divider"></div>
+
+              <!-- 2. Executive Leadership (CoE & DCoE) -->
+              <div class="section-header-premium mb-3">
+                <h6 class="section-title-premium">
+                  <i class="fas fa-user-shield text-indigo"></i>
+                  {% trans "Executive Examination Leadership (CoE & DCoE)" %}
+                </h6>
+              </div>
+              <div class="row">
+                <!-- Controller of Examinations -->
                 <div class="col-md-6 mb-3">
-                  <div class="premium-input-wrapper mb-0">
-                    <label for="rule_{{ rule.code }}" style="font-size: 0.82rem; font-weight: 600;">{{ rule.label }}</label>
-                    <div class="premium-input-group">
-                      <span class="premium-input-group-text"><i class="fas fa-user-tie"></i></span>
-                      <select name="rule_{{ rule.code }}" id="rule_{{ rule.code }}" class="form-control">
-                        <option value="">-- {% trans "Manual Assignment" %} --</option>
+                  <div class="p-3 bg-white rounded-lg border shadow-sm h-100" style="border-radius: 12px !important; border-color: #cbd5e1 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <strong class="text-dark" style="font-size: 0.92rem;"><i class="fas fa-user-cog text-indigo mr-1.5"></i>{% trans "Controller of Examinations (CoE)" %}</strong>
+                    </div>
+
+                    <div class="assigned-officers-list d-flex flex-wrap mb-2 p-2 bg-light rounded" id="officer_chips_controller" style="min-height: 48px; border: 1px dashed #cbd5e1; gap: 4px; align-items: center;">
+                      {% for u in candidate_users %}
+                        {% if u.id in role_assignments.controller %}
+                        <span class="badge badge-primary px-2.5 py-1.5 d-inline-flex align-items-center font-weight-semibold officer-chip" data-user-id="{{ u.id }}" style="font-size: 0.82rem; border-radius: 20px; background: #4f46e5; color: #fff;">
+                          <i class="fas fa-user-shield mr-1.5" style="font-size: 0.75rem;"></i>
+                          {{ u.get_full_name|default:u.username }}
+                          <button type="button" class="btn btn-link text-white p-0 ml-2" onclick="removeOfficerChip(this)" style="line-height: 1; text-decoration: none; font-size: 0.9rem;">&times;</button>
+                          <input type="hidden" name="role_controller" value="{{ u.id }}">
+                        </span>
+                        {% endif %}
+                      {% endfor %}
+                      <span class="text-muted small empty-officers-msg" style="{% if role_assignments.controller %}display:none;{% endif %}">
+                        <em>{% trans "No designated Controllers added." %}</em>
+                      </span>
+                    </div>
+
+                    <div class="input-group input-group-sm">
+                      <select class="form-control form-control-sm font-weight-semibold officer-picker-select" id="select_controller" style="border-radius: 8px 0 0 8px; height: 36px;">
+                        <option value="">-- {% trans "Select CoE Officer to Add" %} --</option>
+                        {% for u in candidate_users %}
+                        <option value="{{ u.id }}" data-full-name="{{ u.get_full_name|default:u.username }}">
+                          {{ u.get_full_name|default:u.username }} ({% if u.email %}{{ u.email }}{% else %}{{ u.username }}{% endif %})
+                        </option>
+                        {% endfor %}
+                      </select>
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-sm btn-indigo font-weight-bold px-3" onclick="addOfficerChip('select_controller', 'officer_chips_controller', 'role_controller')" style="border-radius: 0 8px 8px 0; height: 36px;">
+                          <i class="fas fa-plus mr-1"></i>{% trans "Add" %}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Deputy Controller of Examinations -->
+                <div class="col-md-6 mb-3">
+                  <div class="p-3 bg-white rounded-lg border shadow-sm h-100" style="border-radius: 12px !important; border-color: #cbd5e1 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <strong class="text-dark" style="font-size: 0.92rem;"><i class="fas fa-user-edit text-indigo mr-1.5"></i>{% trans "Deputy Controller of Examinations (DCoE)" %}</strong>
+                    </div>
+
+                    <div class="assigned-officers-list d-flex flex-wrap mb-2 p-2 bg-light rounded" id="officer_chips_dcoe" style="min-height: 48px; border: 1px dashed #cbd5e1; gap: 4px; align-items: center;">
+                      {% for u in candidate_users %}
+                        {% if u.id in role_assignments.dcoe %}
+                        <span class="badge badge-primary px-2.5 py-1.5 d-inline-flex align-items-center font-weight-semibold officer-chip" data-user-id="{{ u.id }}" style="font-size: 0.82rem; border-radius: 20px; background: #4f46e5; color: #fff;">
+                          <i class="fas fa-user-edit mr-1.5" style="font-size: 0.75rem;"></i>
+                          {{ u.get_full_name|default:u.username }}
+                          <button type="button" class="btn btn-link text-white p-0 ml-2" onclick="removeOfficerChip(this)" style="line-height: 1; text-decoration: none; font-size: 0.9rem;">&times;</button>
+                          <input type="hidden" name="role_dcoe" value="{{ u.id }}">
+                        </span>
+                        {% endif %}
+                      {% endfor %}
+                      <span class="text-muted small empty-officers-msg" style="{% if role_assignments.dcoe %}display:none;{% endif %}">
+                        <em>{% trans "No designated Deputy Controllers added." %}</em>
+                      </span>
+                    </div>
+
+                    <div class="input-group input-group-sm">
+                      <select class="form-control form-control-sm font-weight-semibold officer-picker-select" id="select_dcoe" style="border-radius: 8px 0 0 8px; height: 36px;">
+                        <option value="">-- {% trans "Select DCoE Officer to Add" %} --</option>
+                        {% for u in candidate_users %}
+                        <option value="{{ u.id }}" data-full-name="{{ u.get_full_name|default:u.username }}">
+                          {{ u.get_full_name|default:u.username }} ({% if u.email %}{{ u.email }}{% else %}{{ u.username }}{% endif %})
+                        </option>
+                        {% endfor %}
+                      </select>
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-sm btn-indigo font-weight-bold px-3" onclick="addOfficerChip('select_dcoe', 'officer_chips_dcoe', 'role_dcoe')" style="border-radius: 0 8px 8px 0; height: 36px;">
+                          <i class="fas fa-plus mr-1"></i>{% trans "Add" %}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-divider"></div>
+
+              <!-- 3. Processing Officers & Delivery Clerks -->
+              <div class="section-header-premium mb-3">
+                <h6 class="section-title-premium">
+                  <i class="fas fa-users-cog text-indigo"></i>
+                  {% trans "Processing Officers & Delivery Desk Clerks" %}
+                </h6>
+              </div>
+              <div class="row">
+                <!-- Processing Officers -->
+                <div class="col-md-6 mb-3">
+                  <div class="p-3 bg-white rounded-lg border shadow-sm h-100" style="border-radius: 12px !important; border-color: #cbd5e1 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <strong class="text-dark" style="font-size: 0.92rem;"><i class="fas fa-user-tie text-indigo mr-1.5"></i>{% trans "Designated Processing Officers (Kanban Desk)" %}</strong>
+                    </div>
+
+                    <div class="assigned-officers-list d-flex flex-wrap mb-2 p-2 bg-light rounded" id="officer_chips_officer" style="min-height: 48px; border: 1px dashed #cbd5e1; gap: 4px; align-items: center;">
+                      {% for u in candidate_users %}
+                        {% if u.id in role_assignments.officer %}
+                        <span class="badge badge-primary px-2.5 py-1.5 d-inline-flex align-items-center font-weight-semibold officer-chip" data-user-id="{{ u.id }}" style="font-size: 0.82rem; border-radius: 20px; background: #4f46e5; color: #fff;">
+                          <i class="fas fa-user-check mr-1.5" style="font-size: 0.75rem;"></i>
+                          {{ u.get_full_name|default:u.username }}
+                          <button type="button" class="btn btn-link text-white p-0 ml-2" onclick="removeOfficerChip(this)" style="line-height: 1; text-decoration: none; font-size: 0.9rem;">&times;</button>
+                          <input type="hidden" name="role_officer" value="{{ u.id }}">
+                        </span>
+                        {% endif %}
+                      {% endfor %}
+                      <span class="text-muted small empty-officers-msg" style="{% if role_assignments.officer %}display:none;{% endif %}">
+                        <em>{% trans "No designated Processing Officers added." %}</em>
+                      </span>
+                    </div>
+
+                    <div class="input-group input-group-sm">
+                      <select class="form-control form-control-sm font-weight-semibold officer-picker-select" id="select_officer" style="border-radius: 8px 0 0 8px; height: 36px;">
+                        <option value="">-- {% trans "Select Processing Officer to Add" %} --</option>
+                        {% for u in candidate_users %}
+                        <option value="{{ u.id }}" data-full-name="{{ u.get_full_name|default:u.username }}">
+                          {{ u.get_full_name|default:u.username }} ({% if u.email %}{{ u.email }}{% else %}{{ u.username }}{% endif %})
+                        </option>
+                        {% endfor %}
+                      </select>
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-sm btn-indigo font-weight-bold px-3" onclick="addOfficerChip('select_officer', 'officer_chips_officer', 'role_officer')" style="border-radius: 0 8px 8px 0; height: 36px;">
+                          <i class="fas fa-plus mr-1"></i>{% trans "Add" %}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Delivery Clerks -->
+                <div class="col-md-6 mb-3">
+                  <div class="p-3 bg-white rounded-lg border shadow-sm h-100" style="border-radius: 12px !important; border-color: #cbd5e1 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <strong class="text-dark" style="font-size: 0.92rem;"><i class="fas fa-clipboard-check text-indigo mr-1.5"></i>{% trans "Designated Delivery Desk Clerks" %}</strong>
+                    </div>
+
+                    <div class="assigned-officers-list d-flex flex-wrap mb-2 p-2 bg-light rounded" id="officer_chips_clerk" style="min-height: 48px; border: 1px dashed #cbd5e1; gap: 4px; align-items: center;">
+                      {% for u in candidate_users %}
+                        {% if u.id in role_assignments.clerk %}
+                        <span class="badge badge-primary px-2.5 py-1.5 d-inline-flex align-items-center font-weight-semibold officer-chip" data-user-id="{{ u.id }}" style="font-size: 0.82rem; border-radius: 20px; background: #4f46e5; color: #fff;">
+                          <i class="fas fa-user-clock mr-1.5" style="font-size: 0.75rem;"></i>
+                          {{ u.get_full_name|default:u.username }}
+                          <button type="button" class="btn btn-link text-white p-0 ml-2" onclick="removeOfficerChip(this)" style="line-height: 1; text-decoration: none; font-size: 0.9rem;">&times;</button>
+                          <input type="hidden" name="role_clerk" value="{{ u.id }}">
+                        </span>
+                        {% endif %}
+                      {% endfor %}
+                      <span class="text-muted small empty-officers-msg" style="{% if role_assignments.clerk %}display:none;{% endif %}">
+                        <em>{% trans "No designated Delivery Clerks added." %}</em>
+                      </span>
+                    </div>
+
+                    <div class="input-group input-group-sm">
+                      <select class="form-control form-control-sm font-weight-semibold officer-picker-select" id="select_clerk" style="border-radius: 8px 0 0 8px; height: 36px;">
+                        <option value="">-- {% trans "Select Delivery Clerk to Add" %} --</option>
+                        {% for u in candidate_users %}
+                        <option value="{{ u.id }}" data-full-name="{{ u.get_full_name|default:u.username }}">
+                          {{ u.get_full_name|default:u.username }} ({% if u.email %}{{ u.email }}{% else %}{{ u.username }}{% endif %})
+                        </option>
+                        {% endfor %}
+                      </select>
+                      <div class="input-group-append">
+                        <button type="button" class="btn btn-sm btn-indigo font-weight-bold px-3" onclick="addOfficerChip('select_clerk', 'officer_chips_clerk', 'role_clerk')" style="border-radius: 0 8px 8px 0; height: 36px;">
+                          <i class="fas fa-plus mr-1"></i>{% trans "Add" %}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Tab 6: Auto-Assignment Rules & Officer Workload Rules -->
+            <div class="coe-tab-pane" id="rules" role="tabpanel">
+              <div id="auto-assign-rules-section">
+                <div class="section-header-premium mb-3">
+                  <h6 class="section-title-premium">
+                    <i class="fas fa-sitemap text-indigo"></i>
+                    {% trans "Auto-Assignment Rules & Officer Workload Limits" %}
+                  </h6>
+                </div>
+                <p class="text-muted small mb-3">
+                  {% trans "Configure default processing officers for each application type. If enabled, newly approved applications auto-assign to designated officers." %}
+                </p>
+                
+                <div class="row">
+                  {% for rule in app_type_rules %}
+                  <div class="col-md-6 mb-3">
+                    <div class="filter-group mb-0">
+                      <label for="rule_{{ rule.code }}">{{ rule.label }}</label>
+                      <i class="fas fa-user-tie input-icon"></i>
+                      <select name="rule_{{ rule.code }}" id="rule_{{ rule.code }}">
+                        <option value="">-- {% trans "Manual Desk Assignment" %} --</option>
                         {% for officer in officers %}
                         <option value="{{ officer.id }}" {% if officer.id == rule.assigned_officer_id %}selected{% endif %}>
                           {{ officer.get_full_name|default:officer.username }}
@@ -614,8 +1476,8 @@
                       </select>
                     </div>
                   </div>
+                  {% endfor %}
                 </div>
-                {% endfor %}
               </div>
             </div>
 
@@ -635,56 +1497,228 @@
         </form>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- Right Column: Cleanup Terminal Command -->
-    <div class="col-lg-4">
-      <div class="premium-card">
-        <div class="premium-card-header">
-          <h3 class="premium-card-title">
-            <i class="fas fa-terminal text-indigo"></i>
-            {% trans "Cleanup Utility" %}
-          </h3>
-        </div>
-        <div class="premium-card-body">
-          <p class="text-muted small">
-            {% trans "Execute command-line scripts to safely purge attachment documents in accordance with the retention rules specified." %}
-          </p>
+<!-- ──────────────────────────────────────────────────────────────────────────────
+     Cleanup & Retention Utility Console Modal
+     ────────────────────────────────────────────────────────────────────────────── -->
+<div class="modal fade" id="cleanupConsoleModal" tabindex="-1" role="dialog" aria-labelledby="cleanupConsoleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header bg-dark text-white py-3 px-4">
+        <h5 class="modal-title font-weight-bold mb-0" id="cleanupConsoleModalLabel">
+          <i class="fas fa-terminal text-info mr-2"></i>
+          {% trans "File Retention & Cleanup Utility Console" %}
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
 
-          <!-- macOS style Terminal Console -->
-          <div class="terminal-box mb-3">
-            <div class="terminal-header">
-              <div class="terminal-dots">
-                <span class="terminal-dot dot-red"></span>
-                <span class="terminal-dot dot-yellow"></span>
-                <span class="terminal-dot dot-green"></span>
-              </div>
-              <span class="terminal-title">python manage.py coe_cleanup</span>
-              <button type="button" class="copy-btn" onclick="copyTerminalText()">
-                <i class="far fa-copy"></i>
-                <span>{% trans "Copy" %}</span>
-              </button>
+      <!-- Modal Body -->
+      <div class="modal-body p-4 text-left">
+        
+        <p class="text-muted small mb-3">
+          {% trans "Execute command-line scripts to safely purge attachment documents in accordance with the retention rules specified in General settings." %}
+        </p>
+
+        <!-- macOS style Terminal Console -->
+        <div class="terminal-box mb-3">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="terminal-dot dot-red"></span>
+              <span class="terminal-dot dot-yellow"></span>
+              <span class="terminal-dot dot-green"></span>
             </div>
-            <div class="terminal-body">
-              <pre class="terminal-pre"><span class="terminal-comment"># {% trans "Run actual purge" %}</span>
+            <span class="terminal-title">python manage.py coe_cleanup</span>
+            <button type="button" class="copy-btn" onclick="copyTerminalText()">
+              <i class="far fa-copy"></i>
+              <span>{% trans "Copy" %}</span>
+            </button>
+          </div>
+          <div class="terminal-body">
+            <pre class="terminal-pre"><span class="terminal-comment"># {% trans "Run actual purge" %}</span>
 python manage.py coe_cleanup
 
 <span class="terminal-comment"># {% trans "Dry-run (only verify counts)" %}</span>
 python manage.py coe_cleanup --dry-run</pre>
-            </div>
-          </div>
-
-          <!-- Info Callout -->
-          <div class="info-callout-premium">
-            <p class="text-secondary small mb-0 font-weight-bold" style="color: #0369a1 !important;">
-              <i class="fas fa-info-circle mr-1 text-info"></i>
-              {% trans "Automation Tip" %}
-            </p>
-            <p class="text-muted small mb-0 mt-1">
-              {% trans "Configure a system cron job to run coe_cleanup daily for hands-free background maintenance." %}
-            </p>
           </div>
         </div>
+
+        <!-- Automation Tip Callout -->
+        <div class="info-callout-premium mb-0">
+          <p class="text-secondary small mb-0 font-weight-bold" style="color: #0369a1 !important;">
+            <i class="fas fa-info-circle mr-1 text-info"></i>
+            {% trans "Background System Cron Automation" %}
+          </p>
+          <p class="text-muted small mb-0 mt-1">
+            {% trans "Configure a system cron job to run coe_cleanup daily at midnight for hands-free background document retention maintenance." %}
+          </p>
+        </div>
+
       </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light py-2 px-4">
+        <button type="button" class="btn btn-secondary btn-sm rounded-lg px-3" data-dismiss="modal">{% trans "Close Console" %}</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────────────────────
+     SMTP Credentials Step-by-Step Interactive Guide Modal
+     ────────────────────────────────────────────────────────────────────────────── -->
+<div class="modal fade" id="smtpGuideModal" tabindex="-1" role="dialog" aria-labelledby="smtpGuideModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header bg-dark text-white py-3 px-4">
+        <h5 class="modal-title font-weight-bold mb-0" id="smtpGuideModalLabel">
+          <i class="fas fa-info-circle text-info mr-2"></i>
+          {% trans "How to Find & Configure Email SMTP Credentials" %}
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-4 text-left">
+        
+        <p class="text-muted small mb-3">
+          {% trans "Select your email provider below to view exact step-by-step instructions on obtaining your SMTP host, port, and security credentials." %}
+        </p>
+
+        <!-- Provider Tab Pills inside Modal -->
+        <ul class="nav nav-pills mb-3 flex-nowrap overflow-auto" id="guideTab" role="tablist" style="gap: 8px;">
+          <li class="nav-item">
+            <a class="nav-link active font-weight-bold rounded-pill px-3 py-1.5" id="guide-gmail-tab" data-toggle="tab" href="#guide-gmail" role="tab" style="font-size:0.85rem;">
+              <i class="fab fa-google text-danger mr-1"></i> Google Gmail
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link font-weight-bold rounded-pill px-3 py-1.5" id="guide-baust-tab" data-toggle="tab" href="#guide-baust" role="tab" style="font-size:0.85rem;">
+              <i class="fas fa-university text-indigo mr-1"></i> BAUST Webmail (cPanel)
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link font-weight-bold rounded-pill px-3 py-1.5" id="guide-office-tab" data-toggle="tab" href="#guide-office" role="tab" style="font-size:0.85rem;">
+              <i class="fab fa-microsoft text-primary mr-1"></i> Microsoft Outlook 365
+            </a>
+          </li>
+        </ul>
+
+        <!-- Provider Tab Contents -->
+        <div class="tab-content" id="guideTabContent">
+          
+          <!-- Guide 1: Gmail -->
+          <div class="tab-pane fade show active" id="guide-gmail" role="tabpanel">
+            <div class="guide-step-card">
+              <div class="d-flex align-items-center mb-1">
+                <span class="guide-step-number">1</span>
+                <strong class="text-dark">{% trans "Enable 2-Step Verification" %}</strong>
+              </div>
+              <p class="text-muted small mb-0 ml-4">
+                {% trans "Open your Google Account Security Settings -> Turn ON 2-Step Verification." %}
+              </p>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="d-flex align-items-center mb-1">
+                <span class="guide-step-number">2</span>
+                <strong class="text-dark">{% trans "Generate an App Password" %}</strong>
+              </div>
+              <p class="text-muted small mb-0 ml-4">
+                {% trans "In Google Security search bar, search for 'App Passwords'. Create a new App Password named 'CampusConnect Mail' and copy the 16-character code." %}
+              </p>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="d-flex align-items-center mb-1">
+                <span class="guide-step-number">3</span>
+                <strong class="text-dark">{% trans "Enter Configuration Values" %}</strong>
+              </div>
+              <table class="table table-sm table-bordered mt-2 mb-0 small">
+                <tr><th>{% trans "SMTP Host" %}</th><td><code>smtp.gmail.com</code></td></tr>
+                <tr><th>{% trans "SMTP Port" %}</th><td><code>587</code></td></tr>
+                <tr><th>{% trans "Use TLS" %}</th><td><code>ON (Checked)</code></td></tr>
+                <tr><th>{% trans "Username" %}</th><td>{% trans "Your full Gmail address (e.g. coe.baust@gmail.com)" %}</td></tr>
+                <tr><th>{% trans "Password" %}</th><td>{% trans "The 16-character Google App Password (without spaces)" %}</td></tr>
+              </table>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-indigo font-weight-bold px-3 py-1.5 rounded-lg" style="font-size: 0.85rem;" onclick="applySmtpPreset('gmail')">
+              <i class="fas fa-magic mr-1.5"></i>{% trans "Apply Gmail Preset Values" %}
+            </button>
+          </div>
+
+          <!-- Guide 2: BAUST Webmail (cPanel) -->
+          <div class="tab-pane fade" id="guide-baust" role="tabpanel">
+            <div class="guide-step-card">
+              <div class="d-flex align-items-center mb-1">
+                <span class="guide-step-number">1</span>
+                <strong class="text-dark">{% trans "Open cPanel / Webmail Settings" %}</strong>
+              </div>
+              <p class="text-muted small mb-0 ml-4">
+                {% trans "Log in to BAUST cPanel or Webmail -> Email Accounts -> Click 'Connect Devices' / 'Configure Mail Client'." %}
+              </p>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="d-flex align-items-center mb-1">
+                <span class="guide-step-number">2</span>
+                <strong class="text-dark">{% trans "Copy Outgoing Server Credentials" %}</strong>
+              </div>
+              <table class="table table-sm table-bordered mt-2 mb-0 small">
+                <tr><th>{% trans "SMTP Host" %}</th><td><code>mail.baust.edu.bd</code> (or your domain mail host)</td></tr>
+                <tr><th>{% trans "SMTP Port" %}</th><td><code>587</code> (or <code>465</code> for SSL)</td></tr>
+                <tr><th>{% trans "Use TLS" %}</th><td><code>ON (Checked)</code></td></tr>
+                <tr><th>{% trans "Username" %}</th><td><code>coe@baust.edu.bd</code> (Full institutional email)</td></tr>
+                <tr><th>{% trans "Password" %}</th><td>{% trans "Your cPanel email account password" %}</td></tr>
+              </table>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-indigo font-weight-bold px-3 py-1.5 rounded-lg" style="font-size: 0.85rem;" onclick="applySmtpPreset('baust')">
+              <i class="fas fa-magic mr-1.5"></i>{% trans "Apply BAUST Webmail Preset Values" %}
+            </button>
+          </div>
+
+          <!-- Guide 3: Office 365 -->
+          <div class="tab-pane fade" id="guide-office" role="tabpanel">
+            <div class="guide-step-card">
+              <div class="d-flex align-items-center mb-1">
+                <span class="guide-step-number">1</span>
+                <strong class="text-dark">{% trans "Configure Microsoft Office 365 SMTP" %}</strong>
+              </div>
+              <table class="table table-sm table-bordered mt-2 mb-0 small">
+                <tr><th>{% trans "SMTP Host" %}</th><td><code>smtp.office365.com</code></td></tr>
+                <tr><th>{% trans "SMTP Port" %}</th><td><code>587</code></td></tr>
+                <tr><th>{% trans "Use TLS" %}</th><td><code>ON (Checked)</code></td></tr>
+                <tr><th>{% trans "Username" %}</th><td>{% trans "Your Office 365 email (e.g. coe@baust.edu.bd)" %}</td></tr>
+                <tr><th>{% trans "Password" %}</th><td>{% trans "Your Office 365 password (or App Password if 2FA is active)" %}</td></tr>
+              </table>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-indigo font-weight-bold px-3 py-1.5 rounded-lg" style="font-size: 0.85rem;" onclick="applySmtpPreset('office365')">
+              <i class="fas fa-magic mr-1.5"></i>{% trans "Apply Office 365 Preset Values" %}
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light py-2 px-4">
+        <button type="button" class="btn btn-secondary btn-sm rounded-lg px-3" data-dismiss="modal">{% trans "Close Guide" %}</button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -693,7 +1727,6 @@ python manage.py coe_cleanup --dry-run</pre>
 <script>
   // Card click-toggle listener for custom switch widgets
   function toggleSwitchCard(card, inputId, event) {
-    // Avoid double-triggering when checkbox or custom switch labels are targeted directly
     if (event.target.tagName === 'INPUT' || event.target.classList.contains('custom-control-label')) {
       return;
     }
@@ -704,37 +1737,264 @@ python manage.py coe_cleanup --dry-run</pre>
     }
   }
 
-  // Real-time tracking ID prefix visualizer & Auto-Assignment rules toggling
-  document.addEventListener('DOMContentLoaded', function() {
-    const prefixInput = document.getElementById('{{ form.tracking_id_prefix.id_for_label }}');
-    const previewSpan = document.getElementById('prefix-preview');
-    if (prefixInput && previewSpan) {
-      prefixInput.addEventListener('input', function() {
-        const val = this.value.toUpperCase().trim() || 'APP';
-        previewSpan.textContent = val + '-2026-0001';
-      });
-    }
-
-    const autoAssignCheckbox = document.getElementById('{{ form.enable_auto_assignment.id_for_label }}');
-    const autoAssignSection = document.getElementById('auto-assign-rules-section');
-    const autoAssignDivider = document.getElementById('auto-assign-rules-divider');
+  // Preset Applicator for SMTP Guide Modal
+  function applySmtpPreset(provider) {
+    const host = document.getElementById('id_email_host');
+    const port = document.getElementById('id_email_port');
+    const tls = document.getElementById('id_email_use_tls');
     
-    if (autoAssignCheckbox && autoAssignSection) {
-      function toggleRulesVisibility() {
-        if (autoAssignCheckbox.checked) {
-          autoAssignSection.style.display = 'block';
-          if (autoAssignDivider) autoAssignDivider.style.display = 'block';
-        } else {
-          autoAssignSection.style.display = 'none';
-          if (autoAssignDivider) autoAssignDivider.style.display = 'none';
+    if (provider === 'gmail') {
+      if (host) host.value = 'smtp.gmail.com';
+      if (port) port.value = '587';
+      if (tls && !tls.checked) { tls.checked = true; tls.dispatchEvent(new Event('change')); }
+    } else if (provider === 'baust') {
+      if (host) host.value = 'mail.baust.edu.bd';
+      if (port) port.value = '587';
+      if (tls && !tls.checked) { tls.checked = true; tls.dispatchEvent(new Event('change')); }
+    } else if (provider === 'office365') {
+      if (host) host.value = 'smtp.office365.com';
+      if (port) port.value = '587';
+      if (tls && !tls.checked) { tls.checked = true; tls.dispatchEvent(new Event('change')); }
+    }
+    
+    $('#smtpGuideModal').modal('hide');
+  }
+
+  // ── JS Tab Manager ──
+  (function() {
+    function initSettingsTabs() {
+      const tabLinks = document.querySelectorAll('#settingsTabs .nav-link');
+      const tabPanes = document.querySelectorAll('.coe-tab-pane');
+
+      function activateTab(targetId) {
+        tabLinks.forEach(function(link) {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + targetId);
+        });
+        tabPanes.forEach(function(pane) {
+          pane.classList.toggle('is-active', pane.id === targetId);
+        });
+        if (history.replaceState) {
+          history.replaceState(null, null, '#' + targetId);
         }
       }
-      
-      autoAssignCheckbox.addEventListener('change', toggleRulesVisibility);
-      // Trigger once on load to ensure correct initial state
-      toggleRulesVisibility();
+
+      tabLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const targetId = this.getAttribute('href').replace('#', '');
+          activateTab(targetId);
+        });
+      });
+
+      const hash = window.location.hash.replace('#', '');
+      const validIds = Array.from(tabPanes).map(p => p.id);
+      activateTab(validIds.includes(hash) ? hash : (validIds[0] || 'general'));
     }
-  });
+
+    // ── Tracking ID prefix live preview ──
+    function initPrefixPreview() {
+      const prefixInput = document.getElementById('{{ form.tracking_id_prefix.id_for_label }}');
+      const previewSpan = document.getElementById('prefix-preview');
+      if (prefixInput && previewSpan) {
+        prefixInput.addEventListener('input', function() {
+          const val = this.value.toUpperCase().trim() || 'COED';
+          previewSpan.textContent = val + '-2026-0001';
+        });
+      }
+    }
+
+    // ── Live Smartphone SMS Preview Sync ──
+    function initSmsLivePreview() {
+      const livePreview = document.getElementById('liveSmsPreview');
+      const textareas = document.querySelectorAll('#templates textarea, #templates input');
+      
+      textareas.forEach(function(el) {
+        el.addEventListener('focus', function() {
+          updatePreview(this.value);
+        });
+        el.addEventListener('input', function() {
+          updatePreview(this.value);
+        });
+      });
+
+      function updatePreview(val) {
+        if (!livePreview) return;
+        let text = val || "Sample notification payload message text preview...";
+        text = text.replace('{tracking_number}', 'COED-2026-0001')
+                   .replace('{student_name}', 'Ruhul Amin Siddique')
+                   .replace('{otp}', '489201')
+                   .replace('{doc_type}', 'Official Transcript')
+                   .replace('{note}', 'Correction required on attachment');
+        livePreview.textContent = text;
+      }
+    }
+
+    // ── Auto-Assignment tab show/hide ──
+    function initAutoAssignToggle() {
+      const autoAssignCheckbox = document.getElementById('{{ form.enable_auto_assignment.id_for_label }}');
+      const rulesTabItem = document.getElementById('rules-tab-item');
+
+      if (!autoAssignCheckbox) return;
+
+      function syncRulesTab() {
+        if (!rulesTabItem) return;
+        rulesTabItem.style.display = autoAssignCheckbox.checked ? '' : 'none';
+        if (!autoAssignCheckbox.checked) {
+          const activeLink = document.querySelector('#settingsTabs .nav-link.active');
+          if (activeLink && activeLink.id === 'rules-tab') {
+            const tabPanes = document.querySelectorAll('.coe-tab-pane');
+            const tabLinks = document.querySelectorAll('#settingsTabs .nav-link');
+            tabLinks.forEach(l => l.classList.remove('active'));
+            tabPanes.forEach(p => p.classList.remove('is-active'));
+            const generalLink = document.getElementById('general-tab');
+            const generalPane = document.getElementById('general');
+            if (generalLink) generalLink.classList.add('active');
+            if (generalPane) generalPane.classList.add('is-active');
+          }
+        }
+      }
+
+      autoAssignCheckbox.addEventListener('change', syncRulesTab);
+      syncRulesTab();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initSettingsTabs();
+      initPrefixPreview();
+      initSmsLivePreview();
+      initAutoAssignToggle();
+    });
+  })();
+
+  // Insert tag pill helper
+  function insertTag(tag) {
+    const activeTextarea = document.activeElement;
+    if (activeTextarea && activeTextarea.tagName === 'TEXTAREA') {
+      const start = activeTextarea.selectionStart;
+      const end = activeTextarea.selectionEnd;
+      const val = activeTextarea.value;
+      activeTextarea.value = val.substring(0, start) + tag + val.substring(end);
+      activeTextarea.selectionStart = activeTextarea.selectionEnd = start + tag.length;
+      activeTextarea.dispatchEvent(new Event('input'));
+      activeTextarea.focus();
+    }
+  }
+
+  // Simulate Test SMS
+  function simulateTestSMS() {
+    const input = document.getElementById('testMobileInput');
+    const alertBox = document.getElementById('testSmsAlert');
+    if (input && alertBox) {
+      if (!input.value.trim()) {
+        input.value = "+8801712345678";
+      }
+      alertBox.style.display = 'block';
+      setTimeout(() => {
+        alertBox.style.display = 'none';
+      }, 4000);
+    }
+  }
+
+  // Live Test Email Gateway Dispatch
+  function simulateTestEmail() {
+    const input = document.getElementById('testEmailInput');
+    const btn = document.getElementById('btnSendTestEmail');
+    const successBox = document.getElementById('testEmailAlertSuccess');
+    const dangerBox = document.getElementById('testEmailAlertDanger');
+    const successMsg = document.getElementById('testEmailSuccessMsg');
+    const dangerMsg = document.getElementById('testEmailDangerMsg');
+
+    if (!input || !input.value.trim()) {
+      alert('{% trans "Please enter a valid recipient email address." %}');
+      return;
+    }
+
+    if (successBox) successBox.style.display = 'none';
+    if (dangerBox) dangerBox.style.display = 'none';
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> {% trans "Sending..." %}';
+
+    fetch("{% url 'coe_test_email' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}"
+      },
+      body: JSON.stringify({ email: input.value.trim() })
+    })
+    .then(res => res.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane mr-1.5"></i> {% trans "Send Test Email" %}';
+
+      if (data.success) {
+        if (successMsg) successMsg.textContent = data.message;
+        if (successBox) successBox.style.display = 'block';
+      } else {
+        if (dangerMsg) dangerMsg.textContent = data.message;
+        if (dangerBox) dangerBox.style.display = 'block';
+      }
+    })
+    .catch(err => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane mr-1.5"></i> {% trans "Send Test Email" %}';
+      if (dangerMsg) dangerMsg.textContent = err.toString();
+      if (dangerBox) dangerBox.style.display = 'block';
+    });
+  }
+
+  // Dynamic Officer Chip List Manager
+  function addOfficerChip(selectId, listId, inputName) {
+    var selectElem = document.getElementById(selectId);
+    if (!selectElem) return;
+    var userId = selectElem.value;
+    if (!userId) return;
+
+    var selectedOption = selectElem.options[selectElem.selectedIndex];
+    var fullName = selectedOption.getAttribute('data-full-name') || selectedOption.text;
+
+    var container = document.getElementById(listId);
+    if (!container) return;
+    
+    // Check if user is already added in this card
+    var existing = container.querySelector('[data-user-id="' + userId + '"]');
+    if (existing) {
+      alert(fullName + ' is already designated in this role list.');
+      return;
+    }
+
+    // Hide empty message
+    var emptyMsg = container.querySelector('.empty-officers-msg');
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    // Create chip badge
+    var chip = document.createElement('span');
+    chip.className = 'badge badge-primary px-2.5 py-1.5 d-inline-flex align-items-center font-weight-semibold officer-chip';
+    chip.setAttribute('data-user-id', userId);
+    chip.style.cssText = 'font-size: 0.82rem; border-radius: 20px; background: #4f46e5; color: #fff; margin-right: 4px; margin-bottom: 4px;';
+    
+    chip.innerHTML = '<i class="fas fa-user-check mr-1.5" style="font-size: 0.75rem;"></i>' +
+      fullName +
+      '<button type="button" class="btn btn-link text-white p-0 ml-2" onclick="removeOfficerChip(this)" style="line-height: 1; text-decoration: none; font-size: 0.9rem;">&times;</button>' +
+      '<input type="hidden" name="' + inputName + '" value="' + userId + '">';
+
+    container.appendChild(chip);
+    selectElem.value = '';
+  }
+
+  function removeOfficerChip(btnElem) {
+    var chip = btnElem.closest('.officer-chip');
+    if (!chip) return;
+    var container = chip.parentElement;
+    chip.remove();
+
+    var remainingChips = container.querySelectorAll('.officer-chip');
+    if (remainingChips.length === 0) {
+      var emptyMsg = container.querySelector('.empty-officers-msg');
+      if (emptyMsg) emptyMsg.style.display = 'inline';
+    }
+  }
 
   // macOS Terminal Copy utility
   function copyTerminalText() {

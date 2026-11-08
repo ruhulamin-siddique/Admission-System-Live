@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "type": "sms_api_profiles",
+  "exported_at": "2026-07-23T16:37:44.342226+00:00",
+  "profiles": [
+    {
+      "profile_name": "AUTOMAS",
+      "api_url": "https://api.automas.com.bd/smsapiv3",
+      "api_key": "b4cc2444bc08c1c6cf59c77adc960373",
+      "sender_id": "8809617639936",
+      "number_param": "msisdn",
+      "message_param": "smstext",
+      "sender_param": "sender",
+      "http_method": "GET",
+      "auth_type": "api_key",
+      "user_id": "",
+      "user_id_param": "userId",
+      "password": "",
+      "password_param": "password",
+      "extra_params": "",
+      "balance_url": "https://api.automas.com.bd/getbalancev3?apikey=b4cc2444bc08c1c6cf59c77adc960373",
+      "is_active": true
+    },
+    {
+      "profile_name": "BULK SMS BD",
+      "api_url": "http://bulksmsbd.net/api/smsapi",
+      "api_key": "iIwpHm6UpLYGuu0pSJvX",
+      "sender_id": "8809617612975",
+      "number_param": "number",
+      "message_param": "message",
+      "sender_param": "senderid",
+      "http_method": "GET",
+      "auth_type": "api_key",
+      "user_id": "",
+      "user_id_param": "userId",
+      "password": "",
+      "password_param": "password",
+      "extra_params": "",
+      "balance_url": "http://bulksmsbd.net/api/getBalanceApi?api_key=iIwpHm6UpLYGuu0pSJvX",
+      "is_active": true
+    },
+    {
+      "profile_name": "Durbar SMS",
+      "api_url": "https://sms.durbar71.com/httpapi/sendsms",
+      "api_key": "",
+      "sender_id": "",
+      "number_param": "commaSeperatedReceiverNumbers",
+      "message_param": "smsText",
+      "sender_param": "senderid",
+      "http_method": "POST",
+      "auth_type": "user_pass",
+      "user_id": "ruhulamin",
+      "user_id_param": "userId",
+      "password": "Ruhulamin123",
+      "password_param": "password",
+      "extra_params": "",
+      "balance_url": "https://sms.durbar71.com/httpapi/accountinfo?userId=ruhulamin&password=Ruhulamin123&info=package",
+      "is_active": true
+    }
+  ]
+}

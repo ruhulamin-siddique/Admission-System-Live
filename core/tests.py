@@ -147,7 +147,8 @@ class UserSecurityManagementTests(TestCase):
             'description': 'Reviews reports and export outputs.',
         })
 
-        self.assertRedirects(response, reverse('role_management'))
+        new_role = Role.objects.get(name='Report Reviewer')
+        self.assertRedirects(response, f"{reverse('role_management')}?role_id={new_role.id}")
         self.assertTrue(Role.objects.filter(name='Report Reviewer').exists())
 
 

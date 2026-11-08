@@ -15,6 +15,7 @@ class Command(BaseCommand):
         Program.objects.get_or_create(name="EEE", ugc_code="02", cluster=eng, level_code='1')
         Program.objects.get_or_create(name="BBA", ugc_code="08", cluster=biz, level_code='1')
         Program.objects.get_or_create(name="English", ugc_code="09", cluster=arts, level_code='1')
+        Program.objects.get_or_create(name="Master of Arts in English Language Teaching", short_name="MA in ELT", ugc_code="16", cluster=arts, level_code='3')
 
         # Halls
         Hall.objects.get_or_create(full_name="Abbas Uddin Ahmed Hall", short_name="AUAH", code="02")

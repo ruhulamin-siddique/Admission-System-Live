@@ -17,32 +17,88 @@ from django.utils import timezone
 from .models import ApplicationStatusLog, CoeSettings
 
 
-def get_coe_processing_officers():
+def get_coe_module_candidate_users():
     """
-    Return active users specifically designated as CoE processing officers or CoE department staff.
-    Filters by RolePermission (module='coe', task='processing_officer') or UserProfile.department containing CoE/Controller/Exam.
-    Falls back to active staff/superusers if no specific CoE staff exist.
+    Smart candidate user filter: Returns active staff/officer users possessing CoE module privileges,
+    staff credentials, or CoE/Controller/Exam/Section department keywords.
+    Excludes academic department wildcards so general users are NOT listed.
     """
     from django.contrib.auth.models import User
     from django.db.models import Q
     from core.models import RolePermission
 
     role_ids = RolePermission.objects.filter(
-        module='coe', task='processing_officer'
+        module='coe'
     ).values_list('role_id', flat=True)
 
     qs = User.objects.filter(
-        Q(profile__role_id__in=role_ids)
+        Q(is_staff=True)
+        | Q(is_superuser=True)
+        | Q(profile__role_id__in=role_ids)
         | Q(profile__department__icontains='coe')
+        | Q(profile__department__icontains='dcoe')
         | Q(profile__department__icontains='controller')
-        | Q(profile__department__icontains='exam'),
+        | Q(profile__department__icontains='exam')
+        | Q(profile__department__icontains='clerk')
+        | Q(profile__department__icontains='officer')
+        | Q(profile__department__icontains='section')
+        | Q(profile__department__icontains='head'),
         is_active=True
     ).distinct().order_by('first_name', 'username')
 
     if not qs.exists():
-        qs = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True), is_active=True).order_by('first_name', 'username')
+        qs = User.objects.filter(is_active=True, is_staff=True).order_by('first_name', 'username')
 
     return qs
+
+
+def get_coe_role_users(role_type: str, department=None):
+    """
+    Return active users explicitly assigned to a specific CoE system role (HoD, CoE, DCoE, Officer, Clerk).
+    Falls back to smart candidate users if no explicit designations exist for that role.
+    """
+    from django.contrib.auth.models import User
+    from .models import CoeUserRoleAssignment
+
+    filters = {'role_type': role_type, 'user__is_active': True}
+    if department:
+        filters['department'] = department
+
+    assigned_user_ids = CoeUserRoleAssignment.objects.filter(**filters).values_list('user_id', flat=True)
+    if assigned_user_ids:
+        return User.objects.filter(id__in=assigned_user_ids, is_active=True).order_by('first_name', 'username')
+
+    return get_coe_module_candidate_users()
+
+
+def get_department_hod_users(department=None):
+    """Return designated HoD users for a specific academic department (Program)."""
+    from .models import CoeRoleType
+    return get_coe_role_users(role_type=CoeRoleType.HOD, department=department)
+
+
+def get_coe_processing_officers():
+    """
+    Return active users designated as CoE processing officers, clerks, deputy controllers, or controllers in CoE settings.
+    If no explicit designations exist in CoE settings, returns User.objects.none() (Strictly NO fallback).
+    """
+    from django.contrib.auth.models import User
+    from .models import CoeUserRoleAssignment, CoeRoleType
+
+    assigned_user_ids = CoeUserRoleAssignment.objects.filter(
+        role_type__in=[
+            CoeRoleType.PROCESSING_OFFICER,
+            CoeRoleType.DEPUTY_CONTROLLER,
+            CoeRoleType.CONTROLLER,
+            CoeRoleType.DELIVERY_CLERK
+        ],
+        user__is_active=True
+    ).values_list('user_id', flat=True)
+
+    if assigned_user_ids:
+        return User.objects.filter(id__in=assigned_user_ids, is_active=True).order_by('first_name', 'username')
+
+    return User.objects.none()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -59,7 +115,7 @@ def generate_tracking_number(year: int | None = None) -> str:
     from django.db import transaction
     from .models import DocumentApplication
     cfg = CoeSettings.get_settings()
-    prefix = cfg.tracking_id_prefix or 'APP'
+    prefix = cfg.tracking_id_prefix or 'CoE'
     year = year or date.today().year
     base = f"{prefix}-{year}-"
 
@@ -199,21 +255,42 @@ SMS_TEMPLATES = {
 }
 
 
-def send_coe_sms(mobile: str, template_key: str, context: dict) -> tuple[bool, str]:
+def send_coe_sms(mobile: str, template_key: str, context: dict, recipient_name: str | None = None, student_id: str | None = None) -> tuple[bool, str]:
     """
     Send an SMS using the existing core.utils.send_sms gateway.
     template_key must be one of SMS_TEMPLATES keys.
     context is a dict of template variables.
     Returns (success_bool, response_text).
     """
-    if template_key not in SMS_TEMPLATES:
-        return False, f"Unknown SMS template: {template_key}"
+    cfg = CoeSettings.get_settings()
+    
+    template_fields = {
+        'submit':             getattr(cfg, 'sms_template_submit', ''),
+        'hod_approved':       getattr(cfg, 'sms_template_hod_approved', ''),
+        'action_required':    getattr(cfg, 'sms_template_action_required', ''),
+        'ready_for_delivery':  getattr(cfg, 'sms_template_ready_for_delivery', ''),
+        'delivery_otp':       getattr(cfg, 'sms_template_delivery_otp', ''),
+        'reupload_complete':  getattr(cfg, 'sms_template_reupload_complete', ''),
+    }
+    
+    raw_template = template_fields.get(template_key)
+    if not raw_template:
+        if template_key not in SMS_TEMPLATES:
+            return False, f"Unknown SMS template: {template_key}"
+        raw_template = SMS_TEMPLATES[template_key]
 
-    message = SMS_TEMPLATES[template_key].format(**context)
+    message = raw_template.format(**context)
 
     try:
         from core.utils import send_sms
-        return send_sms(mobile, message)
+        return send_sms(
+            mobile,
+            message,
+            module='COE',
+            use_case_event=template_key,
+            recipient_name=recipient_name,
+            student_id=student_id
+        )
     except Exception as exc:
         return False, str(exc)
 
@@ -224,9 +301,26 @@ def send_coe_email(recipient_email: str, subject: str, template_name: str, conte
     if not recipient_email:
         return False
     try:
-        from django.core.mail import EmailMultiAlternatives
+        from django.core.mail import EmailMultiAlternatives, get_connection
         from django.template.loader import render_to_string
         from django.utils.html import strip_tags
+
+        cfg = CoeSettings.get_settings()
+        
+        # Build dynamic SMTP connection from CoE Settings if email host & user are configured
+        connection = None
+        if cfg.email_host and cfg.email_host_user:
+            connection = get_connection(
+                backend='django.core.mail.backends.smtp.EmailBackend',
+                host=cfg.email_host,
+                port=cfg.email_port or 587,
+                username=cfg.email_host_user,
+                password=cfg.email_host_password,
+                use_tls=cfg.email_use_tls,
+                fail_silently=True,
+            )
+
+        from_email = cfg.email_from_address or getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'coe@baust.edu.bd')
 
         html_content = render_to_string(template_name, context)
         text_content = strip_tags(html_content)
@@ -234,8 +328,9 @@ def send_coe_email(recipient_email: str, subject: str, template_name: str, conte
         msg = EmailMultiAlternatives(
             subject=subject,
             body=text_content,
-            from_email=getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'coe@baust.edu.bd'),
+            from_email=from_email,
             to=[recipient_email],
+            connection=connection,
         )
         msg.attach_alternative(html_content, "text/html")
         if attachment_bytes and attachment_filename:
@@ -280,35 +375,84 @@ def transition_status(application, new_status: str, changed_by=None, note: str =
         sms_gate = {
             'submit':            cfg.sms_notify_submit,
             'hod_approved':      cfg.sms_notify_approved,
+            'action_required':   cfg.sms_notify_action_required,
             'ready_for_delivery': cfg.sms_notify_ready,
             'delivery_otp':      cfg.sms_delivery_otp,
+            'reupload_complete':  cfg.sms_notify_reupload_complete,
         }
         if sms_gate.get(send_sms_key, True):
             ctx = sms_context or {}
             ctx.setdefault('tracking_number', application.application_number)
-            success, _ = send_coe_sms(application.mobile_number, send_sms_key, ctx)
-            sms_sent = success
+            
+            message_text = ''
+            # Send SMS only if Master SMS Channel Switch is enabled
+            if getattr(cfg, 'enable_sms_notifications', True):
+                success, message_text = send_coe_sms(application.mobile_number, send_sms_key, ctx)
+                sms_sent = success
+            else:
+                # Format raw template text for email if SMS is disabled
+                template_fields = {
+                    'submit':             getattr(cfg, 'sms_template_submit', ''),
+                    'hod_approved':       getattr(cfg, 'sms_template_hod_approved', ''),
+                    'action_required':    getattr(cfg, 'sms_template_action_required', ''),
+                    'ready_for_delivery':  getattr(cfg, 'sms_template_ready_for_delivery', ''),
+                    'delivery_otp':       getattr(cfg, 'sms_template_delivery_otp', ''),
+                    'reupload_complete':  getattr(cfg, 'sms_template_reupload_complete', ''),
+                }
+                raw_template = template_fields.get(send_sms_key, '')
+                try:
+                    message_text = raw_template.format(**ctx) if raw_template else ''
+                except Exception:
+                    message_text = raw_template
 
-            # Also dispatch HTML Email if email is present
-            if application.email:
+            # Send Email if Master Email Channel Switch is enabled and student email exists
+            if getattr(cfg, 'enable_email_notifications', True) and application.email:
                 subject_map = {
                     'submit': f"Application Received — {application.application_number}",
                     'hod_approved': f"Department Head Approved — {application.application_number}",
                     'action_required': f"Action Required — {application.application_number}",
                     'ready_for_delivery': f"Document Ready for Delivery — {application.application_number}",
-                    'delivery_otp': f"Delivery OTP — {application.application_number}",
+                    'delivery_otp': f"Delivery Verification OTP — {application.application_number}",
+                    'reupload_complete': f"Re-upload Received — {application.application_number}",
                 }
                 send_coe_email(
                     recipient_email=application.email,
-                    subject=subject_map.get(send_sms_key, f"CoE Update — {application.application_number}"),
+                    subject=subject_map.get(send_sms_key, f"CoE Notification — {application.application_number}"),
                     template_name='coe/emails/status_update_email.html',
                     context={
                         'app': application,
                         'event': send_sms_key,
+                        'custom_message': message_text,
                         'note': note or ctx.get('note', ''),
                         'tracking_number': application.application_number,
                     }
                 )
+
+            # Direct SMS & Email Notification to Department Head (HoD) upon submission
+            if send_sms_key == 'submit' and application.department:
+                hod_users = get_department_hod_users(application.department)
+                for hod_user in hod_users:
+                    hod_phone = getattr(getattr(hod_user, 'profile', None), 'phone_number', None)
+                    if hod_phone and getattr(cfg, 'enable_sms_notifications', True):
+                        send_coe_sms(
+                            mobile=hod_phone,
+                            template_key='submit',
+                            context={'tracking_number': application.application_number},
+                            recipient_name=hod_user.get_full_name() or hod_user.username
+                        )
+                    if hod_user.email and getattr(cfg, 'enable_email_notifications', True):
+                        send_coe_email(
+                            recipient_email=hod_user.email,
+                            subject=f"New Application Pending Review — {application.application_number} ({application.student_name})",
+                            template_name='coe/emails/status_update_email.html',
+                            context={
+                                'app': application,
+                                'event': 'submit',
+                                'custom_message': f"A new application ({application.application_number}) for {application.get_application_type_display()} submitted by {application.student_name} ({application.student_id}) requires your HoD review.",
+                                'note': 'Awaiting Department Head Approval',
+                                'tracking_number': application.application_number,
+                            }
+                        )
 
     ApplicationStatusLog.objects.create(
         application=application,

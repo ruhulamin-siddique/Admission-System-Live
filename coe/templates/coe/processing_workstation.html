@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n coe_tags %}
 
 {% block title %}{% trans "Processing Workstation" %} | {{ app.application_number }}{% endblock %}
 {% block page_title %}<i class="fas fa-microscope mr-2"></i>{% trans "Processing Workstation" %} — {{ app.application_number }}{% endblock %}
@@ -19,30 +19,48 @@
 .attachment-preview iframe, .attachment-preview img { width: 100%; max-height: 500px; object-fit: contain; }
 .api-result-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.8rem; max-height: 200px; overflow-y: auto; }
 @media (max-width: 992px) { .workstation-layout { grid-template-columns: 1fr; } }
+@media (max-width: 576px) {
+  .panel-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .panel-header .btn { align-self: flex-start; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Status Banner -->
-<div class="alert alert-{{ app.status|yesno:'danger,warning,info,success' }} mb-3 d-flex justify-content-between align-items-center py-2">
-  <div>
+<div class="alert alert-{{ app.status|yesno:'danger,warning,info,success' }} mb-3 d-flex flex-wrap justify-content-between align-items-start py-2" style="gap:0.75rem;">
+  <div class="flex-grow-1">
     <span class="badge {{ app.get_status_badge_class }} mr-2" style="font-size:0.9rem;">
       <i class="{{ app.get_status_icon }} mr-1"></i>{{ app.get_status_display }}
     </span>
     <strong>{{ app.student_name }}</strong> · {{ app.get_application_type_display }}
+    
+    <div class="mt-1 d-flex flex-wrap" style="gap:0.35rem;">
+      <span class="badge border" style="background:#ffffff; color:#1e293b; font-size:0.8rem; border-radius:12px; padding: 4px 10px;">
+        <i class="fas fa-hourglass-half text-primary mr-1"></i>Stage: <strong>{{ app.current_stage_duration }}</strong>
+      </span>
+      <span class="badge border" style="background:#eff6ff; color:#1d4ed8; font-size:0.8rem; border-radius:12px; padding: 4px 10px;" title="Time taken by Department Head">
+        <i class="fas fa-user-tie text-info mr-1"></i>HoD: <strong>{{ app.role_time_analytics.hod.duration }}</strong>
+      </span>
+      <span class="badge border" style="background:#fffbeb; color:#b45309; font-size:0.8rem; border-radius:12px; padding: 4px 10px;" title="Time taken by Controller / DCoE to assign">
+        <i class="fas fa-user-tag text-warning mr-1"></i>Controller: <strong>{{ app.role_time_analytics.controller.duration }}</strong>
+      </span>
+      <span class="badge border" style="background:#f8fafc; color:#475569; font-size:0.8rem; border-radius:12px; padding: 4px 10px;">
+        <i class="fas fa-clock text-dark mr-1"></i>Total TAT: <strong>{{ app.total_turnaround_time }}</strong>
+      </span>
+    </div>
   </div>
-  <div>
+  <div class="d-flex flex-wrap align-items-center flex-shrink-0" style="gap:0.5rem;">
     {% if app.status == 'in_processing' %}
-    <button class="btn btn-sm btn-warning mr-2"
-            hx-get=""
+    <button type="button" class="btn btn-sm btn-warning"
             data-toggle="modal" data-target="#reuploadModal">
       <i class="fas fa-exclamation-circle mr-1"></i>{% trans "Request Re-Upload" %}
     </button>
-    <form method="post" action="{% url 'coe_mark_ready' app.pk %}" style="display:inline;">
+    <form method="post" action="{% url 'coe_dispatch_to_delivery' app.pk %}" style="display:inline;">
       {% csrf_token %}
       <button type="submit" class="btn btn-sm btn-success"
-              onclick="return confirm('{% trans "Mark as Ready for Delivery? OTP will be generated and sent via SMS." %}')">
-        <i class="fas fa-box-open mr-1"></i>{% trans "Mark Ready for Delivery" %}
+              onclick="return confirm('{% trans "Send this document to the Delivery Desk? The status will be changed to Dispatched to Delivery Desk." %}')">
+        <i class="fas fa-shipping-fast mr-1"></i>{% trans "Send to Delivery Desk" %}
       </button>
     </form>
     {% endif %}
@@ -62,7 +80,14 @@
         <table class="table table-sm table-borderless mb-0">
           <tr><th width="160">{% trans "Student Name" %}</th><td>{{ app.student_name }}</td></tr>
           <tr><th>{% trans "Student ID" %}</th><td><code>{{ app.student_id }}</code></td></tr>
-          <tr><th>{% trans "Mobile" %}</th><td>{{ app.mobile_number }}</td></tr>
+          <tr><th>{% trans "Mobile" %}</th>
+            <td>
+              {{ app.mobile_number }}
+              {% if app.mobile_number %}
+                {% whatsapp_btn app.mobile_number label="Chat with Student" css_class="btn btn-xs text-white font-weight-bold ml-2" %}
+              {% endif %}
+            </td>
+          </tr>
           <tr><th>{% trans "Department" %}</th><td>{{ app.department }}</td></tr>
           <tr><th>{% trans "Session/Batch" %}</th><td>{{ app.session }} / {{ app.admission_batch }}</td></tr>
           <tr><th>{% trans "Passing Semester" %}</th><td>{{ app.passing_semester }}</td></tr>
@@ -177,7 +202,7 @@
         <h6 class="font-weight-bold mb-2"><i class="fas fa-sticky-note mr-2"></i>{% trans "Verification Notes" %}</h6>
         <p class="text-muted small mb-0">{{ verification.verification_notes|default:_("None.") }}</p>
         {% if verification.verified_by %}
-        <small class="text-muted">{% trans "Last verified by:" %} {{ verification.verified_by.get_full_name }} — {{ verification.verified_at|date:"d M Y" }}</small>
+        <small class="text-muted">{% trans "Last verified by:" %} {{ verification.verified_by.get_full_name }} — {{ verification.verified_at|date:"d F Y" }}</small>
         {% endif %}
       </div>
     </div>
@@ -194,7 +219,7 @@
           <div>
             <small class="font-weight-bold">{{ log.new_status }}</small>
             {% if log.note %}<br><small class="text-muted">{{ log.note|truncatechars:80 }}</small>{% endif %}
-            <br><small class="text-muted">{{ log.changed_at|date:"d M, h:i A" }}</small>
+            <br><small class="text-muted">{{ log.changed_at|date:"d F Y, h:i A" }}</small>
           </div>
         </div>
         {% endfor %}

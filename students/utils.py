@@ -9,6 +9,40 @@ from master_data.models import Cluster, Program, Hall, Semester, AdmissionYear
 # UGC Defaults (Fallback)
 UNIVERSITY_CODE = "080"
 
+
+def normalize_student_id(raw_id, valid_ids_set=None):
+    """
+    Normalizes a student ID extracted from Excel or user input.
+    Handles float representations (e.g. '12345.0'), string cleanup,
+    and missing leading zero recovery (e.g. '802310102161001' -> '0802310102161001').
+    """
+    if raw_id is None:
+        return ''
+    s_id = str(raw_id).strip()
+    if s_id.endswith('.0'):
+        s_id = s_id[:-2]
+    if s_id.lower() in ('nan', 'none', ''):
+        return ''
+
+    # 1. Direct match check if valid_ids_set is provided
+    if valid_ids_set and s_id in valid_ids_set:
+        return s_id
+
+    # 2. Check for missing leading zero '0'
+    # UGC IDs are 16 digits starting with '080'. If '0' was stripped, it becomes 15 digits starting with '80'.
+    # Legacy IDs can be 9 digits starting with '080'. If '0' was stripped, it becomes 8 digits starting with '80'.
+    if s_id.startswith('80') or len(s_id) in (15, 8):
+        padded = '0' + s_id
+        if valid_ids_set is None or padded in valid_ids_set:
+            return padded
+
+    # 3. Fallback check: if '0' + s_id matches valid_ids_set
+    if valid_ids_set and ('0' + s_id) in valid_ids_set:
+        return '0' + s_id
+
+    return s_id
+
+
 def decompose_ugc_id(s_id):
     """
     Breaks down a 16-character UGC ID into its descriptive components.
@@ -57,6 +91,12 @@ def get_canonical_program_name(raw_name):
         for p in progs:
             if p.short_name:
                 get_canonical_program_name._cache[p.short_name.upper()] = (p.short_name if p.short_name else p.name)
+        # Canonical mappings / aliases for merged MA in ELT
+        get_canonical_program_name._cache['MA IN ENG'] = 'MA in ELT'
+        get_canonical_program_name._cache['ELT'] = 'MA in ELT'
+        get_canonical_program_name._cache['MA IN ELT'] = 'MA in ELT'
+        get_canonical_program_name._cache['MA IN ENGLISH'] = 'MA in ELT'
+        get_canonical_program_name._cache['MASTER OF ARTS IN ENGLISH LANGUAGE TEACHING'] = 'MA in ELT'
 
     key = str(raw_name).strip().upper()
     return get_canonical_program_name._cache.get(key, raw_name)
@@ -193,7 +233,7 @@ def import_students_from_excel(file_obj, update_existing=False):
     Enhanced Bulk Excel Import Logic with Update and Validation support.
     """
     try:
-        df = pd.read_excel(file_obj)
+        df = pd.read_excel(file_obj, dtype={'student_id': str})
         # Standardize column names (lowercase and snake_case)
         df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
         
@@ -253,14 +293,11 @@ def import_students_from_excel(file_obj, update_existing=False):
                     student_data[col] = val
             
             # 1. Extract and Clean ID
-            s_id = str(student_data.get('student_id', '')).strip()
-            if not s_id or s_id == 'nan':
+            s_id = normalize_student_id(student_data.get('student_id', ''), valid_ids_set=existing_ids)
+            if not s_id:
                 errors.append(f"Row {index+2}: Student ID is missing.")
                 continue
                 
-            # ID Correction (legacy logic)
-            if len(s_id) == 15 and s_id.startswith('80'):
-                s_id = '0' + s_id
             student_data['student_id'] = s_id
             
             # Automatically detect legacy student status (batch 1-12 or short ID)
@@ -438,7 +475,14 @@ def execute_program_change_web(student, new_program, new_cluster, new_year, new_
                 
                 # Trigger Actual SMS Delivery
                 from core.utils import send_sms
-                success, response_text = send_sms(student.student_mobile, msg_body)
+                success, response_text = send_sms(
+                    student.student_mobile,
+                    msg_body,
+                    module='ADMISSION',
+                    use_case_event='department_change',
+                    recipient_name=student.student_name,
+                    student_id=new_id
+                )
                 
                 # Log the SMS in History with API Response
                 SMSHistory.objects.create(
@@ -463,34 +507,41 @@ def execute_program_change_web(student, new_program, new_cluster, new_year, new_
 # ──────────────────────────────────────────────────────────────────────────────
 
 SSC_FIELDS = [
-    'ssc_school', 'ssc_year', 'ssc_board', 'ssc_roll',
-    'ssc_reg', 'ssc_gpa', 'ssc_physics', 'ssc_chemistry', 'ssc_math',
+    'ssc_system', 'ssc_school', 'ssc_year', 'ssc_board', 'ssc_roll',
+    'ssc_reg', 'ssc_division', 'ssc_marks', 'ssc_gpa', 'ssc_physics', 'ssc_chemistry', 'ssc_math',
 ]
 HSC_FIELDS = [
-    'hsc_college', 'hsc_year', 'hsc_board', 'hsc_roll',
-    'hsc_reg', 'hsc_gpa', 'hsc_physics', 'hsc_chemistry', 'hsc_math',
+    'hsc_system', 'hsc_college', 'hsc_year', 'hsc_board', 'hsc_roll',
+    'hsc_reg', 'hsc_division', 'hsc_marks', 'hsc_gpa', 'hsc_physics', 'hsc_chemistry', 'hsc_math',
 ]
 FLOAT_FIELDS = {'ssc_gpa', 'ssc_physics', 'ssc_chemistry', 'ssc_math',
                 'hsc_gpa', 'hsc_physics', 'hsc_chemistry', 'hsc_math'}
+INT_FIELDS = {'ssc_marks', 'hsc_marks'}
 
 ALL_ACADEMIC_FIELDS = SSC_FIELDS + HSC_FIELDS
 
 # Friendly labels for each field (used in templates)
 FIELD_LABELS = {
+    'ssc_system':    'SSC System',
     'ssc_school':    'SSC School',
     'ssc_year':      'SSC Year',
     'ssc_board':     'SSC Board',
     'ssc_roll':      'SSC Roll',
     'ssc_reg':       'SSC Registration',
+    'ssc_division':  'SSC Division',
+    'ssc_marks':     'SSC Marks',
     'ssc_gpa':       'SSC GPA',
     'ssc_physics':   'SSC Physics',
     'ssc_chemistry': 'SSC Chemistry',
     'ssc_math':      'SSC Math',
+    'hsc_system':    'HSC System',
     'hsc_college':   'HSC College',
     'hsc_year':      'HSC Year',
     'hsc_board':     'HSC Board',
     'hsc_roll':      'HSC Roll',
     'hsc_reg':       'HSC Registration',
+    'hsc_division':  'HSC Division',
+    'hsc_marks':     'HSC Marks',
     'hsc_gpa':       'HSC GPA',
     'hsc_physics':   'HSC Physics',
     'hsc_chemistry': 'HSC Chemistry',
@@ -592,7 +643,7 @@ def patch_academic_data_from_excel(file_obj, selected_fields, scope_queryset, dr
         return {'success': False, 'error': "No valid academic fields selected."}
 
     try:
-        df = pd.read_excel(file_obj)
+        df = pd.read_excel(file_obj, dtype={'student_id': str})
         df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
 
         if 'student_id' not in df.columns:
@@ -620,11 +671,8 @@ def patch_academic_data_from_excel(file_obj, selected_fields, scope_queryset, dr
         errors = []
 
         for idx, row in df.iterrows():
-            raw_id = str(row.get('student_id', '')).strip()
-            # Clean float representation (e.g. "12345.0")
-            if raw_id.endswith('.0'):
-                raw_id = raw_id[:-2]
-            if not raw_id or raw_id == 'nan':
+            raw_id = normalize_student_id(row.get('student_id', ''), valid_ids_set=all_ids_in_db)
+            if not raw_id:
                 errors.append(f"Row {idx + 2}: Missing student_id.")
                 continue
 
@@ -652,6 +700,12 @@ def patch_academic_data_from_excel(file_obj, selected_fields, scope_queryset, dr
                             new_val = float(raw_val)
                         except (ValueError, TypeError):
                             errors.append(f"Row {idx + 2} ({raw_id}): Invalid numeric for '{field}': {raw_val}")
+                            new_val = None
+                    elif field in INT_FIELDS:
+                        try:
+                            new_val = int(float(raw_val))
+                        except (ValueError, TypeError):
+                            errors.append(f"Row {idx + 2} ({raw_id}): Invalid integer for '{field}': {raw_val}")
                             new_val = None
                     else:
                         new_val = str(raw_val).strip()
@@ -739,6 +793,48 @@ def patch_academic_data_from_excel(file_obj, selected_fields, scope_queryset, dr
     except Exception as e:
         import traceback
         return {'success': False, 'error': str(e), 'traceback': traceback.format_exc()}
+
+
+def get_division_equivalent_gpa(division, marks=None):
+    """
+    Returns the UGC standard equivalent GPA for pre-2001 (SSC) / pre-2003 (HSC) division results.
+    Reference: Bangladesh Ministry of Education & UGC Equivalence Framework.
+    
+    If marks are provided, fine-grained interpolation is used within the division band:
+      - FIRST_STAR (>=750):  4.00 (flat, top tier)
+      - FIRST      (600-749): 3.50 base, up to 3.99 proportional to marks
+      - SECOND     (450-599): 2.75 base, up to 3.49 proportional to marks
+      - THIRD      (330-449): 2.00 base, up to 2.74 proportional to marks
+      - PASS       (<330):    1.50
+    If no marks: returns standard base equivalent (4.00, 3.50, 2.75, 2.00, 1.50).
+    """
+    BASE_MAP = {
+        'FIRST_STAR': 4.00,
+        'FIRST':      3.50,
+        'SECOND':     2.75,
+        'THIRD':      2.00,
+        'PASS':       1.50,
+    }
+    if not division:
+        return None
+    base = BASE_MAP.get(str(division).upper())
+    if base is None:
+        return None
+    
+    if marks is not None:
+        try:
+            m = float(marks)
+            if str(division).upper() == 'FIRST' and 600 <= m < 750:
+                return round(3.50 + ((m - 600) / 150) * 0.49, 2)
+            elif str(division).upper() == 'SECOND' and 450 <= m < 600:
+                return round(2.75 + ((m - 450) / 150) * 0.74, 2)
+            elif str(division).upper() == 'THIRD' and 330 <= m < 450:
+                return round(2.00 + ((m - 330) / 120) * 0.74, 2)
+        except (ValueError, TypeError):
+            pass
+            
+    return base
+
 
 
 

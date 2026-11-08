@@ -229,6 +229,7 @@ class OfficerAssignForm(forms.Form):
         super().__init__(*args, **kwargs)
         from .utils import get_coe_processing_officers
         self.fields['officer'].queryset = get_coe_processing_officers()
+        self.fields['officer'].label_from_instance = lambda obj: f"{obj.get_full_name() or obj.username} ({obj.email})" if obj.email else (obj.get_full_name() or obj.username)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -304,6 +305,19 @@ class CoeSettingsForm(forms.ModelForm):
             'attachment_max_mb': forms.NumberInput(attrs={'min': 1, 'max': 20, 'class': 'form-control'}),
             'rejected_purge_days': forms.NumberInput(attrs={'min': 1, 'class': 'form-control'}),
             'delivered_purge_days': forms.NumberInput(attrs={'min': 30, 'class': 'form-control'}),
+            'sla_warning_hours': forms.NumberInput(attrs={'min': 1, 'max': 168, 'class': 'form-control'}),
+            'sla_danger_hours': forms.NumberInput(attrs={'min': 1, 'max': 336, 'class': 'form-control'}),
+            'sms_template_submit': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'sms_template_hod_approved': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'sms_template_action_required': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'sms_template_ready_for_delivery': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'sms_template_delivery_otp': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'sms_template_reupload_complete': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'email_host': forms.TextInput(attrs={'placeholder': 'e.g. smtp.gmail.com or mail.baust.edu.bd', 'class': 'form-control'}),
+            'email_port': forms.NumberInput(attrs={'placeholder': '587', 'class': 'form-control'}),
+            'email_host_user': forms.TextInput(attrs={'placeholder': 'e.g. coe@baust.edu.bd', 'class': 'form-control'}),
+            'email_host_password': forms.PasswordInput(render_value=True, attrs={'placeholder': '••••••••••••', 'class': 'form-control'}),
+            'email_from_address': forms.TextInput(attrs={'placeholder': 'e.g. BAUST Controller of Examinations <coe@baust.edu.bd>', 'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):

@@ -17,8 +17,11 @@ def get_academic_analytics(year=None, program=None, batch=None):
     if program: 
         queryset = queryset.filter(program=program)
 
-    # GPA Distribution (SSC & HSC)
-    gpa_stats = queryset.aggregate(
+    # GPA Distribution (SSC & HSC) - filtered to GPA system to avoid skewing stats
+    gpa_queryset = queryset.filter(ssc_system='GPA')
+    division_count = queryset.filter(ssc_system='DIVISION').count()
+
+    gpa_stats = gpa_queryset.aggregate(
         ssc_avg=Avg('ssc_gpa'),
         hsc_avg=Avg('hsc_gpa'),
         total_count=Count('student_id'),
@@ -37,6 +40,7 @@ def get_academic_analytics(year=None, program=None, batch=None):
 
     return {
         'gpa_stats': gpa_stats,
+        'division_count': division_count,
         'gender_split': list(gender_split),
         'religion_split': list(religion_split),
         'blood_split': list(blood_split),

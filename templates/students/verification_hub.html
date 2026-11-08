@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>শিক্ষা বোর্ড ভেরিফিকেশন সাপোর্ট হাব — Extension &amp; Bookmarklets Setup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --success: #16a34a;
+            --success-dark: #15803d;
+            --bg-slate: #f8fafc;
+            --card-bg: #ffffff;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Hind Siliguri', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-slate);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 36px 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .lang-switch-box {
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4px;
+            border-radius: 50px;
+            gap: 4px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 5px 14px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .lang-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+        }
+
+        .header-title {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .header-desc {
+            color: #94a3b8;
+            font-size: 15px;
+            max-width: 780px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .nav-tab-btn {
+            flex: 1;
+            padding: 16px 20px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text-dark);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+            font-family: inherit;
+        }
+
+        .nav-tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 10px 20px -3px rgba(2, 132, 199, 0.3);
+        }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 28px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: white !important;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 14px 28px;
+            border-radius: 50px;
+            text-decoration: none !important;
+            box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3);
+            margin-bottom: 24px;
+            transition: transform 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-download:hover { transform: translateY(-2px); }
+
+        .step-list { list-style: none; padding: 0; }
+        .step-item { display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+        .step-badge { width: 34px; height: 34px; min-width: 34px; background: #e0f2fe; color: var(--primary); font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+
+        .drag-box {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn-drag {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: white !important;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 14px 28px;
+            border-radius: 50px;
+            text-decoration: none !important;
+            cursor: grab;
+            font-family: inherit;
+        }
+
+        .btn-blue { background: linear-gradient(135deg, #0284c7, #0369a1); box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3); }
+        .btn-green { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.3); }
+
+        textarea.code-textarea {
+            width: 100%;
+            height: 90px;
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 14px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: none;
+        }
+
+        .code-container { position: relative; margin-top: 16px; }
+        .btn-copy { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: inherit; }
+
+        .faq-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 18px 24px;
+            border-radius: 12px;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #1e40af;
+        }
+
+        .lang-en { display: none; }
+        .lang-bn { display: inline; }
+        div.lang-bn, p.lang-bn, span.lang-bn { display: block; }
+        span.lang-bn.inline { display: inline; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- Main Header -->
+        <div class="header-card">
+            <div class="header-top-bar">
+                <div class="header-badge">
+                    <i class="fas fa-shield-halved"></i>
+                    <span class="lang-bn inline">বোর্ড ভেরিফিকেশন টুলস ও সাপোর্ট সেন্টার</span>
+                    <span class="lang-en">Verification Tools &amp; Support Center</span>
+                </div>
+
+                <div class="lang-switch-box">
+                    <button type="button" class="lang-btn active" id="btn_lang_bn" onclick="setLanguage('bn')">
+                        🇧🇩 বাংলা (ডিফল্ট)
+                    </button>
+                    <button type="button" class="lang-btn" id="btn_lang_en" onclick="setLanguage('en')">
+                        🇬🇧 English
+                    </button>
+                </div>
+            </div>
+
+            <h1 class="header-title">
+                <span class="lang-bn inline">শিক্ষা বোর্ড ভেরিফিকেশন সাপোর্ট হাব</span>
+                <span class="lang-en">Education Board Verification Hub</span>
+            </h1>
+
+            <p class="header-desc">
+                <span class="lang-bn">
+                    ভর্তি কর্মকর্তাদের জন্য অফিশিয়াল গাইডলাইন ও ভেরিফিকেশন টুলস। আপনার পিসি/ল্যাপটপের জন্য <strong>"ক্রোম/এজ এক্সটেনশন"</strong> অথবা মোবাইল/সফারি ব্রাউজারের জন্য <strong>"১-ক্লিক বুকমার্কলেটস"</strong> নির্বাচন করুন।
+                </span>
+                <span class="lang-en">
+                    Setup guide and official tools for admission officers. Choose between the <strong>Chrome/Edge Extension</strong> (for PC) or <strong>1-Click Bookmarklets</strong> (for Mobile &amp; Safari).
+                </span>
+            </p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button type="button" class="nav-tab-btn active" onclick="showTab('tab_pc', event)">
+                <i class="fab fa-chrome text-primary"></i>
+                <span class="lang-bn inline">পিসি / ল্যাপটপ (ব্রাউজার এক্সটেনশন)</span>
+                <span class="lang-en">PC / Laptop (Browser Extension)</span>
+            </button>
+            <button type="button" class="nav-tab-btn" onclick="showTab('tab_mobile', event)">
+                <i class="fas fa-mobile-alt text-success"></i>
+                <span class="lang-bn inline">মোবাইল / সফারি (১-ক্লিক বুকমার্কলেটস)</span>
+                <span class="lang-en">Mobile / Safari (1-Click Bookmarklets)</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: PC EXTENSION -->
+        <div id="tab_pc" class="tab-pane active">
+            <div class="card">
+                <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <span>
+                        <i class="fas fa-puzzle-piece text-primary"></i>
+                        <span class="lang-bn inline">ক্রোম ও এজ ভেরিফায়ার এক্সটেনশন</span>
+                        <span class="lang-en">Chrome &amp; Edge Extension</span>
+                        <span class="badge badge-success px-2 py-1" style="font-size:12px; background:#10b981; color:#fff;">v2.5.0 PRO</span>
+                    </span>
+                    <span class="badge badge-info px-2 py-1" style="font-size:11px; background:#0284c7; color:#fff;">
+                        <i class="fas fa-clock mr-1"></i>
+                        <span class="lang-bn inline">সর্বশেষ আপডেট: ১৩ আগস্ট, ২০২৬</span>
+                        <span class="lang-en">Last Updated: Aug 13, 2026</span>
+                    </span>
+                </div>
+                
+                <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">
+                    <span class="lang-bn">
+                        আপনার ব্রাউজারে একবার ইনস্টল করুন। এটি <code>eboardresults.com/v2/home</code> এবং <code>result.bteb.gov.bd</code> ওয়েবসাইটে অটো এআই ক্যাপচা সমাধান, টেকনিক্যাল বোর্ড (BTEB) সাপোর্ট, ১-ক্লিক ব্যাচ অটো-অ্যাডভান্স এবং ৪-স্তরের মিসম্যাচ সুরক্ষা সহ <strong>⚡ Admission Verifier</strong> টুলবার যুক্ত করে।
+                    </span>
+                    <span class="lang-en">
+                        Install once in your browser. Adds a floating <strong>⚡ Admission Verifier</strong> toolbar directly on <code>eboardresults.com/v2/home</code> and <code>result.bteb.gov.bd</code> with AI Captcha auto-solving, BTEB support, 1-click batch queue auto-advance, exam type tags, and 4-layer mismatch protection!
+                    </span>
+                </p>
+
+                <a href="{% url 'download_extension_zip' %}" class="btn-download">
+                    <i class="fas fa-download"></i>
+                    <span class="lang-bn inline">এক্সটেনশন প্যাকেজ ডাউনলোড করুন (.ZIP v2.5.0)</span>
+                    <span class="lang-en">Download Extension Package v2.5.0 (.ZIP)</span>
+                </a>
+
+                <div class="card-title" style="font-size:16px; margin-top:20px;">
+                    <i class="fas fa-list-ol text-primary"></i>
+                    <span class="lang-bn inline">৩০ সেকেন্ডে ইনস্টল করার নিয়ম:</span>
+                    <span class="lang-en">30-Second Installation Steps:</span>
+                </div>
+
+                <ul class="step-list">
+                    <li class="step-item">
+                        <div class="step-badge">1</div>
+                        <div>
+                            <span class="lang-bn">
+                                <strong>১. এক্সটেনশন ম্যানেজার খুলুন:</strong><br>
+                                Chrome ব্রাউজারে type করুন: <code>chrome://extensions</code> | Edge ব্রাউজারে type করুন: <code>edge://extensions</code>।
+                            </span>
+                            <span class="lang-en">
+                                <strong>1. Open Extension Manager:</strong><br>
+                                In Chrome: Type <code>chrome://extensions</code> | In Edge: Type <code>edge://extensions</code>.
+                            </span>
+                        </div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-badge">2</div>
+                        <div>
+                            <span class="lang-bn">
+                                <strong>২. ডেভেলপার মোড চালু করুন:</strong><br>
+                                পেজের উপরে ডান কোণে অবস্থিত <strong>"Developer mode"</strong> টগল সুইচটি ON করুন।
+                            </span>
+                            <span class="lang-en">
+                                <strong>2. Enable Developer Mode:</strong><br>
+                                Turn ON the <strong>"Developer mode"</strong> toggle switch in the top-right corner.
+                            </span>
+                        </div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-badge">3</div>
+                        <div>
+                            <span class="lang-bn">
+                                <strong>৩. আনপ্যাকড এক্সটেনশন লোড করুন:</strong><br>
+                                উপরে বাম কোণে <strong>"Load unpacked"</strong> বোতামে ক্লিক করুন &rarr; জিপ থেকে আনজিপ করা এক্সটেনশন ফোল্ডারটি সিলেক্ট করুন।
+                            </span>
+                            <span class="lang-en">
+                                <strong>3. Load Unpacked Extension:</strong><br>
+                                Click <strong>"Load unpacked"</strong> in the top-left &rarr; select the extracted extension folder.
+                            </span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TAB 2: MOBILE BOOKMARKLETS -->
+        <div id="tab_mobile" class="tab-pane">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-bookmark text-success"></i>
+                    <span class="lang-bn inline">১-ক্লিক মোবাইল ও সফারি বুকমার্কলেটস</span>
+                    <span class="lang-en">1-Click Mobile &amp; Safari Bookmarklets</span>
+                </div>
+                <p style="color:var(--text-muted); font-size:14px;">
+                    <span class="lang-bn">
+                        কোনো এক্সটেনশন ইনস্টল না করেই অ্যান্ড্রয়েড ক্রোম এবং আইফোন সফারি সহ যেকোনো মোবাইল ব্রাউজারে সরাসরি কাজ করে!
+                    </span>
+                    <span class="lang-en">
+                        Works natively in all mobile browsers (Android Chrome, iPhone Safari) without installing any extension!
+                    </span>
+                </p>
+
+                <!-- BOOKMARKLET 1 -->
+                <div style="margin-top:24px; padding-top:20px; border-top:1px solid #f1f5f9;">
+                    <div style="font-weight:700; font-size:16px; color:var(--text-dark);">
+                        <span class="lang-bn inline">১. বোর্ড ফরম অটো-ফিল বুকমার্কলেট</span>
+                        <span class="lang-en">1. Auto-Fill Board Form Bookmarklet</span>
+                    </div>
+                    <div class="drag-box">
+                        <a class="btn-drag btn-blue" id="btn_bm1" href="#">
+                            <i class="fas fa-hand-pointer"></i>
+                            <span class="lang-bn inline">বুকমার্কে ড্র্যাগ করুন: ১. বোর্ড ফরম অটো-ফিল</span>
+                            <span class="lang-en">Drag to Bookmarks: 1. Auto-Fill Board Form</span>
+                        </a>
+                    </div>
+                    <div class="code-container">
+                        <textarea class="code-textarea" id="bm1_code" readonly onclick="this.select()"></textarea>
+                        <button class="btn-copy" onclick="copyCode('bm1_code', this)">
+                            <i class="fas fa-copy"></i>
+                            <span class="lang-bn inline">কপি করুন</span>
+                            <span class="lang-en">Copy Code</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- BOOKMARKLET 2 -->
+                <div style="margin-top:28px; padding-top:20px; border-top:1px solid #f1f5f9;">
+                    <div style="font-weight:700; font-size:16px; color:var(--text-dark);">
+                        <span class="lang-bn inline">২. ভর্তি সিস্টেমে রেজাল্ট সিঙ্ক বুকমার্কলেট</span>
+                        <span class="lang-en">2. Sync Result to Admission System Bookmarklet</span>
+                    </div>
+                    <div class="drag-box">
+                        <a class="btn-drag btn-green" id="btn_bm2" href="#">
+                            <i class="fas fa-hand-pointer"></i>
+                            <span class="lang-bn inline">বুকমার্কে ড্র্যাগ করুন: ২. সিস্টেমে রেজাল্ট সিঙ্ক</span>
+                            <span class="lang-en">Drag to Bookmarks: 2. Sync Result to Admission System</span>
+                        </a>
+                    </div>
+                    <div class="code-container">
+                        <textarea class="code-textarea" id="bm2_code" readonly onclick="this.select()"></textarea>
+                        <button class="btn-copy" onclick="copyCode('bm2_code', this)">
+                            <i class="fas fa-copy"></i>
+                            <span class="lang-bn inline">কপি করুন</span>
+                            <span class="lang-en">Copy Code</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ & Anti-Bot Notice -->
+        <div class="faq-box">
+            <i class="fas fa-shield-alt mr-1"></i>
+            <span class="lang-bn">
+                <strong>অ্যান্টি-বোট সুরক্ষা নোটিশ:</strong> eboardresults.com ওয়েবসাইটের নিরাপত্তা ব্যবস্থার কারণে সরাসরি সার্ভার-সাইড স্ক্র্যাপিং সীমিত। ক্রোম এক্সটেনশন বা বুকমার্কলেট ব্যবহারের মাধ্যমে আপনার ব্রাউজার থেকেই ১০০% সফলভাবে সরাসরি ভেরিফিকেশন সম্পন্ন হয়!
+            </span>
+            <span class="lang-en">
+                <strong>Anti-Bot Protection Notice:</strong> Direct backend captcha scrapers are restricted by <code>eboardresults.com</code> JS anti-bot protection. Using the <strong>Chrome Extension</strong> or <strong>Bookmarklets</strong> runs verification natively inside your browser from Bangladesh, bypassing anti-bot blocks with 100% success!
+            </span>
+        </div>
+
+    </div>
+
+    <script>
+        var currentOrigin = window.location.origin || 'http://localhost:8000';
+
+        function showTab(id, evt) {
+            document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+            }
+        }
+
+        function setLanguage(lang) {
+            var isBn = (lang === 'bn');
+            document.querySelectorAll('.lang-bn').forEach(el => {
+                if (el.tagName === 'SPAN' && el.classList.contains('inline')) {
+                    el.style.display = isBn ? 'inline' : 'none';
+                } else {
+                    el.style.display = isBn ? 'block' : 'none';
+                }
+            });
+            document.querySelectorAll('.lang-en').forEach(el => {
+                if (el.tagName === 'SPAN' && !el.classList.contains('block')) {
+                    el.style.display = isBn ? 'none' : 'inline';
+                } else {
+                    el.style.display = isBn ? 'none' : 'block';
+                }
+            });
+
+            document.getElementById('btn_lang_bn').classList.toggle('active', isBn);
+            document.getElementById('btn_lang_en').classList.toggle('active', !isBn);
+            localStorage.setItem('verification_hub_lang', lang);
+        }
+
+        // Initialize language (Bangla by Default)
+        var savedLang = localStorage.getItem('verification_hub_lang') || 'bn';
+        setLanguage(savedLang);
+
+        var BM1_JS = 'javascript:(function(){var clip=prompt("Paste student info copied from Admission System:");if(!clip)return;var sidM=clip.match(/StudentID:\\s*([A-Za-z0-9_]+)/i)||clip.match(/\\b(080\\d{13}|\\d{16})\\b/);if(sidM){sessionStorage.setItem("current_verify_sid",sidM[1]);}var examM=clip.match(/Exam:\\s*([A-Za-z0-9]+)/i);if(examM){sessionStorage.setItem("current_verify_exam",examM[1].toUpperCase());}var rollM=clip.match(/Roll:\\s*(\\d+)/i);var regM=clip.match(/Reg:\\s*(\\d+)/i);var yearM=clip.match(/Year:\\s*(\\d+)/i);var boardM=clip.match(/Board:\\s*([A-Za-z\\s]+)/i);function triggerChange(el){if(!el)return;var ev=document.createEvent("HTMLEvents");ev.initEvent("change",true,false);el.dispatchEvent(ev);}var examSel=document.querySelector(\'select[name="exam"]\')||document.getElementById("exam");if(examSel&&examM){var exTarget=examM[1].toLowerCase();for(var i=0;i<examSel.options.length;i++){var optT=examSel.options[i].text.toLowerCase();var optV=examSel.options[i].value.toLowerCase();if(optV.includes(exTarget)||optT.includes(exTarget)){examSel.selectedIndex=i;triggerChange(examSel);break;}}}var yearSel=document.querySelector(\'select[name="year"]\')||document.getElementById("year");if(yearSel&&yearM){yearSel.value=yearM[1];triggerChange(yearSel);}var boardSel=document.querySelector(\'select[name="board"]\')||document.getElementById("board");if(boardSel&&boardM){var bTarget=boardM[1].trim().toLowerCase();for(var j=0;j<boardSel.options.length;j++){var bOptT=boardSel.options[j].text.toLowerCase();var bOptV=boardSel.options[j].value.toLowerCase();if(bOptV.includes(bTarget)||bOptT.includes(bTarget)){boardSel.selectedIndex=j;triggerChange(boardSel);break;}}}var resTypeSel=document.querySelector(\'select[name="result_type"]\')||document.querySelector(\'select[name="res_type"]\')||document.getElementById("result_type")||document.getElementById("res_type");if(resTypeSel){for(var k=0;k<resTypeSel.options.length;k++){if(resTypeSel.options[k].value=="1"||resTypeSel.options[k].text.toLowerCase().includes("individual")){resTypeSel.selectedIndex=k;triggerChange(resTypeSel);break;}}}setTimeout(function(){var rollInp=document.querySelector(\'input[name="roll"]\')||document.getElementById("roll");if(rollInp&&rollM){rollInp.value=rollM[1];triggerChange(rollInp);}var regInp=document.querySelector(\'input[name="reg"]\')||document.getElementById("reg");if(regInp&&regM){regInp.value=regM[1];triggerChange(regInp);}var capInp=document.querySelector(\'input[name="captcha"]\')||document.getElementById("captcha");if(capInp)capInp.focus();},250);})();';
+
+        function getBM2_JS(domain) {
+            var endpoint = domain.replace(/\/$/, '') + '/api/manual-verify-student/';
+            return 'javascript:(function(){function syncData(sid){if(!sid)return;sessionStorage.setItem("current_verify_sid",sid);var text=document.body.innerText;var headerText="";var headers=document.querySelectorAll("h1, h2, h3, h4, th, td, .panel-heading, .title, .header");for(var h=0;h<headers.length;h++){headerText+=" "+headers[h].innerText;}var BL=["BOARD OF","EDUCATION BOARD","TECHNICAL EDUCATION","INTERMEDIATE AND SECONDARY","EXAMINATION RESULT","RESULT PUBLICATION","GOVERNMENT OF","BANGLADESH","MINISTRY OF EDUCATION","WEB BASED RESULT"];function cleanN(s){if(!s)return"";var u=s.trim().toUpperCase();if(u.length<3)return"";for(var i=0;i<BL.length;i++){if(u.indexOf(BL[i])!==-1)return"";}return s.trim();}var savedExam=sessionStorage.getItem("current_verify_exam");var exam="SSC";if(savedExam){if(savedExam.includes("HSC")||savedExam.includes("ALIM"))exam="HSC";else if(savedExam.includes("SSC")||savedExam.includes("DAKHIL"))exam="SSC";}else if(/Secondary\\s*School\\s*Certificate|SSC\\/Dakhil|Result\\s*of\\s*SSC/i.test(headerText)){exam="SSC";}else if(/Higher\\s*Secondary|HSC\\/Alim|Result\\s*of\\s*HSC/i.test(headerText)){exam="HSC";}var gpa="";var name="";var father="";var mother="";var gender="";var dob="";var inst="";var physics="";var chemistry="";var math="";var rows=document.querySelectorAll("tr");for(var r=0;r<rows.length;r++){var cols=rows[r].querySelectorAll("td, th");if(cols.length>=2){var rowText=rows[r].innerText.trim().toLowerCase();var label=cols[0].innerText.trim().toLowerCase();var val=cols[1].innerText.trim();if(label.includes("student")||label.includes("name of examinee")||label==="name")name=name||cleanN(val);if(label.includes("father"))father=father||cleanN(val);if(label.includes("mother"))mother=mother||cleanN(val);if(label.includes("gender")||label.includes("sex"))gender=gender||val;if(label.includes("date of birth")||label.includes("dob"))dob=dob||val;if(label.includes("institute")||label.includes("school")||label.includes("college"))inst=inst||cleanN(val);if(label.includes("gpa")||label.includes("result")){var gMatch=val.match(/([0-5]\\.[0-9]{1,2})/);if(gMatch)gpa=gpa||gMatch[1];}var lastColText=cols[cols.length-1].innerText.trim();var gMatchSubj=lastColText.match(/(A\\+|A\\-|A|B|C|D|F|[0-5]\\.[0-9]{1,2})/i);if(!gMatchSubj&&cols.length>=3){var midColText=cols[cols.length-2].innerText.trim();gMatchSubj=midColText.match(/(A\\+|A\\-|A|B|C|D|F|[0-5]\\.[0-9]{1,2})/i);}var gradeVal=gMatchSubj?gMatchSubj[1].toUpperCase():lastColText;if(rowText.includes("physics"))physics=physics||gradeVal;if(rowText.includes("chemistry"))chemistry=chemistry||gradeVal;if(rowText.includes("math"))math=math||gradeVal;}}if(!name){var nM=text.match(/Name\\s*[:\\-\\s]+([^\\n\\r]+)/i);if(nM)name=cleanN(nM[1]);}if(!father){var fM=text.match(/Father[\'’]?s?\\s*Name\\s*[:\\-\\s]+([^\\n\\r]+)/i);if(fM)father=cleanN(fM[1]);}if(!mother){var mM=text.match(/Mother[\'’]?s?\\s*Name\\s*[:\\-\\s]+([^\\n\\r]+)/i);if(mM)mother=cleanN(mM[1]);}if(!gender){var gM=text.match(/Gender\\s*[:\\-\\s]+([A-Za-z]+)/i)||text.match(/Sex\\s*[:\\-\\s]+([A-Za-z]+)/i);if(gM)gender=gM[1].trim();}if(!dob){var dM=text.match(/Date\\s*of\\s*Birth\\s*[:\\-\\s]+([0-9\\-\\/\w]+)/i)||text.match(/DOB\\s*[:\\-\\s]+([0-9\\-\\/\w]+)/i);if(dM)dob=dM[1].trim();}if(!inst){var iM=text.match(/Institute\\s*[:\\-\\s]+([^\\n\\r]+)/i);if(iM)inst=cleanN(iM[1]);}if(!gpa){var gpaM=text.match(/GPA\\s*[:=\\s]+([0-5]\\.[0-9]{1,2})/i)||text.match(/Result\\s*[:\\-\\s]+PASSED?\\s*\\(?\\s*([0-5]\\.[0-9]{1,2})\\)?/i)||text.match(/PASSED[^\\d]*?([0-5]\\.[0-9]{1,2})/i)||text.match(/GPA[^\\d]*?([0-5]\\.[0-9]{2})/i)||text.match(/([0-5]\\.[0-9]{2})/i);if(gpaM)gpa=gpaM[1].trim();}var rollInp=document.querySelector(\'input[name="roll"], #roll\');var capInp=document.querySelector(\'input[name="captcha"], #captcha\');if((rollInp||capInp)&&!name&&!gpa&&!inst){alert("⚠️ Board result is not displayed on this page yet! Please enter roll & captcha, then click Get Result first.");return;}var confirmMsg="Confirm Board Sync for Student ID: "+sid+"?\\n\\n"+"Board Name: "+(name||"N/A (Keep DB Name)")+"\\nGPA: "+(gpa||"N/A (No GPA)")+"\\nInstitute: "+(inst||"N/A");if(!confirm(confirmMsg))return;var form=document.createElement("form");form.method="POST";form.action="' + endpoint + '";form.target="_blank";function addF(n,v){if(!v)return;var inp=document.createElement("input");inp.type="hidden";inp.name=n;inp.value=v;form.appendChild(inp);}addF("student_id",sid.trim());addF("exam_type",exam);addF("student_name",name);addF("father_name",father);addF("mother_name",mother);addF("gender",gender);addF("dob",dob);addF("gpa",gpa);addF("inst_name",inst);addF("physics",physics);addF("chemistry",chemistry);addF("math",math);addF("format","html");document.body.appendChild(form);form.submit();document.body.removeChild(form);}var savedSid=sessionStorage.getItem("current_verify_sid");if(savedSid){syncData(savedSid);}else if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(txt){var sidM=txt.match(/StudentID:\\s*([A-Za-z0-9_]+)/i)||txt.match(/\\b(080\\d{13}|\\d{16})\\b/);if(sidM){syncData(sidM[1]);}else{var p=prompt("Enter Student ID to sync:");if(p)syncData(p);}}).catch(function(){var p=prompt("Enter Student ID to sync:");if(p)syncData(p);});}else{var p=prompt("Enter Student ID to sync:");if(p)syncData(p);}})();';
+        }
+
+        document.getElementById('btn_bm1').href = BM1_JS;
+        document.getElementById('bm1_code').value = BM1_JS;
+
+        var bm2_js = getBM2_JS(currentOrigin);
+        document.getElementById('btn_bm2').href = bm2_js;
+        document.getElementById('bm2_code').value = bm2_js;
+
+        function copyCode(id, btn) {
+            var textarea = document.getElementById(id);
+            textarea.select();
+            document.execCommand('copy');
+            var isBn = (localStorage.getItem('verification_hub_lang') || 'bn') === 'bn';
+            var old = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> ' + (isBn ? 'কপি হয়েছে!' : 'Copied!');
+            btn.style.background = '#16a34a';
+            setTimeout(function() { btn.innerHTML = old; btn.style.background = ''; }, 2000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,736 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Online Applicant Hub | BAUST Admission{% endblock %}
+
+{% block extra_css %}
+<style>
+    .applicant-filter-card {
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 20px;
+        padding: 16px 20px;
+    }
+
+    .applicant-table th {
+        background-color: #1e293b;
+        color: #ffffff;
+        font-size: 0.85rem;
+        font-weight: 600;
+        vertical-align: middle;
+        text-align: center;
+        border-color: #334155;
+        white-space: nowrap;
+    }
+
+    .applicant-table td {
+        font-size: 0.88rem;
+        vertical-align: middle;
+        border-color: #e2e8f0;
+    }
+
+    .thumb-photo {
+        width: 44px;
+        height: 48px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #cbd5e1;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .thumb-photo:hover {
+        transform: scale(1.15);
+    }
+
+    .badge-status-pending { background-color: #fef08a; color: #854d0e; font-weight: 700; border: 1px solid #fde047; }
+    .badge-status-verified { background-color: #e0f2fe; color: #0369a1; font-weight: 700; border: 1px solid #bae6fd; }
+    .badge-status-approved { background-color: #dcfce7; color: #15803d; font-weight: 700; border: 1px solid #bbf7d0; }
+    .badge-status-rejected { background-color: #fee2e2; color: #b91c1c; font-weight: 700; border: 1px solid #fecaca; }
+    .badge-status-admitted { background-color: #dbeafe; color: #1d4ed8; font-weight: 700; border: 1px solid #bfdbfe; }
+
+    .action-dropdown .dropdown-item {
+        font-size: 0.86rem;
+        padding: 6px 14px;
+    }
+    .action-dropdown .dropdown-item i {
+        width: 18px;
+        margin-right: 6px;
+    }
+    .dark-mode .d-inline-flex.bg-white {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-user-graduate text-primary mr-2"></i> Online Applicant Hub
+{% endblock %}
+
+{% block page_actions %}
+    <!-- Login Page Admission Portal Toggle Switch -->
+    <div class="d-inline-flex align-items-center bg-white border rounded-pill px-3 py-1 shadow-sm mr-2"
+         title="Toggle whether the Online Admission row appears on the public login page"
+         style="gap: 8px;">
+        <small class="font-weight-bold text-muted text-uppercase" style="letter-spacing: 0.04em;">Login Portal</small>
+        <div class="custom-control custom-switch mb-0">
+            <input type="checkbox"
+                   class="custom-control-input"
+                   id="toggleLoginAdmissionSwitch"
+                   {% if sys_settings and sys_settings.show_online_admission_on_login %}checked{% endif %}>
+            <label class="custom-control-label mb-0" for="toggleLoginAdmissionSwitch" id="loginAdmissionSwitchLabel">
+                {% if sys_settings and sys_settings.show_online_admission_on_login %}
+                    <span class="text-success font-weight-bold small" id="loginVisLabel">
+                        <i class="fas fa-eye mr-1"></i>Visible
+                    </span>
+                {% else %}
+                    <span class="text-secondary font-weight-bold small" id="loginVisLabel">
+                        <i class="fas fa-eye-slash mr-1"></i>Hidden
+                    </span>
+                {% endif %}
+            </label>
+        </div>
+    </div>
+
+    <a href="{% url 'admin_intake_list' %}" class="btn btn-outline-primary btn-sm mr-2 font-weight-bold">
+        <i class="fas fa-calendar-alt mr-1"></i> Manage Intakes
+    </a>
+    <a href="{% url 'public_requirements' %}" target="_blank" class="btn btn-outline-info btn-sm font-weight-bold">
+        <i class="fas fa-external-link-alt mr-1"></i> Public Apply Page
+    </a>
+{% endblock %}
+
+{% block content %}
+
+            <!-- Filter & Search Bar (Screenshot 3 Alignment) -->
+            <div class="applicant-filter-card">
+                <form method="GET" id="filterForm">
+                    <div class="row align-items-end">
+                        
+                        <!-- Mobile Search -->
+                        <div class="col-md-3 col-12 mb-2">
+                            <label class="small font-weight-bold mb-1">Search Mobile / Name / Roll:</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" name="mobile" value="{{ mobile_query }}" placeholder="e.g. 01711... or Roll">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Semester / Intake -->
+                        <div class="col-md-2 col-6 mb-2">
+                            <label class="small font-weight-bold mb-1">Semester:</label>
+                            <select class="custom-select custom-select-sm" name="intake" onchange="this.form.submit()">
+                                <option value="">---All Semester---</option>
+                                {% for item in all_intakes %}
+                                <option value="{{ item.id }}" {% if selected_intake_id == item.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ item.intake_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Program -->
+                        <div class="col-md-2 col-6 mb-2">
+                            <label class="small font-weight-bold mb-1">Program:</label>
+                            <select class="custom-select custom-select-sm" name="program" onchange="this.form.submit()">
+                                <option value="">---All Program---</option>
+                                {% for prog in all_programs %}
+                                <option value="{{ prog.short_name|default:prog.name }}" {% if selected_program == prog.short_name or selected_program == prog.name %}selected{% endif %}>
+                                    {{ prog.short_name|default:prog.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-2 col-6 mb-2">
+                            <label class="small font-weight-bold mb-1">Status:</label>
+                            <select class="custom-select custom-select-sm" name="status" onchange="this.form.submit()">
+                                <option value="">---All Status---</option>
+                                {% for s_val, s_label in status_choices %}
+                                <option value="{{ s_val }}" {% if selected_status == s_val %}selected{% endif %}>{{ s_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Page Size Selector (Clamped: 10, 20, 50, 100) -->
+                        <div class="col-md-1 col-6 mb-2">
+                            <label class="small font-weight-bold mb-1">Page Size:</label>
+                            <select class="custom-select custom-select-sm" name="page_size" onchange="this.form.submit()">
+                                <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                                <option value="20" {% if page_size == 20 %}selected{% endif %}>20</option>
+                                <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                                <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                            </select>
+                        </div>
+
+                        <!-- Controls: Show Trash & Export -->
+                        <div class="col-md-2 col-12 mb-2 text-right">
+                            <div class="custom-control custom-checkbox d-inline-block mr-2">
+                                <input type="checkbox" class="custom-control-input" id="show_trash" name="show_trash" value="1" 
+                                    {% if show_trash %}checked{% endif %} onchange="this.form.submit()">
+                                <label class="custom-control-label small font-weight-bold cursor-pointer text-danger" for="show_trash">
+                                    Show Trash
+                                </label>
+                            </div>
+
+                            <a href="{% url 'admin_export_applicants' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm font-weight-bold">
+                                <i class="fas fa-file-excel mr-1"></i> Export
+                            </a>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+            <!-- Table Card -->
+            <div class="card card-outline card-primary shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <span class="font-weight-bold text-dark">
+                        Total Applicants Found: <span class="badge badge-primary px-2 py-1">{{ total_count }}</span>
+                    </span>
+                    <span class="text-muted small">
+                        Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </div>
+
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover table-striped table-bordered applicant-table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th>Mobile No</th>
+                                <th>Name</th>
+                                <th>Program</th>
+                                <th>Semester</th>
+                                <th>Exam Roll</th>
+                                <th>SSC HSC</th>
+                                <th>Payment</th>
+                                <th>Applied Date</th>
+                                <th style="width: 60px;">Photo</th>
+                                <th>Status</th>
+                                <th style="width: 100px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in page_obj %}
+                            <tr>
+                                <td class="text-center font-weight-bold">{{ forloop.counter0|add:page_obj.start_index }}</td>
+                                <td class="font-weight-bold text-primary">{{ app.mobile }}</td>
+                                <td class="font-weight-bold text-dark">{{ app.name }}</td>
+                                <td>
+                                    <span class="badge badge-info">{{ app.desired_program|default:"N/A" }}</span>
+                                    <small class="d-block text-muted">{{ app.program_category }}</small>
+                                </td>
+                                <td>{{ app.intake_name }}</td>
+                                <td class="text-center">
+                                    {% if app.exam_roll %}
+                                    <code class="font-weight-bold text-dark" style="font-size: 0.95rem;">{{ app.exam_roll }}</code>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <small class="d-block">SSC: <strong>{{ app.ssc_gpa }}</strong> {% if app.ssc_verified %}<i class="fas fa-check-circle text-success" title="Board Verified"></i>{% endif %}</small>
+                                    <small class="d-block">HSC: <strong>{{ app.hsc_gpa }}</strong> {% if app.hsc_verified %}<i class="fas fa-check-circle text-success" title="Board Verified"></i>{% endif %}</small>
+                                    <span class="badge badge-secondary" style="font-size: 0.72rem;">Tot: {{ app.total_gpa }}</span>
+                                </td>
+                                <td>
+                                    <span class="d-block small font-weight-bold">bKash: <code>{{ app.payment_trx_id }}</code></span>
+                                    {% if app.payment_status == 'VERIFIED' %}
+                                        <span class="badge badge-success" style="font-size: 0.72rem;"><i class="fas fa-check mr-1"></i>Verified</span>
+                                    {% elif app.payment_status == 'INVALID' %}
+                                        <span class="badge badge-danger" style="font-size: 0.72rem;">Invalid</span>
+                                    {% else %}
+                                        <span class="badge badge-warning text-dark" style="font-size: 0.72rem;">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small text-muted text-center">{{ app.applied_at|date:"Y-m-d H:i" }}</td>
+                                <td class="text-center">
+                                    {% if app.photo %}
+                                    <img src="{{ app.photo.url }}" alt="{{ app.name }}" class="thumb-photo" 
+                                         onclick="showPhotoZoom('{{ app.photo.url }}', '{{ app.name }}')">
+                                    {% else %}
+                                    <img src="{% static 'img/default_avatar.jpg' %}" alt="No Photo" class="thumb-photo">
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if app.status == 'APPROVED' %}
+                                        <span class="badge badge-status-approved px-2 py-1">Approved</span>
+                                    {% elif app.status == 'ADMITTED' %}
+                                        <span class="badge badge-status-admitted px-2 py-1">Admitted</span>
+                                        {% if app.admitted_student %}
+                                        <small class="d-block text-primary font-weight-bold mt-1">{{ app.admitted_student.student_id }}</small>
+                                        {% endif %}
+                                    {% elif app.status == 'VERIFIED' %}
+                                        <span class="badge badge-status-verified px-2 py-1">Verified</span>
+                                    {% elif app.status == 'REJECTED' %}
+                                        <span class="badge badge-status-rejected px-2 py-1">Rejected</span>
+                                    {% else %}
+                                        <span class="badge badge-status-pending px-2 py-1">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-default btn-xs dropdown-toggle font-weight-bold" data-toggle="dropdown" aria-expanded="false">
+                                            Action
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right action-dropdown shadow">
+                                            <!-- 1. View Details -->
+                                            <a class="dropdown-item" href="javascript:void(0);" onclick="openApplicantDetailModal({{ app.id }})">
+                                                <i class="fas fa-eye text-primary"></i> View Details
+                                            </a>
+                                            <!-- 2. Verify Board Data -->
+                                            <a class="dropdown-item" href="javascript:void(0);" onclick="openBoardVerifyModal({{ app.id }}, '{{ app.ssc_board }}', '{{ app.ssc_roll }}', '{{ app.ssc_year }}', '{{ app.ssc_reg }}', '{{ app.hsc_board }}', '{{ app.hsc_roll }}', '{{ app.hsc_year }}', '{{ app.hsc_reg }}')">
+                                                <i class="fas fa-check-double text-info"></i> Verify Board
+                                            </a>
+                                            <!-- 3. Verify Payment -->
+                                            <a class="dropdown-item" href="javascript:void(0);" onclick="openPaymentVerifyModal({{ app.id }}, '{{ app.payment_trx_id }}', '{{ app.payment_status }}', '{{ app.payment_notes|escapejs }}')">
+                                                <i class="fas fa-credit-card text-success"></i> Verify Payment
+                                            </a>
+                                            <!-- 4. Edit -->
+                                            <a class="dropdown-item" href="javascript:void(0);" onclick="openEditModal({{ app.id }})">
+                                                <i class="fas fa-edit text-warning"></i> Edit
+                                            </a>
+                                            <!-- 5. Print Summary -->
+                                            <a class="dropdown-item" href="{% url 'admin_print_application' app.id %}" target="_blank">
+                                                <i class="fas fa-print text-secondary"></i> Print
+                                            </a>
+                                            
+                                            <div class="dropdown-divider"></div>
+                                            
+                                            <!-- 6. 1-Click Enroll to Main Database -->
+                                            {% if app.status != 'ADMITTED' and not app.admitted_student %}
+                                            <a class="dropdown-item text-success font-weight-bold" href="javascript:void(0);" 
+                                               onclick="openEnrollModal({{ app.id }}, '{{ app.name|escapejs }}', '{{ app.desired_program }}', '{{ app.intake_name }}')">
+                                                <i class="fas fa-user-plus"></i> Enroll to DB
+                                            </a>
+                                            {% else %}
+                                            <span class="dropdown-item text-muted disabled">
+                                                <i class="fas fa-check text-success"></i> Already Enrolled
+                                            </span>
+                                            {% endif %}
+
+                                            <div class="dropdown-divider"></div>
+
+                                            <!-- 7. Trash / Restore -->
+                                            {% if not app.is_trashed %}
+                                            <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="trashApplicant({{ app.id }}, '{{ app.name|escapejs }}')">
+                                                <i class="fas fa-trash-alt"></i> Move to Trash
+                                            </a>
+                                            {% else %}
+                                            <a class="dropdown-item text-success" href="javascript:void(0);" onclick="restoreApplicant({{ app.id }}, '{{ app.name|escapejs }}')">
+                                                <i class="fas fa-trash-restore"></i> Restore
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="12" class="text-center py-5 text-muted">
+                                    <i class="fas fa-folder-open fa-3x mb-3 text-secondary"></i>
+                                    <h5>No online applicants found matching your criteria.</h5>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                {% if page_obj.has_other_pages %}
+                <div class="card-footer d-flex justify-content-between align-items-center py-2">
+                    <span class="text-muted small">
+                        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_count }} entries
+                    </span>
+                    <ul class="pagination pagination-sm m-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">« Prev</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">« Prev</span></li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">Next »</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">Next »</span></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+
+<!-- Placeholder container for dynamic modals -->
+<div id="modalContainer"></div>
+
+<!-- Photo Zoom Modal -->
+<div class="modal fade" id="photoZoomModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title font-weight-bold" id="photoZoomTitle">Photo</h6>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body text-center p-2">
+                <img id="photoZoomImg" src="" alt="Zoom" class="img-fluid rounded shadow">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generic Confirmation Modal for Payment / Status / Trash -->
+<div class="modal fade" id="paymentVerifyModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-navy py-2 text-white">
+                <h6 class="modal-title font-weight-bold"><i class="fas fa-credit-card mr-1"></i> Verify Payment</h6>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="paymentVerifyForm">
+                {% csrf_token %}
+                <input type="hidden" id="pv_applicant_id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="small font-weight-bold">Submitted bKash TrxID:</label>
+                        <input type="text" class="form-control bg-light font-weight-bold" id="pv_trx_id" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold">Verification Decision:</label>
+                        <select class="custom-select" id="pv_status" name="payment_status" required>
+                            <option value="VERIFIED">Payment Verified (Valid)</option>
+                            <option value="INVALID">Invalid / Fake TrxID (Reject)</option>
+                            <option value="PENDING">Pending Verification</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="small font-weight-bold">Internal Audit Notes:</label>
+                        <textarea class="form-control" id="pv_notes" name="payment_notes" rows="2" placeholder="e.g. Checked with bKash merchant portal on date..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-sm font-weight-bold">
+                        <i class="fas fa-check mr-1"></i> Save Decision
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Board Verification Modal -->
+<div class="modal fade" id="boardVerifyModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info py-2 text-white">
+                <h6 class="modal-title font-weight-bold"><i class="fas fa-check-double mr-1"></i> Board Result Verification</h6>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="bv_applicant_id">
+                <div class="form-group">
+                    <label class="small font-weight-bold">Select Examination to Verify:</label>
+                    <select class="custom-select" id="bv_exam_type">
+                        <option value="ssc">SSC / Dakhil / Equivalent</option>
+                        <option value="hsc">HSC / Alim / Equivalent</option>
+                    </select>
+                </div>
+                <div id="boardDetailsSummary" class="alert alert-light border small mb-3"></div>
+                <div id="boardVerifyResult" class="d-none"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info btn-sm font-weight-bold" id="btnExecuteBoardVerify" onclick="executeBoardVerification()">
+                    <i class="fas fa-search mr-1"></i> Check Board Portal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Photo Zoom
+    function showPhotoZoom(url, name) {
+        $('#photoZoomImg').attr('src', url);
+        $('#photoZoomTitle').text(name);
+        $('#photoZoomModal').modal('show');
+    }
+
+    // Detail Modal AJAX
+    function openApplicantDetailModal(id) {
+        $.get(`/students/online-applicants/${id}/detail/`, function(html) {
+            $('#modalContainer').html(html);
+            $('#applicantDetailModal').modal('show');
+        }).fail(function() {
+            alert('Failed to load applicant details.');
+        });
+    }
+
+    // Edit Modal AJAX
+    function openEditModal(id) {
+        $.get(`/students/online-applicants/${id}/edit/`, function(html) {
+            $('#modalContainer').html(html);
+            $('#applicantEditModal').modal('show');
+        }).fail(function() {
+            alert('Failed to load edit modal.');
+        });
+    }
+
+    // Payment Verify Modal
+    function openPaymentVerifyModal(id, trx, status, notes) {
+        $('#pv_applicant_id').val(id);
+        $('#pv_trx_id').val(trx);
+        $('#pv_status').val(status || 'VERIFIED');
+        $('#pv_notes').val(notes || '');
+        $('#paymentVerifyModal').modal('show');
+    }
+
+    $('#paymentVerifyForm').on('submit', function(e) {
+        e.preventDefault();
+        const id = $('#pv_applicant_id').val();
+        $.post(`/students/online-applicants/${id}/verify-payment/`, $(this).serialize(), function(res) {
+            if (res.status === 'success') {
+                $('#paymentVerifyModal').modal('hide');
+                location.reload();
+            } else {
+                alert(res.message || 'Error verifying payment.');
+            }
+        }).fail(function(xhr) {
+            alert(xhr.responseJSON?.message || 'Server error occurred.');
+        });
+    });
+
+    // Board Verification Bridge
+    let cachedBoardData = {};
+    function openBoardVerifyModal(id, sscBoard, sscRoll, sscYear, sscReg, hscBoard, hscRoll, hscYear, hscReg) {
+        $('#bv_applicant_id').val(id);
+        cachedBoardData = {
+            ssc: { board: sscBoard, roll: sscRoll, year: sscYear, reg: sscReg },
+            hsc: { board: hscBoard, roll: hscRoll, year: hscYear, reg: hscReg }
+        };
+        updateBoardModalDisplay();
+        $('#boardVerifyResult').addClass('d-none').empty();
+        $('#boardVerifyModal').modal('show');
+    }
+
+    $('#bv_exam_type').on('change', updateBoardModalDisplay);
+
+    function updateBoardModalDisplay() {
+        const type = $('#bv_exam_type').val();
+        const d = cachedBoardData[type] || {};
+        $('#boardDetailsSummary').html(`
+            <strong>Board:</strong> ${d.board || 'N/A'} &bull; 
+            <strong>Year:</strong> ${d.year || 'N/A'} &bull; 
+            <strong>Roll:</strong> ${d.roll || 'N/A'} &bull; 
+            <strong>Reg:</strong> ${d.reg || 'N/A'}
+        `);
+    }
+
+    function executeBoardVerification() {
+        const id = $('#bv_applicant_id').val();
+        const examType = $('#bv_exam_type').val();
+        const $btn = $('#btnExecuteBoardVerify');
+        const $res = $('#boardVerifyResult');
+
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Querying Board...');
+        $res.removeClass('d-none').html('<div class="text-center py-2"><i class="fas fa-spinner fa-spin text-info mr-1"></i> Contacting official education board server...</div>');
+
+        $.post(`/students/online-applicants/${id}/verify-board/`, {
+            exam_type: examType,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(res) {
+            $btn.prop('disabled', false).html('<i class="fas fa-search mr-1"></i> Check Board Portal');
+            if (res.success) {
+                const d = res.data || {};
+                $res.html(`
+                    <div class="alert alert-success mt-2">
+                        <h6 class="font-weight-bold mb-1"><i class="fas fa-check-circle mr-1"></i> Verification Successful!</h6>
+                        <p class="mb-0 small">
+                            <strong>Candidate:</strong> ${d.name || 'Verified'}<br>
+                            <strong>GPA:</strong> ${d.gpa || 'Verified'}<br>
+                            <strong>Institute:</strong> ${d.institute || 'Matched'}
+                        </p>
+                    </div>
+                `);
+            } else {
+                $res.html(`
+                    <div class="alert alert-danger mt-2">
+                        <i class="fas fa-times-circle mr-1"></i> ${res.error || 'Verification failed.'}
+                    </div>
+                `);
+            }
+        }).fail(function(xhr) {
+            $btn.prop('disabled', false).html('<i class="fas fa-search mr-1"></i> Check Board Portal');
+            $res.html(`<div class="alert alert-danger mt-2">Server error: ${xhr.responseJSON?.error || 'Failed to connect to board API.'}</div>`);
+        });
+    }
+
+    // Enroll Modal
+    function openEnrollModal(id, name, program, semester) {
+        const modalHtml = `
+            <div class="modal fade" id="enrollModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-success">
+                        <div class="modal-header bg-success text-white py-2">
+                            <h6 class="modal-title font-weight-bold"><i class="fas fa-user-plus mr-1"></i> Enroll Student to Database</h6>
+                            <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                        </div>
+                        <form id="enrollForm">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                            <div class="modal-body">
+                                <div class="alert alert-light border small mb-3">
+                                    Enrolling <strong>${name}</strong> into <strong>${program}</strong> (${semester}).
+                                    A permanent 16-digit UGC Student ID will be generated automatically.
+                                </div>
+                                <div class="form-group">
+                                    <label class="small font-weight-bold">Assigned Residential Hall: <span class="text-danger">*</span></label>
+                                    <select class="custom-select" name="hall_name" required>
+                                        <option value="">-- Select Hall --</option>
+                                        {% for h in halls %}
+                                        <option value="{{ h.full_name }}">{{ h.full_name }} ({{ h.short_name }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="small font-weight-bold">Batch Name / Intake Batch: <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="batch_name" placeholder="e.g. 1st Batch, 20th Batch" required>
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label class="small font-weight-bold">Custom Student ID (Optional - Leave blank for Auto UGC ID):</label>
+                                    <input type="text" class="form-control" name="custom_student_id" placeholder="Optional manual override">
+                                </div>
+                            </div>
+                            <div class="modal-footer py-2">
+                                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-success btn-sm font-weight-bold" id="btnConfirmEnroll">
+                                    <i class="fas fa-check-circle mr-1"></i> Confirm Enrollment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('#modalContainer').html(modalHtml);
+        $('#enrollModal').modal('show');
+
+        $('#enrollForm').on('submit', function(e) {
+            e.preventDefault();
+            $('#btnConfirmEnroll').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Enrolling...');
+            $.post(`/students/online-applicants/${id}/enroll/`, $(this).serialize(), function(res) {
+                if (res.status === 'success') {
+                    $('#enrollModal').modal('hide');
+                    alert(`Enrollment Successful! New Student ID: ${res.student_id}`);
+                    location.reload();
+                } else {
+                    alert(res.message || 'Error enrolling student.');
+                    $('#btnConfirmEnroll').prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> Confirm Enrollment');
+                }
+            }).fail(function(xhr) {
+                alert(xhr.responseJSON?.message || 'Server error occurred.');
+                $('#btnConfirmEnroll').prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> Confirm Enrollment');
+            });
+        });
+    }
+
+    // Trash & Restore
+    function trashApplicant(id, name) {
+        if (!confirm(`Are you sure you want to move applicant "${name}" to trash?`)) return;
+        $.post(`/students/online-applicants/${id}/trash/`, { csrfmiddlewaretoken: '{{ csrf_token }}' }, function(res) {
+            if (res.status === 'success') {
+                location.reload();
+            } else {
+                alert(res.message || 'Error trashing applicant.');
+            }
+        });
+    }
+
+    function restoreApplicant(id, name) {
+        if (!confirm(`Restore applicant "${name}" from trash?`)) return;
+        $.post(`/students/online-applicants/${id}/restore/`, { csrfmiddlewaretoken: '{{ csrf_token }}' }, function(res) {
+            if (res.status === 'success') {
+                location.reload();
+            } else {
+                alert(res.message || 'Error restoring applicant.');
+            }
+        }).fail(function(xhr) {
+            alert(xhr.responseJSON?.message || 'Error restoring applicant.');
+        });
+    }
+
+    // ==== Login Page Admission Portal Toggle ====
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    $('#toggleLoginAdmissionSwitch').on('change', function () {
+        const $switch = $(this);
+        const $label = $('#loginVisLabel');
+
+        // Prevent double-click
+        $switch.prop('disabled', true);
+
+        $.ajax({
+            url: '{% url "admin_toggle_login_admission_visibility" %}',
+            type: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            success: function (res) {
+                if (res.status === 'success') {
+                    if (res.is_visible) {
+                        $label.html('<i class="fas fa-eye mr-1"></i>Visible').removeClass('text-secondary').addClass('text-success');
+                    } else {
+                        $label.html('<i class="fas fa-eye-slash mr-1"></i>Hidden').removeClass('text-success').addClass('text-secondary');
+                    }
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: res.message,
+                        showConfirmButton: false,
+                        timer: 2500,
+                        timerProgressBar: true
+                    });
+                }
+            },
+            error: function (xhr) {
+                // Revert switch position on failure
+                $switch.prop('checked', !$switch.prop('checked'));
+                const errMsg = xhr.responseJSON?.error || xhr.responseJSON?.message || 'Failed to update portal visibility.';
+                Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: errMsg, showConfirmButton: false, timer: 3500 });
+            },
+            complete: function () {
+                $switch.prop('disabled', false);
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -4,6 +4,7 @@ from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from .access_registry import ACCESS_REGISTRY
 from .decorators import require_access
@@ -127,7 +128,7 @@ def role_management(request):
                 messages.success(request, f'Role "{role.name}" created successfully.')
                 from .utils import log_activity
                 log_activity(request, 'CREATE', 'security', f'Created security role: {role.name}', object_id=str(role.id))
-                return redirect('role_management')
+                return redirect(f"{reverse('role_management')}?role_id={role.id}")
             _add_form_errors(request, role_form, 'Could not create the role.')
             
         elif action == 'edit_role':
@@ -185,19 +186,58 @@ def role_management(request):
     roles = Role.objects.all().prefetch_related('permissions').order_by('name')
     from django.db.models import Count
     roles = roles.annotate(user_count=Count('userprofile'))
-    
+
     for role in roles:
         role.permission_total = role.permissions.count()
 
     task_count = sum(len(module['tasks']) for module in ACCESS_REGISTRY.values())
-    return render(request, 'core/role_management.html', {
+
+    # Determine the selected role for the right-panel workstation
+    selected_role_id = request.GET.get('role_id')
+    selected_role = None
+    if selected_role_id:
+        selected_role = roles.filter(id=selected_role_id).first()
+    if not selected_role and roles.exists():
+        selected_role = roles.first()
+
+    context = {
         'roles': roles,
         'registry': ACCESS_REGISTRY,
         'role_form': role_form,
         'role_count': roles.count(),
         'module_count': len(ACCESS_REGISTRY),
         'task_count': task_count,
+        'selected_role': selected_role,
+    }
+
+    # HTMX role-switch: return only the workstation right-panel partial
+    if request.headers.get('HX-Request') == 'true' and request.method == 'GET':
+        return render(request, 'core/_role_workstation_partial.html', context)
+
+    return render(request, 'core/role_management.html', context)
+
+
+@require_access('security', 'manage_roles')
+def role_users_partial(request):
+    """HTMX partial: returns the user list for a given role."""
+    from django.db.models import Count
+    role_id = request.GET.get('role_id')
+    role = None
+    users = []
+    if role_id:
+        role = Role.objects.filter(id=role_id).first()
+        if role:
+            users = (
+                UserProfile.objects
+                .filter(role=role, is_active=True)
+                .select_related('user')
+                .order_by('user__first_name', 'user__last_name')
+            )
+    return render(request, 'core/_role_users_partial.html', {
+        'role': role,
+        'users': users,
     })
+
 
 
 @require_access('security', 'manage_users')
@@ -1155,9 +1195,498 @@ def set_user_language(request):
             profile.language = language
             profile.save(update_fields=['language'])
         
-        # Save in session for Django's LocaleMiddleware to recognize immediately
         request.session['_language'] = language
         activate(language)
         
     return HttpResponseRedirect(next_url)
+
+
+# ── SMS GATEWAY MANAGEMENT & PERIOD REPORTING DASHBOARD ─────────────────────────
+import csv
+from datetime import datetime, time
+from django.utils import timezone
+from django.db.models import Count, Q
+from django.core.paginator import Paginator
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from .models import SMSProfile
+from students.models import SMSHistory
+from .utils import send_sms, get_sms_balance
+
+@login_required
+def sms_dashboard(request):
+    """
+    Main SMS Gateway Hub: Profile Management, Live Balance Checker,
+    One-Click Test Dispatch, and Period & Module-Wise Reporting Analytics.
+    """
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and (request.user.profile.has_access('security', 'manage_sms') or request.user.profile.has_access('security', 'manage_settings')))):
+        messages.error(request, "Permission denied.")
+        return redirect('dashboard')
+
+    # Date Filter parameters
+    from_date_str = request.GET.get('from_date', '')
+    to_date_str = request.GET.get('to_date', '')
+    module_filter = request.GET.get('module', '')
+    status_filter = request.GET.get('status', '')
+    profile_filter = request.GET.get('profile', '')
+    search_query = request.GET.get('q', '').strip()
+    preset = request.GET.get('preset', '')
+
+    today = timezone.now().date()
+    
+    # Handle quick presets
+    if preset == 'today':
+        from_date = today
+        to_date = today
+    elif preset == 'yesterday':
+        from_date = today - timezone.timedelta(days=1)
+        to_date = today - timezone.timedelta(days=1)
+    elif preset == '7days':
+        from_date = today - timezone.timedelta(days=7)
+        to_date = today
+    elif preset == 'this_month':
+        from_date = today.replace(day=1)
+        to_date = today
+    else:
+        # Parse custom dates
+        if from_date_str:
+            try:
+                from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                from_date = today - timezone.timedelta(days=30)
+        else:
+            from_date = today - timezone.timedelta(days=30)
+            
+        if to_date_str:
+            try:
+                to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                to_date = today
+        else:
+            to_date = today
+
+    # Construct datetime bounds
+    start_dt = timezone.make_aware(datetime.combine(from_date, time.min))
+    end_dt = timezone.make_aware(datetime.combine(to_date, time.max))
+
+    # Base query for period logs
+    logs_qs = SMSHistory.objects.filter(sent_at__gte=start_dt, sent_at__lte=end_dt)
+
+    if module_filter:
+        logs_qs = logs_qs.filter(module_name=module_filter)
+    if status_filter:
+        logs_qs = logs_qs.filter(status=status_filter)
+    if profile_filter:
+        logs_qs = logs_qs.filter(sms_profile_id=profile_filter)
+    if search_query:
+        logs_qs = logs_qs.filter(
+            Q(recipient_contact__icontains=search_query) |
+            Q(recipient_name__icontains=search_query) |
+            Q(student_id__icontains=search_query) |
+            Q(message_body__icontains=search_query)
+        )
+
+    # Aggregations for Period Report
+    total_sent = logs_qs.count()
+    delivered_count = logs_qs.filter(status='Delivered').count()
+    failed_count = logs_qs.filter(status='Failed').count()
+    success_rate = round((delivered_count / total_sent * 100), 1) if total_sent > 0 else 0.0
+
+    # Module-wise breakdown
+    module_breakdown = list(logs_qs.values('module_name').annotate(
+        total=Count('id'),
+        delivered=Count('id', filter=Q(status='Delivered')),
+        failed=Count('id', filter=Q(status='Failed'))
+    ).order_by('-total'))
+
+    # Use-case event breakdown
+    usecase_breakdown = list(logs_qs.values('module_name', 'use_case_event').annotate(
+        total=Count('id')
+    ).order_by('module_name', '-total'))
+
+    # Pagination
+    paginator = Paginator(logs_qs.select_related('sms_profile'), 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    profiles = SMSProfile.objects.all()
+    active_profile = profiles.filter(is_active=True).first()
+    active_tab = request.GET.get('tab', 'profiles')
+
+    context = {
+        'profiles': profiles,
+        'active_profile': active_profile,
+        'page_obj': page_obj,
+        'total_sent': total_sent,
+        'delivered_count': delivered_count,
+        'failed_count': failed_count,
+        'success_rate': success_rate,
+        'module_breakdown': module_breakdown,
+        'usecase_breakdown': usecase_breakdown,
+        'from_date': from_date.strftime('%Y-%m-%d'),
+        'to_date': to_date.strftime('%Y-%m-%d'),
+        'module_filter': module_filter,
+        'status_filter': status_filter,
+        'profile_filter': profile_filter,
+        'search_query': search_query,
+        'preset': preset,
+        'active_tab': active_tab,
+    }
+    return render(request, 'core/sms_dashboard.html', context)
+
+
+@login_required
+def sms_activate_profile(request, profile_id):
+    """Activates an SMSProfile and deactivates all others."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'view_security'))):
+        messages.error(request, "Permission denied.")
+        return redirect('sms_dashboard')
+
+    try:
+        profile = SMSProfile.objects.get(pk=profile_id)
+        profile.is_active = True
+        profile.save()
+        messages.success(request, f"SMS Profile '{profile.profile_name}' is now active.")
+    except SMSProfile.DoesNotExist:
+        messages.error(request, "SMS Profile not found.")
+
+    return redirect('sms_dashboard')
+
+
+@login_required
+def sms_save_profile(request):
+    """Creates or updates an SMSProfile from the form submission."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'view_security'))):
+        messages.error(request, "Permission denied.")
+        return redirect('sms_dashboard')
+
+    if request.method == 'POST':
+        profile_id = request.POST.get('profile_id')
+        profile_name = request.POST.get('profile_name', '').strip()
+        api_url = request.POST.get('api_url', '').strip()
+        auth_type = request.POST.get('auth_type', 'api_key')
+        http_method = request.POST.get('http_method', 'GET')
+        
+        api_key = request.POST.get('api_key', '').strip()
+        sender_id = request.POST.get('sender_id', '').strip()
+        number_param = request.POST.get('number_param', 'number').strip()
+        message_param = request.POST.get('message_param', 'message').strip()
+        sender_param = request.POST.get('sender_param', 'senderid').strip()
+        
+        user_id = request.POST.get('user_id', '').strip()
+        user_id_param = request.POST.get('user_id_param', 'userId').strip()
+        password = request.POST.get('password', '').strip()
+        password_param = request.POST.get('password_param', 'password').strip()
+        
+        extra_params = request.POST.get('extra_params', '').strip()
+        balance_url = request.POST.get('balance_url', '').strip()
+        is_active = request.POST.get('is_active') == '1'
+
+        if profile_id:
+            profile = get_object_or_404(SMSProfile, pk=profile_id)
+        else:
+            profile = SMSProfile()
+
+        profile.profile_name = profile_name
+        profile.api_url = api_url
+        profile.auth_type = auth_type
+        profile.http_method = http_method
+        profile.api_key = api_key
+        profile.sender_id = sender_id
+        profile.number_param = number_param or 'number'
+        profile.message_param = message_param or 'message'
+        profile.sender_param = sender_param or 'senderid'
+        profile.user_id = user_id
+        profile.user_id_param = user_id_param or 'userId'
+        profile.password = password
+        profile.password_param = password_param or 'password'
+        profile.extra_params = extra_params
+        profile.balance_url = balance_url
+        profile.is_active = is_active
+
+        try:
+            profile.save()
+            messages.success(request, f"SMS Profile '{profile.profile_name}' saved successfully.")
+        except Exception as e:
+            messages.error(request, f"Error saving SMS Profile: {e}")
+
+    return redirect('sms_dashboard')
+
+
+@login_required
+def sms_delete_profile(request, profile_id):
+    """Deletes an SMSProfile."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'view_security'))):
+        messages.error(request, "Permission denied.")
+        return redirect('sms_dashboard')
+
+    try:
+        profile = SMSProfile.objects.get(pk=profile_id)
+        name = profile.profile_name
+        profile.delete()
+        messages.success(request, f"SMS Profile '{name}' deleted.")
+    except SMSProfile.DoesNotExist:
+        messages.error(request, "SMS Profile not found.")
+
+    return redirect('sms_dashboard')
+
+
+@login_required
+def sms_get_balance_api(request, profile_id):
+    """AJAX endpoint to query account balance for a specific SMSProfile."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'view_security'))):
+        return JsonResponse({'success': False, 'message': 'Permission denied.'}, status=403)
+
+    try:
+        profile = SMSProfile.objects.get(pk=profile_id)
+        success, balance_text = get_sms_balance(profile)
+        return JsonResponse({'success': success, 'balance': balance_text})
+    except SMSProfile.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Profile not found.'}, status=404)
+
+
+@login_required
+def sms_send_test_api(request):
+    """AJAX endpoint to send a one-click test SMS."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'view_security'))):
+        return JsonResponse({'success': False, 'message': 'Permission denied.'}, status=403)
+
+    if request.method == 'POST':
+        number = request.POST.get('number', '').strip()
+        message = request.POST.get('message', 'Test message from BAUST Admission System SMS Gateway.').strip()
+        profile_id = request.POST.get('profile_id')
+
+        if not number:
+            return JsonResponse({'success': False, 'message': 'Target phone number is required.'})
+
+        # If specific profile requested for test, temporarily set active or pass directly
+        profile = None
+        if profile_id:
+            try:
+                profile = SMSProfile.objects.get(pk=profile_id)
+            except SMSProfile.DoesNotExist:
+                pass
+
+        if not profile:
+            profile = SMSProfile.objects.filter(is_active=True).first()
+
+        if not profile:
+            return JsonResponse({'success': False, 'message': 'No SMS Profile selected or active.'})
+
+        # Temporarily save active state to test specific profile
+        was_active = profile.is_active
+        if not was_active:
+            SMSProfile.objects.filter(is_active=True).update(is_active=False)
+            profile.is_active = True
+            profile.save()
+
+        success, response_text = send_sms(
+            number=number,
+            message=message,
+            module='SYSTEM',
+            use_case_event='test_sms',
+            recipient_name=f"Test Recipient ({request.user.username})",
+            student_id="TEST"
+        )
+
+        # Restore previous active profile state if it wasn't the active one
+        if not was_active:
+            profile.is_active = False
+            profile.save()
+
+        return JsonResponse({
+            'success': success,
+            'message': f"SMS Sent via {profile.profile_name}!" if success else f"Dispatch Failed: {response_text}",
+            'response': response_text,
+            'profile_name': profile.profile_name
+        })
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=405)
+
+
+@login_required
+def sms_export_report_csv(request):
+    """Generates a CSV report export for SMS logs based on date and module filters."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'view_security'))):
+        messages.error(request, "Permission denied.")
+        return redirect('sms_dashboard')
+
+    from_date_str = request.GET.get('from_date', '')
+    to_date_str = request.GET.get('to_date', '')
+    module_filter = request.GET.get('module', '')
+    status_filter = request.GET.get('status', '')
+    search_query = request.GET.get('q', '').strip()
+
+    today = timezone.now().date()
+    if from_date_str:
+        try:
+            from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            from_date = today - timezone.timedelta(days=30)
+    else:
+        from_date = today - timezone.timedelta(days=30)
+
+    if to_date_str:
+        try:
+            to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            to_date = today
+    else:
+        to_date = today
+
+    start_dt = timezone.make_aware(datetime.combine(from_date, time.min))
+    end_dt = timezone.make_aware(datetime.combine(to_date, time.max))
+
+    logs_qs = SMSHistory.objects.filter(sent_at__gte=start_dt, sent_at__lte=end_dt)
+
+    if module_filter:
+        logs_qs = logs_qs.filter(module_name=module_filter)
+    if status_filter:
+        logs_qs = logs_qs.filter(status=status_filter)
+    if search_query:
+        logs_qs = logs_qs.filter(
+            Q(recipient_contact__icontains=search_query) |
+            Q(recipient_name__icontains=search_query) |
+            Q(student_id__icontains=search_query) |
+            Q(message_body__icontains=search_query)
+        )
+
+    response = HttpResponse(content_type='text/csv')
+    timestamp_str = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="SMS_Report_{from_date}_to_{to_date}_{timestamp_str}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Log ID', 'Date & Time', 'Module', 'Use Case Event',
+        'Recipient Contact', 'Recipient Name', 'Student ID',
+        'Gateway Profile', 'Delivery Status', 'SMS Message Body', 'API Response'
+    ])
+
+    for log in logs_qs.select_related('sms_profile').order_by('-sent_at'):
+        writer.writerow([
+            log.id,
+            log.sent_at.strftime('%Y-%m-%d %H:%M:%S'),
+            log.get_module_name_display() if hasattr(log, 'get_module_name_display') else log.module_name,
+            log.use_case_event,
+            log.recipient_contact,
+            log.recipient_name or '',
+            log.student_id or '',
+            log.api_profile_name or '',
+            log.status,
+            log.message_body,
+            log.api_response or ''
+        ])
+
+    return response
+
+
+@login_required
+def sms_export_profiles_json(request):
+    """Exports all SMS Gateway profiles as a single JSON file."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'view_security'))):
+        messages.error(request, "Permission denied.")
+        return redirect('sms_dashboard')
+
+    profiles = SMSProfile.objects.all()
+    fields = [
+        'profile_name', 'api_url', 'auth_type', 'http_method', 'api_key',
+        'sender_id', 'number_param', 'message_param', 'sender_param',
+        'user_id', 'user_id_param', 'password', 'password_param',
+        'extra_params', 'balance_url', 'is_active'
+    ]
+
+    export_data = []
+    for p in profiles:
+        export_data.append({field: getattr(p, field) for field in fields})
+
+    response = JsonResponse(export_data, safe=False, json_dumps_params={'indent': 2})
+    timestamp_str = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="sms_profiles_{timestamp_str}.json"'
+    return response
+
+
+@login_required
+def sms_import_profiles_json(request):
+    """Imports SMS Gateway profiles from an uploaded JSON file."""
+    if not (request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.has_access('security', 'view_security'))):
+        messages.error(request, "Permission denied.")
+        return redirect('sms_dashboard')
+
+    if request.method == 'POST':
+        json_file = request.FILES.get('profiles_json')
+        if not json_file:
+            messages.error(request, "No file uploaded.")
+            return redirect('sms_dashboard')
+
+        import json
+        try:
+            data = json.load(json_file)
+        except Exception as e:
+            messages.error(request, f"Failed to parse JSON file: {e}")
+            return redirect('sms_dashboard')
+
+        # Wrap dict in list if a single profile was uploaded
+        if isinstance(data, dict):
+            data = [data]
+        elif not isinstance(data, list):
+            messages.error(request, "Invalid JSON format. Expected a list of profile objects.")
+            return redirect('sms_dashboard')
+
+        imported_count = 0
+        error_count = 0
+
+        fields = [
+            'api_url', 'auth_type', 'http_method', 'api_key',
+            'sender_id', 'number_param', 'message_param', 'sender_param',
+            'user_id', 'user_id_param', 'password', 'password_param',
+            'extra_params', 'balance_url'
+        ]
+
+        for item in data:
+            if not isinstance(item, dict):
+                error_count += 1
+                continue
+
+            profile_name = item.get('profile_name', '').strip()
+            api_url = item.get('api_url', '').strip()
+
+            if not profile_name or not api_url:
+                error_count += 1
+                continue
+
+            # Auto-resolve naming conflicts to prevent integrity errors
+            base_name = profile_name
+            counter = 1
+            while SMSProfile.objects.filter(profile_name=profile_name).exists():
+                profile_name = f"{base_name} (Imported {counter})"
+                counter += 1
+
+            profile = SMSProfile(
+                profile_name=profile_name,
+                api_url=api_url,
+                is_active=False  # Keep imported profiles inactive by default
+            )
+
+            # Map additional fields
+            for field in fields:
+                if field in item:
+                    setattr(profile, field, item[field])
+
+            try:
+                profile.save()
+                imported_count += 1
+            except Exception as e:
+                error_count += 1
+
+        if imported_count > 0:
+            msg = f"Successfully imported {imported_count} SMS profile(s)."
+            if error_count > 0:
+                msg += f" Failed to import {error_count} profile(s)."
+            messages.success(request, msg)
+        else:
+            messages.error(request, f"No profiles imported. Errors: {error_count}")
+
+    return redirect('sms_dashboard')
+
 

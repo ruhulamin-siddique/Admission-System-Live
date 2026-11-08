@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ case.case_number }} — {% trans "Case Dossier" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'counseling/css/counseling.css' %}">
+{% endblock %}
+
+{% block page_title %}
+  <i class="fas fa-id-card-alt mr-2 text-primary"></i>{% trans "Clinical Case Dossier" %} : <span class="text-primary">{{ case.case_number }}</span>
+{% endblock %}
+
+{% block page_actions %}
+  <button type="button" class="btn-action-pill btn-pill-privacy" id="privacyShieldToggle" title="Toggle confidential PII blur (Alt+P)">
+    <i class="fas fa-eye-slash"></i> <span>{% trans "Privacy Shield" %}</span>
+  </button>
+  <a href="{% url 'counseling_emergency' case_id=case.pk %}" class="btn-action-pill btn-pill-emergency">
+    <i class="fas fa-exclamation-triangle"></i> <span>{% trans "Emergency Crisis" %}</span>
+  </a>
+  <a href="{% url 'counseling_appointment_create' %}?case_id={{ case.pk }}" class="btn-action-pill btn-pill-schedule">
+    <i class="fas fa-calendar-plus"></i> <span>{% trans "Book Session" %}</span>
+  </a>
+  <a href="{% url 'counseling_record_session' case_id=case.pk %}" class="btn-action-pill btn-pill-intake">
+    <i class="fas fa-notes-medical"></i> <span>{% trans "SOAP Note" %}</span>
+  </a>
+  <a href="{% url 'counseling_case_edit' pk=case.pk %}" class="btn-action-pill btn-pill-chamber">
+    <i class="fas fa-edit"></i> <span>{% trans "Edit Case" %}</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+
+{% if case.is_deleted %}
+<div class="alert alert-warning border-warning d-flex align-items-center mb-4">
+  <i class="fas fa-archive fa-2x mr-3 text-warning"></i>
+  <div>
+    <strong class="h6 font-weight-bold mb-0">{% trans "This clinical case is soft-deleted and archived." %}</strong>
+    <p class="mb-0 small">{% trans "It is hidden from active student directories and standard KPI reporting. Historical records are preserved for clinical compliance." %}</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <!-- Left Column: Student Demographic & Clinical Context Card -->
+  <div class="col-lg-4">
+    <!-- Student Profile Card -->
+    <div class="counseling-card">
+      <div class="card-body text-center p-4">
+        {% if student.photo_url %}
+          <img src="{{ student.photo_url }}" class="img-circle elevation-2 mb-3 confidential-pii" style="width: 100px; height: 100px; object-fit: cover;" alt="Student Photo">
+        {% else %}
+          <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 90px; height: 90px;">
+            <i class="fas fa-user-graduate fa-3x text-secondary"></i>
+          </div>
+        {% endif %}
+
+        <h4 class="font-weight-bold mb-1 confidential-pii">
+          {% if case.alias_code %}{{ case.alias_code }} <small class="text-muted">({{ student.student_name }})</small>{% else %}{{ student.student_name }}{% endif %}
+        </h4>
+        <p class="text-muted mb-2 confidential-pii">{{ student.student_id }}</p>
+
+        <div class="d-flex justify-content-center gap-2 mb-3">
+          <span class="badge {{ case.get_risk_badge_class }} mr-1">{% trans "Risk:" %} {{ case.get_risk_level_display }}</span>
+          <span class="badge {{ case.get_status_badge_class }}">{% trans "Status:" %} {{ case.get_status_display }}</span>
+        </div>
+
+        <hr>
+
+        <div class="text-left small">
+          <div class="mb-2"><strong><i class="fas fa-graduation-cap text-primary mr-2"></i>{% trans "Program / Dept:" %}</strong> {{ student.program|default:"—" }} (Batch: {{ student.batch|default:"—" }})</div>
+          <div class="mb-2"><strong><i class="fas fa-layer-group text-primary mr-2"></i>{% trans "Semester:" %}</strong> {{ student.current_semester|default:"Level 1 Term I" }}</div>
+          <div class="mb-2"><strong><i class="fas fa-building text-primary mr-2"></i>{% trans "Residential Hall:" %}</strong> {{ student.hall_attached|default:"Non-Resident / Commuter" }}</div>
+          <div class="mb-2 confidential-pii"><strong><i class="fas fa-phone text-primary mr-2"></i>{% trans "Student Mobile:" %}</strong> {{ student.student_mobile|default:"—" }}</div>
+          <div class="mb-2 confidential-pii"><strong><i class="fas fa-user-shield text-danger mr-2"></i>{% trans "Father / Guardian Mobile:" %}</strong> {{ student.father_mobile|default:student.emergency_contact|default:"—" }}</div>
+          <div class="mb-2"><strong><i class="fas fa-tint text-danger mr-2"></i>{% trans "Blood Group:" %}</strong> {{ student.blood_group|default:"—" }}</div>
+          <div><strong><i class="fas fa-map-marker-alt text-primary mr-2"></i>{% trans "Home District:" %}</strong> {{ student.permanent_district|default:student.permanent_division|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clinical Intake & History -->
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title"><i class="fas fa-clipboard-list text-primary"></i> {% trans "Intake Summary" %}</h3>
+      </div>
+      <div class="card-body">
+        <h6 class="font-weight-bold text-dark">{% trans "Presenting Concerns & Triggers" %}</h6>
+        <p class="small text-muted">{{ case.presenting_complaints|linebreaks }}</p>
+
+        {% if case.sleep_appetite_notes %}
+        <h6 class="font-weight-bold text-dark mt-3">{% trans "Biological Sleep & Appetite" %}</h6>
+        <p class="small text-muted">{{ case.sleep_appetite_notes|linebreaks }}</p>
+        {% endif %}
+
+        {% if case.family_social_notes %}
+        <h6 class="font-weight-bold text-dark mt-3">{% trans "Family / Social Background" %}</h6>
+        <p class="small text-muted">{{ case.family_social_notes|linebreaks }}</p>
+        {% endif %}
+
+        {% if case.medication_history %}
+        <h6 class="font-weight-bold text-dark mt-3">{% trans "Past Psychiatric / Medication" %}</h6>
+        <p class="small text-muted">{{ case.medication_history|linebreaks }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Launch Standardized Assessments -->
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title"><i class="fas fa-tasks text-teal"></i> {% trans "Administer Screening Test" %}</h3>
+      </div>
+      <div class="card-body">
+        <div class="d-flex flex-column gap-2">
+          <a href="{% url 'counseling_assessment' case_id=case.pk scale_type='phq9' %}" class="btn-counseling-scale">
+            <div>
+              <div class="scale-title text-info"><i class="fas fa-file-medical-alt mr-1"></i> PHQ-9</div>
+              <div class="scale-desc">{% trans "Depression Screener (9 items)" %}</div>
+            </div>
+            <span class="badge badge-info scale-badge">0–27</span>
+          </a>
+          <a href="{% url 'counseling_assessment' case_id=case.pk scale_type='gad7' %}" class="btn-counseling-scale">
+            <div>
+              <div class="scale-title text-primary"><i class="fas fa-heartbeat mr-1"></i> GAD-7</div>
+              <div class="scale-desc">{% trans "Anxiety Screener (7 items)" %}</div>
+            </div>
+            <span class="badge badge-primary scale-badge">0–21</span>
+          </a>
+          <a href="{% url 'counseling_assessment' case_id=case.pk scale_type='dass21' %}" class="btn-counseling-scale">
+            <div>
+              <div class="scale-title text-teal"><i class="fas fa-poll mr-1"></i> DASS-21</div>
+              <div class="scale-desc">{% trans "Depression, Anxiety, Stress (21 items)" %}</div>
+            </div>
+            <span class="badge badge-teal scale-badge" style="background:#0d9488;color:#fff;">0–126</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Longitudinal Chart, Past Sessions (SOAP), Assessments & Timeline -->
+  <div class="col-lg-8">
+    <!-- Longitudinal Progression Chart -->
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title">
+          <i class="fas fa-chart-line text-primary"></i> {% trans "Longitudinal Symptom Progression (PHQ-9 & GAD-7)" %}
+        </h3>
+      </div>
+      <div class="card-body">
+        <div style="height: 220px;">
+          <canvas id="longitudinalChart"></canvas>
+        </div>
+        <small class="text-muted mt-2 d-block text-center">
+          <i class="fas fa-info-circle mr-1"></i> {% trans "Score decrease indicates therapeutic improvement & symptom reduction." %}
+        </small>
+      </div>
+    </div>
+
+    <!-- Clinical Session Records (SOAP Notes) Accordion -->
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title">
+          <i class="fas fa-notes-medical text-primary"></i> {% trans "Clinical Session Notes (SOAP Records)" %}
+        </h3>
+        <a href="{% url 'counseling_record_session' case_id=case.pk %}" class="btn-counseling-soap">
+          <i class="fas fa-plus mr-1"></i> {% trans "Add Session Note" %}
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% if sessions %}
+        <div class="accordion" id="sessionsAccordion">
+          {% for s in sessions %}
+          <div class="border-bottom p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <h5 class="font-weight-bold mb-0 text-primary">
+                  <i class="fas fa-file-signature mr-2"></i>{% trans "Session" %} #{{ s.session_number }}
+                </h5>
+                <span class="badge badge-light border text-muted px-2 py-1 ml-sm-2 mt-1 mt-sm-0">
+                  <i class="fas fa-calendar-day mr-1"></i>{{ s.session_date|date:"d F Y" }}
+                </span>
+                {% if s.next_session_date %}
+                  <span class="badge badge-info px-2 py-1 ml-1 mt-1 mt-sm-0" title="{% trans 'Target Next Session' %}">
+                    <i class="fas fa-arrow-right mr-1"></i>{% trans "Next:" %} {{ s.next_session_date|date:"d M Y" }}
+                  </span>
+                {% endif %}
+              </div>
+              <div class="mt-2 mt-sm-0">
+                {% if s.is_locked %}
+                  <span class="badge badge-secondary py-1 px-2"><i class="fas fa-lock mr-1"></i>{% trans "Locked / Signed" %}</span>
+                {% else %}
+                  <a href="{% url 'counseling_record_session' case_id=case.pk %}?session_id={{ s.pk }}" class="btn-counseling-dossier mr-1">
+                    <i class="fas fa-edit mr-1"></i> {% trans "Edit Note" %}
+                  </a>
+                  <span class="badge badge-success py-1 px-2"><i class="fas fa-unlock mr-1"></i>{% trans "Active" %}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- 4-Quadrant SOAP Full Note Display Grid -->
+            <div class="row">
+              <!-- S -->
+              <div class="col-12 col-md-6 mb-3">
+                <div class="soap-quadrant-card soap-card-s">
+                  <div class="d-flex align-items-center mb-2">
+                    <span class="soap-letter">S</span>
+                    <strong class="text-primary">{% trans "Subjective (Narrative)" %}</strong>
+                  </div>
+                  <div class="soap-text-content">
+                    {% if s.subjective_notes %}
+                      {{ s.subjective_notes|linebreaksbr }}
+                    {% else %}
+                      <em class="text-muted small">{% trans "No subjective notes recorded." %}</em>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- O -->
+              <div class="col-12 col-md-6 mb-3">
+                <div class="soap-quadrant-card soap-card-o">
+                  <div class="d-flex align-items-center mb-2">
+                    <span class="soap-letter" style="background:#0284c7;">O</span>
+                    <strong class="text-info">{% trans "Objective (Observation)" %}</strong>
+                  </div>
+                  <div class="soap-text-content">
+                    {% if s.objective_notes %}
+                      {{ s.objective_notes|linebreaksbr }}
+                    {% else %}
+                      <em class="text-muted small">{% trans "No objective observations recorded." %}</em>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- A -->
+              <div class="col-12 col-md-6 mb-3">
+                <div class="soap-quadrant-card soap-card-a">
+                  <div class="d-flex align-items-center mb-2">
+                    <span class="soap-letter" style="background:#f59e0b;">A</span>
+                    <strong class="text-warning">{% trans "Assessment (Formulation)" %}</strong>
+                  </div>
+                  <div class="soap-text-content">
+                    {% if s.assessment %}
+                      {{ s.assessment|linebreaksbr }}
+                    {% else %}
+                      <em class="text-muted small">{% trans "No assessment formulation recorded." %}</em>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- P -->
+              <div class="col-12 col-md-6 mb-3">
+                <div class="soap-quadrant-card soap-card-p">
+                  <div class="d-flex align-items-center mb-2">
+                    <span class="soap-letter" style="background:#10b981;">P</span>
+                    <strong class="text-success">{% trans "Plan (Interventions & Homework)" %}</strong>
+                  </div>
+                  <div class="soap-text-content">
+                    {% if s.plan %}
+                      {{ s.plan|linebreaksbr }}
+                    {% else %}
+                      <em class="text-muted small">{% trans "No plan / homework recorded." %}</em>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center pt-2 border-top mt-1 small text-muted">
+              <span><i class="fas fa-clock mr-1"></i>{% trans "Recorded at:" %} {{ s.created_at|date:"d M Y, h:i A" }}</span>
+              <span><i class="fas fa-user-md mr-1"></i>{% trans "Psychologist:" %} <strong>{{ s.recorded_by.get_full_name|default:s.recorded_by.username }}</strong></span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-file-medical fa-3x mb-2 text-secondary"></i>
+          <p>{% trans "No clinical session notes recorded yet." %}</p>
+          <a href="{% url 'counseling_record_session' case_id=case.pk %}" class="btn btn-sm btn-primary">{% trans "Record 1st Session" %}</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Past Psychometric Assessment History -->
+    <div class="counseling-card">
+      <div class="counseling-card-header">
+        <h3 class="counseling-card-title">
+          <i class="fas fa-poll text-teal"></i> {% trans "Psychometric Assessment History" %}
+        </h3>
+      </div>
+      <div class="card-body p-0">
+        {% if assessments %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Scale Type" %}</th>
+                <th>{% trans "Total Score" %}</th>
+                <th>{% trans "Severity Tier" %}</th>
+                <th>{% trans "Administered By" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in assessments %}
+              <tr>
+                <td>{{ a.assessed_date|date:"d M Y" }}</td>
+                <td class="font-weight-bold">{{ a.get_assessment_type_display }}</td>
+                <td class="font-weight-bold text-primary">{{ a.total_score }}</td>
+                <td><span class="badge {{ a.get_severity_badge_class }}">{{ a.severity_tier }}</span></td>
+                <td><small class="text-muted">{{ a.administered_by.get_full_name|default:a.administered_by.username }}</small></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="p-3 text-center text-muted">
+          <p class="mb-0">{% trans "No screening tests completed yet." %}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Emergency Crisis Interventions (If Any) -->
+    {% if emergencies %}
+    <div class="counseling-card border-danger">
+      <div class="counseling-card-header bg-danger text-white">
+        <h3 class="counseling-card-title text-white">
+          <i class="fas fa-exclamation-triangle mr-2"></i>{% trans "Emergency Crisis Incident Logs" %}
+        </h3>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          {% for em in emergencies %}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <strong class="text-danger">{{ em.incident_type }}</strong>
+              <small class="text-muted">{{ em.incident_date|date:"d M Y H:i" }}</small>
+            </div>
+            <p class="small text-muted mb-1"><strong>{% trans "Actions Taken:" %}</strong> {{ em.actions_taken }}</p>
+            {% if em.hospital_name %}
+              <div class="badge badge-warning">{% trans "Referred to:" %} {{ em.hospital_name }}</div>
+            {% endif %}
+            {% if em.safety_contract_signed %}
+              <div class="badge badge-success">{% trans "Safety Contract Signed" %}</div>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'counseling/js/counseling_scales.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('longitudinalChart').getContext('2d');
+    const labels = {{ chart_dates_json|safe }};
+    const phq9 = {{ phq9_scores_json|safe }};
+    const gad7 = {{ gad7_scores_json|safe }};
+
+    if (labels.length > 0) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'PHQ-9 (Depression)',
+              data: phq9,
+              borderColor: '#1e40af',
+              backgroundColor: 'rgba(30, 64, 175, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 5,
+            },
+            {
+              label: 'GAD-7 (Anxiety)',
+              data: gad7,
+              borderColor: '#0284c7',
+              backgroundColor: 'rgba(2, 132, 199, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 5,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            yAxes: [{
+              ticks: { beginAtZero: true, max: 27 }
+            }]
+          }
+        }
+      });
+    } else {
+      ctx.font = '14px Source Sans Pro';
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'center';
+      ctx.fillText('No assessment test points recorded yet to render progression graph.', 250, 100);
+    }
+  });
+</script>
+{% endblock %}
