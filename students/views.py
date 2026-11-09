@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
-from django.db import transaction
+from django.db import transaction, IntegrityError
+import logging
+
+logger = logging.getLogger(__name__)
 from django.db.models import Count, Q, Case, When, IntegerField, Sum, Max, Value
 from django.db.models.functions import Cast, Coalesce, Lower, Right, TruncMonth
 from django.http import JsonResponse, HttpResponse
@@ -2505,42 +2508,72 @@ def add_student(request):
                             )
                         # manual mode: ID from form field (validated by clean_student_id)
 
-                # Handle Photo Upload
-                photo_path = _handle_student_photo(request, student)
-                if photo_path:
-                    student.photo_path = photo_path
+                    # Defensive Uniqueness Check: Ensure student_id is not already enrolled
+                    if student.student_id and Student.objects.filter(student_id=student.student_id).exists():
+                        if sys.id_mode == 'auto':
+                            # Auto-mode: dynamically bump to next free ID
+                            while Student.objects.filter(student_id=student.student_id).exists():
+                                student.student_id = generate_next_ugc_id(
+                                    admission_year=request.POST.get('admission_year'),
+                                    semester_name=request.POST.get('semester_name'),
+                                    hall_name=request.POST.get('hall_attached'),
+                                    program_name=request.POST.get('program'),
+                                    cluster_name=request.POST.get('cluster'),
+                                    program_level=request.POST.get('program_type', 'Bachelor'),
+                                )
+                        else:
+                            existing_owner = Student.objects.filter(student_id=student.student_id).first()
+                            owner_name = existing_owner.student_name if existing_owner else "another student"
+                            form.add_error('student_id', f"Student ID {student.student_id} is already registered to {owner_name}. Please choose another serial number.")
+                            messages.error(request, f"Admission failed: Student ID {student.student_id} is already registered to {owner_name}.")
 
-                student.changed_by_user = request.user
-                student.save()
-                from core.utils import log_activity
-                if is_legacy:
-                    log_activity(
-                        request, 'CREATE', 'students',
-                        f'Added legacy student (Batch {student.batch}): {student.student_name} '
-                        f'[Old ID: {student.old_student_id}] [System ID: {student.student_id}]',
-                        object_id=student.student_id
-                    )
-                else:
-                    log_activity(request, 'CREATE', 'students', f'Admitted new student: {student.student_name}', object_id=student.student_id)
+                if not form.errors:
+                    # Handle Photo Upload
+                    photo_path = _handle_student_photo(request, student)
+                    if photo_path:
+                        student.photo_path = photo_path
 
-                # Automated Welcome SMS — suppressed for legacy records (already graduated / not new admissions)
-                if student.student_mobile and not is_legacy:
-                    msg_body = f"Welcome {student.student_name} to BAUST! Your Student ID is {student.student_id}. Please keep this for your records."
-                    from core.utils import send_sms
-                    success, response_text = send_sms(
-                        student.student_mobile,
-                        msg_body,
-                        module='ADMISSION',
-                        use_case_event='admission_welcome',
-                        recipient_name=student.student_name,
-                        student_id=student.student_id
-                    )
+                    student.changed_by_user = request.user
+                    student_saved = False
+                    try:
+                        student.save(force_insert=True)
+                        student_saved = True
+                    except IntegrityError as exc:
+                        student_saved = False
+                        logger.exception("IntegrityError saving student %s: %s", student.student_id, exc)
+                        form.add_error('student_id', f"A database collision occurred for ID {student.student_id}. Please choose another serial or try again.")
+                        messages.error(request, f"Cannot save student: A record with ID {student.student_id} already exists.")
 
-                if is_legacy:
-                    messages.success(request, f"Legacy student {student.student_name} added. Old ID: {student.old_student_id} | System ID: {student.student_id}")
-                else:
-                    messages.success(request, f"Student {student.student_name} admitted successfully with ID {student.student_id}")
-                return redirect('student_list')
+                    if student_saved:
+                        from core.utils import log_activity
+                        if is_legacy:
+                            log_activity(
+                                request, 'CREATE', 'students',
+                                f'Added legacy student (Batch {student.batch}): {student.student_name} '
+                                f'[Old ID: {student.old_student_id}] [System ID: {student.student_id}]',
+                                object_id=student.student_id
+                            )
+                        else:
+                            log_activity(request, 'CREATE', 'students', f'Admitted new student: {student.student_name}', object_id=student.student_id)
+
+                        # Automated Welcome SMS — suppressed for legacy records (already graduated / not new admissions)
+                        if student.student_mobile and not is_legacy:
+                            msg_body = f"Welcome {student.student_name} to BAUST! Your Student ID is {student.student_id}. Please keep this for your records."
+                            from core.utils import send_sms
+                            success, response_text = send_sms(
+                                student.student_mobile,
+                                msg_body,
+                                module='ADMISSION',
+                                use_case_event='admission_welcome',
+                                recipient_name=student.student_name,
+                                student_id=student.student_id
+                            )
+
+                        if is_legacy:
+                            messages.success(request, f"Legacy student {student.student_name} added. Old ID: {student.old_student_id} | System ID: {student.student_id}")
+                        else:
+                            messages.success(request, f"Student {student.student_name} admitted successfully with ID {student.student_id}")
+                        return redirect('student_list')
         else:
             error_count = len(form.errors)
             messages.error(request, f"Admission failed. Please fix the {error_count} error(s) in the form.")

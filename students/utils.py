@@ -188,7 +188,7 @@ def generate_next_ugc_id(admission_year, semester_name, hall_name, program_name,
     # Full ID prefix (including hall)
     full_prefix = f"{prefix_part1}{hall_code}{prefix_part2}"      # 13 chars total
     
-    # Serial Logic
+    # Serial Logic: Program-wide sequential serials (across all halls for this intake/program)
     serial_start = 1
     if program_name == "MBA":
         if mba_credits == 48:
@@ -196,17 +196,31 @@ def generate_next_ugc_id(admission_year, semester_name, hall_name, program_name,
         elif mba_credits == 60:
             serial_start = 601
 
-    last_student = Student.objects.filter(
+    existing_students = Student.objects.filter(
         student_id__regex=rf'^{prefix_part1}..{prefix_part2}'
-    ).order_by('-student_id').first()
+    ).values_list('student_id', flat=True)
 
-    if last_student:
-        last_serial = int(last_student.student_id[-3:])
-        new_serial = last_serial + 1
+    max_serial = 0
+    for sid in existing_students:
+        try:
+            s_val = int(sid[-3:])
+            if s_val > max_serial:
+                max_serial = s_val
+        except (ValueError, TypeError):
+            continue
+
+    if max_serial >= serial_start:
+        new_serial = max_serial + 1
     else:
         new_serial = serial_start
 
-    return f"{full_prefix}{str(new_serial).zfill(3)}"
+    # Safety Guard: Guarantee the candidate ID is strictly unique in the database
+    candidate_id = f"{full_prefix}{str(new_serial).zfill(3)}"
+    while Student.objects.filter(student_id=candidate_id).exists():
+        new_serial += 1
+        candidate_id = f"{full_prefix}{str(new_serial).zfill(3)}"
+
+    return candidate_id
 
 def validate_ugc_id(s_id):
     """

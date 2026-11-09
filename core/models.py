@@ -64,6 +64,20 @@ class UserProfile(models.Model):
     )
     photo = models.ImageField(upload_to='staff_photos/', null=True, blank=True)
 
+    @property
+    def photo_url(self):
+        """Safe photo URL that only returns a URL if the physical file exists on disk."""
+        if self.photo:
+            try:
+                import os
+                from django.conf import settings
+                full_path = os.path.join(settings.MEDIA_ROOT, self.photo.name)
+                if os.path.isfile(full_path):
+                    return self.photo.url
+            except Exception:
+                pass
+        return None
+
     def __str__(self):
         return f"{self.user.username} - {self.role.name if self.role else 'No Role'}"
 

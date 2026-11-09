@@ -599,6 +599,55 @@ class StudentDirectoryTests(TestCase):
         )
         self.assertEqual(prefix, expected_prefix)
 
+    def test_generate_next_ugc_id_multi_hall_sequential_serial(self):
+        """
+        Regression Test: Ensure that when students exist across different halls
+        (e.g. Hall 04 with serial 001, Hall 02 with serial 002), the next generated
+        serial is strictly greater than all existing serials (003), preventing
+        lexicographical sorting collisions on hall code ('04' > '02').
+        """
+        from students.utils import generate_next_ugc_id
+        from master_data.models import Semester
+
+        Semester.objects.get_or_create(name='Winter', defaults={'code': '1'})
+
+        # Student 1 in Hall 03 (ZH), serial 001
+        Student.objects.create(
+            student_id='0802710305021001',
+            student_name='Student ZH',
+            program=self.eee_program.name,
+            admission_year=2027,
+            semester_name='Winter',
+            hall_attached='ZH'
+        )
+        # Student 2 in Hall 01 (AUAH), serial 002
+        Student.objects.create(
+            student_id='0802710105021002',
+            student_name='Student AUAH',
+            program=self.eee_program.name,
+            admission_year=2027,
+            semester_name='Winter',
+            hall_attached='AUAH'
+        )
+
+        # Generate next ID for Hall AUAH (code 01)
+        next_id = generate_next_ugc_id(
+            admission_year=2027,
+            semester_name='Winter',
+            hall_name='AUAH',
+            program_name='EEE',
+            cluster_name='Engineering & Technology'
+        )
+        # Must be serial 003 (because 001 and 002 already exist), NEVER colliding with 002!
+        self.assertEqual(next_id, '0802710105021003')
+        self.assertFalse(Student.objects.filter(student_id=next_id).exists())
+
+    def test_favicon_redirect(self):
+        """Ensure /favicon.ico returns a permanent redirect without 404 error."""
+        response = self.client.get('/favicon.ico')
+        self.assertIn(response.status_code, [301, 302])
+        self.assertEqual(response.url, '/static/img/logo.png')
+
     def test_excel_import_logs_activity(self):
         from core.models import ActivityLog
         # Create Excel file in-memory

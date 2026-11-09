@@ -2,9 +2,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.views.decorators.cache import never_cache
+from django.views.generic import RedirectView
 from core import views as core_views
 
 urlpatterns = [
+    path('favicon.ico', RedirectView.as_view(url='/static/img/logo.png', permanent=True)),
     path('admin/', admin.site.urls),
     
     # Root Level Authentication

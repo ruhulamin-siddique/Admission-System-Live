@@ -377,8 +377,8 @@
       <!-- User Profile Dropdown -->
       <li class="nav-item dropdown user-menu">
         <a href="#" class="nav-link nav-link-round p-0 ml-3" data-toggle="dropdown">
-            {% if user.profile.photo %}
-            <img src="{{ user.profile.photo.url }}" class="rounded-circle shadow-sm" style="width: 36px; height: 36px; object-fit: cover;" alt="User">
+            {% if user.profile.photo_url %}
+            <img src="{{ user.profile.photo_url }}" class="rounded-circle shadow-sm" style="width: 36px; height: 36px; object-fit: cover;" alt="User">
             {% else %}
             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center font-weight-bold shadow-sm" style="width: 36px; height: 36px; font-size: 0.9rem;">
                 {{ user.username|make_list|first|upper }}
@@ -387,8 +387,8 @@
         </a>
         <div class="dropdown-menu dropdown-menu-right user-menu-dropdown animate__animated animate__fadeIn">
             <div class="user-menu-header">
-                <div class="user-menu-avatar" style="{% if user.profile.photo %}background: url('{{ user.profile.photo.url }}') center/cover no-repeat; color: transparent;{% endif %}">
-                    {% if not user.profile.photo %}
+                <div class="user-menu-avatar" style="{% if user.profile.photo_url %}background: url('{{ user.profile.photo_url }}') center/cover no-repeat; color: transparent;{% endif %}">
+                    {% if not user.profile.photo_url %}
                     {{ user.username|make_list|first|upper }}
                     {% endif %}
                 </div>

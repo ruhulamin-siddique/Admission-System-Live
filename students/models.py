@@ -327,6 +327,8 @@ class Student(models.Model):
             try:
                 orig = Student.objects.get(pk=self.pk)
                 is_update = True
+                if not self.created_at and orig.created_at:
+                    self.created_at = orig.created_at
                 
                 # Exclude field list
                 exclude_fields = ['last_updated', 'created_at', 'academic_verification_logs']
