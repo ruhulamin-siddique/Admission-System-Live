@@ -89,7 +89,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'core.middleware.FastMediaMiddleware',  # Fast, lock-free media serving (bypasses sessions & DB)
+    'core.middleware.ResilientSessionMiddleware',  # Concurrency-hardened session middleware
     'django.middleware.locale.LocaleMiddleware',  # Activates bilingual translation switching
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -136,7 +137,7 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', ''),
         # Database options tailored for high-concurrency SQLite WAL and MySQL
         'OPTIONS': {
-            'timeout': 20,  # 20-second lock retry timeout for SQLite
+            'timeout': 30,  # 30-second lock retry timeout for SQLite
         } if os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3') == 'django.db.backends.sqlite3' else {
             'charset': 'utf8mb4',
         },
@@ -158,9 +159,11 @@ def configure_sqlite_pragmas(sender, connection, **kwargs):
         with connection.cursor() as cursor:
             cursor.execute('PRAGMA journal_mode = WAL;')
             cursor.execute('PRAGMA synchronous = NORMAL;')
-            cursor.execute('PRAGMA busy_timeout = 20000;')  # 20-second retry buffer
+            cursor.execute('PRAGMA busy_timeout = 30000;')  # 30-second retry buffer
             cursor.execute('PRAGMA wal_autocheckpoint = 1000;')
             cursor.execute('PRAGMA cache_size = -64000;')  # 64MB memory cache
+            cursor.execute('PRAGMA temp_store = MEMORY;')
+            cursor.execute('PRAGMA mmap_size = 268435456;')  # 256MB memory-mapped I/O
 
 
 # Password validation
@@ -242,7 +245,8 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
 
-# Session Hardening (Perfect Security)
+# Session Hardening (High Concurrency & Lock-Free Caching)
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 1800  # 30 Minutes Inactivity Timeout
 SESSION_SAVE_EVERY_REQUEST = True  # Ensures timeout resets on interaction

@@ -10,23 +10,22 @@
 
     <!-- 2. Photo -->
     <td class="td-photo text-center p-1">
-        <div class="bg-light border d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 40px; height: 48px; border-radius: 8px; overflow: hidden;">
+        <div class="bg-light border d-flex align-items-center justify-content-center mx-auto shadow-sm position-relative" style="width: 40px; height: 48px; border-radius: 8px; overflow: hidden;">
             {% if student.photo_url %}
-            <img src="{{ student.photo_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+            <img src="{{ student.photo_url }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; if(this.nextElementSibling){this.nextElementSibling.style.display='flex';}">
+            {% endif %}
+            {% if student.gender and student.gender|lower == 'female' or student.gender|lower == 'f' %}
+            <div class="w-100 h-100 align-items-center justify-content-center" style="background: linear-gradient(135deg, #fbcfe8, #f472b6); color: #831843; display: {% if student.photo_url %}none{% else %}flex{% endif %};" title="Female Student">
+                <i class="fas fa-user-graduate" style="font-size: 18px;"></i>
+            </div>
+            {% elif student.gender and student.gender|lower == 'male' or student.gender|lower == 'm' %}
+            <div class="w-100 h-100 align-items-center justify-content-center" style="background: linear-gradient(135deg, #e0f2fe, #38bdf8); color: #0369a1; display: {% if student.photo_url %}none{% else %}flex{% endif %};" title="Male Student">
+                <i class="fas fa-user-tie" style="font-size: 18px;"></i>
+            </div>
             {% else %}
-                {% if student.gender and student.gender|lower == 'female' or student.gender|lower == 'f' %}
-                <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #fbcfe8, #f472b6); color: #831843;" title="Female Student (No Photo)">
-                    <i class="fas fa-user-graduate" style="font-size: 18px;"></i>
-                </div>
-                {% elif student.gender and student.gender|lower == 'male' or student.gender|lower == 'm' %}
-                <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #e0f2fe, #38bdf8); color: #0369a1;" title="Male Student (No Photo)">
-                    <i class="fas fa-user-tie" style="font-size: 18px;"></i>
-                </div>
-                {% else %}
-                <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #f1f5f9, #cbd5e1); color: #475569;" title="Student (No Photo)">
-                    <i class="fas fa-user-graduate" style="font-size: 18px;"></i>
-                </div>
-                {% endif %}
+            <div class="w-100 h-100 align-items-center justify-content-center" style="background: linear-gradient(135deg, #f1f5f9, #cbd5e1); color: #475569; display: {% if student.photo_url %}none{% else %}flex{% endif %};" title="Student">
+                <i class="fas fa-user-graduate" style="font-size: 18px;"></i>
+            </div>
             {% endif %}
         </div>
     </td>
