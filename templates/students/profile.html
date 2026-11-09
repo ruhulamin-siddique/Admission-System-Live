@@ -219,7 +219,7 @@
     .bg-danger-light { background-color: rgba(220, 53, 69, 0.1); }
     .text-xs { font-size: 0.75rem; letter-spacing: 0.5px; }
 
-    /* ─── Modern Student 360 Milestone Stepper & Hero ─── */
+    /* ─── Unified Student Master Command Header (Option 1) ─── */
     .milestone-hero-card {
         background: #ffffff;
         border-radius: 16px;
@@ -233,12 +233,30 @@
         border-color: #334155;
         box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
     }
+    .profile-hero-avatar {
+        width: 88px;
+        height: 104px;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 3px solid #ffffff;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+        background: #f8fafc;
+        position: relative;
+        flex-shrink: 0;
+    }
+    .profile-hero-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        border-radius: 13px;
+    }
     .milestone-stepper-wrap {
         display: flex;
         align-items: center;
         justify-content: space-between;
         position: relative;
-        padding: 16px 20px;
+        padding: 14px 20px;
         background: #f8fafc;
         border-top: 1px solid #e2e8f0;
         overflow-x: auto;
@@ -256,7 +274,7 @@
         text-align: center;
         position: relative;
         flex: 1 1 0;
-        min-width: 110px;
+        min-width: 105px;
         cursor: pointer;
         transition: transform 0.2s ease;
         padding: 6px 4px;
@@ -267,14 +285,14 @@
         background: rgba(2, 132, 199, 0.08);
     }
     .milestone-step-node {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 15px;
-        margin-bottom: 6px;
+        font-size: 14px;
+        margin-bottom: 5px;
         box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         transition: all 0.25s ease;
         z-index: 2;
@@ -304,7 +322,7 @@
         color: #ffffff;
     }
     .milestone-step-title {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         font-weight: 700;
         color: #1e293b;
         margin-bottom: 2px;
@@ -314,9 +332,9 @@
         color: #f1f5f9;
     }
     .milestone-step-badge {
-        font-size: 0.7rem;
+        font-size: 0.68rem;
         font-weight: 600;
-        padding: 2px 8px;
+        padding: 2px 7px;
         border-radius: 20px;
         white-space: nowrap;
     }
@@ -353,6 +371,7 @@
         border-color: #059669 !important;
         color: #ffffff !important;
     }
+
 </style>
 {% endblock %}
 
@@ -360,22 +379,22 @@
 {% block content %}
 {% has_access 'students' 'academic_audit' as can_audit %}
 {% has_access 'students' 'edit_profile' as can_edit %}
-<!-- Profile Header Actions -->
-<div class="row mb-4">
+<!-- ─── 1. Top Quick Navigation Bar ─── -->
+<div class="row mb-3">
     <div class="col-12">
-        <div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-3 shadow-sm profile-header-actions" style="border-radius: 12px;">
-            <a href="{% url 'student_list' %}" class="btn btn-outline-secondary font-weight-bold profile-back-btn" style="border-radius: 10px; white-space: nowrap;">
-                <i class="fas fa-arrow-left mr-2"></i> Back to Directory
+        <div class="d-flex flex-wrap justify-content-between align-items-center bg-white py-2 px-3 shadow-sm profile-top-bar" style="border-radius: 12px; border: 1px solid #e2e8f0;">
+            <a href="{% url 'student_list' %}" class="btn btn-sm btn-outline-secondary font-weight-bold" style="border-radius: 8px;">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Directory
             </a>
             
-            <div class="position-relative search-wrapper">
+            <div class="position-relative search-wrapper" style="min-width: 260px; max-width: 380px; width: 100%;">
                 <form action="{% url 'student_list' %}" method="GET" id="profileSearchForm" class="mb-0">
-                    <div class="input-group">
+                    <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
                         </div>
                         <input type="text" name="search" id="profileQuickSearch" class="form-control border-0 bg-light" 
-                               placeholder="Jump to another student..." autocomplete="off" style="border-radius: 0 10px 10px 0;">
+                               placeholder="Jump to another student..." autocomplete="off" style="border-radius: 0 8px 8px 0; font-size: 0.85rem;">
                     </div>
                 </form>
                 <!-- Search Results Dropdown -->
@@ -383,89 +402,40 @@
                      style="display: none; position: absolute; top: 100%; left: 0; z-index: 1050; border-radius: 12px; max-height: 400px; overflow-y: auto;">
                 </div>
             </div>
-            
-            <div class="edit-btn-wrapper d-flex align-items-center" style="gap: 8px;">
-                <!-- Certificate -->
-                <button type="button" hx-get="{% url 'studentship_preview' student.student_id %}" hx-target="#modals-here" class="btn btn-info font-weight-bold px-3 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
-                    <i class="fas fa-certificate mr-1 text-warning"></i> Certificate
+
+            <!-- Profile Completeness Pill -->
+            <div class="d-flex align-items-center" style="gap: 8px;">
+                <span class="small font-weight-bold text-muted d-none d-md-inline"><i class="fas fa-tasks mr-1"></i>Completeness:</span>
+                <button type="button" class="btn btn-sm btn-light border py-1 px-2.5 rounded-pill d-flex align-items-center font-weight-bold" 
+                        data-toggle="collapse" data-target="#completenessDetailsDropdown" aria-expanded="false" style="font-size: 0.78rem;">
+                    <span class="badge badge-{{ profile_completeness.bar_class }} mr-1.5 px-2 py-0.5 rounded-pill">{{ profile_completeness.score }}%</span>
+                    <span>{{ profile_completeness.tier }}</span>
+                    {% if profile_completeness.missing_items %}
+                    <i class="fas fa-chevron-down text-muted ml-1.5" style="font-size: 10px;"></i>
+                    {% endif %}
                 </button>
-                
-                <!-- Save PDF -->
-                <a href="{% url 'download_master_sheet' student.student_id %}" class="btn btn-outline-danger font-weight-bold px-3 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
-                    <i class="fas fa-file-pdf mr-1"></i> Save PDF
-                </a>
-
-                <!-- Edit Profile -->
-                <a href="{% url 'edit_student' student.student_id %}" class="btn btn-primary font-weight-bold px-3 shadow-sm" style="border-radius: 10px; white-space: nowrap;">
-                    <i class="fas fa-edit mr-1"></i> Edit Profile
-                </a>
-
-                <!-- Unified Dropdown for Admin Tools -->
-                <div class="dropdown">
-                    <button class="btn btn-dark font-weight-bold px-3 shadow-sm dropdown-toggle" type="button" id="adminToolsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 10px; white-space: nowrap;">
-                        <i class="fas fa-tools mr-1"></i> Actions
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-right border-0 shadow-lg" aria-labelledby="adminToolsDropdown" style="border-radius: 12px; z-index: 1060;">
-                        <h6 class="dropdown-header font-weight-bold text-muted">Academic Operations</h6>
-                        <a class="dropdown-item py-2" href="{% url 'change_program' student.student_id %}">
-                            <i class="fas fa-exchange-alt mr-2 text-warning"></i> Program Migration
-                        </a>
-                        {% if user.is_superuser %}
-                        <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left w-100" onclick="openUgcMigrationModal()">
-                            <i class="fas fa-arrows-spin mr-2 text-success"></i> UGC 16-Digit Migrate
-                        </button>
-                        {% endif %}
-
-                        <div class="dropdown-divider opacity-50"></div>
-                        <h6 class="dropdown-header font-weight-bold text-muted">Residency Operations</h6>
-                        {% if student.is_non_residential or not student.hall_residential %}
-                            <a class="dropdown-item py-2 disabled text-muted" href="javascript:void(0)">
-                                <i class="fas fa-hotel mr-2 opacity-50"></i> Migrate Hall (Disabled)
-                            </a>
-                            <a class="dropdown-item py-2 disabled text-muted" href="javascript:void(0)">
-                                <i class="fas fa-times-circle mr-2 opacity-50"></i> Cancel Seat (Disabled)
-                            </a>
-                        {% else %}
-                            <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-info w-100" data-toggle="modal" data-target="#migrateResidencyModal">
-                                <i class="fas fa-hotel mr-2"></i> Migrate Hall
-                            </button>
-                            <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-warning w-100" data-toggle="modal" data-target="#cancelResidencyModal">
-                                <i class="fas fa-times-circle mr-2"></i> Cancel Hall Seat
-                            </button>
-                        {% endif %}
-
-                        {% if user.is_superuser %}
-                        <div class="dropdown-divider opacity-50"></div>
-                        <h6 class="dropdown-header font-weight-bold text-muted">Security & Records</h6>
-                        <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-primary w-100" data-toggle="modal" data-target="#rectifyIdModal">
-                            <i class="fas fa-fingerprint mr-2"></i> Change Student ID
-                        </button>
-                        {% endif %}
-
-                        <div class="dropdown-divider opacity-50"></div>
-                        <h6 class="dropdown-header font-weight-bold text-info"><i class="fas fa-magic mr-1"></i> Board Verifier Tools</h6>
-                        {% if can_audit or can_edit %}
-                        <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-success font-weight-bold w-100" onclick="openAcademicTabAndMarkVerified()">
-                            <i class="fas fa-user-check mr-2 text-success"></i> Mark Verified Manually
-                        </button>
-                        {% endif %}
-
-                        <div class="dropdown-divider opacity-50"></div>
-                        <h6 class="dropdown-header font-weight-bold text-danger">Danger Zone</h6>
-                        <a class="dropdown-item py-2 text-danger" href="{% url 'cancellation_hub' %}?search={{ student.student_id }}">
-                            <i class="fas fa-user-slash mr-2"></i> Cancel Admission
-                        </a>
-                        <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-danger font-weight-bold w-100" data-toggle="modal" data-target="#deleteStudentModal">
-                            <i class="fas fa-trash-alt mr-2"></i> Delete Admission Record
-                        </button>
-                    </div>
+            </div>
+        </div>
+        
+        <!-- Completeness missing items popdown if clicked -->
+        {% if profile_completeness.missing_items %}
+        <div class="collapse mt-2" id="completenessDetailsDropdown">
+            <div class="card card-body py-2 px-3 bg-white shadow-sm border-warning" style="border-radius: 10px; font-size: 0.8rem;">
+                <span class="font-weight-bold text-warning mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> {{ profile_completeness.missing_items|length }} missing field(s):</span>
+                <div class="d-flex flex-wrap" style="gap: 8px;">
+                    {% for item in profile_completeness.missing_items %}
+                    <span class="badge badge-light border text-dark"><i class="fas fa-times text-danger mr-1"></i>{{ item }}</span>
+                    {% endfor %}
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
+
+<!-- ─── 2. Legacy Student Alert (if applicable) ─── -->
+{% if student.is_legacy_student %}
 <div class="row">
-    {% if student.is_legacy_student %}
     <div class="col-12 mb-3">
         <div class="alert alert-warning py-2 px-3 mb-0" style="border-radius: 12px; border-left: 5px solid #ffc107;">
             <div class="d-flex align-items-center">
@@ -485,452 +455,301 @@
             </div>
         </div>
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
-    <!-- ─── Student 360 Progression Hero & Stepper ─── -->
+<!-- ─── 3. Unified Student Master Command Card (Option 1) ─── -->
+<div class="row">
     <div class="col-12 mb-4">
         <div class="milestone-hero-card">
-            <!-- Hero Summary Strip -->
-            <div class="p-3 d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
-                <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
-                    <div class="d-flex align-items-center">
-                        <span class="font-weight-black text-uppercase text-dark h5 mb-0 mr-2">{{ student.student_name }}</span>
-                        <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
-                            {{ student.admission_status }}
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center" style="gap: 8px;">
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_id }}" title="Click to Copy Student ID">
-                            <i class="fas fa-id-badge text-primary"></i>
-                            <code>{{ student.student_id }}</code>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% if student.student_mobile and student.student_mobile != '-' %}
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_mobile }}" title="Click to Copy Mobile">
-                            <i class="fas fa-phone-alt text-success"></i>
-                            <span>{{ student.student_mobile }}</span>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="text-muted small">
-                    <span class="font-weight-bold text-dark">{{ student.program|default:"Unspecified Dept" }}</span>
-                    <span class="mx-1.5">•</span>
-                    <span>Batch {{ student.batch }}</span>
-                    {% if student.semester_name %}
-                    <span class="mx-1.5">•</span>
-                    <span>{{ student.semester_name }}</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 6-Stage Milestone Stepper -->
-            <div class="milestone-stepper-wrap">
-                <!-- 1. Form Submitted -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view bio details">
-                    <div class="milestone-step-node node-complete">
-                        <i class="fas fa-file-check"></i>
-                    </div>
-                    <div class="milestone-step-title">1. Form &amp; Bio</div>
-                    <span class="milestone-step-badge badge badge-success">Enrolled</span>
-                </div>
-
-                <!-- 2. Board Verified -->
-                <div class="milestone-step-item" onclick="jumpToTab('#academic')" title="Click to view board verification logs">
-                    {% if student.ssc_verified and student.hsc_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-check-double"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">Both Verified</span>
-                    {% elif student.bteb_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-award"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">BTEB Verified</span>
-                    {% elif student.ssc_verified or student.hsc_verified %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-check"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial Verified</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-shield-alt"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-light border">Unverified</span>
-                    {% endif %}
-                </div>
-
-                <!-- 3. Admission Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view payment details">
-                    {% if student.admission_payment and student.admission_payment > 0 or student.waiver and student.waiver >= 100 or student.admission_status == 'Active' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-receipt"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-success">Paid / Active</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Pending</span>
-                    {% endif %}
-                </div>
-
-                <!-- 4. UGC ID Finalized -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view ID structure">
-                    {% if student.student_id|length == 16 %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-fingerprint"></i></div>
-                        <div class="milestone-step-title">4. UGC ID</div>
-                        <span class="milestone-step-badge badge badge-success">16-Digit Valid</span>
-                    {% elif student.is_legacy_student %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-history"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-info">Legacy Valid</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-exclamation-circle"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Standard</span>
-                    {% endif %}
-                </div>
-
-                <!-- 5. Hall Residency -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view residency and attachment">
-                    {% if student.is_non_residential %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-house-user"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-secondary">Non-Residential</span>
-                    {% elif student.hall_residential %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-hotel"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-success">{{ student.hall_residential.short_name|default:"Allocated" }}</span>
-                    {% elif student.hall_attached %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-building"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">{{ student.hall_attached }}</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-bed"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-light border">Unallocated</span>
-                    {% endif %}
-                </div>
-
-                <!-- 6. Uniform & Additional Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view uniform package status">
-                    {% if student.uniform_status == 'PAID' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-user-tie"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-success">Paid</span>
-                    {% elif student.uniform_status == 'OPTED_OUT' %}
-                        <div class="milestone-step-node node-muted"><i class="fas fa-ban"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-secondary">Opted Out</span>
-                    {% elif student.uniform_status == 'PARTIAL' %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-adjust"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-light border">Due / Pending</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- ─── Student 360 Progression Hero & Stepper ─── -->
-    <div class="col-12 mb-4">
-        <div class="milestone-hero-card">
-            <!-- Hero Summary Strip -->
-            <div class="p-3 d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
-                <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
-                    <div class="d-flex align-items-center">
-                        <span class="font-weight-black text-uppercase text-dark h5 mb-0 mr-2">{{ student.student_name }}</span>
-                        <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
-                            {{ student.admission_status }}
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center" style="gap: 8px;">
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_id }}" title="Click to Copy Student ID">
-                            <i class="fas fa-id-badge text-primary"></i>
-                            <code>{{ student.student_id }}</code>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% if student.student_mobile and student.student_mobile != '-' %}
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_mobile }}" title="Click to Copy Mobile">
-                            <i class="fas fa-phone-alt text-success"></i>
-                            <span>{{ student.student_mobile }}</span>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="text-muted small">
-                    <span class="font-weight-bold text-dark">{{ student.program|default:"Unspecified Dept" }}</span>
-                    <span class="mx-1.5">•</span>
-                    <span>Batch {{ student.batch }}</span>
-                    {% if student.semester_name %}
-                    <span class="mx-1.5">•</span>
-                    <span>{{ student.semester_name }}</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 6-Stage Milestone Stepper -->
-            <div class="milestone-stepper-wrap">
-                <!-- 1. Form Submitted -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view bio details">
-                    <div class="milestone-step-node node-complete">
-                        <i class="fas fa-file-check"></i>
-                    </div>
-                    <div class="milestone-step-title">1. Form &amp; Bio</div>
-                    <span class="milestone-step-badge badge badge-success">Enrolled</span>
-                </div>
-
-                <!-- 2. Board Verified -->
-                <div class="milestone-step-item" onclick="jumpToTab('#academic')" title="Click to view board verification logs">
-                    {% if student.ssc_verified and student.hsc_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-check-double"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">Both Verified</span>
-                    {% elif student.bteb_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-award"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">BTEB Verified</span>
-                    {% elif student.ssc_verified or student.hsc_verified %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-check"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial Verified</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-shield-alt"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-light border">Unverified</span>
-                    {% endif %}
-                </div>
-
-                <!-- 3. Admission Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view payment details">
-                    {% if student.admission_payment and student.admission_payment > 0 or student.waiver and student.waiver >= 100 or student.admission_status == 'Active' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-receipt"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-success">Paid / Active</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Pending</span>
-                    {% endif %}
-                </div>
-
-                <!-- 4. UGC ID Finalized -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view ID structure">
-                    {% if student.student_id|length == 16 %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-fingerprint"></i></div>
-                        <div class="milestone-step-title">4. UGC ID</div>
-                        <span class="milestone-step-badge badge badge-success">16-Digit Valid</span>
-                    {% elif student.is_legacy_student %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-history"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-info">Legacy Valid</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-exclamation-circle"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Standard</span>
-                    {% endif %}
-                </div>
-
-                <!-- 5. Hall Residency -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view residency and attachment">
-                    {% if student.is_non_residential %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-house-user"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-secondary">Non-Residential</span>
-                    {% elif student.hall_residential %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-hotel"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-success">{{ student.hall_residential.short_name|default:"Allocated" }}</span>
-                    {% elif student.hall_attached %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-building"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">{{ student.hall_attached }}</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-bed"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-light border">Unallocated</span>
-                    {% endif %}
-                </div>
-
-                <!-- 6. Uniform & Additional Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view uniform package status">
-                    {% if student.uniform_status == 'PAID' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-user-tie"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-success">Paid</span>
-                    {% elif student.uniform_status == 'OPTED_OUT' %}
-                        <div class="milestone-step-node node-muted"><i class="fas fa-ban"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-secondary">Opted Out</span>
-                    {% elif student.uniform_status == 'PARTIAL' %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-adjust"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-light border">Due / Pending</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <!-- Profile Image -->
-        <div class="card card-primary card-outline">
-            <div class="card-body box-profile">
-                <div class="text-center mb-3">
-                    <div class="profile-avatar-container">
+            <!-- Top Hero Summary Strip: Avatar + Bio Info + Action Buttons -->
+            <div class="p-3 p-md-4 d-flex flex-wrap justify-content-between align-items-center" style="gap: 16px;">
+                <!-- Left: Photo + Identity -->
+                <div class="d-flex align-items-center flex-wrap" style="gap: 16px;">
+                    <!-- Avatar Box -->
+                    <div class="profile-avatar-card profile-hero-avatar has-photo">
                         {% if student.photo_url %}
-                            <div class="profile-avatar-card has-photo">
-                                <img class="profile-avatar-img" src="{{ student.photo_url }}" alt="{{ student.student_name }}" data-gender="{{ student.gender }}" onerror="handleAvatarError(this)">
-                            </div>
+                            <img class="profile-avatar-img" src="{{ student.photo_url }}" alt="{{ student.student_name }}" data-gender="{{ student.gender }}" onerror="handleAvatarError(this)">
                         {% else %}
                             {% if student.gender and student.gender|lower == 'female' or student.gender|lower == 'f' %}
-                                <div class="profile-avatar-card placeholder-avatar female-avatar" title="Female Student (No Photo)">
-                                    <div class="avatar-icon-wrap"><i class="fas fa-user-graduate"></i></div>
-                                    <span class="avatar-gender-badge female"><i class="fas fa-venus mr-1"></i> Female</span>
+                                <div class="profile-avatar-card placeholder-avatar female-avatar w-100 h-100" title="Female Student (No Photo)" style="padding: 6px;">
+                                    <div class="avatar-icon-wrap"><i class="fas fa-user-graduate" style="font-size: 24px;"></i></div>
+                                    <span class="avatar-gender-badge female" style="font-size: 0.65rem;"><i class="fas fa-venus"></i> F</span>
                                 </div>
                             {% elif student.gender and student.gender|lower == 'male' or student.gender|lower == 'm' %}
-                                <div class="profile-avatar-card placeholder-avatar male-avatar" title="Male Student (No Photo)">
-                                    <div class="avatar-icon-wrap"><i class="fas fa-user-tie"></i></div>
-                                    <span class="avatar-gender-badge male"><i class="fas fa-mars mr-1"></i> Male</span>
+                                <div class="profile-avatar-card placeholder-avatar male-avatar w-100 h-100" title="Male Student (No Photo)" style="padding: 6px;">
+                                    <div class="avatar-icon-wrap"><i class="fas fa-user-tie" style="font-size: 24px;"></i></div>
+                                    <span class="avatar-gender-badge male" style="font-size: 0.65rem;"><i class="fas fa-mars"></i> M</span>
                                 </div>
                             {% else %}
-                                <div class="profile-avatar-card placeholder-avatar neutral-avatar" title="Student (No Photo)">
-                                    <div class="avatar-icon-wrap"><i class="fas fa-user-graduate"></i></div>
-                                    <span class="avatar-gender-badge neutral"><i class="fas fa-user mr-1"></i> Student</span>
+                                <div class="profile-avatar-card placeholder-avatar neutral-avatar w-100 h-100" title="Student (No Photo)" style="padding: 6px;">
+                                    <div class="avatar-icon-wrap"><i class="fas fa-user-graduate" style="font-size: 24px;"></i></div>
+                                    <span class="avatar-gender-badge neutral" style="font-size: 0.65rem;">Student</span>
                                 </div>
                             {% endif %}
                         {% endif %}
                     </div>
-                </div>
 
-                <h3 class="profile-username text-center font-weight-bold text-uppercase">{{ student.student_name }}</h3>
-                <p class="text-muted text-center mb-1">{{ student.student_id }}</p>
-                <div class="text-center mb-2">
-                    {% if student.ssc_verified and student.hsc_verified %}
-                        <span class="badge badge-success px-2 py-1" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(16,185,129,0.4);" title="Both SSC &amp; HSC Board Verified"><i class="fas fa-check-double" style="font-size: 12px;"></i></span>
-                    {% elif student.ssc_verified or student.hsc_verified %}
-                        <span class="badge badge-info px-2 py-1" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(2,132,199,0.4);" title="{% if student.ssc_verified %}SSC{% else %}HSC{% endif %} Board Verified"><i class="fas fa-check" style="font-size: 12px;"></i></span>
-                    {% endif %}
-                </div>
-                {% if student.old_student_id %}
-                    <div class="text-center mt-1">
-                        <span class="badge badge-warning py-1 px-2 rounded-sm" style="font-size: 0.65rem; opacity: 0.8;">
-                            <i class="fas fa-history mr-1"></i> FORMERLY: {{ student.old_student_id }}
-                        </span>
-                    </div>
-                {% elif student.is_legacy_student %}
-                    <div class="text-center mt-1">
-                        <span class="badge badge-warning py-1 px-2 rounded-sm" style="font-size: 0.65rem; opacity: 0.8;">
-                            <i class="fas fa-archive mr-1"></i> LEGACY RECORD
-                        </span>
-                    </div>
-                {% endif %}
-
-                <ul class="list-group list-group-unbordered mb-3">
-                    <li class="list-group-item">
-                        <b>Program</b> <a class="float-right text-dark font-weight-bold">{{ student.program }}</a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>Admission Batch</b> <a class="float-right text-dark font-weight-bold">{{ student.batch }}</a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>Current Batch</b> <a class="float-right text-dark font-weight-bold">{{ student.current_batch|default:student.batch }}</a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>Admitted Semester</b> <a class="float-right text-dark font-weight-bold">{{ student.semester_name }}</a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>Current Semester</b> <a class="float-right text-dark font-weight-bold">{{ student.current_semester|default:"Level 1 Term I" }}</a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>Hall Attachment</b> <a class="float-right text-dark font-weight-bold">{{ student.hall_attached|default:"Unspecified" }}</a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>Residential Hall</b> 
-                        <a class="float-right text-dark font-weight-bold">
-                            {% if student.is_non_residential %}
-                                <span class="badge badge-secondary">Non-Residential</span>
-                            {% else %}
-                                {% if student.hall_residential %}
-                                    {{ student.hall_residential.full_name|default:student.hall_residential.short_name }}
-                                {% else %}
-                                    Unspecified
-                                {% endif %}
-                            {% endif %}
-                        </a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>Status</b> 
-                        <a class="float-right">
-                            <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-3 py-2 rounded-pill">
+                    <!-- Student Info Cluster -->
+                    <div class="d-flex flex-column justify-content-center" style="gap: 5px;">
+                        <!-- Name & Primary Badges -->
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                            <h3 class="font-weight-black text-uppercase text-dark mb-0" style="font-size: 1.35rem; letter-spacing: 0.3px;">
+                                {{ student.student_name }}
+                            </h3>
+                            <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
                                 {{ student.admission_status }}
                             </span>
-                        </a>
-                    </li>
-                </ul>
+                            {% if student.ssc_verified and student.hsc_verified %}
+                                <span class="badge badge-success px-2 py-0.5 rounded-pill" style="font-size: 0.72rem;" title="Both SSC & HSC Board Verified">
+                                    <i class="fas fa-check-double mr-1"></i>Verified
+                                </span>
+                            {% elif student.ssc_verified or student.hsc_verified %}
+                                <span class="badge badge-info px-2 py-0.5 rounded-pill" style="font-size: 0.72rem;" title="Partial Board Verified">
+                                    <i class="fas fa-check mr-1"></i>Partial
+                                </span>
+                            {% endif %}
+                        </div>
 
-                <!-- ─── Profile Completeness Widget ─────────────────────────── -->
-                <div class="px-3 pb-3" id="profileCompletenessWidget">
-                    <div class="border-top pt-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small font-weight-bold text-muted">
-                                <i class="fas fa-tasks mr-1"></i>Profile Completeness
-                            </span>
-                            <span class="badge badge-{{ profile_completeness.bar_class }} px-2 py-1 rounded-pill"
-                                  id="completenessScore"
-                                  style="font-size: 0.75rem;">{{ profile_completeness.score }}%</span>
-                        </div>
-                        <div class="progress mb-1" style="height: 8px; border-radius: 50px; background: #e2e8f0;">
-                            <div class="progress-bar bg-{{ profile_completeness.bar_class }}"
-                                 id="completenessBar"
-                                 role="progressbar"
-                                 style="width: {{ profile_completeness.score }}%; transition: width 0.8s ease; border-radius: 50px;"
-                                 aria-valuenow="{{ profile_completeness.score }}"
-                                 aria-valuemin="0"
-                                 aria-valuemax="100"></div>
-                        </div>
-                        <div class="text-center">
-                            <small class="text-muted" style="font-size: 0.7rem;" id="completenessTier">{{ profile_completeness.tier }}</small>
-                        </div>
-                        {% if profile_completeness.missing_items %}
-                        <div class="text-center mt-1">
-                            <a href="#missingItemsList" class="small text-warning font-weight-bold"
-                               data-toggle="collapse" style="font-size: 0.72rem;">
-                                <i class="fas fa-exclamation-circle mr-1"></i>
-                                {{ profile_completeness.missing_items|length }} field(s) incomplete
+                        <!-- ID & Mobile Click-to-Copy Chips -->
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                            <button type="button" class="copy-chip-btn" data-copy="{{ student.student_id }}" title="Click to Copy Student ID">
+                                <i class="fas fa-id-badge text-primary"></i>
+                                <code>{{ student.student_id }}</code>
+                                <i class="far fa-copy text-muted ml-1 copy-icon"></i>
+                            </button>
+
+                            {% if student.student_mobile and student.student_mobile != '-' %}
+                            <button type="button" class="copy-chip-btn" data-copy="{{ student.student_mobile }}" title="Click to Copy Mobile">
+                                <i class="fas fa-phone-alt text-success"></i>
+                                <span>{{ student.student_mobile }}</span>
+                                <i class="far fa-copy text-muted ml-1 copy-icon"></i>
+                            </button>
+                            <a href="javascript:void(0)" class="text-success ml-0.5" onclick="openWhatsAppAndCopy('{{ student.student_mobile|escapejs }}')" title="WhatsApp student">
+                                <i class="fab fa-whatsapp text-success" style="font-size: 1.15rem; vertical-align: middle;"></i>
                             </a>
-                            <div class="collapse" id="missingItemsList">
-                                <ul class="list-unstyled text-left mt-2 mb-0 pl-1" style="font-size: 0.72rem;">
-                                    {% for item in profile_completeness.missing_items %}
-                                    <li class="text-muted">
-                                        <i class="fas fa-times-circle text-danger mr-1" style="font-size: 9px;"></i>{{ item }}
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
+                            {% endif %}
+
+                            {% if student.student_email and student.student_email != '-' %}
+                            <span class="small text-muted d-none d-lg-inline ml-1">
+                                <i class="fas fa-envelope text-muted mr-1"></i>{{ student.student_email }}
+                            </span>
+                            {% endif %}
                         </div>
-                        {% else %}
-                        <div class="text-center mt-1">
-                            <small class="text-success font-weight-bold" style="font-size: 0.72rem;">
-                                <i class="fas fa-check-circle mr-1"></i>All key fields complete!
-                            </small>
+
+                        <!-- Department & Enrollment Breadcrumbs -->
+                        <div class="text-muted small d-flex flex-wrap align-items-center" style="gap: 6px;">
+                            <span class="font-weight-bold text-dark"><i class="fas fa-graduation-cap text-primary mr-1"></i>{{ student.program|default:"Unspecified Dept" }}</span>
+                            <span class="text-muted">•</span>
+                            <span>Batch {{ student.batch }}</span>
+                            {% if student.semester_name %}
+                            <span class="text-muted">•</span>
+                            <span>{{ student.semester_name }}</span>
+                            {% endif %}
+                            <span class="text-muted">•</span>
+                            <span>
+                                {% if student.is_non_residential %}
+                                    <span class="text-secondary"><i class="fas fa-house-user mr-1"></i>Non-Residential</span>
+                                {% elif student.hall_residential %}
+                                    <span class="text-info"><i class="fas fa-hotel mr-1"></i>{{ student.hall_residential.short_name|default:student.hall_residential }}</span>
+                                {% else %}
+                                    <span class="text-muted"><i class="fas fa-bed mr-1"></i>Unallocated Hall</span>
+                                {% endif %}
+                            </span>
                         </div>
-                        {% endif %}
                     </div>
                 </div>
-                <!-- ─── End Profile Completeness Widget ────────────────────── -->
 
+                <!-- Right: Action Button Cluster -->
+                <div class="edit-btn-wrapper d-flex align-items-center flex-wrap" style="gap: 8px;">
+                    <!-- Certificate -->
+                    <button type="button" hx-get="{% url 'studentship_preview' student.student_id %}" hx-target="#modals-here" class="btn btn-sm btn-info font-weight-bold px-3 shadow-xs" style="border-radius: 8px; white-space: nowrap;">
+                        <i class="fas fa-certificate mr-1 text-warning"></i> Certificate
+                    </button>
+                    
+                    <!-- Save PDF -->
+                    <a href="{% url 'download_master_sheet' student.student_id %}" class="btn btn-sm btn-outline-danger font-weight-bold px-3 shadow-xs" style="border-radius: 8px; white-space: nowrap;">
+                        <i class="fas fa-file-pdf mr-1"></i> Save PDF
+                    </a>
+
+                    <!-- Edit Profile -->
+                    <a href="{% url 'edit_student' student.student_id %}" class="btn btn-sm btn-primary font-weight-bold px-3 shadow-xs" style="border-radius: 8px; white-space: nowrap;">
+                        <i class="fas fa-edit mr-1"></i> Edit Profile
+                    </a>
+
+                    <!-- Unified Actions Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-dark font-weight-bold px-3 shadow-xs dropdown-toggle" type="button" id="adminToolsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 8px; white-space: nowrap;">
+                            <i class="fas fa-tools mr-1"></i> Actions
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right border-0 shadow-lg" aria-labelledby="adminToolsDropdown" style="border-radius: 12px; z-index: 1060; min-width: 200px;">
+                            <h6 class="dropdown-header font-weight-bold text-muted">Academic Operations</h6>
+                            <a class="dropdown-item py-2" href="{% url 'change_program' student.student_id %}">
+                                <i class="fas fa-exchange-alt mr-2 text-warning"></i> Program Migration
+                            </a>
+                            {% if user.is_superuser %}
+                            <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left w-100" onclick="openUgcMigrationModal()">
+                                <i class="fas fa-arrows-spin mr-2 text-success"></i> UGC 16-Digit Migrate
+                            </button>
+                            {% endif %}
+
+                            <div class="dropdown-divider opacity-50"></div>
+                            <h6 class="dropdown-header font-weight-bold text-muted">Residency Operations</h6>
+                            {% if student.is_non_residential or not student.hall_residential %}
+                                <a class="dropdown-item py-2 disabled text-muted" href="javascript:void(0)">
+                                    <i class="fas fa-hotel mr-2 opacity-50"></i> Migrate Hall (Disabled)
+                                </a>
+                                <a class="dropdown-item py-2 disabled text-muted" href="javascript:void(0)">
+                                    <i class="fas fa-times-circle mr-2 opacity-50"></i> Cancel Seat (Disabled)
+                                </a>
+                            {% else %}
+                                <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-info w-100" data-toggle="modal" data-target="#migrateResidencyModal">
+                                    <i class="fas fa-hotel mr-2"></i> Migrate Hall
+                                </button>
+                                <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-warning w-100" data-toggle="modal" data-target="#cancelResidencyModal">
+                                    <i class="fas fa-times-circle mr-2"></i> Cancel Hall Seat
+                                </button>
+                            {% endif %}
+
+                            {% if user.is_superuser %}
+                            <div class="dropdown-divider opacity-50"></div>
+                            <h6 class="dropdown-header font-weight-bold text-muted">Security & Records</h6>
+                            <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-primary w-100" data-toggle="modal" data-target="#rectifyIdModal">
+                                <i class="fas fa-fingerprint mr-2"></i> Change Student ID
+                            </button>
+                            {% endif %}
+
+                            <div class="dropdown-divider opacity-50"></div>
+                            <h6 class="dropdown-header font-weight-bold text-info"><i class="fas fa-magic mr-1"></i> Board Verifier Tools</h6>
+                            {% if can_audit or can_edit %}
+                            <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-success font-weight-bold w-100" onclick="openAcademicTabAndMarkVerified()">
+                                <i class="fas fa-user-check mr-2 text-success"></i> Mark Verified Manually
+                            </button>
+                            {% endif %}
+
+                            <div class="dropdown-divider opacity-50"></div>
+                            <h6 class="dropdown-header font-weight-bold text-danger">Danger Zone</h6>
+                            <a class="dropdown-item py-2 text-danger" href="{% url 'cancellation_hub' %}?search={{ student.student_id }}">
+                                <i class="fas fa-user-slash mr-2"></i> Cancel Admission
+                            </a>
+                            <button type="button" class="dropdown-item py-2 border-0 bg-transparent text-left text-danger font-weight-bold w-100" data-toggle="modal" data-target="#deleteStudentModal">
+                                <i class="fas fa-trash-alt mr-2"></i> Delete Admission Record
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <!-- /.card-body -->
-        </div>
-        <!-- /.card -->
-    </div>
 
-    <!-- Delete Confirmation Modal -->
+            <!-- Bottom: 6-Stage Milestone Stepper (Rendered EXACTLY ONCE) -->
+            <div class="milestone-stepper-wrap">
+                <!-- 1. Form Submitted -->
+                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view bio details">
+                    <div class="milestone-step-node node-complete">
+                        <i class="fas fa-file-check"></i>
+                    </div>
+                    <div class="milestone-step-title">1. Form &amp; Bio</div>
+                    <span class="milestone-step-badge badge badge-success">Enrolled</span>
+                </div>
+
+                <!-- 2. Board Verified -->
+                <div class="milestone-step-item" onclick="jumpToTab('#academic')" title="Click to view board verification logs">
+                    {% if student.ssc_verified and student.hsc_verified %}
+                        <div class="milestone-step-node node-complete"><i class="fas fa-check-double"></i></div>
+                        <div class="milestone-step-title">2. Board Verif</div>
+                        <span class="milestone-step-badge badge badge-success">Both Verified</span>
+                    {% elif student.bteb_verified %}
+                        <div class="milestone-step-node node-complete"><i class="fas fa-award"></i></div>
+                        <div class="milestone-step-title">2. Board Verif</div>
+                        <span class="milestone-step-badge badge badge-success">BTEB Verified</span>
+                    {% elif student.ssc_verified or student.hsc_verified %}
+                        <div class="milestone-step-node node-partial"><i class="fas fa-check"></i></div>
+                        <div class="milestone-step-title">2. Board Verif</div>
+                        <span class="milestone-step-badge badge badge-warning text-dark">Partial Verified</span>
+                    {% else %}
+                        <div class="milestone-step-node node-pending"><i class="fas fa-shield-alt"></i></div>
+                        <div class="milestone-step-title">2. Board Verif</div>
+                        <span class="milestone-step-badge badge badge-light border">Unverified</span>
+                    {% endif %}
+                </div>
+
+                <!-- 3. Admission Fees -->
+                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view payment details">
+                    {% if student.admission_payment and student.admission_payment > 0 or student.waiver and student.waiver >= 100 or student.admission_status == 'Active' %}
+                        <div class="milestone-step-node node-complete"><i class="fas fa-receipt"></i></div>
+                        <div class="milestone-step-title">3. Admission Fee</div>
+                        <span class="milestone-step-badge badge badge-success">Paid / Active</span>
+                    {% else %}
+                        <div class="milestone-step-node node-partial"><i class="fas fa-clock"></i></div>
+                        <div class="milestone-step-title">3. Admission Fee</div>
+                        <span class="milestone-step-badge badge badge-warning text-dark">Pending</span>
+                    {% endif %}
+                </div>
+
+                <!-- 4. UGC ID Finalized -->
+                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view ID structure">
+                    {% if student.student_id|length == 16 %}
+                        <div class="milestone-step-node node-complete"><i class="fas fa-fingerprint"></i></div>
+                        <div class="milestone-step-title">4. UGC ID</div>
+                        <span class="milestone-step-badge badge badge-success">16-Digit Valid</span>
+                    {% elif student.is_legacy_student %}
+                        <div class="milestone-step-node node-exempt"><i class="fas fa-history"></i></div>
+                        <div class="milestone-step-title">4. System ID</div>
+                        <span class="milestone-step-badge badge badge-info">Legacy Valid</span>
+                    {% else %}
+                        <div class="milestone-step-node node-partial"><i class="fas fa-exclamation-circle"></i></div>
+                        <div class="milestone-step-title">4. System ID</div>
+                        <span class="milestone-step-badge badge badge-warning text-dark">Standard</span>
+                    {% endif %}
+                </div>
+
+                <!-- 5. Hall Residency -->
+                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view residency and attachment">
+                    {% if student.is_non_residential %}
+                        <div class="milestone-step-node node-exempt"><i class="fas fa-house-user"></i></div>
+                        <div class="milestone-step-title">5. Hall Seat</div>
+                        <span class="milestone-step-badge badge badge-secondary">Non-Residential</span>
+                    {% elif student.hall_residential %}
+                        <div class="milestone-step-node node-complete"><i class="fas fa-hotel"></i></div>
+                        <div class="milestone-step-title">5. Hall Seat</div>
+                        <span class="milestone-step-badge badge badge-success">{{ student.hall_residential.short_name|default:"Allocated" }}</span>
+                    {% elif student.hall_attached %}
+                        <div class="milestone-step-node node-partial"><i class="fas fa-building"></i></div>
+                        <div class="milestone-step-title">5. Hall Seat</div>
+                        <span class="milestone-step-badge badge badge-warning text-dark">{{ student.hall_attached }}</span>
+                    {% else %}
+                        <div class="milestone-step-node node-pending"><i class="fas fa-bed"></i></div>
+                        <div class="milestone-step-title">5. Hall Seat</div>
+                        <span class="milestone-step-badge badge badge-light border">Unallocated</span>
+                    {% endif %}
+                </div>
+
+                <!-- 6. Uniform & Additional Fees -->
+                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view uniform package status">
+                    {% if student.uniform_status == 'PAID' %}
+                        <div class="milestone-step-node node-complete"><i class="fas fa-user-tie"></i></div>
+                        <div class="milestone-step-title">6. Uniform</div>
+                        <span class="milestone-step-badge badge badge-success">Paid</span>
+                    {% elif student.uniform_status == 'OPTED_OUT' %}
+                        <div class="milestone-step-node node-muted"><i class="fas fa-ban"></i></div>
+                        <div class="milestone-step-title">6. Uniform</div>
+                        <span class="milestone-step-badge badge badge-secondary">Opted Out</span>
+                    {% elif student.uniform_status == 'PARTIAL' %}
+                        <div class="milestone-step-node node-partial"><i class="fas fa-adjust"></i></div>
+                        <div class="milestone-step-title">6. Uniform</div>
+                        <span class="milestone-step-badge badge badge-warning text-dark">Partial</span>
+                    {% else %}
+                        <div class="milestone-step-node node-pending"><i class="fas fa-clock"></i></div>
+                        <div class="milestone-step-title">6. Uniform</div>
+                        <span class="milestone-step-badge badge badge-light border">Due / Pending</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Modals (Preserved) ─── -->
+<!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteStudentModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
@@ -1069,9 +888,9 @@
             </div>
         </div>
     </div>
-    <!-- /.col -->
 
-    <div class="col-md-9">
+
+    <div class="col-12">
         <div class="card">
             <div class="card-header p-2">
                 <ul class="nav nav-pills">
@@ -1084,6 +903,37 @@
             <div class="card-body">
                 <div class="tab-content">
                     <div class="active tab-pane" id="details">
+                        <!-- ─── Academic & Enrollment Overview ─── -->
+                        <div class="card mb-4 border-0 shadow-xs" style="background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div class="card-body p-3">
+                                <div class="row text-center text-md-left">
+                                    <div class="col-6 col-md-3 mb-2 mb-md-0 border-right">
+                                        <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 0.7rem;">Program & Department</small>
+                                        <span class="font-weight-bold text-dark">{{ student.program }}</span>
+                                    </div>
+                                    <div class="col-6 col-md-3 mb-2 mb-md-0 border-right">
+                                        <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 0.7rem;">Batches</small>
+                                        <span class="font-weight-bold text-dark">Adm: {{ student.batch }}</span>
+                                        <span class="text-muted small">| Curr: {{ student.current_batch|default:student.batch }}</span>
+                                    </div>
+                                    <div class="col-6 col-md-3 mb-2 mb-md-0 border-right">
+                                        <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 0.7rem;">Semesters</small>
+                                        <span class="font-weight-bold text-dark">{{ student.semester_name|default:"-" }}</span>
+                                        <span class="text-muted small">({{ student.current_semester|default:"Level 1 Term I" }})</span>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 0.7rem;">Residency</small>
+                                        {% if student.is_non_residential %}
+                                            <span class="badge badge-secondary">Non-Residential</span>
+                                        {% elif student.hall_residential %}
+                                            <span class="font-weight-bold text-info">{{ student.hall_residential.full_name|default:student.hall_residential.short_name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Attachment: {{ student.hall_attached|default:"Unspecified" }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <h5 class="text-primary border-bottom pb-2">Personal Information</h5>
@@ -2440,455 +2290,20 @@
                                 </div>
 
                                 <div class="row">
-                                    <!-- ─── Student 360 Progression Hero & Stepper ─── -->
-    <div class="col-12 mb-4">
-        <div class="milestone-hero-card">
-            <!-- Hero Summary Strip -->
-            <div class="p-3 d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
-                <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
-                    <div class="d-flex align-items-center">
-                        <span class="font-weight-black text-uppercase text-dark h5 mb-0 mr-2">{{ student.student_name }}</span>
-                        <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
-                            {{ student.admission_status }}
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center" style="gap: 8px;">
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_id }}" title="Click to Copy Student ID">
-                            <i class="fas fa-id-badge text-primary"></i>
-                            <code>{{ student.student_id }}</code>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% if student.student_mobile and student.student_mobile != '-' %}
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_mobile }}" title="Click to Copy Mobile">
-                            <i class="fas fa-phone-alt text-success"></i>
-                            <span>{{ student.student_mobile }}</span>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="text-muted small">
-                    <span class="font-weight-bold text-dark">{{ student.program|default:"Unspecified Dept" }}</span>
-                    <span class="mx-1.5">•</span>
-                    <span>Batch {{ student.batch }}</span>
-                    {% if student.semester_name %}
-                    <span class="mx-1.5">•</span>
-                    <span>{{ student.semester_name }}</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 6-Stage Milestone Stepper -->
-            <div class="milestone-stepper-wrap">
-                <!-- 1. Form Submitted -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view bio details">
-                    <div class="milestone-step-node node-complete">
-                        <i class="fas fa-file-check"></i>
-                    </div>
-                    <div class="milestone-step-title">1. Form &amp; Bio</div>
-                    <span class="milestone-step-badge badge badge-success">Enrolled</span>
-                </div>
-
-                <!-- 2. Board Verified -->
-                <div class="milestone-step-item" onclick="jumpToTab('#academic')" title="Click to view board verification logs">
-                    {% if student.ssc_verified and student.hsc_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-check-double"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">Both Verified</span>
-                    {% elif student.bteb_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-award"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">BTEB Verified</span>
-                    {% elif student.ssc_verified or student.hsc_verified %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-check"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial Verified</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-shield-alt"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-light border">Unverified</span>
-                    {% endif %}
-                </div>
-
-                <!-- 3. Admission Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view payment details">
-                    {% if student.admission_payment and student.admission_payment > 0 or student.waiver and student.waiver >= 100 or student.admission_status == 'Active' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-receipt"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-success">Paid / Active</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Pending</span>
-                    {% endif %}
-                </div>
-
-                <!-- 4. UGC ID Finalized -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view ID structure">
-                    {% if student.student_id|length == 16 %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-fingerprint"></i></div>
-                        <div class="milestone-step-title">4. UGC ID</div>
-                        <span class="milestone-step-badge badge badge-success">16-Digit Valid</span>
-                    {% elif student.is_legacy_student %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-history"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-info">Legacy Valid</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-exclamation-circle"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Standard</span>
-                    {% endif %}
-                </div>
-
-                <!-- 5. Hall Residency -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view residency and attachment">
-                    {% if student.is_non_residential %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-house-user"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-secondary">Non-Residential</span>
-                    {% elif student.hall_residential %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-hotel"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-success">{{ student.hall_residential.short_name|default:"Allocated" }}</span>
-                    {% elif student.hall_attached %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-building"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">{{ student.hall_attached }}</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-bed"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-light border">Unallocated</span>
-                    {% endif %}
-                </div>
-
-                <!-- 6. Uniform & Additional Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view uniform package status">
-                    {% if student.uniform_status == 'PAID' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-user-tie"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-success">Paid</span>
-                    {% elif student.uniform_status == 'OPTED_OUT' %}
-                        <div class="milestone-step-node node-muted"><i class="fas fa-ban"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-secondary">Opted Out</span>
-                    {% elif student.uniform_status == 'PARTIAL' %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-adjust"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-light border">Due / Pending</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
+                                    <div class="col-md-3">
                                         <div class="form-group mb-2">
                                             <label class="small font-weight-bold text-dark">Package Amount (BDT)</label>
                                             <input type="number" step="1" class="form-control form-control-sm font-weight-bold" name="uniform_amount" id="fee_uniform_amount" value="{% if student.uniform_amount %}{{ student.uniform_amount|floatformat:0 }}{% elif student.gender|lower == 'female' or student.gender|lower == 'f' %}5400{% else %}4400{% endif %}">
                                         </div>
                                     </div>
-                                    <!-- ─── Student 360 Progression Hero & Stepper ─── -->
-    <div class="col-12 mb-4">
-        <div class="milestone-hero-card">
-            <!-- Hero Summary Strip -->
-            <div class="p-3 d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
-                <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
-                    <div class="d-flex align-items-center">
-                        <span class="font-weight-black text-uppercase text-dark h5 mb-0 mr-2">{{ student.student_name }}</span>
-                        <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
-                            {{ student.admission_status }}
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center" style="gap: 8px;">
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_id }}" title="Click to Copy Student ID">
-                            <i class="fas fa-id-badge text-primary"></i>
-                            <code>{{ student.student_id }}</code>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% if student.student_mobile and student.student_mobile != '-' %}
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_mobile }}" title="Click to Copy Mobile">
-                            <i class="fas fa-phone-alt text-success"></i>
-                            <span>{{ student.student_mobile }}</span>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="text-muted small">
-                    <span class="font-weight-bold text-dark">{{ student.program|default:"Unspecified Dept" }}</span>
-                    <span class="mx-1.5">•</span>
-                    <span>Batch {{ student.batch }}</span>
-                    {% if student.semester_name %}
-                    <span class="mx-1.5">•</span>
-                    <span>{{ student.semester_name }}</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 6-Stage Milestone Stepper -->
-            <div class="milestone-stepper-wrap">
-                <!-- 1. Form Submitted -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view bio details">
-                    <div class="milestone-step-node node-complete">
-                        <i class="fas fa-file-check"></i>
-                    </div>
-                    <div class="milestone-step-title">1. Form &amp; Bio</div>
-                    <span class="milestone-step-badge badge badge-success">Enrolled</span>
-                </div>
-
-                <!-- 2. Board Verified -->
-                <div class="milestone-step-item" onclick="jumpToTab('#academic')" title="Click to view board verification logs">
-                    {% if student.ssc_verified and student.hsc_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-check-double"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">Both Verified</span>
-                    {% elif student.bteb_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-award"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">BTEB Verified</span>
-                    {% elif student.ssc_verified or student.hsc_verified %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-check"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial Verified</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-shield-alt"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-light border">Unverified</span>
-                    {% endif %}
-                </div>
-
-                <!-- 3. Admission Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view payment details">
-                    {% if student.admission_payment and student.admission_payment > 0 or student.waiver and student.waiver >= 100 or student.admission_status == 'Active' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-receipt"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-success">Paid / Active</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Pending</span>
-                    {% endif %}
-                </div>
-
-                <!-- 4. UGC ID Finalized -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view ID structure">
-                    {% if student.student_id|length == 16 %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-fingerprint"></i></div>
-                        <div class="milestone-step-title">4. UGC ID</div>
-                        <span class="milestone-step-badge badge badge-success">16-Digit Valid</span>
-                    {% elif student.is_legacy_student %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-history"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-info">Legacy Valid</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-exclamation-circle"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Standard</span>
-                    {% endif %}
-                </div>
-
-                <!-- 5. Hall Residency -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view residency and attachment">
-                    {% if student.is_non_residential %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-house-user"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-secondary">Non-Residential</span>
-                    {% elif student.hall_residential %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-hotel"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-success">{{ student.hall_residential.short_name|default:"Allocated" }}</span>
-                    {% elif student.hall_attached %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-building"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">{{ student.hall_attached }}</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-bed"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-light border">Unallocated</span>
-                    {% endif %}
-                </div>
-
-                <!-- 6. Uniform & Additional Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view uniform package status">
-                    {% if student.uniform_status == 'PAID' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-user-tie"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-success">Paid</span>
-                    {% elif student.uniform_status == 'OPTED_OUT' %}
-                        <div class="milestone-step-node node-muted"><i class="fas fa-ban"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-secondary">Opted Out</span>
-                    {% elif student.uniform_status == 'PARTIAL' %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-adjust"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-light border">Due / Pending</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
+                                    <div class="col-md-3">
                                         <div class="form-group mb-2">
                                             <label class="small font-weight-bold text-dark">Amount Paid (BDT)</label>
                                             <input type="number" step="1" min="0" class="form-control form-control-sm font-weight-bold text-success" name="uniform_paid_amount" id="fee_uniform_paid_amount" value="{% if student.uniform_status == 'PAID' %}{% if student.uniform_paid_amount %}{{ student.uniform_paid_amount|floatformat:0 }}{% elif student.gender|lower == 'female' or student.gender|lower == 'f' %}5400{% else %}4400{% endif %}{% else %}{{ student.uniform_paid_amount|default:'0'|floatformat:0 }}{% endif %}">
                                             <small id="uniform_balance_indicator" class="form-text font-weight-bold mt-1" style="font-size: 0.72rem;"></small>
                                         </div>
                                     </div>
-                                    <!-- ─── Student 360 Progression Hero & Stepper ─── -->
-    <div class="col-12 mb-4">
-        <div class="milestone-hero-card">
-            <!-- Hero Summary Strip -->
-            <div class="p-3 d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
-                <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
-                    <div class="d-flex align-items-center">
-                        <span class="font-weight-black text-uppercase text-dark h5 mb-0 mr-2">{{ student.student_name }}</span>
-                        <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
-                            {{ student.admission_status }}
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center" style="gap: 8px;">
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_id }}" title="Click to Copy Student ID">
-                            <i class="fas fa-id-badge text-primary"></i>
-                            <code>{{ student.student_id }}</code>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% if student.student_mobile and student.student_mobile != '-' %}
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_mobile }}" title="Click to Copy Mobile">
-                            <i class="fas fa-phone-alt text-success"></i>
-                            <span>{{ student.student_mobile }}</span>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="text-muted small">
-                    <span class="font-weight-bold text-dark">{{ student.program|default:"Unspecified Dept" }}</span>
-                    <span class="mx-1.5">•</span>
-                    <span>Batch {{ student.batch }}</span>
-                    {% if student.semester_name %}
-                    <span class="mx-1.5">•</span>
-                    <span>{{ student.semester_name }}</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 6-Stage Milestone Stepper -->
-            <div class="milestone-stepper-wrap">
-                <!-- 1. Form Submitted -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view bio details">
-                    <div class="milestone-step-node node-complete">
-                        <i class="fas fa-file-check"></i>
-                    </div>
-                    <div class="milestone-step-title">1. Form &amp; Bio</div>
-                    <span class="milestone-step-badge badge badge-success">Enrolled</span>
-                </div>
-
-                <!-- 2. Board Verified -->
-                <div class="milestone-step-item" onclick="jumpToTab('#academic')" title="Click to view board verification logs">
-                    {% if student.ssc_verified and student.hsc_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-check-double"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">Both Verified</span>
-                    {% elif student.bteb_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-award"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">BTEB Verified</span>
-                    {% elif student.ssc_verified or student.hsc_verified %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-check"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial Verified</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-shield-alt"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-light border">Unverified</span>
-                    {% endif %}
-                </div>
-
-                <!-- 3. Admission Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view payment details">
-                    {% if student.admission_payment and student.admission_payment > 0 or student.waiver and student.waiver >= 100 or student.admission_status == 'Active' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-receipt"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-success">Paid / Active</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Pending</span>
-                    {% endif %}
-                </div>
-
-                <!-- 4. UGC ID Finalized -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view ID structure">
-                    {% if student.student_id|length == 16 %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-fingerprint"></i></div>
-                        <div class="milestone-step-title">4. UGC ID</div>
-                        <span class="milestone-step-badge badge badge-success">16-Digit Valid</span>
-                    {% elif student.is_legacy_student %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-history"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-info">Legacy Valid</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-exclamation-circle"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Standard</span>
-                    {% endif %}
-                </div>
-
-                <!-- 5. Hall Residency -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view residency and attachment">
-                    {% if student.is_non_residential %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-house-user"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-secondary">Non-Residential</span>
-                    {% elif student.hall_residential %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-hotel"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-success">{{ student.hall_residential.short_name|default:"Allocated" }}</span>
-                    {% elif student.hall_attached %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-building"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">{{ student.hall_attached }}</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-bed"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-light border">Unallocated</span>
-                    {% endif %}
-                </div>
-
-                <!-- 6. Uniform & Additional Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view uniform package status">
-                    {% if student.uniform_status == 'PAID' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-user-tie"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-success">Paid</span>
-                    {% elif student.uniform_status == 'OPTED_OUT' %}
-                        <div class="milestone-step-node node-muted"><i class="fas fa-ban"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-secondary">Opted Out</span>
-                    {% elif student.uniform_status == 'PARTIAL' %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-adjust"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-light border">Due / Pending</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
+                                    <div class="col-md-3">
                                         <div class="form-group mb-2">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
                                                 <label class="small font-weight-bold text-dark mb-0">Receipt / Token No</label>
@@ -2906,152 +2321,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- ─── Student 360 Progression Hero & Stepper ─── -->
-    <div class="col-12 mb-4">
-        <div class="milestone-hero-card">
-            <!-- Hero Summary Strip -->
-            <div class="p-3 d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
-                <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
-                    <div class="d-flex align-items-center">
-                        <span class="font-weight-black text-uppercase text-dark h5 mb-0 mr-2">{{ student.student_name }}</span>
-                        <span class="badge {% if student.admission_status == 'Active' %}badge-success{% else %}badge-secondary{% endif %} px-2.5 py-1 rounded-pill" style="font-size: 0.78rem;">
-                            {{ student.admission_status }}
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center" style="gap: 8px;">
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_id }}" title="Click to Copy Student ID">
-                            <i class="fas fa-id-badge text-primary"></i>
-                            <code>{{ student.student_id }}</code>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% if student.student_mobile and student.student_mobile != '-' %}
-                        <button type="button" class="copy-chip-btn" data-copy="{{ student.student_mobile }}" title="Click to Copy Mobile">
-                            <i class="fas fa-phone-alt text-success"></i>
-                            <span>{{ student.student_mobile }}</span>
-                            <i class="far fa-copy text-muted ml-1 copy-icon"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="text-muted small">
-                    <span class="font-weight-bold text-dark">{{ student.program|default:"Unspecified Dept" }}</span>
-                    <span class="mx-1.5">•</span>
-                    <span>Batch {{ student.batch }}</span>
-                    {% if student.semester_name %}
-                    <span class="mx-1.5">•</span>
-                    <span>{{ student.semester_name }}</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 6-Stage Milestone Stepper -->
-            <div class="milestone-stepper-wrap">
-                <!-- 1. Form Submitted -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view bio details">
-                    <div class="milestone-step-node node-complete">
-                        <i class="fas fa-file-check"></i>
-                    </div>
-                    <div class="milestone-step-title">1. Form &amp; Bio</div>
-                    <span class="milestone-step-badge badge badge-success">Enrolled</span>
-                </div>
-
-                <!-- 2. Board Verified -->
-                <div class="milestone-step-item" onclick="jumpToTab('#academic')" title="Click to view board verification logs">
-                    {% if student.ssc_verified and student.hsc_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-check-double"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">Both Verified</span>
-                    {% elif student.bteb_verified %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-award"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-success">BTEB Verified</span>
-                    {% elif student.ssc_verified or student.hsc_verified %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-check"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial Verified</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-shield-alt"></i></div>
-                        <div class="milestone-step-title">2. Board Verif</div>
-                        <span class="milestone-step-badge badge badge-light border">Unverified</span>
-                    {% endif %}
-                </div>
-
-                <!-- 3. Admission Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view payment details">
-                    {% if student.admission_payment and student.admission_payment > 0 or student.waiver and student.waiver >= 100 or student.admission_status == 'Active' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-receipt"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-success">Paid / Active</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">3. Admission Fee</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Pending</span>
-                    {% endif %}
-                </div>
-
-                <!-- 4. UGC ID Finalized -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view ID structure">
-                    {% if student.student_id|length == 16 %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-fingerprint"></i></div>
-                        <div class="milestone-step-title">4. UGC ID</div>
-                        <span class="milestone-step-badge badge badge-success">16-Digit Valid</span>
-                    {% elif student.is_legacy_student %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-history"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-info">Legacy Valid</span>
-                    {% else %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-exclamation-circle"></i></div>
-                        <div class="milestone-step-title">4. System ID</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Standard</span>
-                    {% endif %}
-                </div>
-
-                <!-- 5. Hall Residency -->
-                <div class="milestone-step-item" onclick="jumpToTab('#details')" title="Click to view residency and attachment">
-                    {% if student.is_non_residential %}
-                        <div class="milestone-step-node node-exempt"><i class="fas fa-house-user"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-secondary">Non-Residential</span>
-                    {% elif student.hall_residential %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-hotel"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-success">{{ student.hall_residential.short_name|default:"Allocated" }}</span>
-                    {% elif student.hall_attached %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-building"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">{{ student.hall_attached }}</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-bed"></i></div>
-                        <div class="milestone-step-title">5. Hall Seat</div>
-                        <span class="milestone-step-badge badge badge-light border">Unallocated</span>
-                    {% endif %}
-                </div>
-
-                <!-- 6. Uniform & Additional Fees -->
-                <div class="milestone-step-item" onclick="jumpToTab('#financial')" title="Click to view uniform package status">
-                    {% if student.uniform_status == 'PAID' %}
-                        <div class="milestone-step-node node-complete"><i class="fas fa-user-tie"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-success">Paid</span>
-                    {% elif student.uniform_status == 'OPTED_OUT' %}
-                        <div class="milestone-step-node node-muted"><i class="fas fa-ban"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-secondary">Opted Out</span>
-                    {% elif student.uniform_status == 'PARTIAL' %}
-                        <div class="milestone-step-node node-partial"><i class="fas fa-adjust"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-warning text-dark">Partial</span>
-                    {% else %}
-                        <div class="milestone-step-node node-pending"><i class="fas fa-clock"></i></div>
-                        <div class="milestone-step-title">6. Uniform</div>
-                        <span class="milestone-step-badge badge badge-light border">Due / Pending</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
+                                    <div class="col-md-3">
                                         <div class="form-group mb-2">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
                                                 <label class="small font-weight-bold text-dark mb-0">Receipt Date</label>
@@ -4528,68 +3798,5 @@
             card.innerHTML = '<div class="avatar-icon-wrap"><i class="fas fa-user-graduate"></i></div><span class="avatar-gender-badge neutral"><i class="fas fa-user mr-1"></i> Student</span>';
         }
     }
-
-    // ─── Jump To Tab Helper (Safely activates tab & scrolls) ───
-    window.jumpToTab = function(tabHash) {
-        if (!tabHash) return;
-        let tabLink = document.querySelector('.nav-pills a[href="' + tabHash + '"]');
-        if (!tabLink && tabHash === '#academic') {
-            tabLink = document.querySelector('.nav-pills a[href="#academic-records"]') || document.querySelector('.nav-pills a[href="#academic"]');
-        }
-        if (tabLink) {
-            $(tabLink).tab('show');
-            const targetPane = document.querySelector(tabHash);
-            if (targetPane) {
-                targetPane.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-    };
-
-    // ─── Interactive Copy Chip with Tooltip Reset ───
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.copy-chip-btn').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const textToCopy = this.getAttribute('data-copy');
-                if (!textToCopy) return;
-
-                const self = this;
-                const icon = self.querySelector('.copy-icon');
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(textToCopy).then(function() {
-                        self.classList.add('copied');
-                        if (icon) icon.className = 'fas fa-check text-white ml-1 copy-icon';
-                        setTimeout(function() {
-                            self.classList.remove('copied');
-                            if (icon) icon.className = 'far fa-copy text-muted ml-1 copy-icon';
-                        }, 1800);
-                    }).catch(function() {
-                        fallbackCopy(self, textToCopy, icon);
-                    });
-                } else {
-                    fallbackCopy(self, textToCopy, icon);
-                }
-            });
-        });
-
-        function fallbackCopy(elem, text, icon) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                elem.classList.add('copied');
-                if (icon) icon.className = 'fas fa-check text-white ml-1 copy-icon';
-                setTimeout(function() {
-                    elem.classList.remove('copied');
-                    if (icon) icon.className = 'far fa-copy text-muted ml-1 copy-icon';
-                }, 1800);
-            } catch (err) {}
-            document.body.removeChild(textarea);
-        }
-    });
 </script>
 {% endblock %}

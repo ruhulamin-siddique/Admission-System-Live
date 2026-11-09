@@ -15,3 +15,4 @@ python scripts\sync_student_photos.py --execute
 
 echo.
 pause
+
